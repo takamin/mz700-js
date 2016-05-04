@@ -1,0 +1,24 @@
+.mz700keymatrix .button {
+    display:inline-block;
+    width:58px;
+    height:20px;
+    line-height:20px;
+    border:solid 1px gray;
+    margin:1px;
+    padding:0;
+    font-weight:normal;
+    font-size:6pt;
+    color:gray;
+    text-align:center;
+    cursor:pointer;
+    border-radius:4px;
+}
+.mz700keymatrix .button:hover {
+    color:blue;
+    border-color:blue;
+}
+.mz700keymatrix .button.push {
+    color:white;
+    background-color:blue;
+    border-color:blue;
+}

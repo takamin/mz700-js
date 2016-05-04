@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="content-language" content="ja" />
+        <meta http-equiv="X-UA-Compatible" content="chrome=1">
+        <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no"/>
+        <title>Full JavaScript MZ-700</title>
+        <link rel="stylesheet" type="text/css" href="../lib/jquery.ddpanel.css"/>
+        <link rel="stylesheet" type="text/css" href="../lib/jquery.soundctrl.css"/>
+        <link rel="stylesheet" type="text/css" href="../lib/jquery.Z80-reg.css"/>
+        <link rel="stylesheet" type="text/css" href="../lib/jquery.MZ-700-kb.css"/>
+        <link rel="stylesheet" type="text/css" href="index.css"/>
+    </head>
+    <body>
+        <h1>Full JavaScript MZ-700</h1>
+        <div style="padding:0px;" class="MZ-700">
+            <div class="ctrl-panel"></div>
+            <div class="screen cmt-slot key-switcher"></div>
+            <span class="key-state-message"></span>
+            <div class="keyboard"></div>
+            <div class="register-monitor"></div>
+            <div class="source-list"></div>
+            <div class="memory"></div>
+            <div class="imm-exec"></div>
+        </div>
+        <script type="text/javascript" src="https://code.jquery.com/jquery-2.2.3.min.js"></script>
+        <script type="text/javascript" src="../lib/ex_number.js"></script>
+        <script type="text/javascript" src="../lib/jquery_plugin_class.js"></script>
+        <script type="text/javascript" src="../lib/jquery.ddpanel.js"></script>
+        <script type="text/javascript" src="../lib/jquery.soundctrl.js"></script>
+        <script type="text/javascript" src="../lib/jquery.Z80-mem.js"></script>
+        <script type="text/javascript" src="../lib/jquery.Z80-reg.js"></script>
+        <script type="text/javascript" src="../lib/jquery.MZ-700-vram.js"></script>
+        <script type="text/javascript" src="../lib/jquery.MZ-700-kb.js"></script>
+        <script type="text/javascript" src="../lib/transworker.js"></script>
+        <script type="text/javascript" src="../Z80/emulator.js"></script>
+        <script type="text/javascript" src="../Z80/register.js"></script>
+        <script type="text/javascript" src="../Z80/memory.js"></script>
+        <script type="text/javascript" src="../Z80/assembler.js"></script>
+        <script type="text/javascript" src="index.js"></script>
+        <script type="text/javascript" src="mztape.js"></script>
+        <script type="text/javascript" src="emulator.js"></script>
+        <script type="text/javascript" src="sound.js"></script>
+        <script type="text/javascript">
+            $(function() {
+                var mz700js = MZ700Js.create({"urlPrefix" : "../" });
+                mz700js.reset(function() {
+                    mz700js.start();
+                });
+            });
+        </script>
+    </body>
+</html>

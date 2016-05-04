@@ -1,0 +1,37 @@
+.Z80RegView {
+    font-size:6pt;
+}
+.Z80RegView .reg-value {
+    text-align: center;
+}
+.Z80RegView .row {
+    border-style: solid;
+    border-width: 0 0 1px 0;
+    border-color: gray;
+}
+.Z80RegView > .row:nth-child(1) {
+    border-top-width: 1px;
+}
+.Z80RegView .row .register {
+    display: inline-block;
+    border-style: solid;
+    border-width: 0 1px 0 0;
+    border-color: gray;
+    width: 30px;
+}
+.Z80RegView .row .register:nth-child(1) {
+    border-left-width: 1px;
+}
+.Z80RegView .register.wide {
+    width: 40px;
+}
+.Z80RegView .register.narrow {
+    width: 15px;
+}
+.Z80RegView .register .name {
+    border-style: solid;
+    border-width: 0 0 1px 0;
+    border-color: gray;
+    text-align: center;
+    background-color:silver;
+}

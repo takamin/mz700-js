@@ -1,0 +1,21 @@
+/**
+ * 音量コントロール
+ */
+.soundctrl .gauge {
+    vertical-align: middle;
+    height: 30px;
+}
+.soundctrl .gauge .step{
+    height: 20px;
+    width: 10px;
+    margin: 4px 1px;
+}
+.soundctrl .muteButton {
+    vertical-align: middle;
+    line-height:26px;
+    height: 26px;
+    width: 26px;
+    border-width: 0;
+    background-color:transparent;
+}
+

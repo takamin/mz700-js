@@ -1,0 +1,91 @@
+.MZ-700 .screen {
+    border: solid 1px black;
+    background-color: black;
+    padding:4px 2px;
+}
+.MZ-700 .screen:hover {
+   border-color:red;
+}
+.MZ-700 .ctrl-panel > button {
+    background-color: blue;
+    color: white;
+    border: solid 2px blue;
+    padding: 5px;
+    margin: 5px 2px;
+    font-size: 11pt;
+    font-weight:bold;
+}
+.MZ-700 .ctrl-panel > button:hover {
+    background-color: white;
+    color: blue;
+}
+.MZ-700 .ctrl-panel > button:focus {
+    background-color: white;
+    color: blue;
+}
+
+/**
+ * アセンブルリスト
+ */
+.assemble_list .row .colLabel {
+    color:blue;
+    font-weight:bold;
+}
+.assemble_list .row .colComment {
+    color:#008800;
+}
+.assemble_list .row.current {
+    color:black;
+    background-color: yellow;
+}
+.assemble_list .row.breakPoint {
+    background-color: silver;
+}
+.assemble_list .row.current.breakPoint {
+    background-color: yellow;
+}
+.assemble_list .row.current .colRowAttr {
+    color:red;
+}
+.assemble_list .row.breakPoint .colRowAttr {
+    color:red;
+}
+.assemble_list .row.breakPoint .colRowAttr::before {
+    content:"●";
+}
+.assemble_list .row.current .colRowAttr::after {
+    content:"⇒";
+}
+
+#updateReg {
+    width:80px;
+    height:30px;
+}
+
+.y-scroll-pane {
+    overflow-y: scroll;
+}
+.tabPageContainer {
+    padding:10px;
+    font-family:monospace;
+    font-size:10pt;
+    border:solid 1px gray;
+    height:480px;
+}
+.tabPageContainer .y-scroll-pane {
+    height: 440px;
+}
+.source-list textarea {
+    height:450px;
+    width:100%;
+    border:none;
+    resize:vertical;
+}
+
+
+.imm-exec input.address {
+    width:60px;
+}
+.imm-exec input.mnemonic {
+    width:200px;
+}

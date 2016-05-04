@@ -1,0 +1,710 @@
+00          NOP               OK
+01          LD BC,nn          OK
+02          LD (BC),A         OK
+03          INC BC            OK
+04          INC B             OK
+05          DEC B             OK
+06          LD B,n            OK
+07          RLCA              OK
+08          EX AF,AF'         OK
+09          ADD HL,BC         OK
+0A          LD A,(BC)         OK
+0B          DEC BC            OK
+0C          INC C             OK
+0D          DEC C             OK
+0E          LD C,n            OK
+0F          RRCA              OK
+10          DJNZ              OK
+11          LD DE,nn          OK
+12          LD (DE),A         OK
+13          INC DE            OK
+14          INC D             OK
+15          DEC D             OK
+16          LD D,n            OK
+17          RLA               OK
+18          JR e              OK
+19          ADD HL,DE         OK
+1A          LD A,(DE)         OK
+1B          DEC DE            OK
+1C          INC E             OK
+1D          DEC E             OK
+1E          LD E,n            OK
+1F          RRA               OK
+20          JR NZ,e           OK
+21          LD HL,nn          OK
+22          LD (nn), HL       OK
+23          INC HL            OK
+24          INC H             OK
+25          DEC H             OK
+26          LD H,n            OK
+27          DAA               OK
+28          JR Z,e            OK
+29          ADD HL,HL         OK
+2A          LD HL,(nn)        OK
+2B          DEC HL            OK
+2C          INC L             OK
+2D          DEC L             OK
+2E          LD L,n            OK
+2F          CPL               OK
+30          JR NC,e           OK
+31          LD SP,nn          OK
+32          LD (nn),A         OK
+33          INC SP            OK
+34          INC (HL)          OK
+35          DEC (HL)          OK
+36          LD (HL),n         OK
+37          SCF               OK
+38          JR C,e            OK
+39          ADD HL,SP         OK
+3A          LD A,(nn)         OK
+3B          DEC SP            OK
+3C          INC A             OK
+3D          DEC A             OK
+3E          LD A,n            OK
+3F          CCF               OK
+40          LD B,B            OK
+41          LD B,C            OK
+42          LD B,D            OK
+43          LD B,E            OK
+44          LD B,H            OK
+45          LD B,L            OK
+46          LD B,(HL)         OK
+47          LD B,A            OK
+48          LD C,B            OK
+49          LD C,C            OK
+4A          LD C,D            OK
+4B          LD C,E            OK
+4C          LD C,H            OK
+4D          LD C,L            OK
+4E          LD C,(HL)         OK
+4F          LD C,A            OK
+50          LD D,B            OK
+51          LD D,C            OK
+52          LD D,D            OK
+53          LD D,E            OK
+54          LD D,H            OK
+55          LD D,L            OK
+56          LD D,(HL)         OK
+57          LD D,A            OK
+58          LD E,B            OK
+59          LD E,C            OK
+5A          LD E,D            OK
+5B          LD E,E            OK
+5C          LD E,H            OK
+5D          LD E,L            OK
+5E          LD E,(HL)         OK
+5F          LD E,A            OK
+60          LD H,B            OK
+61          LD H,C            OK
+62          LD H,D            OK
+63          LD H,E            OK
+64          LD H,H            OK
+65          LD H,L            OK
+66          LD H,(HL)         OK
+67          LD H,A            OK
+68          LD L,B            OK
+69          LD L,C            OK
+6A          LD L,D            OK
+6B          LD L,E            OK
+6C          LD L,H            OK
+6D          LD L,L            OK
+6E          LD L,(HL)         OK
+6F          LD L,A            OK
+70          LD (HL),B         OK
+71          LD (HL),C         OK
+72          LD (HL),D         OK
+73          LD (HL),E         OK
+74          LD (HL),H         OK
+75          LD (HL),L         OK
+76          HALT              OK
+77          LD (HL),A         OK
+78          LD A,B            OK
+79          LD A,C            OK
+7A          LD A,D            OK
+7B          LD A,E            OK
+7C          LD A,H            OK
+7D          LD A,L            OK
+7E          LD A,(HL)         OK
+7F          LD A,A            OK
+80          ADD A,B           OK
+81          ADD A,C           OK
+82          ADD A,D           OK
+83          ADD A,E           OK
+84          ADD A,H           OK
+85          ADD A,L           OK
+86          ADD A,(HL)        OK
+87          ADD A,A           OK
+88          ADC A,B           OK
+89          ADC A,C           OK
+8A          ADC A,D           OK
+8B          ADC A,E           OK
+8C          ADC A,H           OK
+8D          ADC A,L           OK
+8E          ADC A,(HL)        OK
+8F          ADC A,A           OK
+90          SUB A,B           OK
+91          SUB A,C           OK
+92          SUB A,D           OK
+93          SUB A,E           OK
+94          SUB A,H           OK
+95          SUB A,L           OK
+96          SUB A,(HL)        OK
+97          SUB A,A           OK
+98          SBC A,B           OK
+99          SBC A,C           OK
+9A          SBC A,D           OK
+9B          SBC A,E           OK
+9C          SBC A,H           OK
+9D          SBC A,L           OK
+9E          SBC A,(HL)        OK
+9F          SBC A,A           OK
+A0          AND B             OK
+A1          AND C             OK
+A2          AND D             OK
+A3          AND E             OK
+A4          AND H             OK
+A5          AND L             OK
+A6          AND (HL)          OK
+A7          AND A             OK
+A8          XOR B             OK
+A9          XOR C             OK
+AA          XOR D             OK
+AB          XOR E             OK
+AC          XOR H             OK
+AD          XOR L             OK
+AE          XOR (HL)          OK
+AF          XOR A             OK
+B0          OR B              OK
+B1          OR C              OK
+B2          OR D              OK
+B3          OR E              OK
+B4          OR H              OK
+B5          OR L              OK
+B6          OR (HL)           OK
+B7          OR A              OK
+B8          CP B              OK
+B9          CP C              OK
+BA          CP D              OK
+BB          CP E              OK
+BC          CP H              OK
+BD          CP L              OK
+BE          CP (HL)           OK
+BF          CP A              OK
+C0          RET NZ            OK
+C1          POP BC            OK
+C2          JP NZ,nn          OK
+C3          JP nn             OK
+C4          CALL NZ,nn        OK
+C5          PUSH BC           OK
+C6          ADD A,n           OK
+C7          RST 00H           OK
+C8          RET Z             OK
+C9          RET               OK
+CA          JP Z,nn           OK
+CB 00       RLC B             OK
+CB 01       RLC C             OK
+CB 02       RLC D             OK
+CB 03       RLC E             OK
+CB 04       RLC H             OK
+CB 05       RLC L             OK
+CB 06       RLC (HL)          OK
+CB 07       RLC A             OK
+CB 08       RRC B             OK
+CB 09       RRC C             OK
+CB 0A       RRC D             OK
+CB 0B       RRC E             OK
+CB 0C       RRC H             OK
+CB 0D       RRC L             OK
+CB 0E       RRC (HL)          OK
+CB 0F       RRC A             OK
+CB 10       RL B              OK
+CB 11       RL C              OK
+CB 12       RL D              OK
+CB 13       RL E              OK
+CB 14       RL H              OK
+CB 15       RL L              OK
+CB 16       RL (HL)           OK
+CB 18       RR B              OK
+CB 19       RR C              OK
+CB 1A       RR D              OK
+CB 1B       RR E              OK
+CB 1C       RR H              OK
+CB 1D       RR L              OK
+CB 1E       RR (HL)           OK
+CB 20       SLA B             OK
+CB 21       SLA C             OK
+CB 22       SLA D             OK
+CB 23       SLA E             OK
+CB 24       SLA H             OK
+CB 25       SLA L             OK
+CB 26       SLA (HL)          OK
+CB 27       SLA A             OK
+CB 28       SRA B             OK
+CB 29       SRA C             OK
+CB 2A       SRA D             OK
+CB 2B       SRA E             OK
+CB 2C       SRA H             OK
+CB 2D       SRA L             OK
+CB 2E       SRA (HL)          OK
+CB 2F       SRA A             OK
+CB 38       SRL B             OK
+CB 39       SRL C             OK
+CB 3A       SRL D             OK
+CB 3B       SRL E             OK
+CB 3C       SRL H             OK
+CB 3D       SRL L             OK
+CB 3E       SRL (HL)          OK
+CB 3F       SRL A             OK
+CB 40       BIT 0,B           OK
+CB 41       BIT 0,C           OK
+CB 42       BIT 0,D           OK
+CB 43       BIT 0,E           OK
+CB 44       BIT 0,H           OK
+CB 45       BIT 0,L           OK
+CB 46       BIT 0,(HL)        OK
+CB 47       BIT 0,A           OK
+CB 48       BIT 1,B           OK
+CB 49       BIT 1,C           OK
+CB 4A       BIT 1,D           OK
+CB 4B       BIT 1,E           OK
+CB 4C       BIT 1,H           OK
+CB 4D       BIT 1,L           OK
+CB 4E       BIT 1,(HL)        OK
+CB 4F       BIT 1,A           OK
+CB 50       BIT 2,B           OK
+CB 51       BIT 2,C           OK
+CB 52       BIT 2,D           OK
+CB 53       BIT 2,E           OK
+CB 54       BIT 2,H           OK
+CB 55       BIT 2,L           OK
+CB 56       BIT 2,(HL)        OK
+CB 57       BIT 2,A           OK
+CB 58       BIT 3,B           OK
+CB 59       BIT 3,C           OK
+CB 5A       BIT 3,D           OK
+CB 5B       BIT 3,E           OK
+CB 5C       BIT 3,H           OK
+CB 5D       BIT 3,L           OK
+CB 5E       BIT 3,(HL)        OK
+CB 5F       BIT 3,A           OK
+CB 60       BIT 4,B           OK
+CB 61       BIT 4,C           OK
+CB 62       BIT 4,D           OK
+CB 63       BIT 4,E           OK
+CB 64       BIT 4,H           OK
+CB 65       BIT 4,L           OK
+CB 66       BIT 4,(HL)        OK
+CB 67       BIT 4,A           OK
+CB 68       BIT 5,B           OK
+CB 69       BIT 5,C           OK
+CB 6A       BIT 5,D           OK
+CB 6B       BIT 5,E           OK
+CB 6C       BIT 5,H           OK
+CB 6D       BIT 5,L           OK
+CB 6E       BIT 5,(HL)        OK
+CB 6F       BIT 5,A           OK
+CB 70       BIT 6,B           OK
+CB 71       BIT 6,C           OK
+CB 72       BIT 6,D           OK
+CB 73       BIT 6,E           OK
+CB 74       BIT 6,H           OK
+CB 75       BIT 6,L           OK
+CB 76       BIT 6,(HL)        OK
+CB 77       BIT 6,A           OK
+CB 78       BIT 7,B           OK
+CB 79       BIT 7,C           OK
+CB 7A       BIT 7,D           OK
+CB 7B       BIT 7,E           OK
+CB 7C       BIT 7,H           OK
+CB 7D       BIT 7,L           OK
+CB 7E       BIT 7,(HL)        OK
+CB 7F       BIT 7,A           OK
+CB 80       RES 0,B           OK
+CB 81       RES 0,C           OK
+CB 82       RES 0,D           OK
+CB 83       RES 0,E           OK
+CB 84       RES 0,H           OK
+CB 85       RES 0,L           OK
+CB 86       RES 0,(HL)        OK
+CB 87       RES 0,A           OK
+CB 88       RES 1,B           OK
+CB 89       RES 1,C           OK
+CB 8A       RES 1,D           OK
+CB 8B       RES 1,E           OK
+CB 8C       RES 1,H           OK
+CB 8D       RES 1,L           OK
+CB 8E       RES 1,(HL)        OK
+CB 8F       RES 1,A           OK
+CB 90       RES 2,B           OK
+CB 91       RES 2,C           OK
+CB 92       RES 2,D           OK
+CB 93       RES 2,E           OK
+CB 94       RES 2,H           OK
+CB 95       RES 2,L           OK
+CB 96       RES 2,(HL)        OK
+CB 97       RES 2,A           OK
+CB 98       RES 3,B           OK
+CB 99       RES 3,C           OK
+CB 9A       RES 3,D           OK
+CB 9B       RES 3,E           OK
+CB 9C       RES 3,H           OK
+CB 9D       RES 3,L           OK
+CB 9E       RES 3,(HL)        OK
+CB 9F       RES 3,A           OK
+CB A0       RES 4,B           OK
+CB A1       RES 4,C           OK
+CB A2       RES 4,D           OK
+CB A3       RES 4,E           OK
+CB A4       RES 4,H           OK
+CB A5       RES 4,L           OK
+CB A6       RES 4,(HL)        OK
+CB A7       RES 4,A           OK
+CB A8       RES 5,B           OK
+CB A9       RES 5,C           OK
+CB AA       RES 5,D           OK
+CB AB       RES 5,E           OK
+CB AC       RES 5,H           OK
+CB AD       RES 5,L           OK
+CB AE       RES 5,(HL)        OK
+CB AF       RES 5,A           OK
+CB B0       RES 6,B           OK
+CB B1       RES 6,C           OK
+CB B2       RES 6,D           OK
+CB B3       RES 6,E           OK
+CB B4       RES 6,H           OK
+CB B5       RES 6,L           OK
+CB B6       RES 6,(HL)        OK
+CB B7       RES 6,A           OK
+CB B8       RES 7,B           OK
+CB B9       RES 7,C           OK
+CB BA       RES 7,D           OK
+CB BB       RES 7,E           OK
+CB BC       RES 7,H           OK
+CB BD       RES 7,L           OK
+CB BE       RES 7,(HL)        OK
+CB BF       RES 7,A           OK
+CB C0       SET 0,B           OK
+CB C1       SET 0,C           OK
+CB C2       SET 0,D           OK
+CB C3       SET 0,E           OK
+CB C4       SET 0,H           OK
+CB C5       SET 0,L           OK
+CB C6       SET 0,(HL)        OK
+CB C7       SET 0,A           OK
+CB C8       SET 1,B           OK
+CB C9       SET 1,C           OK
+CB CA       SET 1,D           OK
+CB CB       SET 1,E           OK
+CB CC       SET 1,H           OK
+CB CD       SET 1,L           OK
+CB CE       SET 1,(HL)        OK
+CB CF       SET 1,A           OK
+CB D0       SET 2,B           OK
+CB D1       SET 2,C           OK
+CB D2       SET 2,D           OK
+CB D3       SET 2,E           OK
+CB D4       SET 2,H           OK
+CB D5       SET 2,L           OK
+CB D6       SET 2,(HL)        OK
+CB D7       SET 2,A           OK
+CB D8       SET 3,B           OK
+CB D9       SET 3,C           OK
+CB DA       SET 3,D           OK
+CB DB       SET 3,E           OK
+CB DC       SET 3,H           OK
+CB DD       SET 3,L           OK
+CB DE       SET 3,(HL)        OK
+CB DF       SET 3,A           OK
+CB E0       SET 4,B           OK
+CB E1       SET 4,C           OK
+CB E2       SET 4,D           OK
+CB E3       SET 4,E           OK
+CB E4       SET 4,H           OK
+CB E5       SET 4,L           OK
+CB E6       SET 4,(HL)        OK
+CB E7       SET 4,A           OK
+CB E8       SET 5,B           OK
+CB E9       SET 5,C           OK
+CB EA       SET 5,D           OK
+CB EB       SET 5,E           OK
+CB EC       SET 5,H           OK
+CB ED       SET 5,L           OK
+CB EE       SET 5,(HL)        OK
+CB EF       SET 5,A           OK
+CB F0       SET 6,B           OK
+CB F1       SET 6,C           OK
+CB F2       SET 6,D           OK
+CB F3       SET 6,E           OK
+CB F4       SET 6,H           OK
+CB F5       SET 6,L           OK
+CB F6       SET 6,(HL)        OK
+CB F7       SET 6,A           OK
+CB F8       SET 7,B           OK
+CB F9       SET 7,C           OK
+CB FA       SET 7,D           OK
+CB FB       SET 7,E           OK
+CB FC       SET 7,H           OK
+CB FD       SET 7,L           OK
+CB FE       SET 7,(HL)        OK
+CB FF       SET 7,A           OK
+CC          CALL Z,nn         OK
+CD          CALL nn           OK
+CE          ADC A,n           OK
+CF          RST 08H           OK
+D0          RET NC            OK
+D1          POP DE            OK
+D2          JP NC,nn          OK
+D3          OUT (n),A         OK
+D4          CALL NC,nn        OK
+D5          PUSH DE           OK
+D6          SUB A,n           OK
+D7          RST 10H           OK
+D8          RET C             OK
+D9          EXX               OK
+DA          JP C,nn           OK
+DB          IN A,(n)          OK
+DC          CALL C,nn         OK
+DD 09       ADD IX,BC         OK
+DD 19       ADD IX,DE         OK
+DD 21       LD IX,nn          OK
+DD 23       INC IX            *** NO DISASSEMBLER
+DD 29       ADD IX,IX         OK
+DD 2A       LD IX,(nn)        OK
+DD 2B       DEC IX            *** NO DISASSEMBLER
+DD 34       INC (IX+d)        OK
+DD 35       DEC (IX+d)        *** NO DISASSEMBLER
+DD 36       LD (IX+d),n       OK
+DD 39       ADD IX,SP         OK
+DD 46       LD B,(IX+d)       *** NO DISASSEMBLER
+DD 4E       LD C,(IX+d)       *** NO DISASSEMBLER
+DD 56       LD D,(IX+d)       *** NO DISASSEMBLER
+DD 5E       LD E,(IX+d)       *** NO DISASSEMBLER
+DD 66       LD H,(IX+d)       *** NO DISASSEMBLER
+DD 6E       LD L,(IX+d)       *** NO DISASSEMBLER
+DD 70       LD (IX+d),B       *** NO DISASSEMBLER
+DD 71       LD (IX+d),C       *** NO DISASSEMBLER
+DD 72       LD (IX+d),D       *** NO DISASSEMBLER
+DD 73       LD (IX+d),E       *** NO DISASSEMBLER
+DD 74       LD (IX+d),H       *** NO DISASSEMBLER
+DD 75       LD (IX+d),L       *** NO DISASSEMBLER
+DD 77       LD (IX+d),A       *** NO DISASSEMBLER
+DD 7E       LD A,(IX+d)       *** NO DISASSEMBLER
+DD 86       ADD A,(IX+d)      *** NO DISASSEMBLER
+DD 8E       ADC A,(IX+d)      *** NO DISASSEMBLER
+DD 96       SUB A,(IX+d)      *** NO DISASSEMBLER
+DD 9E       SBC A,(IX+d)      *** NO DISASSEMBLER
+DD A6       AND (IX+d)        *** NO DISASSEMBLER
+DD AE       XOR (IX+d)        *** NO DISASSEMBLER
+DD B6       OR (IX+d)         *** NO DISASSEMBLER
+DD BE       CP (IX+d)         *** NO DISASSEMBLER
+DD CB 06    RLC (IX+d)        OK
+DD CB 0E    RRC (IX+d)        OK
+DD CB 16    RL (IX+d)         OK
+DD CB 1E    RR (IX+d)         OK
+DD CB 26    SLA (IX+d)        OK
+DD CB 2E    SRA (IX+d)        OK
+DD CB 3E    SRL (IX+d)        OK
+DD CB 46    BIT 0,(IX+d)      *** NO DISASSEMBLER
+DD CB 4E    BIT 1,(IX+d)      *** NO DISASSEMBLER
+DD CB 56    BIT 2,(IX+d)      *** NO DISASSEMBLER
+DD CB 5E    BIT 3,(IX+d)      *** NO DISASSEMBLER
+DD CB 66    BIT 4,(IX+d)      *** NO DISASSEMBLER
+DD CB 6E    BIT 5,(IX+d)      *** NO DISASSEMBLER
+DD CB 76    BIT 6,(IX+d)      *** NO DISASSEMBLER
+DD CB 7E    BIT 7,(IX+d)      *** NO DISASSEMBLER
+DD CB 86    RES 0,(IX+d)      OK
+DD CB 8E    RES 1,(IX+d)      OK
+DD CB 96    RES 2,(IX+d)      OK
+DD CB 9E    RES 3,(IX+d)      OK
+DD CB A6    RES 4,(IX+d)      OK
+DD CB AE    RES 5,(IX+d)      OK
+DD CB B6    RES 6,(IX+d)      OK
+DD CB BE    RES 7,(IX+d)      OK
+DD CB C6    SET 0,(IX+d)      *** NO DISASSEMBLER
+DD CB CE    SET 1,(IX+d)      *** NO DISASSEMBLER
+DD CB D6    SET 2,(IX+d)      *** NO DISASSEMBLER
+DD CB DE    SET 3,(IX+d)      *** NO DISASSEMBLER
+DD CB E6    SET 4,(IX+d)      *** NO DISASSEMBLER
+DD CB EE    SET 5,(IX+d)      *** NO DISASSEMBLER
+DD CB F6    SET 6,(IX+d)      *** NO DISASSEMBLER
+DD CB FE    SET 7,(IX+d)      *** NO DISASSEMBLER
+DD E1       POP IX            OK
+DD E3       EX (SP),IX        OK
+DD E5       PUSH IX           OK
+DD E9       JP (IX)           OK
+DD F9       LD SP,IX          OK
+DE          SBC A,n           OK
+DF          RST 18H           OK
+E0          RET PO            OK
+E1          POP HL            OK
+E2          JP PO,nn          OK
+E3          EX (SP),HL        OK
+E4          CALL PO,nn        OK
+E5          PUSH HL           OK
+E6          AND n             OK
+E7          RST 20H           OK
+E8          RET PE            OK
+E9          JP (HL)           OK
+EA          JP PE,nn          OK
+EB          EX DE,HL          OK
+EC          CALL PE,nn        OK
+ED 40       IN B,(C)          OK
+ED 41       OUT (C),B         OK
+ED 42       SBC HL,BC         OK
+ED 43       LD (nn),BC        OK
+ED 44       NEG               OK
+ED 45       RETN              OK
+ED 46       IM0               OK
+ED 47       LD I,A            OK
+ED 48       IN C,(C)          OK
+ED 49       OUT (C),C         OK
+ED 4A       ADC HL,BC         OK
+ED 4B       LD BC,(nn)        OK
+ED 4D       RETI              OK
+ED 4F       LD R,A            OK
+ED 50       IN D,(C)          OK
+ED 51       OUT (C),D         OK
+ED 52       SBC HL,DE         OK
+ED 53       LD (nn),DE        OK
+ED 56       IM1               OK
+ED 57       LD A,I            OK
+ED 58       IN E,(C)          OK
+ED 59       OUT (C),E         OK
+ED 5A       ADC HL,DE         OK
+ED 5B       LD DE,(nn)        OK
+ED 5E       IM2               OK
+ED 5F       LD A,R            OK
+ED 60       IN H,(C)          OK
+ED 61       OUT (C),H         OK
+ED 62       SBC HL,HL         OK
+ED 63       LD (nn),HL        *** CODES UNMATCH MATCH: LD (3412H),HL
+    * ORG: ED 63 12
+    * ASM: 22 12 34
+ED 67       RRD               OK
+ED 68       IN L,(C)          OK
+ED 69       OUT (C),L         OK
+ED 6A       ADC HL,HL         OK
+ED 6B       LD HL,(nn)        *** CODES UNMATCH MATCH: LD HL,(3412H)
+    * ORG: ED 6B 12
+    * ASM: 2A 12 34
+ED 6F       RLD               OK
+ED 70       IN A,(C)          *** CODES UNMATCH MATCH: IN A,(C)
+    * ORG: ED 70
+    * ASM: ED 78
+ED 71       OUT (C),A         *** CODES UNMATCH MATCH: OUT (C),A
+    * ORG: ED 71
+    * ASM: ED 79
+ED 72       SBC HL,SP         OK
+ED 73       LD (nn),SP        OK
+ED 7A       ADC HL,SP         OK
+ED 7B       LD SP,(nn)        OK
+ED A0       LDI               OK
+ED A1       CPI               OK
+ED A2       INI               OK
+ED A3       OUTI              OK
+ED A8       LDD               OK
+ED A9       CPD               OK
+ED AA       IND               OK
+ED AB       OUTD              OK
+ED B0       LDIR              OK
+ED B1       CPIR              OK
+ED B2       INIR              OK
+ED B3       OTIR              OK
+ED B8       LDDR              OK
+ED B9       CPDR              OK
+ED BA       INDR              OK
+ED BB       OTDR              OK
+EE          XOR n             OK
+EF          RST 28H           OK
+F0          RET P             OK
+F1          POP AF            OK
+F2          JP P,nn           OK
+F3          DI                OK
+F4          CALL P,nn         OK
+F5          PUSH AF           OK
+F6          OR n              OK
+F7          RST 30H           OK
+F8          RET M             OK
+F9          LD SP,HL          OK
+FA          JP M,nn           OK
+FB          EI                OK
+FC          CALL M,nn         OK
+FD 09       ADD IY,BC         OK
+FD 19       ADD IY,DE         OK
+FD 21       LD IY,nn          OK
+FD 23       INC IY            *** NO DISASSEMBLER
+FD 29       ADD IY,IY         OK
+FD 2A       LD IY,(nn)        OK
+FD 2B       DEC IY            *** NO DISASSEMBLER
+FD 34       INC (IY+d)        OK
+FD 35       DEC (IY+d)        *** NO DISASSEMBLER
+FD 36       LD (IY+d),n       OK
+FD 39       ADD IY,SP         OK
+FD 46       LD B,(IY+d)       *** NO DISASSEMBLER
+FD 4E       LD C,(IY+d)       *** NO DISASSEMBLER
+FD 56       LD D,(IY+d)       *** NO DISASSEMBLER
+FD 5E       LD E,(IY+d)       *** NO DISASSEMBLER
+FD 66       LD H,(IY+d)       *** NO DISASSEMBLER
+FD 6E       LD L,(IY+d)       *** NO DISASSEMBLER
+FD 70       LD (IY+d),B       *** NO DISASSEMBLER
+FD 71       LD (IY+d),C       *** NO DISASSEMBLER
+FD 72       LD (IY+d),D       *** NO DISASSEMBLER
+FD 73       LD (IY+d),E       *** NO DISASSEMBLER
+FD 74       LD (IY+d),H       *** NO DISASSEMBLER
+FD 75       LD (IY+d),L       *** NO DISASSEMBLER
+FD 77       LD (IY+d),A       *** NO DISASSEMBLER
+FD 7E       LD A,(IY+d)       *** NO DISASSEMBLER
+FD 86       ADD A,(IY+d)      *** NO DISASSEMBLER
+FD 8E       ADC A,(IY+d)      *** NO DISASSEMBLER
+FD 96       SUB A,(IY+d)      *** NO DISASSEMBLER
+FD 9E       SBC A,(IY+d)      *** NO DISASSEMBLER
+FD A6       AND (IY+d)        *** NO DISASSEMBLER
+FD AE       XOR (IY+d)        *** NO DISASSEMBLER
+FD B6       OR (IY+d)         *** NO DISASSEMBLER
+FD BE       CP (IY+d)         *** NO DISASSEMBLER
+FD CB 06    RLC (IY+d)        OK
+FD CB 0E    RRC (IY+d)        OK
+FD CB 16    RL (IY+d)         OK
+FD CB 1E    RR (IY+d)         OK
+FD CB 26    SLA (IY+d)        OK
+FD CB 2E    SRA (IY+d)        OK
+FD CB 3E    SRL (IY+d)        OK
+FD CB 46    BIT 0,(IY+d)      *** NO DISASSEMBLER
+FD CB 4E    BIT 1,(IY+d)      *** NO DISASSEMBLER
+FD CB 56    BIT 2,(IY+d)      *** NO DISASSEMBLER
+FD CB 5E    BIT 3,(IY+d)      *** NO DISASSEMBLER
+FD CB 66    BIT 4,(IY+d)      *** NO DISASSEMBLER
+FD CB 6E    BIT 5,(IY+d)      *** NO DISASSEMBLER
+FD CB 76    BIT 6,(IY+d)      *** NO DISASSEMBLER
+FD CB 7E    BIT 7,(IY+d)      *** NO DISASSEMBLER
+FD CB 86    RES 0,(IY+d)      OK
+FD CB 8E    RES 1,(IY+d)      OK
+FD CB 96    RES 2,(IY+d)      OK
+FD CB 9E    RES 3,(IY+d)      OK
+FD CB A6    RES 4,(IY+d)      OK
+FD CB AE    RES 5,(IY+d)      OK
+FD CB B6    RES 6,(IY+d)      OK
+FD CB BE    RES 7,(IY+d)      OK
+FD CB C6    SET 0,(IY+d)      *** NO DISASSEMBLER
+FD CB CE    SET 1,(IY+d)      *** NO DISASSEMBLER
+FD CB D6    SET 2,(IY+d)      *** NO DISASSEMBLER
+FD CB DE    SET 3,(IY+d)      *** NO DISASSEMBLER
+FD CB E6    SET 4,(IY+d)      *** NO DISASSEMBLER
+FD CB EE    SET 5,(IY+d)      *** NO DISASSEMBLER
+FD CB F6    SET 6,(IY+d)      *** NO DISASSEMBLER
+FD CB FE    SET 7,(IY+d)      *** NO DISASSEMBLER
+FD E1       POP IY            OK
+FD E3       EX (SP),IY        OK
+FD E5       PUSH IY           OK
+FD E9       JP (IY)           OK
+FD F9       LD SP,IY          OK
+FE          CP n              OK
+FF          RST 38H           OK
+----
+Total check count: 694
+Not emulated: 0
+Disassembler:
+  Not implemented: 82
+  Unsupported    : 0
+  Fail           : 0
+  Not correct    : 4
