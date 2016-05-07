@@ -1,3 +1,6 @@
+.MZ-700 {
+    padding:0px;
+}
 .MZ-700 .screen {
     border: solid 1px black;
     background-color: black;
@@ -82,10 +85,30 @@
     resize:vertical;
 }
 
-
+.imm-exec {
+}
 .imm-exec input.address {
     width:60px;
 }
 .imm-exec input.mnemonic {
     width:200px;
+}
+
+.ui-draggable.DropDownPanel {
+    position:absolute;
+}
+.ui-draggable.DropDownPanel.close {
+    opacity:0.5;
+}
+.ui-draggable.DropDownPanel.open {
+    opacity:0.8;
+}
+.ui-draggable.DropDownPanel > .content {
+    background-color:white;
+}
+.ui-draggable.DropDownPanel {
+    border-color:silver;
+}
+.ui-draggable.DropDownPanel > .heading {
+    background-color: silver;
 }
