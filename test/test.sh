@@ -11,13 +11,13 @@ fi
 node test.js
 
 #NEWMON7
-node ../tools/mzdasm testdata/NEWMON7.ROM -o testdata/NEWMON7.asm
+node ../tools/mzdasm testdata/NEWMON7.ROM | grep '^\s*[^;]' > testdata/NEWMON7.asm
 node ../tools/mzasm testdata/NEWMON7.asm -o testdata/NEWMON7.BIN
 diff -b testdata/NEWMON7.ROM testdata/NEWMON7.BIN
 hexdump -C testdata/NEWMON7.ROM > testdata/NEWMON7_ROM.hex
 hexdump -C testdata/NEWMON7.bin > testdata/NEWMON7_bin.hex
 diff -a testdata/NEWMON7_ROM.hex testdata/NEWMON7_bin.hex
-node ../tools/mzdasm testdata/NEWMON7.BIN -o testdata/NEWMON7.as2
+node ../tools/mzdasm testdata/NEWMON7.BIN | grep '^\s*[^;]' > testdata/NEWMON7.as2
 diff -a testdata/NEWMON7.asm testdata/NEWMON7.as2
 node ../tools/mzasm ASM/NEWMON7.asm -o testdata/NEWMON7.BN2
 diff -b testdata/NEWMON7.ROM testdata/NEWMON7.BN2
@@ -25,13 +25,13 @@ hexdump -C testdata/NEWMON7.BN2 > testdata/NEWMON7_BN2.hex
 diff -a testdata/NEWMON7_ROM.hex testdata/NEWMON7_BN2.hex
 
 #NEWMON
-node ../tools/mzdasm testdata/NEWMON.ROM -o testdata/NEWMON.asm
+node ../tools/mzdasm testdata/NEWMON.ROM | grep '^\s*[^;]' > testdata/NEWMON.asm
 node ../tools/mzasm testdata/NEWMON.asm -o testdata/NEWMON.BIN
 diff -b testdata/NEWMON.ROM testdata/NEWMON.BIN
 hexdump -C testdata/NEWMON.ROM > testdata/NEWMON_ROM.hex
 hexdump -C testdata/NEWMON.bin > testdata/NEWMON_bin.hex
 diff -a testdata/NEWMON_ROM.hex testdata/NEWMON_bin.hex
-node ../tools/mzdasm testdata/NEWMON.BIN -o testdata/NEWMON.as2
+node ../tools/mzdasm testdata/NEWMON.BIN | grep '^\s*[^;]' > testdata/NEWMON.as2
 diff -a testdata/NEWMON.asm testdata/NEWMON.as2
 node ../tools/mzasm ASM/NEWMON.asm -o testdata/NEWMON.BN2
 diff -b testdata/NEWMON.ROM testdata/NEWMON.BN2
