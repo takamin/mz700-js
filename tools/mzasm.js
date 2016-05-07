@@ -13,7 +13,7 @@ if(getopt.options.version) {
     return;
 }
 var fs = require('fs');
-eval(fs.readFileSync('../../../../../js/ex_number.js')+'');
+eval(fs.readFileSync('../lib/ex_number.js')+'');
 eval(fs.readFileSync('../Z80/emulator.js')+'');
 eval(fs.readFileSync('../Z80/register.js')+'');
 eval(fs.readFileSync('../Z80/assembler.js')+'');
