@@ -141,7 +141,7 @@ Z80.dasm = function (buf, offset, size, addr) {
     cpu.reg.PC = memory_block.startAddr;
     dasmlist.push({ code:[], mnemonic:["ORG", memory_block.startAddr.HEX(4) + "H"] });
     while(cpu.reg.PC < memory_block.startAddr + memory_block.size) {
-        var dis = cpu.disassemble(cpu.reg.PC);
+        var dis = cpu.disassemble(cpu.reg.PC, addr - offset + size);
         dis.addr = cpu.reg.PC;
         dis.refs = 0;
         dasmlist.push( dis );
@@ -149,7 +149,7 @@ Z80.dasm = function (buf, offset, size, addr) {
     }
     return dasmlist;
 }
-Z80.prototype.disassemble = function(addr) {
+Z80.prototype.disassemble = function(addr, last_addr) {
     var disasm = null;
     var errmsg = "";
     var opecode = this.memory.peek(addr);
@@ -161,6 +161,8 @@ Z80.prototype.disassemble = function(addr) {
             errmsg = "NO DISASSEMBLER";
         } else if((disasm = opecodeEntry.disasm(this.memory, addr)) == null) {
             errmsg = "NULL RETURNED";
+        } else if(addr + disasm.code.length > last_addr) {
+            disasm = null;
         }
     } catch(e) {
         errmsg = "EXCEPTION THROWN";
