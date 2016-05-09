@@ -17,19 +17,19 @@ __There is no impossible things for MZ-700.__
 INSTALLATION
 ------------
 
-use npm
+use npm.
+
+If you just want to run the emulator, you would use -g option for npm.
 
 ```
-$ npm install mz700-js
+$ npm install -g mz700-js
 ```
-
-Or clone from GitHub
 
 RUN A CLIENT SIDE EMULATION ON THE BROWSER
 ------------------------------------------
 
-Go to the directory where this module was installed,
-And start a local web server.
+When this module was installed to local,
+Go to its installed directory like ./node\_modules/mz700.js, and start a local web server.
 
 ```
 $ npm start
@@ -38,9 +38,16 @@ $ npm start
 > node ./bin/www
 ```
 
-Then, open a http://localhost:3000/MZ-700/client.html with your browser.
-But this does not work with the Microsoft Edge.
+Then, the client emulation page is being served as an URL
+[http://localhost:3000/MZ-700/client.html](http://localhost:3000/MZ-700/client.html).
+The page will be opened in automatically with your main browser.
+Ofcource, you can use another one instead in manually.
 
+The browser requires the features of HTML5.
+But, it __does not work with the Microsoft Edge__.
+
+
+If you installed this to global, you can run the emulator by command 'mz700-js'.
 
 LICENCE
 -------
