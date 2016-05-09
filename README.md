@@ -38,8 +38,13 @@ $ npm start
 > node ./bin/www
 ```
 
-Then, open a http://localhost:3000/MZ-700/client.html with your browser.
-But this does not work with the Microsoft Edge.
+Then, the client emulation page is being served as an URL
+[http://localhost:3000/MZ-700/client.html](http://localhost:3000/MZ-700/client.html).
+The page will be opened in automatically with your main browser.
+Ofcource, you can use another one instead in manually.
+
+The browser requires the features of HTML5.
+But, it __does not work with the Microsoft Edge__.
 
 
 LICENCE

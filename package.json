@@ -1,6 +1,6 @@
 {
   "name": "mz700-js",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Full JavaScript MZ-700 Emulator",
   "private": false,
   "scripts": {
@@ -16,6 +16,7 @@
     "list-it": "^0.3.3",
     "morgan": "~1.6.1",
     "node-getopt": "^0.2.3",
+    "opn": "^4.0.1",
     "serve-favicon": "~2.3.0"
   },
   "devDependencies": {
@@ -26,7 +27,10 @@
     "url": "git+https://github.com/takamin/mz700-js.git"
   },
   "keywords": [
-    "emulator", "MZ-700", "MZ700", "Z80"
+    "emulator",
+    "MZ-700",
+    "MZ700",
+    "Z80"
   ],
   "author": "Koji Takami",
   "license": "MIT",

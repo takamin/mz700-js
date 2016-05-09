@@ -87,4 +87,8 @@ function onListening() {
     ? 'pipe ' + addr
     : 'port ' + addr.port;
   debug('Listening on ' + bind);
+
+  /* Open the page */
+  const opn = require('opn');
+  opn('http://localhost:3000/MZ-700/client.html');
 }
