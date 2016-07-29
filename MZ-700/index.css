@@ -27,6 +27,22 @@
     color: blue;
 }
 
+.MZ-700 .ctrl-panel > button.key-switcher,
+.MZ-700 .ctrl-panel > button.key-switcher:focus {
+    background-color: blue;
+    color: white;
+}
+.MZ-700 .ctrl-panel > button.key-switcher:hover {
+    background-color: white;
+    color: blue;
+}
+.MZ-700 .ctrl-panel > button.key-switcher.on,
+.MZ-700 .ctrl-panel > button.key-switcher.on:focus,
+.MZ-700 .ctrl-panel > button.key-switcher.on:hover {
+    background-color: white;
+    color: blue;
+}
+
 /**
  * アセンブルリスト
  */

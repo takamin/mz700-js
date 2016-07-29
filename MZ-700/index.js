@@ -18,7 +18,7 @@ MZ700Js.prototype.create = function(opt) {
     }, this);
 
     //
-    // Communicte with MZ-700 Worker Thread
+    // Communicate with MZ-700 Worker Thread
     //
     if(window.Worker) {
         //
@@ -71,6 +71,7 @@ MZ700Js.prototype.create = function(opt) {
 
         // MZ-700 Control buttons
         this.keyEventReceiver = $("<button/>")
+            .addClass("key-switcher")
             .attr("type", "button")
             .html("キー入力");
         this.btnReset = $("<button/>").attr("type", "button")
@@ -152,36 +153,22 @@ MZ700Js.prototype.create = function(opt) {
         //
         // キー入力
         //
-        if(this.keyEventReceiver.length > 0) {
+        {
 
             //キーボードからの入力処理
-            //
-            //キー入力ボタンにフォーカスがあるときに、キー入力を仮想マシンへ転送し、
-            //ブラウザには処理させない。
 
-            var rcvr = this.keyEventReceiver.get(0); //キー入力ボタン
-            var keyInStateMessage = $(".MZ-700 .key-state-message");
-            if(keyInStateMessage.length > 0) {
-                var stat = keyInStateMessage.get(0);
-
-                //キー入力ボタンがフォーカスを得たときの処理
-                rcvr.onfocus = function(e) {
-                    stat.innerHTML = "キー入力受付中 ― 解除は画面以外をクリック";
-                };
-
-                //キー入力ボタンが、フォーカスを失ったときの処理
-                rcvr.onblur = function(e) {
-                    stat.innerHTML = "キーボードからキー入力するには画面をクリック";
-                };
-            }
-
-            //キー入力を受け付けるかどうかの判定
-            //キー入力ボタンがフォーカスを持っているなら受け付ける
-            var isKeyAcceptable = function() {
-                return document.activeElement.id == rcvr.id;
-            };
-
+            var keyAcceptanceState = true;
             var keystates = {};
+            var updateKeyAcceptanceState = function() {
+                var msg = $(".MZ-700 .key-state-message");
+                if(keyAcceptanceState) {
+                    msg.html("キー入力受付中 ― 解除は画面以外をクリック");
+                    this.keyEventReceiver.addClass("on");
+                } else {
+                    msg.html("キーボードからキー入力するには画面をクリック");
+                    this.keyEventReceiver.removeClass("on");
+                }
+            }.bind(this);
             var updateKeyStates = function (e, state) {
                 var code = e.keyCode;
                 if(!(code in keystates) || keystates[code] != state) {
@@ -194,31 +181,39 @@ MZ700Js.prototype.create = function(opt) {
                 }
             }.bind(this);
 
-
             //キーダウン
-            rcvr.onkeydown = function(e) {
-                if(isKeyAcceptable()) {
+            window.onkeydown = function(e) {
+                if(keyAcceptanceState) {
                     updateKeyStates(e, true);
                     return false;
                 }
             };
 
             //キーアップ
-            rcvr.onkeyup = function(e) {
-                if(isKeyAcceptable()) {
+            window.onkeyup = function(e) {
+                if(keyAcceptanceState) {
                     updateKeyStates(e, false);
                     return false;
                 }
             };
 
-            //画面クリックで、キー入力ボタンへフォーカスを設定し、
-            //キー入力を受け付けるようにする。
-            $(".MZ-700 .key-switcher").click(function() {
-                rcvr.focus();
+            //画面クリック、キー入力ボタン等で、キー入力を受け付ける。
+            $(".MZ-700 .key-switcher").click(function(event) {
+                keyAcceptanceState = true;
+                updateKeyAcceptanceState();
+                this.keyEventReceiver.get(0).focus();
+                event.stopPropagation();
+            }.bind(this));
+
+            //ウィンドウクリックでキー入力解除
+            $(window).click(function() {
+                keyAcceptanceState = false;
+                updateKeyAcceptanceState();
             });
 
             //初期状態でキー入力を受け付ける
-            rcvr.focus();
+            keyAcceptanceState = true;
+            updateKeyAcceptanceState();
         }
 
         //
