@@ -49,6 +49,18 @@ But, it __does not work with the Microsoft Edge__.
 
 If you installed this to global, you can run the emulator by command 'mz700-js'.
 
+ROADMAP
+-------
+
+* v0.1.0 - The key-in events are accepted by window object.
+* v0.2.0 - Improve the key-alignment like a keyboard rather than the key-matrix.
+* v0.3.0 - The screen objects are aligned smarter.
+* v1.0.0 - The emulation of a CMT reading and writing work.
+* The running speed can be changed.
+* Visualize the memory bank to show which is selected.
+* Disassemble when stopped at a break point or after step execution.
+* Create a list of addresses like a distination of jumping instruction.
+
 LICENCE
 -------
 
