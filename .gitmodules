@@ -1,0 +1,3 @@
+[submodule "lib/transworker"]
+	path = lib/transworker
+	url = https://github.com/takamin/transworker
