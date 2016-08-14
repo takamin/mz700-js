@@ -4,7 +4,7 @@
 //
 if("importScripts" in this) {
     importScripts(
-            '../lib/transworker.js',
+            '../lib/transworker/transworker.js',
             '../lib/ex_number.js',
             '../Z80/memory.js',
             '../Z80/register.js',
