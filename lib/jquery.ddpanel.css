@@ -1,49 +1,24 @@
-.DropDownPanel {
-    padding:0;
-    border-width: 6px;
-    border-color: transparent;
-    border-style:solid;
-    border-radius:10px;
-    margin-top:2px;
-}
-.DropDownPanel.open {
-    border-color: blue;
-}
-.DropDownPanel .heading {
-    font-weight:bold;
-    font-size: 16pt;
-    border-width: 0 0 3px 0;
-    border-color: gray;
-    border-style:solid;
-    color:gray;
+.ui-draggable.DropDownPanel .heading {
     cursor:pointer;
-    padding:6px;
-    margin:0;
 }
-.DropDownPanel.open .heading {
-    color:white;
-    background-color:blue;
-    border-width: 0 0 0 0;
-}
-.DropDownPanel .heading .caption {
+.ui-draggable.DropDownPanel .heading .caption {
     display:inline-block;
     width: calc(100% - 30px);
 }
-.DropDownPanel .heading .button {
+.ui-draggable.DropDownPanel .heading .button {
     display:inline-block;
-    width:24px;
-    height:24px;
-    line-height:24px;
-    border-radius:24px;
-    line-height:24px;
+    width:20px;
+    height:20px;
+    line-height:20px;
+    border-radius:20px;
     text-align: center;
     margin: 0;
     border: 3px solid gray;
 }
-.DropDownPanel.open .heading .button {
+.ui-draggable.DropDownPanel.open .heading .button {
     transform:rotate(180deg);
     border-color: white;
 }
-.DropDownPanel .content {
+.ui-draggable.DropDownPanel .content {
     padding:6px;
 }

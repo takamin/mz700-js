@@ -18,7 +18,6 @@
             <div class="resizer">
                 <div class="ctrl-panel"></div>
                 <div class="screen cmt-slot key-switcher"></div>
-                <span class="key-state-message"></span>
             </div>
             <div class="keyboard"></div>
             <div class="register-monitor"></div>
@@ -51,8 +50,13 @@
                 mz700js.reset(function() {
                     mz700js.start();
                 });
-                $(".resizer").resizable().css("width", "685px");
+                $(".resizer").resizable({ aspectRatio: true }).css("width", "685px");
                 $(".DropDownPanel").draggable().css("width", "680px");
+                var i = 0;
+                $(".DropDownPanel").each(function(element) {
+                        $(element).css("top", (560 + 20 * i) + "px");
+                        i++;
+                    });
                 $(".MZ-700 > div").css("margin-right", "2px");
                 $(".MZ-700").append($("<br clear='all'/>"));
 

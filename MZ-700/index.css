@@ -1,5 +1,6 @@
 .MZ-700 {
     padding:0px;
+    overflow:hidden;
 }
 .MZ-700 .screen {
     border: solid 1px black;
@@ -27,18 +28,20 @@
     color: blue;
 }
 
-.MZ-700 .ctrl-panel > button.key-switcher,
-.MZ-700 .ctrl-panel > button.key-switcher:focus {
+.MZ-700 .ctrl-panel > span.key-switcher {
+    padding:5px;
+    border-style:solid;
+    border-color:blue;
+    border-width:3px;
     background-color: blue;
     color: white;
 }
-.MZ-700 .ctrl-panel > button.key-switcher:hover {
+.MZ-700 .ctrl-panel > span.key-switcher:hover {
     background-color: white;
     color: blue;
 }
-.MZ-700 .ctrl-panel > button.key-switcher.on,
-.MZ-700 .ctrl-panel > button.key-switcher.on:focus,
-.MZ-700 .ctrl-panel > button.key-switcher.on:hover {
+.MZ-700 .ctrl-panel > span.key-switcher.on,
+.MZ-700 .ctrl-panel > span.key-switcher.on:hover {
     background-color: white;
     color: blue;
 }
@@ -111,20 +114,39 @@
 }
 
 .ui-draggable.DropDownPanel {
-    position:absolute;
+    position: absolute;
+    padding:0;
+    border-width: 6px;
+    border-color: silver;
+    border-style: solid;
+    border-radius:10px;
+    margin-top:2px;
 }
 .ui-draggable.DropDownPanel.close {
     opacity:0.5;
 }
 .ui-draggable.DropDownPanel.open {
-    opacity:0.8;
+    border-color: #44f;
+    opacity:0.7;
 }
 .ui-draggable.DropDownPanel > .content {
     background-color:white;
 }
-.ui-draggable.DropDownPanel {
-    border-color:silver;
-}
-.ui-draggable.DropDownPanel > .heading {
+.ui-draggable.DropDownPanel .heading {
     background-color: silver;
+}
+.ui-draggable.DropDownPanel .heading {
+    font-weight:bold;
+    font-size: 12pt;
+    border-width: 0 0 0 0;
+    border-color: gray;
+    border-style:solid;
+    color:gray;
+    padding:3px;
+    margin:0;
+}
+.ui-draggable.DropDownPanel.open .heading {
+    color:white;
+    background-color:#44f;
+    border-width: 0 0 0 0;
 }
