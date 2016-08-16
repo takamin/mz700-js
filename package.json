@@ -1,10 +1,11 @@
 {
   "name": "mz700-js",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Full JavaScript MZ-700 Emulator",
   "private": false,
   "scripts": {
     "start": "node ./bin/www"
+    , "postinstall": "git clone https://github.com/takamin/transworker.git lib/transworker"
   },
   "bin": {
     "mz700-js": "./bin/www"
