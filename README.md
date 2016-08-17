@@ -3,13 +3,16 @@ Full JavaScript MZ-700 Emulator
 
 This is a MZ-700 emulator running on the web browser written by JavaScript.
 
-At first, the New Monitor Program is running.
+Initially, the New Monitor Program is running.
 
-You can drop the MZT-file to its screen to run the program.
+You can drop a MZT-file to the screen to run.
 
-The MZ-700 was a Japanese 8-bit personal computer that was produced by SHARP from 1982.
+The MZ-700 is a Japanese 8-bit personal computer produced by SHARP in Nov.15,1982.
+It is powered by Z80A CPU 3.58MHz, and represents eight colors and various characters,
+but no graphics and monoral beep sound.
+It also equipped built-in cassette tape player/recorder and 4 color plotter printer.  
 
-a lot of people were saying,
+So, A lot of people were saying,
 
 __There is no impossible things for MZ-700.__
 
@@ -17,19 +20,27 @@ __There is no impossible things for MZ-700.__
 INSTALLATION
 ------------
 
-use npm.
-
 If you just want to run the emulator, you would use -g option for npm.
 
 ```
 $ npm install -g mz700-js
 ```
 
+Or, You can clone from [GitHub](https://github.com/takamin/mz700-js) or download a zip.
+
 RUN A CLIENT SIDE EMULATION ON THE BROWSER
 ------------------------------------------
 
-When this module was installed to local,
-Go to its installed directory like ./node\_modules/mz700.js, and start a local web server.
+If you installed by npm global, you can use `mz700-js` command on your shell,
+
+```
+$ mz700-js
+
+> mz700-js@0.0.0 start <absolute/path/to/this/module>
+> node ./bin/www
+```
+
+When the git repository was cloned, Go to its directory, and then use `npm start`
 
 ```
 $ npm start
@@ -43,16 +54,20 @@ Then, the client emulation page is being served as an URL
 The page will be opened in automatically with your main browser.
 Of course, you can use another one instead in manually.
 
-The browser requires the features of HTML5.
-But, it __does not work with the Microsoft Edge__.
+Available Browsers
+------------------
 
-
-If you installed this to global, you can run the emulator by command 'mz700-js'.
+* Google Chrome
+* Mozzilla Firefox
+* Microsoft Internet explorer 11 (but no sound and slow)
+* Microsoft Edge (but slow)
 
 ROADMAP
 -------
 
 * v0.1.0 - The key-in events are accepted by window object.
+    * v0.1.1 - It can run on the Microsoft Edge.
+    * __v0.1.4__ - Edit this README
 * v0.2.0 - A flexisible screen layout with multi columns that contains multi rows.
 Both of the column and row are movable, resizable, addable and removable. The pane
 can contain one screen object like a screen, a keyboard, a register indicator or a
