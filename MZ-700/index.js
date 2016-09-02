@@ -70,20 +70,19 @@ MZ700Js.prototype.create = function(opt) {
         }
 
         // MZ-700 Control buttons
-        this.keyEventReceiver = $("<button/>")
+        this.keyEventReceiver = $("<span/>")
             .addClass("key-switcher")
-            .attr("type", "button")
-            .html("キー入力");
+            .html("Key-In");
         this.btnReset = $("<button/>").attr("type", "button")
-            .html("リセット").click(function() {
+            .html("Reset").click(function() {
                 this.reset();
             }.bind(this));
         this.btnStart = $("<button/>").attr("type", "button")
-            .html("実行").click(function() {
+            .html("Run").click(function() {
                 this.start();
             }.bind(this));
         this.btnStop = $("<button/>").attr("type", "button")
-            .html("停止").click(function() {
+            .html("Stop").click(function() {
                 this.mz700comworker.stop(function() {
                     this.tid = null;
                     this.setCurrentExecLine();
@@ -93,7 +92,7 @@ MZ700Js.prototype.create = function(opt) {
                 }.bind(this));
             }.bind(this));
         this.btnStep = $("<button/>").attr("type", "button")
-            .html("ステップ実行").click(function() {
+            .html("Step").click(function() {
                 this.clearCurrentExecLine();
                 this.mz700comworker.exec(1, function(result){
                     this.setCurrentExecLine();
@@ -145,9 +144,7 @@ MZ700Js.prototype.create = function(opt) {
             feedbackToKeyboard = function(matrix, state) {
                 kb.mz700keyboard("setState", matrix.strobe, matrix.bit, state);
             };
-            kb.DropDownPanel("create", {
-                "caption" : "スクリーンキーボード(MZ-700キーマトリクス)"
-            });
+            kb.DropDownPanel("create", { "caption" : "Keyboard" });
         }
 
         //
@@ -160,12 +157,9 @@ MZ700Js.prototype.create = function(opt) {
             var keyAcceptanceState = true;
             var keystates = {};
             var updateKeyAcceptanceState = function() {
-                var msg = $(".MZ-700 .key-state-message");
                 if(keyAcceptanceState) {
-                    msg.html("キー入力受付中 ― 解除は画面以外をクリック");
                     this.keyEventReceiver.addClass("on");
                 } else {
-                    msg.html("キーボードからキー入力するには画面をクリック");
                     this.keyEventReceiver.removeClass("on");
                 }
             }.bind(this);
@@ -201,7 +195,6 @@ MZ700Js.prototype.create = function(opt) {
             $(".MZ-700 .key-switcher").click(function(event) {
                 keyAcceptanceState = true;
                 updateKeyAcceptanceState();
-                this.keyEventReceiver.get(0).focus();
                 event.stopPropagation();
             }.bind(this));
 
@@ -255,7 +248,7 @@ MZ700Js.prototype.create = function(opt) {
                     .append(this.regview))
             .append($("<div/>").css("display", "inline-block")
                     .css("text-align", "center")
-                    .append($("<button type='button'>表示更新</button>")
+                    .append($("<button type='button'>Update</button>")
                         .click(function() {
                             this.showStatus();
                         }.bind(this))
@@ -270,8 +263,8 @@ MZ700Js.prototype.create = function(opt) {
                             $(this).parent().find("button").prop("disabled", false);
                         }
                     }))
-                    .append($("<span>自動更新</span>")))
-            .DropDownPanel("create", { "caption" : "レジスタ" });
+                    .append($("<span>Auto Update</span>")))
+            .DropDownPanel("create", { "caption" : "Register" });
 
         //
         // Memory hexa dump list
@@ -291,7 +284,7 @@ MZ700Js.prototype.create = function(opt) {
                     function(addr, callback) {
                         this.readMemory(addr, callback);
                     }.bind(this.mz700comworker)))
-            .DropDownPanel("create", { "caption" : "メモリ" });
+            .DropDownPanel("create", { "caption" : "Memory" });
         //
         // ソースリストを表示する
         //
@@ -301,12 +294,12 @@ MZ700Js.prototype.create = function(opt) {
                 $("<div/>")
                     .addClass("y-scroll-pane")
                     .append(this.asmList))
-            .append("<span>※ 行クリックでブレイクポイントを設定可能。</span>");
+            .append("<span>* Click a line, and set break point</span>");
 
         this.txtAsmSrc = $("<textarea type='text'/>");
         this.tabSource = $("<div/>");
         this.tabSource
-            .append($("<button type='button'>アセンブル</button>")
+            .append($("<button type='button'>Assemble</button>")
                     .click(function() {
                         this.forceAssemble = true;
                         this.assemble();
@@ -324,18 +317,18 @@ MZ700Js.prototype.create = function(opt) {
                         this.forceAssemble = true;
                         this.assemble();
                         this.forceAssemble = false;
-                    }.bind(this)).html("シンタックス・ハイライト"))
+                    }.bind(this)).html("Syntax highlight"))
                     .append($("<button type='button'/>").click(function() {
                         this.showTabSource();
-                    }.bind(this)).html("プレーンテキスト"))
+                    }.bind(this)).html("Plain text"))
                     .append($("<input type='checkbox'/>").click(function() {
                         setAutoAssemble($(this).prop('checked'));
                     }))
-                    .append($("<span/>").html("MZT読込み時に自動アセンブル")))
+                    .append($("<span/>").html("Assemble on load MZT")))
             .append($("<div/>").addClass("tabPageContainer clearfix")
                 .append(this.tabAsmList)
                 .append(this.tabSource))
-            .DropDownPanel("create", { "caption" : "アセンブルソース" });
+            .DropDownPanel("create", { "caption" : "Assembly source" });
 
         //
         //直接実行ボタン
@@ -357,15 +350,15 @@ MZ700Js.prototype.create = function(opt) {
             }.bind(this));
         }.bind(this);
         $(".imm-exec")
-            .append($("<label/>").html("アドレス"))
+            .append($("<label/>").html("Address"))
             .append($("<input/>")
                     .attr("type", "text").attr("value", "CF00h")
                     .addClass("address"))
-            .append($("<label/>").html("ニーモニック"))
+            .append($("<label/>").html("mnemonic"))
             .append($("<input/>")
                     .attr("type", "text").attr("value", "NOP")
                     .addClass("mnemonic"))
-            .append($("<button/>").attr("type", "button").html("実行")
+            .append($("<button/>").attr("type", "button").html("Execute")
                     .click(function() {
                         var par = $(this).parent();
                         var addrToken = par.find("input.address").val();
@@ -378,12 +371,7 @@ MZ700Js.prototype.create = function(opt) {
                         }
                     }))
             .append($("<br/>"))
-            .append($("<span/>").html(
-                "上記アドレスにニーモニックをアセンブルして実行します。" +
-                "メモリの内容とプログラムカウンタ(PC)は退避され、命令実行後に復元されます。" +
-                "PC以外のレジスタは復元されません。" +
-                "また、PCを変更する命令(JP,JR,CALL,RET,...)ではPCは復元されません。"))
-            .DropDownPanel("create", { "caption" : "命令直接実行" });
+            .DropDownPanel("create", { "caption" : "Execute Z80 Instruction" });
     }
 };
 
@@ -405,7 +393,6 @@ MZ700Js.prototype.create = function(opt) {
  *
  */
 MZ700Js.prototype.runServerMZT = function (name) {
-    this.keyEventReceiver.get(0).focus();
     this.mz700comworker.stop(function() {
         this.tid = null;
         this.scrollToShowPC();

@@ -1,5 +1,8 @@
 .MZ-700 {
     padding:0px;
+    overflow:hidden;
+    width:100%;
+    height:100%;
 }
 .MZ-700 .screen {
     border: solid 1px black;
@@ -27,18 +30,20 @@
     color: blue;
 }
 
-.MZ-700 .ctrl-panel > button.key-switcher,
-.MZ-700 .ctrl-panel > button.key-switcher:focus {
+.MZ-700 .ctrl-panel > span.key-switcher {
+    padding:5px;
+    border-style:solid;
+    border-color:blue;
+    border-width:3px;
     background-color: blue;
     color: white;
 }
-.MZ-700 .ctrl-panel > button.key-switcher:hover {
+.MZ-700 .ctrl-panel > span.key-switcher:hover {
     background-color: white;
     color: blue;
 }
-.MZ-700 .ctrl-panel > button.key-switcher.on,
-.MZ-700 .ctrl-panel > button.key-switcher.on:focus,
-.MZ-700 .ctrl-panel > button.key-switcher.on:hover {
+.MZ-700 .ctrl-panel > span.key-switcher.on,
+.MZ-700 .ctrl-panel > span.key-switcher.on:hover {
     background-color: white;
     color: blue;
 }
@@ -108,23 +113,4 @@
 }
 .imm-exec input.mnemonic {
     width:200px;
-}
-
-.ui-draggable.DropDownPanel {
-    position:absolute;
-}
-.ui-draggable.DropDownPanel.close {
-    opacity:0.5;
-}
-.ui-draggable.DropDownPanel.open {
-    opacity:0.8;
-}
-.ui-draggable.DropDownPanel > .content {
-    background-color:white;
-}
-.ui-draggable.DropDownPanel {
-    border-color:silver;
-}
-.ui-draggable.DropDownPanel > .heading {
-    background-color: silver;
 }

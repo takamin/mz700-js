@@ -1,28 +1,25 @@
 .DropDownPanel {
     padding:0;
     border-width: 6px;
-    border-color: transparent;
-    border-style:solid;
+    border-color: gray;
+    border-style: solid;
     border-radius:10px;
     margin-top:2px;
 }
-.DropDownPanel.open {
-    border-color: blue;
-}
 .DropDownPanel .heading {
+    cursor:pointer;
+    background-color: gray;
     font-weight:bold;
-    font-size: 16pt;
-    border-width: 0 0 3px 0;
+    font-size: 12pt;
+    border-width: 0 0 0 0;
     border-color: gray;
     border-style:solid;
-    color:gray;
-    cursor:pointer;
-    padding:6px;
+    color:white;
+    padding:3px;
     margin:0;
 }
 .DropDownPanel.open .heading {
-    color:white;
-    background-color:blue;
+    background-color:#44f;
     border-width: 0 0 0 0;
 }
 .DropDownPanel .heading .caption {
@@ -31,19 +28,26 @@
 }
 .DropDownPanel .heading .button {
     display:inline-block;
-    width:24px;
-    height:24px;
-    line-height:24px;
-    border-radius:24px;
-    line-height:24px;
+    color:white;
+    width:20px;
+    height:20px;
+    line-height:20px;
+    border-radius:20px;
     text-align: center;
     margin: 0;
-    border: 3px solid gray;
+    border: 3px solid white;
+}
+.DropDownPanel.close {
+    opacity:0.7;
+}
+.DropDownPanel.open {
+    border-color: #44f;
+    opacity:0.8;
 }
 .DropDownPanel.open .heading .button {
     transform:rotate(180deg);
-    border-color: white;
 }
 .DropDownPanel .content {
     padding:6px;
+    background-color:white;
 }
