@@ -1,24 +1,53 @@
-.ui-draggable.DropDownPanel .heading {
-    cursor:pointer;
+.DropDownPanel {
+    padding:0;
+    border-width: 6px;
+    border-color: gray;
+    border-style: solid;
+    border-radius:10px;
+    margin-top:2px;
 }
-.ui-draggable.DropDownPanel .heading .caption {
+.DropDownPanel .heading {
+    cursor:pointer;
+    background-color: gray;
+    font-weight:bold;
+    font-size: 12pt;
+    border-width: 0 0 0 0;
+    border-color: gray;
+    border-style:solid;
+    color:white;
+    padding:3px;
+    margin:0;
+}
+.DropDownPanel.open .heading {
+    background-color:#44f;
+    border-width: 0 0 0 0;
+}
+.DropDownPanel .heading .caption {
     display:inline-block;
     width: calc(100% - 30px);
 }
-.ui-draggable.DropDownPanel .heading .button {
+.DropDownPanel .heading .button {
     display:inline-block;
+    color:white;
     width:20px;
     height:20px;
     line-height:20px;
     border-radius:20px;
     text-align: center;
     margin: 0;
-    border: 3px solid gray;
+    border: 3px solid white;
 }
-.ui-draggable.DropDownPanel.open .heading .button {
+.DropDownPanel.close {
+    opacity:0.7;
+}
+.DropDownPanel.open {
+    border-color: #44f;
+    opacity:0.8;
+}
+.DropDownPanel.open .heading .button {
     transform:rotate(180deg);
-    border-color: white;
 }
-.ui-draggable.DropDownPanel .content {
+.DropDownPanel .content {
     padding:6px;
+    background-color:white;
 }

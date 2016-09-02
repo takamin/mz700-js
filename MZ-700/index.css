@@ -1,6 +1,8 @@
 .MZ-700 {
     padding:0px;
     overflow:hidden;
+    width:100%;
+    height:100%;
 }
 .MZ-700 .screen {
     border: solid 1px black;
@@ -111,42 +113,4 @@
 }
 .imm-exec input.mnemonic {
     width:200px;
-}
-
-.ui-draggable.DropDownPanel {
-    position: absolute;
-    padding:0;
-    border-width: 6px;
-    border-color: silver;
-    border-style: solid;
-    border-radius:10px;
-    margin-top:2px;
-}
-.ui-draggable.DropDownPanel.close {
-    opacity:0.5;
-}
-.ui-draggable.DropDownPanel.open {
-    border-color: #44f;
-    opacity:0.7;
-}
-.ui-draggable.DropDownPanel > .content {
-    background-color:white;
-}
-.ui-draggable.DropDownPanel .heading {
-    background-color: silver;
-}
-.ui-draggable.DropDownPanel .heading {
-    font-weight:bold;
-    font-size: 12pt;
-    border-width: 0 0 0 0;
-    border-color: gray;
-    border-style:solid;
-    color:gray;
-    padding:3px;
-    margin:0;
-}
-.ui-draggable.DropDownPanel.open .heading {
-    color:white;
-    background-color:#44f;
-    border-width: 0 0 0 0;
 }

@@ -15,15 +15,17 @@
     <body>
         <h1>Full JavaScript MZ-700</h1>
         <div class="MZ-700">
-            <div class="resizer">
+            <div class="resizer MZ-700-body">
                 <div class="ctrl-panel"></div>
                 <div class="screen cmt-slot key-switcher"></div>
             </div>
+            <div class="operation-panels">
             <div class="keyboard"></div>
             <div class="register-monitor"></div>
             <div class="memory"></div>
             <div class="source-list"></div>
             <div class="imm-exec"></div>
+            </div>
         </div>
         <script type="text/javascript" src="https://code.jquery.com/jquery-2.2.3.min.js"></script>
         <script type="text/javascript" src="https://code.jquery.com/ui/1.12.0-rc.2/jquery-ui.min.js"></script>
@@ -51,15 +53,10 @@
                     mz700js.start();
                 });
                 $(".resizer").resizable({ aspectRatio: true }).css("width", "685px");
-                $(".DropDownPanel").draggable().css("width", "680px");
-                var i = 0;
-                $(".DropDownPanel").each(function(element) {
-                        $(element).css("top", (560 + 20 * i) + "px");
-                        i++;
-                    });
+                $(".operation-panels").draggable().css("width", "680px");
+                $(".operation-panels").css("position", "absolute");
                 $(".MZ-700 > div").css("margin-right", "2px");
                 $(".MZ-700").append($("<br clear='all'/>"));
-
             });
         </script>
     </body>
