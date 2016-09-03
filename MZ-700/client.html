@@ -13,7 +13,7 @@
         <link rel="stylesheet" type="text/css" href="index.css"/>
     </head>
     <body>
-        <h1>Full JavaScript MZ-700</h1>
+        <h1><span class="MZ-700-text" charSize="24" padding="1">&ufo; Full JavaScript MZ-700 &UFO;</span></h1>
         <div class="MZ-700">
             <div class="resizer MZ-700-body">
                 <div class="ctrl-panel"></div>
@@ -57,6 +57,9 @@
                 $(".operation-panels").css("position", "absolute");
                 $(".MZ-700 > div").css("margin-right", "2px");
                 $(".MZ-700").append($("<br clear='all'/>"));
+                $(".MZ-700-text").each(function() {
+                    mz700scrn.convert(this);
+                });
             });
         </script>
     </body>

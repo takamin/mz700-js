@@ -17,7 +17,7 @@ if("importScripts" in this) {
 
     (function() {
         var transworker = new TransWorker();
-        var vram = {};
+        var screenUpdateData = {};
         var vramTxTid = null;
 
         //
@@ -37,15 +37,15 @@ if("importScripts" in this) {
         };
         var mz700 = new MZ700({
             onVramUpdate: function(index, dispcode, attr) {
-                vram[index] = {
+                screenUpdateData[index] = {
                     dispcode: dispcode, attr: attr
                 };
                 if(vramTxTid == null) {
                     vramTxTid = setTimeout(function() {
                         transworker.postNotify(
-                            'onVramUpdateAll',
-                            vram);
-                        vram = {};
+                            'updateScreen',
+                            screenUpdateData);
+                        screenUpdateData = {};
                         vramTxTid = null;
                     }, 100);
                 }
