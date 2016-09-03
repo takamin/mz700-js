@@ -2,7 +2,7 @@ function MZ700Js() {
     this.opt = {
         "urlPrefix": ""
     };
-    this.tid = null;
+    this.isRunning = false;
     this.listRows = {};
 }
 MZ700Js.create = function(opt) {
@@ -84,7 +84,7 @@ MZ700Js.prototype.create = function(opt) {
         this.btnStop = $("<button/>").attr("type", "button")
             .html("Stop").click(function() {
                 this.mz700comworker.stop(function() {
-                    this.tid = null;
+                    this.isRunning = false;
                     this.setCurrentExecLine();
                     this.showStatus();
                     this.updateUI();
@@ -394,7 +394,7 @@ MZ700Js.prototype.create = function(opt) {
  */
 MZ700Js.prototype.runServerMZT = function (name) {
     this.mz700comworker.stop(function() {
-        this.tid = null;
+        this.isRunning = false;
         this.scrollToShowPC();
         this.setCurrentExecLine();
         this.showStatus();
@@ -467,13 +467,13 @@ MZ700Js.NUM_OF_EXEC_OPCODE = 20000;
 MZ700Js.prototype.start = function() {
     this.clearCurrentExecLine();
     this.mz700comworker.start(function() {
-        this.tid = 1;
+        this.isRunning = true;
         this.updateUI();
     }.bind(this));
 };
 MZ700Js.prototype.stop = function() {
     this.mz700comworker.stop(function() {
-        this.tid = null;
+        this.isRunning = false;
         this.scrollToShowPC();
         this.setCurrentExecLine();
         this.showStatus();
@@ -482,7 +482,7 @@ MZ700Js.prototype.stop = function() {
 };
 MZ700Js.prototype.updateUI = function() {
     this.btnReset.prop('disabled', '');
-    if(this.tid == null) {
+    if(!this.isRunning) {
         this.btnStop.prop('disabled', 'disabled');
         this.btnStart.prop('disabled', '');
         this.btnStep.prop('disabled', '');
