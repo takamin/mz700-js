@@ -67,7 +67,11 @@ ROADMAP
 
 * v0.1.0 - The key-in events are accepted by window object.
     * v0.1.1 - It can run on the Microsoft Edge.
-    * __v0.1.4__ - Edit this README
+    * v0.1.4 - Edit this README
+    * v0.1.6 - Update screen layouts.
+    * __v0.1.7__ - Some scripts are changed to a node module.
+    And on development environment, the packages of grunt, bower and browserify
+    are installed.
 * v0.2.0 - A flexisible screen layout with multi columns that contains multi rows.
 Both of the column and row are movable, resizable, addable and removable. The pane
 can contain one screen object like a screen, a keyboard, a register indicator or a
