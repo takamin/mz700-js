@@ -10,8 +10,13 @@
   "bin": {
     "mz700-js": "./bin/www"
   },
+  "browser": {
+    "jquery": "./bower_components/jquery/dist/jquery.js",
+    "jquery-ui": "./bower_components/jquery-ui/jquery-ui.js"
+  },
   "dependencies": {
     "body-parser": "~1.15.2",
+    "bower": "^1.7.9",
     "cookie-parser": "~1.4.3",
     "debug": "~2.2.0",
     "express": "~4.14.0",
@@ -26,7 +31,11 @@
     "serve-favicon": "~2.3.0"
   },
   "devDependencies": {
-    "chai": "^3.5.0"
+    "bower": "^1.7.9",
+    "browserify": "^13.1.0",
+    "chai": "^3.5.0",
+    "grunt": "^1.0.1",
+    "grunt-browserify": "^5.0.0"
   },
   "repository": {
     "type": "git",

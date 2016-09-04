@@ -27,40 +27,16 @@
             <div class="imm-exec"></div>
             </div>
         </div>
-        <script type="text/javascript" src="https://code.jquery.com/jquery-2.2.3.min.js"></script>
-        <script type="text/javascript" src="https://code.jquery.com/ui/1.12.0-rc.2/jquery-ui.min.js"></script>
         <script type="text/javascript" src="../lib/ex_number.js"></script>
-        <script type="text/javascript" src="../lib/jquery_plugin_class.js"></script>
-        <script type="text/javascript" src="../lib/jquery.ddpanel.js"></script>
-        <script type="text/javascript" src="../lib/jquery.soundctrl.js"></script>
-        <script type="text/javascript" src="../lib/jquery.Z80-mem.js"></script>
-        <script type="text/javascript" src="../lib/jquery.Z80-reg.js"></script>
-        <script type="text/javascript" src="../lib/jquery.MZ-700-vram.js"></script>
-        <script type="text/javascript" src="../lib/jquery.MZ-700-kb.js"></script>
         <script type="text/javascript" src="../lib/transworker/transworker.js"></script>
-        <script type="text/javascript" src="../Z80/emulator.js"></script>
-        <script type="text/javascript" src="../Z80/register.js"></script>
         <script type="text/javascript" src="../Z80/memory.js"></script>
+        <script type="text/javascript" src="../Z80/register.js"></script>
         <script type="text/javascript" src="../Z80/assembler.js"></script>
-        <script type="text/javascript" src="index.js"></script>
+        <script type="text/javascript" src="../Z80/emulator.js"></script>
         <script type="text/javascript" src="mztape.js"></script>
         <script type="text/javascript" src="emulator.js"></script>
-        <script type="text/javascript" src="sound.js"></script>
-        <script type="text/javascript">
-            $(function() {
-                var mz700js = MZ700Js.create({"urlPrefix" : "../" });
-                mz700js.reset(function() {
-                    mz700js.start();
-                });
-                $(".resizer").resizable({ aspectRatio: true }).css("width", "685px");
-                $(".operation-panels").draggable().css("width", "680px");
-                $(".operation-panels").css("position", "absolute");
-                $(".MZ-700 > div").css("margin-right", "2px");
-                $(".MZ-700").append($("<br clear='all'/>"));
-                $(".MZ-700-text").each(function() {
-                    mz700scrn.convert(this);
-                });
-            });
-        </script>
+
+        <script type="text/javascript" src="bundle.js"></script>
+        <script type="text/javascript" src="bundle-client.js"></script>
     </body>
 </html>
