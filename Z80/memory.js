@@ -11,6 +11,30 @@ IMem.prototype.create = function(opt) {
     this.size = opt.size || 0x10000;
     this.startAddr = opt.startAddr || 0;
 };
+
+//
+// This peekByte is an abstruct called from `peek`.
+//
+// address: address to write value
+//
+IMem.prototype.peekByte = function(address, value) {
+    var msg = "Error: peekByte was not overrided and supported in class of this:" + JSON.stringify(this, null, "    ");
+    log.error(msg);
+    throw new ReferenseError(msg);
+};
+
+//
+// This pokeByte is an abstruct called from `poke`.
+//
+// address: address to write value
+// value: value to write
+//
+IMem.prototype.pokeByte = function(address, value) {
+    var msg = "Error: pokeByte was not overrided and supported in class of this:" + JSON.stringify(this, null, "    ");
+    log.error(msg);
+    throw new ReferenseError(msg);
+};
+
 IMem.prototype.clear = function() {
     for(var i = 0; i < this.size; i++) {
         this.pokeByte(0);
@@ -61,6 +85,9 @@ MemoryBlock.prototype.pokeByte = function(address, value) {
 
 //
 // MemoryBank
+//
+// TODO: change the type of field `memblk` to `Array` instead of `object`
+// to improve the speed to access.
 //
 MemoryBank = function(opt) {
     this.create(opt);
