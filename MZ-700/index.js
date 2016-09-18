@@ -191,6 +191,11 @@
                     }
                 };
 
+                MZ700Js.prototype.acceptKey = function(state) {
+                    keyAcceptanceState = state;
+                    updateKeyAcceptanceState();
+                };
+
                 //画面クリック、キー入力ボタン等で、キー入力を受け付ける。
                 $(".MZ-700 .key-switcher").click(function(event) {
                     keyAcceptanceState = true;
@@ -405,6 +410,7 @@
                 this.showStatus();
                 this.updateUI();
                 this.start();
+                this.acceptKey(true);
             }.bind(this));
         }.bind(this));
     };
