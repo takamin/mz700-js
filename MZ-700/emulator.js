@@ -1,4 +1,6 @@
+try {
 function MZ700(opt) {
+    "use strict";
     var THIS = this;
 
     //MZ700 Key Matrix
@@ -17,15 +19,43 @@ function MZ700(opt) {
 
     this.MLDST = false;
 
+    var motorOffDelayTid = null;
+    this.dataRecorder = new MZ_DataRecorder(function(motorState){
+        if(motorState) {
+            if(motorOffDelayTid != null) {
+                clearTimeout(motorOffDelayTid);
+                motorOffDelayTid = null;
+            }
+            this.opt.onStartDataRecorder();
+        } else {
+            motorOffDelayTid = setTimeout(function() {
+                motorOffDelayTid = null;
+                this.opt.onStopDataRecorder();
+            }.bind(this), 100);
+        }
+    }.bind(this));
+
     opt = opt || {};
-    opt.onVramUpdate = opt.onVramUpdate || function(){};
-    opt.onMmioRead = opt.onMmioRead || function(){};
-    opt.onMmioWrite = opt.onMmioWrite || function(){};
+    this.opt = {
+        "onVramUpdate": function(){},
+        "onMmioRead": function(){},
+        "onMmioWrite": function(){},
+        "startSound": function(){},
+        "stopSound": function(){},
+        "onStartDataRecorder": function(){},
+        "onStopDataRecorder": function(){}
+    };
+    Object.keys(this.opt).forEach(function (key) {
+        if(key in opt) {
+            this.opt[key] = opt[key];
+        }
+    }, this);
 
     this.mmioMap = [];
     for(var address = 0xE000; address < 0xE800; address++) {
         this.mmioMap.push({ "r": false, "w": false });
     }
+
     this.memory = new MZ700_Memory({
         onVramUpdate: opt.onVramUpdate,
         onMappedIoRead: function(address, value) {
@@ -52,12 +82,28 @@ function MZ700(opt) {
 
                     value = value & 0x0f; // 入力上位4ビットをオフ
 
+                    // PC4 - MOTOR : The motor driving state (high active)
+                    if(THIS.dataRecorder.motor()) {
+                        value = value | 0x10;
+                    } else {
+                        value = value & 0xef;
+                    }
+
+                    // PC5 - RDATA : A bit data to read
+                    if(THIS.dataRecorder_readBit()) {
+                        value = value | 0x20;
+                    } else {
+                        value = value & 0xdf;
+                    }
+
+                    // PC6 - 556_OUT : A signal to blink cursor on the screen
                     if(THIS.ic556.readOutput()) {
                         value = value | 0x40;
                     } else {
                         value = value & 0xbf;
                     }
 
+                    // PC7 - VBLK : A virtical blanking signal
                     // set V-BLANK bit
                     if(THIS.vblank.readOutput()) {
                         value = value | 0x80;
@@ -102,20 +148,62 @@ function MZ700(opt) {
                     this.poke(0xE001, THIS.keymatrix.getKeyData(value));
                     THIS.ic556.loadReset(value & 0x80);
                     break;
+                case 0xE002:
+                    //上位4ビットは読み取り専用。
+                    //下位4ビットへの書き込みは、
+                    //8255コントロール(E003H)のビット操作によって行う
+                    break;
                 case 0xE003:
+                    // MSB==0の場合、PortCへのビット単位の書き込みを指示する。
+                    //
+                    // [ 7   6   5   4   3   2   1   0 ]
+                    //  ---             ----------- ---
+                    //   0   -   -   -  ビット番号  値
+                    //
+                    // MSB==1の場合は、モードセット
+                    //
+                    // [ 7   6   5   4   3   2   1   0 ]
+                    //  --- ------- --- --- --- --- ---
+                    //   1   ModeA   |   |   |   |   |
+                    //       PortA --+   |   |   |   |
+                    //       PortCH------+   |   |   +----- PortCL
+                    //               ModeB --+   +--------- PortB
+                    //
+                    //  ModeA: 1x - モード2、01 - モード1、00 - モード0
+                    //  ModeB: 1  - モード1、0  - モード0
+                    //  PortA: Port A 入出力設定 0 - 出力、1 - 入力
+                    //  PortB: Port B 入出力設定 0 - 出力、1 - 入力
+                    //  PortCH: Port C 上位ニブル入出力設定 0 - 出力、1 - 入力
+                    //  PortCL: Port C 下位ニブル入出力設定 0 - 出力、1 - 入力
+                    //
                     if((value & 0x80) == 0) {
                         var bit = ((value & 0x01) != 0);
                         var bitno = (value & 0x0e) >> 1;
+                        //var name = [
+                        //    "SOUNDMSK(MZ-1500)",
+                        //    "WDATA","INTMSK","M-ON",
+                        //    "MOTOR","RDATA", "556 OUT", "VBLK"][bitno];
+                        //console.log("$E003 8255 CTRL BITSET", name, bit);
                         switch(bitno) {
+                            case 0://SOUNDMSK
+                                break;
+                            case 1://WDATA
+                                THIS.dataRecorder_writeBit(bit);
+                                break;
                             case 2://INTMSK
                                 THIS.INTMSK = bit;//trueで割り込み許可
                                 break;
+                            case 3://M-ON
+                                THIS.dataRecorder_motorOn(bit);
+                                break;
                         }
+                    } else {
+                        console.log("$E003 8255 MODE SET 0x" + value.HEX(2));
                     }
                     break;
                 case 0xE004:
                     if(THIS.intel8253.counter[0].load(value) && THIS.MLDST) {
-                        opt.startSound(895000 / THIS.intel8253.counter[0].value);
+                        THIS.opt.startSound(895000 / THIS.intel8253.counter[0].value);
                     }
                     break;
                 case 0xE005: THIS.intel8253.counter[1].load(value); break;
@@ -123,9 +211,9 @@ function MZ700(opt) {
                 case 0xE007: THIS.intel8253.setCtrlWord(value); break;
                 case 0xE008:
                     if((THIS.MLDST = ((value & 0x01) != 0)) == true) {
-                        opt.startSound(895000 / THIS.intel8253.counter[0].value);
+                        THIS.opt.startSound(895000 / THIS.intel8253.counter[0].value);
                     } else {
-                        opt.stopSound();
+                        THIS.opt.stopSound();
                     }
                     break;
             }
@@ -649,3 +737,49 @@ MZ700.prototype.disassemble = function(mztape_array) {
     outbuf += dasmlines.join("\n") + "\n";
     return {"outbuf": outbuf, "dasmlines": dasmlines};
 };
+
+MZ700.prototype.dataRecorder_setCmt = function(bytes) {
+    var cmt = null;
+    if(bytes == null || bytes.length == 0) {
+        cmt = [];
+    } else {
+        cmt = MZ_Tape.fromBytes(bytes);
+    }
+    this.dataRecorder.setCmt(cmt);
+    return cmt;
+};
+MZ700.prototype.dataRecorder_ejectCmt = function() {
+    if(this.dataRecorder.isCmtSet()) {
+        this.dataRecorder.stop();
+        var cmt = this.dataRecorder.ejectCmt();
+        if(cmt != null && cmt.length >= 128) {
+            return MZ_Tape.toBytes(cmt);
+        }
+    }
+    return [];
+};
+MZ700.prototype.dataRecorder_pushPlay = function() {
+    this.dataRecorder.play();
+};
+MZ700.prototype.dataRecorder_pushRec = function() {
+    if(this.dataRecorder.isCmtSet()) {
+        this.dataRecorder.ejectCmt();
+    }
+    this.dataRecorder.setCmt([]);
+    this.dataRecorder.rec();
+};
+MZ700.prototype.dataRecorder_pushStop = function() {
+    this.dataRecorder.stop();
+};
+MZ700.prototype.dataRecorder_motorOn = function(state) {
+    this.dataRecorder.m_on(state);
+};
+MZ700.prototype.dataRecorder_readBit = function() {
+    return this.dataRecorder.rdata(this.z80.tick);
+};
+MZ700.prototype.dataRecorder_writeBit = function(state) {
+    this.dataRecorder.wdata(state, this.z80.tick);
+};
+} catch (ex) {
+    console.error(ex);
+}

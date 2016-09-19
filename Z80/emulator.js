@@ -18,6 +18,7 @@ Z80 = function(opt) {
     this.onReadIoPort = opt.onReadIoPort || function(port, value) {};
     this.onWriteIoPort = opt.onWriteIoPort || function(port, value) {};
     this.bpmap = new Array(0x10000);
+    this.tick = 0;
 }
 Z80.getSignedByte = function(e) {
     e &= 0xff;
@@ -48,6 +49,7 @@ Z80.prototype.reset = function() {
     this.reg.clear();
     this.regB.clear();
     this.exec = Z80.prototype.exec;
+    this.tick = 0;
 };
 Z80.prototype.interrupt = function() {
     if(this.IFF1) {
@@ -58,7 +60,9 @@ Z80.prototype.interrupt = function() {
 }
 Z80.prototype.exec = function() {
     this.reg.R = (this.reg.R + 1) & 255;
-    this.opecodeTable[this.fetch()].proc();
+    var instruction = this.opecodeTable[this.fetch()];
+    var cycle = instruction.proc() || instruction.cycle || 4;
+    this.tick += cycle;
     if(this.bpmap[this.reg.PC] != null) {
         console.log("*** BREAK AT $" + this.reg.PC.HEX(4));
         throw "break";
@@ -306,6 +310,7 @@ Z80.prototype.createOpecodeTable = function() {
         this.opecodeTable[i] = {
             mnemonic: null,
             proc: function() { throw "ILLEGAL OPCODE"; },
+            "cycle": 4,
             disasm: (function(i) { return function(mem, addr) {
                 return {
                     code:[i],
@@ -319,6 +324,7 @@ Z80.prototype.createOpecodeTable = function() {
                     throw "ILLEGAL OPCODE DD " + i.HEX(2) + " for IX command subset";
                 };
             }(i)),
+            "cycle": 10,
             disasm: (function(i) { return function(mem, addr) {
                 return {
                     code:[0xDD],
@@ -333,6 +339,7 @@ Z80.prototype.createOpecodeTable = function() {
                     throw "ILLEGAL OPCODE FD " + i.HEX(2) + " for IY command subset";
                 }
             }(i)),
+            "cycle": 10,
             disasm: (function(i) { return function(mem, addr) {
                 return {
                     code:[0xFD],
@@ -347,6 +354,7 @@ Z80.prototype.createOpecodeTable = function() {
                     throw "ILLEGAL OPCODE CB " + i.HEX(2) + " for Rotate command subset";
                 };
             }(i)),
+            "cycle": 4,
             disasm: (function(i) { return function(mem, addr) {
                 return {
                     code:[0xCB],
@@ -361,6 +369,7 @@ Z80.prototype.createOpecodeTable = function() {
                     throw "ILLEGAL OPCODE DD CB " + i.HEX(2) + " for Rotate IX command subset";
                 }
             }(i)),
+            "cycle": 10,
             disasm: (function(i) { return function(mem, addr) {
                 return {
                     code:[0xDD, 0xCB],
@@ -374,6 +383,7 @@ Z80.prototype.createOpecodeTable = function() {
                     throw "ILLEGAL OPCODE FD CB " + i.HEX(2) + " for Rotate IY command subset";
                 }
             }(i)),
+            "cycle": 10,
             disasm: (function(i) { return function(mem, addr) {
                 return {
                     code:[0xFD,0xCB],
@@ -388,6 +398,7 @@ Z80.prototype.createOpecodeTable = function() {
                     throw "ILLEGAL OPCODE ED " + i.HEX(2) + " for Misc command subset";
                 }
             }(i)),
+            "cycle": 10,
             disasm: (function(i) { return function(mem, addr) {
                 return {
                     code:[0xED],
@@ -401,6 +412,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[0xDD] = {
         mnemonic:function() { return opeIX; },
         proc: function () { opeIX[THIS.fetch()].proc(); },
+        "cycle": 10,
         disasm: function(mem, addr) { return opeIX[mem.peek(addr+1)].disasm(mem, addr); }
     }
 
@@ -408,6 +420,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[0xFD] = {
         mnemonic: function(){ return opeIY; },
         proc: function () { opeIY[THIS.fetch()].proc(); },
+        "cycle": 10,
         disasm: function(mem, addr) { return opeIY[mem.peek(addr+1)].disasm(mem, addr); }
     }
 
@@ -415,6 +428,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[0xCB] = {
         mnemonic:function() { return opeRotate; },
         proc: function () { opeRotate[THIS.fetch()].proc(); },
+        "cycle": 10,
         disasm: function(mem, addr) {
             return opeRotate[mem.peek(addr+1)].disasm(mem, addr);
         }
@@ -424,6 +438,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[0xED] = {
         mnemonic:function() { return opeMisc; },
         proc: function () { opeMisc[THIS.fetch()].proc(); },
+        "cycle": 10,
         disasm: function(mem, addr) {
             return opeMisc[mem.peek(addr+1)].disasm(mem, addr);
         }
@@ -451,6 +466,7 @@ Z80.prototype.createOpecodeTable = function() {
                                 THIS.reg[dstRegName] = THIS.reg[srcRegName];
 							}
 						}(opecode, dstRegName, srcRegName),
+                    "cycle": 4,
                     disasm:
 						function (opecode, dstRegName, srcRegName) {
                             return function(mem, addr) {
@@ -497,55 +513,171 @@ Z80.prototype.createOpecodeTable = function() {
 	//---------------------------------------------------------------------------------
 	// LD r,n		r<-n					00  r  110	<-  n   ->
 	//---------------------------------------------------------------------------------
-    this.opecodeTable[0006] = { mnemonic:"LD B,n", proc: function() { THIS.reg.B = THIS.fetch(); }, disasm: disa_0x_r_110 };
-    this.opecodeTable[0016] = { mnemonic:"LD C,n", proc: function() { THIS.reg.C = THIS.fetch(); }, disasm: disa_0x_r_110 };
-    this.opecodeTable[0026] = { mnemonic:"LD D,n", proc: function() { THIS.reg.D = THIS.fetch(); }, disasm: disa_0x_r_110 };
-    this.opecodeTable[0036] = { mnemonic:"LD E,n", proc: function() { THIS.reg.E = THIS.fetch(); }, disasm: disa_0x_r_110 };
-    this.opecodeTable[0046] = { mnemonic:"LD H,n", proc: function() { THIS.reg.H = THIS.fetch(); }, disasm: disa_0x_r_110 };
-    this.opecodeTable[0056] = { mnemonic:"LD L,n", proc: function() { THIS.reg.L = THIS.fetch(); }, disasm: disa_0x_r_110 };
-    this.opecodeTable[0076] = { mnemonic:"LD A,n", proc: function() { THIS.reg.A = THIS.fetch(); }, disasm: disa_0x_r_110 };
+    this.opecodeTable[0006] = {
+        mnemonic:"LD B,n",
+        proc: function() { THIS.reg.B = THIS.fetch(); },
+        "cycle": 7,
+        disasm: disa_0x_r_110
+    };
+    this.opecodeTable[0016] = {
+        mnemonic:"LD C,n",
+        proc: function() { THIS.reg.C = THIS.fetch(); },
+        "cycle": 7,
+        disasm: disa_0x_r_110
+    };
+    this.opecodeTable[0026] = {
+        mnemonic:"LD D,n",
+        proc: function() { THIS.reg.D = THIS.fetch(); },
+        "cycle": 7,
+        disasm: disa_0x_r_110
+    };
+    this.opecodeTable[0036] = {
+        mnemonic:"LD E,n",
+        proc: function() { THIS.reg.E = THIS.fetch(); },
+        "cycle": 7,
+        disasm: disa_0x_r_110
+    };
+    this.opecodeTable[0046] = {
+        mnemonic:"LD H,n",
+        proc: function() { THIS.reg.H = THIS.fetch(); },
+        "cycle": 7,
+        disasm: disa_0x_r_110
+    };
+    this.opecodeTable[0056] = {
+        mnemonic:"LD L,n",
+        proc: function() { THIS.reg.L = THIS.fetch(); },
+        "cycle": 7,
+        disasm: disa_0x_r_110
+    };
+    this.opecodeTable[0076] = {
+        mnemonic:"LD A,n",
+        proc: function() { THIS.reg.A = THIS.fetch(); },
+        "cycle": 7,
+        disasm: disa_0x_r_110
+    };
 	//---------------------------------------------------------------------------------
 	// LD r,(HL)	r<-(HL)					01  r  110
 	//---------------------------------------------------------------------------------
-    this.opecodeTable[0106] = { mnemonic:"LD B,(HL)", proc: function() { THIS.reg.B = THIS.memory.peek(THIS.reg.getHL()); }, disasm: disa_0x_r_110 };
-    this.opecodeTable[0116] = { mnemonic:"LD C,(HL)", proc: function() { THIS.reg.C = THIS.memory.peek(THIS.reg.getHL()); }, disasm: disa_0x_r_110 };
-    this.opecodeTable[0126] = { mnemonic:"LD D,(HL)", proc: function() { THIS.reg.D = THIS.memory.peek(THIS.reg.getHL()); }, disasm: disa_0x_r_110 };
-    this.opecodeTable[0136] = { mnemonic:"LD E,(HL)", proc: function() { THIS.reg.E = THIS.memory.peek(THIS.reg.getHL()); }, disasm: disa_0x_r_110 };
-    this.opecodeTable[0146] = { mnemonic:"LD H,(HL)", proc: function() { THIS.reg.H = THIS.memory.peek(THIS.reg.getHL()); }, disasm: disa_0x_r_110 };
-    this.opecodeTable[0156] = { mnemonic:"LD L,(HL)", proc: function() { THIS.reg.L = THIS.memory.peek(THIS.reg.getHL()); }, disasm: disa_0x_r_110 };
-    this.opecodeTable[0176] = { mnemonic:"LD A,(HL)", proc: function() { THIS.reg.A = THIS.memory.peek(THIS.reg.getHL()); }, disasm: disa_0x_r_110 };
+    this.opecodeTable[0106] = {
+        mnemonic:"LD B,(HL)",
+        proc: function() { THIS.reg.B = THIS.memory.peek(THIS.reg.getHL()); },
+        "cycle": 7,
+        disasm: disa_0x_r_110
+    };
+    this.opecodeTable[0116] = {
+        mnemonic:"LD C,(HL)",
+        proc: function() { THIS.reg.C = THIS.memory.peek(THIS.reg.getHL()); },
+        "cycle": 7,
+        disasm: disa_0x_r_110
+    };
+    this.opecodeTable[0126] = {
+        mnemonic:"LD D,(HL)",
+        proc: function() { THIS.reg.D = THIS.memory.peek(THIS.reg.getHL()); },
+        "cycle": 7,
+        disasm: disa_0x_r_110
+    };
+    this.opecodeTable[0136] = {
+        mnemonic:"LD E,(HL)",
+        proc: function() { THIS.reg.E = THIS.memory.peek(THIS.reg.getHL()); },
+        "cycle": 7,
+        disasm: disa_0x_r_110
+    };
+    this.opecodeTable[0146] = {
+        mnemonic:"LD H,(HL)",
+        proc: function() { THIS.reg.H = THIS.memory.peek(THIS.reg.getHL()); },
+        "cycle": 7,
+        disasm: disa_0x_r_110
+    };
+    this.opecodeTable[0156] = {
+        mnemonic:"LD L,(HL)",
+        proc: function() { THIS.reg.L = THIS.memory.peek(THIS.reg.getHL()); },
+        "cycle": 7,
+        disasm: disa_0x_r_110
+    };
+    this.opecodeTable[0176] = {
+        mnemonic:"LD A,(HL)",
+        proc: function() { THIS.reg.A = THIS.memory.peek(THIS.reg.getHL()); },
+        "cycle": 7,
+        disasm: disa_0x_r_110
+    };
 	//---------------------------------------------------------------------------------
 	// LD (HL),r	(HL)<-r					01 110  r 
 	//---------------------------------------------------------------------------------
-    this.opecodeTable[0160] = { mnemonic:"LD (HL),B", proc: function() { THIS.memory.poke(THIS.reg.getHL(), THIS.reg.B); }, disasm: disa_0x_r_110 };
-    this.opecodeTable[0161] = { mnemonic:"LD (HL),C", proc: function() { THIS.memory.poke(THIS.reg.getHL(), THIS.reg.C); }, disasm: disa_0x_r_110 };
-    this.opecodeTable[0162] = { mnemonic:"LD (HL),D", proc: function() { THIS.memory.poke(THIS.reg.getHL(), THIS.reg.D); }, disasm: disa_0x_r_110 };
-    this.opecodeTable[0163] = { mnemonic:"LD (HL),E", proc: function() { THIS.memory.poke(THIS.reg.getHL(), THIS.reg.E); }, disasm: disa_0x_r_110 };
-    this.opecodeTable[0164] = { mnemonic:"LD (HL),H", proc: function() { THIS.memory.poke(THIS.reg.getHL(), THIS.reg.H); }, disasm: disa_0x_r_110 };
-    this.opecodeTable[0165] = { mnemonic:"LD (HL),L", proc: function() { THIS.memory.poke(THIS.reg.getHL(), THIS.reg.L); }, disasm: disa_0x_r_110 };
-    this.opecodeTable[0167] = { mnemonic:"LD (HL),A", proc: function() { THIS.memory.poke(THIS.reg.getHL(), THIS.reg.A); }, disasm: disa_0x_r_110 };
+    this.opecodeTable[0160] = {
+        mnemonic:"LD (HL),B",
+        proc: function() { THIS.memory.poke(THIS.reg.getHL(), THIS.reg.B); },
+        "cycle": 10,
+        disasm: disa_0x_r_110
+    };
+    this.opecodeTable[0161] = {
+        mnemonic:"LD (HL),C",
+        proc: function() { THIS.memory.poke(THIS.reg.getHL(), THIS.reg.C); },
+        "cycle": 10,
+        disasm: disa_0x_r_110
+    };
+    this.opecodeTable[0162] = {
+        mnemonic:"LD (HL),D",
+        proc: function() { THIS.memory.poke(THIS.reg.getHL(), THIS.reg.D); },
+        "cycle": 10,
+        disasm: disa_0x_r_110
+    };
+    this.opecodeTable[0163] = {
+        mnemonic:"LD (HL),E",
+        proc: function() { THIS.memory.poke(THIS.reg.getHL(), THIS.reg.E); },
+        "cycle": 10,
+        disasm: disa_0x_r_110
+    };
+    this.opecodeTable[0164] = {
+        mnemonic:"LD (HL),H",
+        proc: function() { THIS.memory.poke(THIS.reg.getHL(), THIS.reg.H); },
+        "cycle": 10,
+        disasm: disa_0x_r_110
+    };
+    this.opecodeTable[0165] = {
+        mnemonic:"LD (HL),L",
+        proc: function() { THIS.memory.poke(THIS.reg.getHL(), THIS.reg.L); },
+        "cycle": 10,
+        disasm: disa_0x_r_110
+    };
+    this.opecodeTable[0167] = {
+        mnemonic:"LD (HL),A",
+        proc: function() { THIS.memory.poke(THIS.reg.getHL(), THIS.reg.A); },
+        "cycle": 10,
+        disasm: disa_0x_r_110
+    };
 	//---------------------------------------------------------------------------------
 	// LD (HL),n	(HL)<-n					00 110 110	<-  n   ->
 	//---------------------------------------------------------------------------------
-	this.opecodeTable[0066] = { mnemonic:"LD (HL),n",
-        proc: function() { THIS.memory.poke(THIS.reg.getHL(), THIS.fetch()); }, disasm: disa_0x_r_110 };
+	this.opecodeTable[0066] = {
+        mnemonic:"LD (HL),n",
+        proc: function() { THIS.memory.poke(THIS.reg.getHL(), THIS.fetch()); },
+        "cycle": 10,
+        disasm: disa_0x_r_110
+    };
 	//---------------------------------------------------------------------------------
 	// LD A,(BC)	A<-(BC)					00 001 010
 	//---------------------------------------------------------------------------------
-	this.opecodeTable[0012] = { mnemonic:"LD A,(BC)",
+	this.opecodeTable[0012] = {
+        mnemonic:"LD A,(BC)",
         proc: function() { THIS.reg.A = THIS.memory.peek(THIS.reg.getBC()); },
-        disasm: function(mem,addr) {return {code:[mem.peek(addr)], mnemonic: ["LD", "A", "(BC)"]};}  };
+        "cycle": 7,
+        disasm: function(mem,addr) {return {code:[mem.peek(addr)], mnemonic: ["LD", "A", "(BC)"]};}
+    };
 	//---------------------------------------------------------------------------------
 	// LD A,(DE)	A<-(DE)					00 011 010
 	//---------------------------------------------------------------------------------
-	this.opecodeTable[0032] = { mnemonic:"LD A,(DE)",
+	this.opecodeTable[0032] = {
+        mnemonic:"LD A,(DE)",
         proc: function() { THIS.reg.A = THIS.memory.peek(THIS.reg.getDE()); },
-        disasm: function(mem,addr) {return {code:[mem.peek(addr)], mnemonic: ["LD", "A", "(DE)"]};} };
+        "cycle": 7,
+        disasm: function(mem,addr) {return {code:[mem.peek(addr)], mnemonic: ["LD", "A", "(DE)"]};}
+    };
 	//---------------------------------------------------------------------------------
 	// LD A,(nn)	A<-(nn)					00 111 010	<-  n   ->	<-  n   ->
 	//---------------------------------------------------------------------------------
 	this.opecodeTable[0072] = { mnemonic:"LD A,(nn)",
         proc: function() { THIS.reg.A = THIS.memory.peek(THIS.fetchPair()); },
+        "cycle": 13,
         disasm: function(mem,addr) {
             return {
                 code:[mem.peek(addr), mem.peek(addr+1), mem.peek(addr+2)],
@@ -557,18 +689,21 @@ Z80.prototype.createOpecodeTable = function() {
 	//---------------------------------------------------------------------------------
 	this.opecodeTable[0002] = { mnemonic:"LD (BC),A",
         proc: function() { THIS.memory.poke(THIS.reg.getBC(), THIS.reg.A); },
+        "cycle": 7,
         disasm: function(mem,addr) {return {code:[mem.peek(addr)], mnemonic: ["LD", "(BC)","A"]};} };
 	//---------------------------------------------------------------------------------
 	// LD (DE),A	(DE)<-A					00 010 010
 	//---------------------------------------------------------------------------------
 	this.opecodeTable[0022] = { mnemonic:"LD (DE),A",
         proc: function() { THIS.memory.poke(THIS.reg.getDE(), THIS.reg.A); },
+        "cycle": 7,
         disasm: function(mem,addr) {return {code:[mem.peek(addr)], mnemonic: ["LD", "(DE)","A"]};} };
 	//---------------------------------------------------------------------------------
 	// LD (nn),A	(nn)<-A					00 110 010	<-  n   ->	<-  n   ->
 	//---------------------------------------------------------------------------------
 	this.opecodeTable[0062] = { mnemonic:"LD (nn),A",
         proc: function() { THIS.memory.poke(THIS.fetchPair(), THIS.reg.A); },
+        "cycle": 13,
         disasm: function(mem,addr) {
             return {
                 code:[mem.peek(addr), mem.peek(addr+1), mem.peek(addr+2)],
@@ -579,57 +714,200 @@ Z80.prototype.createOpecodeTable = function() {
     //---------------------------------------------------------------------------------
     // LD A,I		A<-I					11 101 101	01 010 111          S,Z,H=0,P/V=IFF,N=0
     //---------------------------------------------------------------------------------
-	opeMisc[0127] = { mnemonic:"LD A,I", proc: function() {
-        THIS.reg.LD_A_I(THIS.IFF2);
-    }, disasm: function(mem,addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic: ["LD", "A","I"]}; } };
+	opeMisc[0127] = {
+        mnemonic:"LD A,I",
+        proc: function() {
+            THIS.reg.LD_A_I(THIS.IFF2);
+        },
+        "cycle": 9,
+        disasm: function(mem,addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic: ["LD", "A","I"]}; }
+    };
     //---------------------------------------------------------------------------------
     // LD A,R		A<-R					11 101 101	01 011 111          S,Z,H=0,P/V=IFF,N=0
     //---------------------------------------------------------------------------------
-	opeMisc[0137] = { mnemonic:"LD A,R", proc: function() {
-        THIS.reg.LD_A_R(THIS.IFF2, THIS.regB.R);
-    }, disasm: function(mem,addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic: ["LD", "A","R"]}; } };
+	opeMisc[0137] = {
+        mnemonic:"LD A,R",
+        proc: function() {
+            THIS.reg.LD_A_R(THIS.IFF2, THIS.regB.R);
+        },
+        "cycle": 9,
+        disasm: function(mem,addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic: ["LD", "A","R"]}; }
+    };
     //---------------------------------------------------------------------------------
     // LD I,A		I<-A					11 101 101	01 000 111
     //---------------------------------------------------------------------------------
-	opeMisc[0107] = { mnemonic:"LD I,A", proc: function() { THIS.reg.I = THIS.reg.A; },
-    disasm: function(mem,addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic: ["LD", "I","A"]}; } };
+	opeMisc[0107] = {
+        mnemonic:"LD I,A",
+        proc: function() { THIS.reg.I = THIS.reg.A; },
+        "cycle": 9,
+        disasm: function(mem,addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic: ["LD", "I","A"]}; }
+    };
     //---------------------------------------------------------------------------------
     // LD R,A		R<-A					11 101 101	01 001 111
     //---------------------------------------------------------------------------------
-	opeMisc[0117] = { mnemonic:"LD R,A", proc: function() { THIS.reg.R = THIS.regB.R = THIS.reg.A; },
-    disasm: function(mem,addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic: ["LD", "R","A"]}; } };
+	opeMisc[0117] = {
+        mnemonic:"LD R,A",
+        proc: function() { THIS.reg.R = THIS.regB.R = THIS.reg.A; },
+        "cycle": 9,
+        disasm: function(mem,addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic: ["LD", "R","A"]}; }
+    };
 
-    opeIX[0106] = { mnemonic:"LD B,(IX+d)", proc: function() { THIS.reg.B = THIS.memory.peek(THIS.reg.IX + THIS.fetch()); }};
-    opeIX[0116] = { mnemonic:"LD C,(IX+d)", proc: function() { THIS.reg.C = THIS.memory.peek(THIS.reg.IX + THIS.fetch()); }};
-    opeIX[0126] = { mnemonic:"LD D,(IX+d)", proc: function() { THIS.reg.D = THIS.memory.peek(THIS.reg.IX + THIS.fetch()); }};
-    opeIX[0136] = { mnemonic:"LD E,(IX+d)", proc: function() { THIS.reg.E = THIS.memory.peek(THIS.reg.IX + THIS.fetch()); }};
-    opeIX[0146] = { mnemonic:"LD H,(IX+d)", proc: function() { THIS.reg.H = THIS.memory.peek(THIS.reg.IX + THIS.fetch()); }};
-    opeIX[0156] = { mnemonic:"LD L,(IX+d)", proc: function() { THIS.reg.L = THIS.memory.peek(THIS.reg.IX + THIS.fetch()); }};
-    opeIX[0176] = { mnemonic:"LD A,(IX+d)", proc: function() { THIS.reg.A = THIS.memory.peek(THIS.reg.IX + THIS.fetch()); }};
+    //---------------------------------------------------------------------------------
+    // LD r, (IX+d)
+    //---------------------------------------------------------------------------------
+    opeIX[0106] = {
+        mnemonic:"LD B,(IX+d)",
+        proc: function() { THIS.reg.B = THIS.memory.peek(THIS.reg.IX + THIS.fetch()); },
+        "cycle": 19
+    };
+    opeIX[0116] = {
+        mnemonic:"LD C,(IX+d)",
+        proc: function() { THIS.reg.C = THIS.memory.peek(THIS.reg.IX + THIS.fetch()); },
+        "cycle": 19
+    };
+    opeIX[0126] = {
+        mnemonic:"LD D,(IX+d)",
+        proc: function() { THIS.reg.D = THIS.memory.peek(THIS.reg.IX + THIS.fetch()); },
+        "cycle": 19
+    };
+    opeIX[0136] = {
+        mnemonic:"LD E,(IX+d)",
+        proc: function() { THIS.reg.E = THIS.memory.peek(THIS.reg.IX + THIS.fetch()); },
+        "cycle": 19
+    };
+    opeIX[0146] = {
+        mnemonic:"LD H,(IX+d)",
+        proc: function() { THIS.reg.H = THIS.memory.peek(THIS.reg.IX + THIS.fetch()); },
+        "cycle": 19
+    };
+    opeIX[0156] = {
+        mnemonic:"LD L,(IX+d)",
+        proc: function() { THIS.reg.L = THIS.memory.peek(THIS.reg.IX + THIS.fetch()); },
+        "cycle": 19
+    };
+    opeIX[0176] = {
+        mnemonic:"LD A,(IX+d)",
+        proc: function() { THIS.reg.A = THIS.memory.peek(THIS.reg.IX + THIS.fetch()); },
+        "cycle": 19
+    };
     
-    opeIX[0160] = { mnemonic:"LD (IX+d),B", proc: function() { THIS.memory.poke(THIS.reg.IX + THIS.fetch(), THIS.reg.B); }};
-    opeIX[0161] = { mnemonic:"LD (IX+d),C", proc: function() { THIS.memory.poke(THIS.reg.IX + THIS.fetch(), THIS.reg.C); }};
-    opeIX[0162] = { mnemonic:"LD (IX+d),D", proc: function() { THIS.memory.poke(THIS.reg.IX + THIS.fetch(), THIS.reg.D); }};
-    opeIX[0163] = { mnemonic:"LD (IX+d),E", proc: function() { THIS.memory.poke(THIS.reg.IX + THIS.fetch(), THIS.reg.E); }};
-    opeIX[0164] = { mnemonic:"LD (IX+d),H", proc: function() { THIS.memory.poke(THIS.reg.IX + THIS.fetch(), THIS.reg.H); }};
-    opeIX[0165] = { mnemonic:"LD (IX+d),L", proc: function() { THIS.memory.poke(THIS.reg.IX + THIS.fetch(), THIS.reg.L); }};
-    opeIX[0167] = { mnemonic:"LD (IX+d),A", proc: function() { THIS.memory.poke(THIS.reg.IX + THIS.fetch(), THIS.reg.A); }};
+    //---------------------------------------------------------------------------------
+    // LD (IX+d), r
+    //---------------------------------------------------------------------------------
+    opeIX[0160] = {
+        mnemonic:"LD (IX+d),B",
+        proc: function() { THIS.memory.poke(THIS.reg.IX + THIS.fetch(), THIS.reg.B); },
+        "cycle": 19
+    };
+    opeIX[0161] = {
+        mnemonic:"LD (IX+d),C",
+        proc: function() { THIS.memory.poke(THIS.reg.IX + THIS.fetch(), THIS.reg.C); },
+        "cycle": 19
+    };
+    opeIX[0162] = {
+        mnemonic:"LD (IX+d),D",
+        proc: function() { THIS.memory.poke(THIS.reg.IX + THIS.fetch(), THIS.reg.D); },
+        "cycle": 19
+    };
+    opeIX[0163] = {
+        mnemonic:"LD (IX+d),E",
+        proc: function() { THIS.memory.poke(THIS.reg.IX + THIS.fetch(), THIS.reg.E); },
+        "cycle": 19
+    };
+    opeIX[0164] = {
+        mnemonic:"LD (IX+d),H",
+        proc: function() { THIS.memory.poke(THIS.reg.IX + THIS.fetch(), THIS.reg.H); },
+        "cycle": 19
+    };
+    opeIX[0165] = {
+        mnemonic:"LD (IX+d),L",
+        proc: function() { THIS.memory.poke(THIS.reg.IX + THIS.fetch(), THIS.reg.L); },
+        "cycle": 19
+    };
+    opeIX[0167] = {
+        mnemonic:"LD (IX+d),A",
+        proc: function() { THIS.memory.poke(THIS.reg.IX + THIS.fetch(), THIS.reg.A); },
+        "cycle": 19
+    };
 
-    opeIY[0106] = { mnemonic:"LD B,(IY+d)", proc: function() { THIS.reg.B = THIS.memory.peek(THIS.reg.IY + THIS.fetch()); }};
-    opeIY[0116] = { mnemonic:"LD C,(IY+d)", proc: function() { THIS.reg.C = THIS.memory.peek(THIS.reg.IY + THIS.fetch()); }};
-    opeIY[0126] = { mnemonic:"LD D,(IY+d)", proc: function() { THIS.reg.D = THIS.memory.peek(THIS.reg.IY + THIS.fetch()); }};
-    opeIY[0136] = { mnemonic:"LD E,(IY+d)", proc: function() { THIS.reg.E = THIS.memory.peek(THIS.reg.IY + THIS.fetch()); }};
-    opeIY[0146] = { mnemonic:"LD H,(IY+d)", proc: function() { THIS.reg.H = THIS.memory.peek(THIS.reg.IY + THIS.fetch()); }};
-    opeIY[0156] = { mnemonic:"LD L,(IY+d)", proc: function() { THIS.reg.L = THIS.memory.peek(THIS.reg.IY + THIS.fetch()); }};
-    opeIY[0176] = { mnemonic:"LD A,(IY+d)", proc: function() { THIS.reg.A = THIS.memory.peek(THIS.reg.IY + THIS.fetch()); }};
+    //---------------------------------------------------------------------------------
+    // LD r, (IX+d)
+    //---------------------------------------------------------------------------------
+    opeIY[0106] = {
+        mnemonic:"LD B,(IY+d)",
+        proc: function() { THIS.reg.B = THIS.memory.peek(THIS.reg.IY + THIS.fetch()); },
+        "cycle": 19
+    };
+    opeIY[0116] = {
+        mnemonic:"LD C,(IY+d)",
+        proc: function() { THIS.reg.C = THIS.memory.peek(THIS.reg.IY + THIS.fetch()); },
+        "cycle": 19
+    };
+    opeIY[0126] = {
+        mnemonic:"LD D,(IY+d)",
+        proc: function() { THIS.reg.D = THIS.memory.peek(THIS.reg.IY + THIS.fetch()); },
+        "cycle": 19
+    };
+    opeIY[0136] = {
+        mnemonic:"LD E,(IY+d)",
+        proc: function() { THIS.reg.E = THIS.memory.peek(THIS.reg.IY + THIS.fetch()); },
+        "cycle": 19
+    };
+    opeIY[0146] = {
+        mnemonic:"LD H,(IY+d)",
+        proc: function() { THIS.reg.H = THIS.memory.peek(THIS.reg.IY + THIS.fetch()); },
+        "cycle": 19
+    };
+    opeIY[0156] = {
+        mnemonic:"LD L,(IY+d)",
+        proc: function() { THIS.reg.L = THIS.memory.peek(THIS.reg.IY + THIS.fetch()); },
+        "cycle": 19
+    };
+    opeIY[0176] = {
+        mnemonic:"LD A,(IY+d)",
+        proc: function() { THIS.reg.A = THIS.memory.peek(THIS.reg.IY + THIS.fetch()); },
+        "cycle": 19
+    };
 
-    opeIY[0160] = { mnemonic:"LD (IY+d),B", proc: function() { THIS.memory.poke(THIS.reg.IY + THIS.fetch(), THIS.reg.B); }};
-    opeIY[0161] = { mnemonic:"LD (IY+d),C", proc: function() { THIS.memory.poke(THIS.reg.IY + THIS.fetch(), THIS.reg.C); }};
-    opeIY[0162] = { mnemonic:"LD (IY+d),D", proc: function() { THIS.memory.poke(THIS.reg.IY + THIS.fetch(), THIS.reg.D); }};
-    opeIY[0163] = { mnemonic:"LD (IY+d),E", proc: function() { THIS.memory.poke(THIS.reg.IY + THIS.fetch(), THIS.reg.E); }};
-    opeIY[0164] = { mnemonic:"LD (IY+d),H", proc: function() { THIS.memory.poke(THIS.reg.IY + THIS.fetch(), THIS.reg.H); }};
-    opeIY[0165] = { mnemonic:"LD (IY+d),L", proc: function() { THIS.memory.poke(THIS.reg.IY + THIS.fetch(), THIS.reg.L); }};
-    opeIY[0167] = { mnemonic:"LD (IY+d),A", proc: function() { THIS.memory.poke(THIS.reg.IY + THIS.fetch(), THIS.reg.A); }};
+    //---------------------------------------------------------------------------------
+    // LD (IY+d), r
+    //---------------------------------------------------------------------------------
+    opeIY[0160] = {
+        mnemonic:"LD (IY+d),B",
+        proc: function() { THIS.memory.poke(THIS.reg.IY + THIS.fetch(), THIS.reg.B); },
+        "cycle": 19
+    };
+    opeIY[0161] = {
+        mnemonic:"LD (IY+d),C",
+        proc: function() { THIS.memory.poke(THIS.reg.IY + THIS.fetch(), THIS.reg.C); },
+        "cycle": 19
+    };
+    opeIY[0162] = {
+        mnemonic:"LD (IY+d),D",
+        proc: function() { THIS.memory.poke(THIS.reg.IY + THIS.fetch(), THIS.reg.D); },
+        "cycle": 19
+    };
+    opeIY[0163] = {
+        mnemonic:"LD (IY+d),E",
+        proc: function() { THIS.memory.poke(THIS.reg.IY + THIS.fetch(), THIS.reg.E); },
+        "cycle": 19
+    };
+    opeIY[0164] = {
+        mnemonic:"LD (IY+d),H",
+        proc: function() { THIS.memory.poke(THIS.reg.IY + THIS.fetch(), THIS.reg.H); },
+        "cycle": 19
+    };
+    opeIY[0165] = {
+        mnemonic:"LD (IY+d),L",
+        proc: function() { THIS.memory.poke(THIS.reg.IY + THIS.fetch(), THIS.reg.L); },
+        "cycle": 19
+    };
+    opeIY[0167] = {
+        mnemonic:"LD (IY+d),A",
+        proc: function() { THIS.memory.poke(THIS.reg.IY + THIS.fetch(), THIS.reg.A); },
+        "cycle": 19
+    };
+
 	//=================================================================================
 	//
 	// 16bit load group
@@ -1503,23 +1781,31 @@ Z80.prototype.createOpecodeTable = function() {
     // INC r        r <- r + 1          00 <r>[100]
     //---------------------------------------------------------------------------------
     this.opecodeTable[0004] = { mnemonic:"INC B", proc: function() { THIS.reg.increment("B"); },
+        "cycle": 4,
         disasm: function(mem, addr) { return { code:[mem.peek(addr)], mnemonic: ["INC", "B"]}; } };
     this.opecodeTable[0014] = { mnemonic:"INC C", proc: function() { THIS.reg.increment("C"); },
+        "cycle": 4,
         disasm: function(mem, addr) { return { code:[mem.peek(addr)], mnemonic: ["INC", "C"]}; } };
     this.opecodeTable[0024] = { mnemonic:"INC D", proc: function() { THIS.reg.increment("D"); },
+        "cycle": 4,
         disasm: function(mem, addr) { return { code:[mem.peek(addr)], mnemonic: ["INC", "D"]}; } };
     this.opecodeTable[0034] = { mnemonic:"INC E", proc: function() { THIS.reg.increment("E"); },
+        "cycle": 4,
         disasm: function(mem, addr) { return { code:[mem.peek(addr)], mnemonic: ["INC", "E"]}; } };
     this.opecodeTable[0044] = { mnemonic:"INC H", proc: function() { THIS.reg.increment("H"); },
+        "cycle": 4,
         disasm: function(mem, addr) { return { code:[mem.peek(addr)], mnemonic: ["INC", "H"]}; } };
     this.opecodeTable[0054] = { mnemonic:"INC L", proc: function() { THIS.reg.increment("L"); },
+        "cycle": 4,
         disasm: function(mem, addr) { return { code:[mem.peek(addr)], mnemonic: ["INC", "L"]}; } };
     this.opecodeTable[0074] = { mnemonic:"INC A", proc: function() { THIS.reg.increment("A"); },
+        "cycle": 4,
         disasm: function(mem, addr) { return { code:[mem.peek(addr)], mnemonic: ["INC", "A"]}; } };
     //---------------------------------------------------------------------------------
     // INC (HL)     (HL) <- (HL) + 1    00 110[100]
     //---------------------------------------------------------------------------------
     this.opecodeTable[0064] = { mnemonic:"INC (HL)", proc: function() { THIS.incrementAt(THIS.reg.getHL()); },
+        "cycle": 11,
         disasm: function(mem, addr) { return { code:[mem.peek(addr)], mnemonic: ["INC", "(HL)"]}; } };
     //---------------------------------------------------------------------------------
     // INC (IX+d)   (IX+d) <- (IX+d)+1  11 011 101
@@ -1529,6 +1815,7 @@ Z80.prototype.createOpecodeTable = function() {
     opeIX[0064] = {
         mnemonic:"INC (IX+d)",
         proc: function() { THIS.incrementAt(THIS.reg.IX + THIS.fetch()); },
+        "cycle": 23,
         disasm: function(mem, addr) {
             var d = mem.peek(addr + 2);
             return {
@@ -1545,6 +1832,7 @@ Z80.prototype.createOpecodeTable = function() {
     opeIY[0064] = {
         mnemonic:"INC (IY+d)",
         proc: function() { THIS.incrementAt(THIS.reg.IY + THIS.fetch());},
+        "cycle": 23,
         disasm: function(mem, addr) {
             var d = mem.peek(addr + 2);
             return {
@@ -1556,24 +1844,36 @@ Z80.prototype.createOpecodeTable = function() {
     //---------------------------------------------------------------------------------
     // DEC m        m <- m + 1                [100]
     //---------------------------------------------------------------------------------
-    this.opecodeTable[0005] = { mnemonic:"DEC B", proc: function() { THIS.reg.decrement("B"); },
+    this.opecodeTable[0005] = {
+        mnemonic:"DEC B", proc: function() { THIS.reg.decrement("B"); }, "cycle": 4,
         disasm: function(mem, addr) { return { code:[mem.peek(addr)], mnemonic: ["DEC", "B"]}; } };
-    this.opecodeTable[0015] = { mnemonic:"DEC C", proc: function() { THIS.reg.decrement("C"); },
+    this.opecodeTable[0015] = {
+        mnemonic:"DEC C", proc: function() { THIS.reg.decrement("C"); }, "cycle": 4,
         disasm: function(mem, addr) { return { code:[mem.peek(addr)], mnemonic: ["DEC", "C"]}; } };
-    this.opecodeTable[0025] = { mnemonic:"DEC D", proc: function() { THIS.reg.decrement("D"); },
+    this.opecodeTable[0025] = {
+        mnemonic:"DEC D", proc: function() { THIS.reg.decrement("D"); }, "cycle": 4,
         disasm: function(mem, addr) { return { code:[mem.peek(addr)], mnemonic: ["DEC", "D"]}; } };
-    this.opecodeTable[0035] = { mnemonic:"DEC E", proc: function() { THIS.reg.decrement("E"); },
+    this.opecodeTable[0035] = {
+        mnemonic:"DEC E", proc: function() { THIS.reg.decrement("E"); }, "cycle": 4,
         disasm: function(mem, addr) { return { code:[mem.peek(addr)], mnemonic: ["DEC", "E"]}; } };
-    this.opecodeTable[0045] = { mnemonic:"DEC H", proc: function() { THIS.reg.decrement("H"); },
+    this.opecodeTable[0045] = {
+        mnemonic:"DEC H", proc: function() { THIS.reg.decrement("H"); }, "cycle": 4,
         disasm: function(mem, addr) { return { code:[mem.peek(addr)], mnemonic: ["DEC", "H"]}; } };
-    this.opecodeTable[0055] = { mnemonic:"DEC L", proc: function() { THIS.reg.decrement("L"); },
+    this.opecodeTable[0055] = {
+        mnemonic:"DEC L", proc: function() { THIS.reg.decrement("L"); }, "cycle": 4,
         disasm: function(mem, addr) { return { code:[mem.peek(addr)], mnemonic: ["DEC", "L"]}; } };
-    this.opecodeTable[0075] = { mnemonic:"DEC A", proc: function() { THIS.reg.decrement("A"); },
+    this.opecodeTable[0075] = {
+        mnemonic:"DEC A", proc: function() { THIS.reg.decrement("A"); }, "cycle": 4,
         disasm: function(mem, addr) { return { code:[mem.peek(addr)], mnemonic: ["DEC", "A"]}; } };
-    this.opecodeTable[0065] = { mnemonic:"DEC (HL)", proc: function() { THIS.decrementAt(THIS.reg.getHL()); },
+    this.opecodeTable[0065] = {
+        mnemonic:"DEC (HL)", proc: function() { THIS.decrementAt(THIS.reg.getHL()); }, "cycle": 11,
         disasm: function(mem, addr) { return { code:[mem.peek(addr)], mnemonic: ["DEC", "(HL)"]}; } };
-    opeIX[0065] = { mnemonic:"DEC (IX+d)", proc: function() { THIS.decrementAt(THIS.reg.IX + THIS.fetch()); }};
-    opeIY[0065] = { mnemonic:"DEC (IY+d)", proc: function() { THIS.decrementAt(THIS.reg.IY + THIS.fetch()); }};
+    opeIX[0065] = {
+        mnemonic:"DEC (IX+d)", proc: function() { THIS.decrementAt(THIS.reg.IX + THIS.fetch()); },
+        "cycle": 23 };
+    opeIY[0065] = {
+        mnemonic:"DEC (IY+d)", proc: function() { THIS.decrementAt(THIS.reg.IY + THIS.fetch()); },
+        "cycle": 23 };
 
     //=================================================================================
     // 一般目的の演算、及びCPUコントロールグループ
@@ -2765,24 +3065,113 @@ Z80.prototype.createOpecodeTable = function() {
         }
         return { code:code, mnemonic:mnemonic, ref_addr: ref_addr };
     };
-    this.opecodeTable[0303] = { mnemonic:"JP nn",   proc: function() { var nn = THIS.fetchPair(); THIS.reg.PC = nn; }, disasm: disaJumpGroup };
-    this.opecodeTable[0302] = { mnemonic:"JP NZ,nn",proc: function() { var nn = THIS.fetchPair(); if(!THIS.reg.flagZ()) { THIS.reg.PC = nn; } }, disasm: disaJumpGroup };
-    this.opecodeTable[0312] = { mnemonic:"JP Z,nn", proc: function() { var nn = THIS.fetchPair(); if(THIS.reg.flagZ())  { THIS.reg.PC = nn; } }, disasm: disaJumpGroup };
-    this.opecodeTable[0322] = { mnemonic:"JP NC,nn",proc: function() { var nn = THIS.fetchPair(); if(!THIS.reg.flagC()) { THIS.reg.PC = nn; } }, disasm: disaJumpGroup };
-    this.opecodeTable[0332] = { mnemonic:"JP C,nn", proc: function() { var nn = THIS.fetchPair(); if(THIS.reg.flagC())  { THIS.reg.PC = nn; } }, disasm: disaJumpGroup };
-    this.opecodeTable[0342] = { mnemonic:"JP PO,nn",proc: function() { var nn = THIS.fetchPair(); if(!THIS.reg.flagP()) { THIS.reg.PC = nn; } }, disasm: disaJumpGroup };
-    this.opecodeTable[0352] = { mnemonic:"JP PE,nn",proc: function() { var nn = THIS.fetchPair(); if(THIS.reg.flagP())  { THIS.reg.PC = nn; } }, disasm: disaJumpGroup };
-    this.opecodeTable[0362] = { mnemonic:"JP P,nn", proc: function() { var nn = THIS.fetchPair(); if(!THIS.reg.flagS()) { THIS.reg.PC = nn; } }, disasm: disaJumpGroup };
-    this.opecodeTable[0372] = { mnemonic:"JP M,nn", proc: function() { var nn = THIS.fetchPair(); if(THIS.reg.flagS())  { THIS.reg.PC = nn; } }, disasm: disaJumpGroup };
-    this.opecodeTable[0030] = { mnemonic:"JR e",    proc: function() { var e = THIS.fetch(); THIS.reg.jumpRel(e); }, disasm: disaJumpGroup };
-    this.opecodeTable[0070] = { mnemonic:"JR C,e",  proc: function() { var e = THIS.fetch(); if(THIS.reg.flagC())   { THIS.reg.jumpRel(e); } }, disasm: disaJumpGroup };
-    this.opecodeTable[0050] = { mnemonic:"JR Z,e",  proc: function() { var e = THIS.fetch(); if(THIS.reg.flagZ())   { THIS.reg.jumpRel(e); } }, disasm: disaJumpGroup };
-    this.opecodeTable[0060] = { mnemonic:"JR NC,e", proc: function() { var e = THIS.fetch(); if(!THIS.reg.flagC())  { THIS.reg.jumpRel(e); } }, disasm: disaJumpGroup };
-    this.opecodeTable[0040] = { mnemonic:"JR NZ,e", proc: function() { var e = THIS.fetch(); if(!THIS.reg.flagZ())  { THIS.reg.jumpRel(e); } }, disasm: disaJumpGroup };
-    this.opecodeTable[0351] = { mnemonic:"JP (HL)", proc: function() { THIS.reg.PC = THIS.reg.getHL(); }, disasm: disaJumpGroup };
-    opeIX[0351] = { mnemonic:"JP (IX)", proc: function() { THIS.reg.PC = THIS.reg.IX; }, disasm: function(mem,addr) { return {code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:['JP','(IX)'] }; }};
-    opeIY[0351] = { mnemonic:"JP (IY)", proc: function() { THIS.reg.PC = THIS.reg.IY; }, disasm: function(mem,addr) { return {code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:['JP','(IY)'] }; }};
-    this.opecodeTable[0020] = { mnemonic:"DJNZ",
+    this.opecodeTable[0303] = {
+        mnemonic:"JP nn",
+        proc: function() { var nn = THIS.fetchPair(); THIS.reg.PC = nn; },
+        "cycle": 10,
+        disasm: disaJumpGroup
+    };
+    this.opecodeTable[0302] = {
+        mnemonic:"JP NZ,nn",
+        proc: function() { var nn = THIS.fetchPair(); if(!THIS.reg.flagZ()) { THIS.reg.PC = nn; } },
+        "cycle": 10,
+        disasm: disaJumpGroup
+    };
+    this.opecodeTable[0312] = {
+        mnemonic:"JP Z,nn",
+        proc: function() { var nn = THIS.fetchPair(); if(THIS.reg.flagZ())  { THIS.reg.PC = nn; } },
+        disasm: disaJumpGroup
+    };
+    this.opecodeTable[0322] = {
+        mnemonic:"JP NC,nn",
+        proc: function() { var nn = THIS.fetchPair(); if(!THIS.reg.flagC()) { THIS.reg.PC = nn; } },
+        "cycle": 10,
+        disasm: disaJumpGroup
+    };
+    this.opecodeTable[0332] = {
+        mnemonic:"JP C,nn",
+        proc: function() { var nn = THIS.fetchPair(); if(THIS.reg.flagC())  { THIS.reg.PC = nn; } },
+        "cycle": 10,
+        disasm: disaJumpGroup
+    };
+    this.opecodeTable[0342] = {
+        mnemonic:"JP PO,nn",
+        proc: function() { var nn = THIS.fetchPair(); if(!THIS.reg.flagP()) { THIS.reg.PC = nn; } },
+        "cycle": 10,
+        disasm: disaJumpGroup
+    };
+    this.opecodeTable[0352] = {
+        mnemonic:"JP PE,nn",
+        proc: function() { var nn = THIS.fetchPair(); if(THIS.reg.flagP())  { THIS.reg.PC = nn; } },
+        "cycle": 10,
+        disasm: disaJumpGroup
+    };
+    this.opecodeTable[0362] = {
+        mnemonic:"JP P,nn",
+        proc: function() { var nn = THIS.fetchPair(); if(!THIS.reg.flagS()) { THIS.reg.PC = nn; } },
+        "cycle": 10,
+        disasm: disaJumpGroup
+    };
+    this.opecodeTable[0372] = {
+        mnemonic:"JP M,nn",
+        proc: function() { var nn = THIS.fetchPair(); if(THIS.reg.flagS())  { THIS.reg.PC = nn; } },
+        "cycle": 10,
+        disasm: disaJumpGroup
+    };
+    this.opecodeTable[0030] = {
+        mnemonic:"JR e",
+        proc: function() { var e = THIS.fetch(); THIS.reg.jumpRel(e); },
+        "cycle": 12,
+        disasm: disaJumpGroup
+    };
+    this.opecodeTable[0070] = {
+        mnemonic:"JR C,e",
+        proc: function() { var e = THIS.fetch(); if(THIS.reg.flagC())   { THIS.reg.jumpRel(e); } },
+        "cycle": 12,
+        disasm: disaJumpGroup
+    };
+    this.opecodeTable[0050] = {
+        mnemonic:"JR Z,e",
+        proc: function() { var e = THIS.fetch(); if(THIS.reg.flagZ())   { THIS.reg.jumpRel(e); } },
+        "cycle": 12,
+        disasm: disaJumpGroup
+    };
+    this.opecodeTable[0060] = {
+        mnemonic:"JR NC,e",
+        proc: function() { var e = THIS.fetch(); if(!THIS.reg.flagC())  { THIS.reg.jumpRel(e); } },
+        "cycle": 12,
+        disasm: disaJumpGroup
+    };
+    this.opecodeTable[0040] = {
+        mnemonic:"JR NZ,e",
+        proc: function() { var e = THIS.fetch(); if(!THIS.reg.flagZ())  { THIS.reg.jumpRel(e); } },
+        "cycle": 12,
+        disasm: disaJumpGroup
+    };
+    this.opecodeTable[0351] = {
+        mnemonic:"JP (HL)",
+        proc: function() { THIS.reg.PC = THIS.reg.getHL(); },
+        "cycle": 4,
+        disasm: disaJumpGroup
+    };
+    opeIX[0351] = {
+        mnemonic:"JP (IX)",
+        proc: function() { THIS.reg.PC = THIS.reg.IX; },
+        "cycle": 8,
+        disasm: function(mem,addr) {
+            return {code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:['JP','(IX)'] };
+        }
+    };
+    opeIY[0351] = {
+        mnemonic:"JP (IY)",
+        proc: function() { THIS.reg.PC = THIS.reg.IY; },
+        "cycle": 8,
+        disasm: function(mem,addr) { return {code:[mem.peek(addr), mem.peek(addr+1)],
+            mnemonic:['JP','(IY)'] };
+        }
+    };
+    this.opecodeTable[0020] = {
+        mnemonic:"DJNZ",
         proc: function() {
             var e = THIS.fetch();
             THIS.reg.decrement("B");
@@ -2790,6 +3179,7 @@ Z80.prototype.createOpecodeTable = function() {
                 THIS.reg.jumpRel(e);
             }
         },
+        "cycle": 13,
         disasm: function(mem,addr) {
             var e = Z80.getSignedByte(mem.peek(addr+1));
             var ref_addr = addr + e + 2;
@@ -2822,37 +3212,76 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[0374] = { mnemonic:"CALL M,nn", proc: function() { var nn = THIS.fetchPair(); if(THIS.reg.flagS())  { THIS.pushPair(THIS.reg.PC); THIS.reg.PC = nn; } },
         disasm: function(m,a) {var l=m.peek(a+1),h=m.peek(a+2);var addr=Z80.pair(h,l);return{code:[m.peek(a),l,h],mnemonic:["CALL","M",addr.HEX(4)+"H"],ref_addr:addr};}};
 
-    this.opecodeTable[0311] = { mnemonic:"RET", proc: function() { THIS.reg.PC = THIS.popPair(); },
-        disasm: function(m,a) {return{code:[m.peek(a)],mnemonic:["RET"]};}};
-    this.opecodeTable[0300] = { mnemonic:"RET NZ",proc: function() { if(!THIS.reg.flagZ()) { THIS.reg.PC = THIS.popPair(); } },
-        disasm: function(m,a) {return{code:[m.peek(a)],mnemonic:["RET","NZ"]};}};
-    this.opecodeTable[0310] = { mnemonic:"RET Z", proc: function() { if(THIS.reg.flagZ())  { THIS.reg.PC = THIS.popPair(); } },
-        disasm: function(m,a) {return{code:[m.peek(a)],mnemonic:["RET","Z"]};}};
-    this.opecodeTable[0320] = { mnemonic:"RET NC",proc: function() { if(!THIS.reg.flagC()) { THIS.reg.PC = THIS.popPair(); } },
-        disasm: function(m,a) {return{code:[m.peek(a)],mnemonic:["RET","NC"]};}};
-    this.opecodeTable[0330] = { mnemonic:"RET C", proc: function() { if(THIS.reg.flagC())  { THIS.reg.PC = THIS.popPair(); } },
-        disasm: function(m,a) {return{code:[m.peek(a)],mnemonic:["RET","C"]};}};
-    this.opecodeTable[0340] = { mnemonic:"RET PO",proc: function() { if(!THIS.reg.flagP()) { THIS.reg.PC = THIS.popPair(); } },
-        disasm: function(m,a) {return{code:[m.peek(a)],mnemonic:["RET","PO"]};}};
-    this.opecodeTable[0350] = { mnemonic:"RET PE",proc: function() { if(THIS.reg.flagP())  { THIS.reg.PC = THIS.popPair(); } },
-        disasm: function(m,a) {return{code:[m.peek(a)],mnemonic:["RET","PE"]};}};
-    this.opecodeTable[0360] = { mnemonic:"RET P", proc: function() { if(!THIS.reg.flagS()) { THIS.reg.PC = THIS.popPair(); } },
-        disasm: function(m,a) {return{code:[m.peek(a)],mnemonic:["RET","P"]};}};
-    this.opecodeTable[0370] = { mnemonic:"RET M", proc: function() { if(THIS.reg.flagS())  { THIS.reg.PC = THIS.popPair(); } },
-        disasm: function(m,a) {return{code:[m.peek(a)],mnemonic:["RET","M"]};}};
+    this.opecodeTable[0311] = {
+        mnemonic:"RET",
+        proc: function() { THIS.reg.PC = THIS.popPair(); },
+        "cycle": 10,
+        disasm: function(m,a) {return{code:[m.peek(a)],mnemonic:["RET"]};}
+    };
+    this.opecodeTable[0300] = {
+        mnemonic:"RET NZ",
+        proc: function() { if(!THIS.reg.flagZ()) { THIS.reg.PC = THIS.popPair(); return 11; } return 5; },
+        disasm: function(m,a) {return{code:[m.peek(a)],mnemonic:["RET","NZ"]};}
+    };
+    this.opecodeTable[0310] = {
+        mnemonic:"RET Z",
+        proc: function() { if(THIS.reg.flagZ())  { THIS.reg.PC = THIS.popPair(); return 11; } return 5; },
+        "cycle": 11,
+        disasm: function(m,a) {return{code:[m.peek(a)],mnemonic:["RET","Z"]};}
+    };
+    this.opecodeTable[0320] = {
+        mnemonic:"RET NC",
+        proc: function() { if(!THIS.reg.flagC()) { THIS.reg.PC = THIS.popPair(); return 11; } return 5; },
+        "cycle": 11,
+        disasm: function(m,a) {return{code:[m.peek(a)],mnemonic:["RET","NC"]};}
+    };
+    this.opecodeTable[0330] = {
+        mnemonic:"RET C",
+        proc: function() { if(THIS.reg.flagC())  { THIS.reg.PC = THIS.popPair(); return 11; } return 5; },
+        "cycle": 11,
+        disasm: function(m,a) {return{code:[m.peek(a)],mnemonic:["RET","C"]};}
+    };
+    this.opecodeTable[0340] = {
+        mnemonic:"RET PO",
+        proc: function() { if(!THIS.reg.flagP()) { THIS.reg.PC = THIS.popPair(); return 11; } return 5; },
+        "cycle": 11,
+        disasm: function(m,a) {return{code:[m.peek(a)],mnemonic:["RET","PO"]};}
+    };
+    this.opecodeTable[0350] = {
+        mnemonic:"RET PE",
+        proc: function() { if(THIS.reg.flagP())  { THIS.reg.PC = THIS.popPair(); return 11; } return 5; },
+        "cycle": 11,
+        disasm: function(m,a) {return{code:[m.peek(a)],mnemonic:["RET","PE"]};}
+    };
+    this.opecodeTable[0360] = {
+        mnemonic:"RET P",
+        proc: function() { if(!THIS.reg.flagS()) { THIS.reg.PC = THIS.popPair(); return 11; } return 5; },
+        "cycle": 11,
+        disasm: function(m,a) {return{code:[m.peek(a)],mnemonic:["RET","P"]};}
+    };
+    this.opecodeTable[0370] = {
+        mnemonic:"RET M",
+        proc: function() { if(THIS.reg.flagS())  { THIS.reg.PC = THIS.popPair(); return 11; } return 5; },
+        "cycle": 11,
+        disasm: function(m,a) {return{code:[m.peek(a)],mnemonic:["RET","M"]};}
+    };
 
     opeMisc[0115] = { mnemonic:"RETI",
         proc: function() {
             THIS.reg.PC = THIS.popPair();
             THIS.IFF1 = THIS.IFF2;
         },
-        disasm: function(m,a) {return{code:[m.peek(a),m.peek(a+1)],mnemonic:["RETI"]};}};
+        "cycle": 15,
+        disasm: function(m,a) {return{code:[m.peek(a),m.peek(a+1)],mnemonic:["RETI"]};}
+    };
     opeMisc[0105] = { mnemonic:"RETN",
         proc: function() {
             THIS.reg.PC = THIS.popPair();
             THIS.IFF1 = THIS.IFF2;
         },
-        disasm: function(m,a) {return{code:[m.peek(a),m.peek(a+1)],mnemonic:["RETN"]};}};
+        "cycle": 14,
+        disasm: function(m,a) {return{code:[m.peek(a),m.peek(a+1)],mnemonic:["RETN"]};}
+    };
 
     var rstVt=[0x00,0x08,0x10,0x18,0x20,0x28,0x30,0x38];
     for(var rstI = 0; rstI < rstVt.length; rstI++) {
@@ -2864,6 +3293,7 @@ Z80.prototype.createOpecodeTable = function() {
                         THIS.reg.PC = vec;
                     }
                 })(rstVt[rstI]),
+            "cycle": 12,
             disasm: (function(vect) {
                     return function(mem, addr) {
                         return {
