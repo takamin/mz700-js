@@ -19,7 +19,7 @@ window.jQuery = require("jquery");
     });
 }(window.jQuery));
 
-},{"./index.js":2,"jquery":5,"jquery-ui":4}],2:[function(require,module,exports){
+},{"./index.js":2,"jquery":6,"jquery-ui":5}],2:[function(require,module,exports){
 (function() {
     var $ = require("jquery");
     var MZ700_Sound = require("../MZ-700/sound.js");
@@ -29,6 +29,7 @@ window.jQuery = require("jquery");
     require("../lib/jquery.Z80-reg.js");
     require("../lib/jquery.MZ-700-vram");
     require("../lib/jquery.MZ-700-kb.js");
+
     var MZ700Js = function() {
         this.opt = {
             "urlPrefix": ""
@@ -239,6 +240,8 @@ window.jQuery = require("jquery");
             //
             // Create MZ-700 Worker
             //
+
+            this.MMIO = require("../MZ-700/mmio").create();
             this.mz700comworker = TransWorker.create(
                 this.opt.urlPrefix + "MZ-700/worker.js", MZ700, this, {
                     'running': function() { this.showStatus(); },
@@ -247,10 +250,22 @@ window.jQuery = require("jquery");
 
                     'updateScreen': (mz700scrn == null) ? function() {} :
                         function(updateData) { mz700scrn.write(updateData); },
+                    'onMmioRead': function(param) {
+                        this.MMIO.read(param.address, param.value);
+                    },
+                    'onMmioWrite': function(param) {
+                        this.MMIO.write(param.address, param.value);
+                    },
                     'startSound': function(freq) { sound.startSound(freq); },
                     'stopSound': function() { sound.stopSound(); }
                 }
             );
+            this.PCG700 = require("../lib/PCG-700").create();
+            this.PCG700.setScreen(mz700scrn);
+            this.PCG700.writeMMIO(0xE010, 0x00);
+            this.PCG700.writeMMIO(0xE011, 0x00);
+            this.PCG700.writeMMIO(0xE012, 0x18);
+            this.mmioMapPeripheral(this.PCG700, [], [0xE010, 0xE011, 0xE012]);
 
             //
             // Register viewers
@@ -401,7 +416,11 @@ window.jQuery = require("jquery");
                 .DropDownPanel("create", { "caption" : "Execute Z80 Instruction" });
         }
     };
-
+    MZ700Js.prototype.mmioMapPeripheral = function(peripheral, mapToRead, mapToWrite) {
+        this.MMIO.entry(peripheral, mapToRead, mapToWrite);
+        this.mz700comworker.mmioMapToWrite(mapToRead, function(){});
+        this.mz700comworker.mmioMapToWrite(mapToWrite, function(){});
+    };
     /**
      *
      * Download and Run a MZT file that is placed on server.
@@ -709,7 +728,70 @@ window.jQuery = require("jquery");
     module.exports = MZ700Js;
 }());
 
-},{"../MZ-700/sound.js":3,"../lib/jquery.MZ-700-kb.js":6,"../lib/jquery.MZ-700-vram":7,"../lib/jquery.Z80-mem.js":8,"../lib/jquery.Z80-reg.js":9,"../lib/jquery.ddpanel.js":10,"../lib/jquery.soundctrl.js":11,"jquery":5}],3:[function(require,module,exports){
+},{"../MZ-700/mmio":3,"../MZ-700/sound.js":4,"../lib/PCG-700":7,"../lib/jquery.MZ-700-kb.js":8,"../lib/jquery.MZ-700-vram":9,"../lib/jquery.Z80-mem.js":10,"../lib/jquery.Z80-reg.js":11,"../lib/jquery.ddpanel.js":12,"../lib/jquery.soundctrl.js":13,"jquery":6}],3:[function(require,module,exports){
+(function() {
+    "use strict";
+
+    //
+    // Memory Mapped I/O
+    //
+    var MMIO = function () {
+        this.mmio = [ ];
+        for(var addr = 0xE000; addr < 0xE800; addr++) {
+            this.mmio.push({ "r":[],"w":[] });
+        }
+    };
+    window.MMIO = MMIO;
+
+    // Map a peripheral to adresses
+    MMIO.prototype.entry = function (peripheral, inputs, outputs)
+    {
+        inputs.forEach(function(address) {
+            if(!("readMMIO" in peripheral) ||
+                    typeof(peripheral.readMMIO) != "function" )
+            {
+                console.error(
+                        "The periferal does not have a method 'readMMIO' "
+                        + "for memory mapped I/O at", address.HEX(4) + "h");
+            } else {
+                this.mmio[address - 0xE000].r.push(peripheral);
+            }
+        }, this);
+        outputs.forEach(function(address) {
+            if(!("writeMMIO" in peripheral) ||
+                    typeof(peripheral.readMMIO) != "function" )
+            {
+                console.error(
+                        "The periferal does not have a method 'writeMMIO' "
+                        + "for memory mapped I/O at", address.HEX(4) + "h");
+            } else {
+                this.mmio[address - 0xE000].w.push(peripheral);
+            }
+        }, this);
+    };
+
+    // Read MMIO
+    MMIO.prototype.read = function(address, value) {
+        this.mmio[address - 0xE000].r.forEach(function(peripheral) {
+            value = peripheral.readMMIO(address, value);
+        });
+        return read;
+    };
+
+    // Write MMIO
+    MMIO.prototype.write = function(address, value) {
+        this.mmio[address - 0xE000].w.forEach(function(peripheral) {
+            value = peripheral.writeMMIO(address, value);
+        });
+    };
+
+    module.exports = {
+        "create": function() { return new MMIO(); }
+    };
+}());
+
+
+},{}],4:[function(require,module,exports){
 (function() {
     var MZ700_Sound = function() {
         window.AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -776,7 +858,7 @@ window.jQuery = require("jquery");
     module.exports = MZ700_Sound;
 }());
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 /*! jQuery UI - v1.12.0 - 2016-07-08
 * http://jqueryui.com
 * Includes: widget.js, position.js, data.js, disable-selection.js, effect.js, effects/effect-blind.js, effects/effect-bounce.js, effects/effect-clip.js, effects/effect-drop.js, effects/effect-explode.js, effects/effect-fade.js, effects/effect-fold.js, effects/effect-highlight.js, effects/effect-puff.js, effects/effect-pulsate.js, effects/effect-scale.js, effects/effect-shake.js, effects/effect-size.js, effects/effect-slide.js, effects/effect-transfer.js, focusable.js, form-reset-mixin.js, jquery-1-7.js, keycode.js, labels.js, scroll-parent.js, tabbable.js, unique-id.js, widgets/accordion.js, widgets/autocomplete.js, widgets/button.js, widgets/checkboxradio.js, widgets/controlgroup.js, widgets/datepicker.js, widgets/dialog.js, widgets/draggable.js, widgets/droppable.js, widgets/menu.js, widgets/mouse.js, widgets/progressbar.js, widgets/resizable.js, widgets/selectable.js, widgets/selectmenu.js, widgets/slider.js, widgets/sortable.js, widgets/spinner.js, widgets/tabs.js, widgets/tooltip.js
@@ -19463,7 +19545,7 @@ var widgetsTooltip = $.ui.tooltip;
 
 
 }));
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 /*eslint-disable no-unused-vars*/
 /*!
  * jQuery JavaScript Library v3.1.0
@@ -29539,7 +29621,138 @@ if ( !noGlobal ) {
 return jQuery;
 } );
 
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
+(function() {
+    "use strict";
+
+    //
+    // http://www.maroon.dti.ne.jp/youkan/mz700/mziomap.html
+    //
+    // ADDR  R/W Explanation
+    // E010h W   The pattern data to be writen to PCG-RAM
+    // E011h W   The lower 8-bit address of PCG-RAM
+    // E012h W   D0-D2 ADDR
+    //           D3    SSW  0:use PCG
+    //                      1:NOT use PCG
+    //           D4    WE   Write data when the bit change 0 to 1 to 0.
+    //           D5    COPY 0:Write data at E010h
+    //                      1:Write data from CGROM
+    //
+    // http://www.sharpmz.org/mz-700/pcg700_01.htm Installation
+    // http://www.sharpmz.org/mz-700/pcg700_02.htm Overview
+    // http://www.sharpmz.org/mz-700/pcg700_03.htm Operation
+    // http://www.sharpmz.org/mz-700/pcg700_04.htm PCG-AID
+    // http://www.sharpmz.org/mz-700/pcg700_05.htm Programming
+    // http://www.sharpmz.org/mz-700/pcg700_06.htm Games
+    //
+
+    var PCG700 = function() {
+        this.addr = 0x000;
+        this.pattern = 0x00;
+        this.we = 0;
+        this.ssw = 1;
+        this.copy = 0;
+
+        //Copy original CGROM
+        this.CGRAM = [];
+        for(var code = 0; code < 512; code++) {
+            this.CGRAM.push([0,0,0,0,0,0,0,0]);
+            for(var row = 0; row < 8; row++) {
+                this.CGRAM[code][row] = this.getCGROMDATA(code, row);
+            }
+        }
+    };
+    PCG700.COPY = 0x20;
+    PCG700.WE = 0x10;
+    PCG700.SSW = 0x08;
+    PCG700.ADDR = 0x07;
+
+    PCG700.prototype.setScreen = function(screen) {
+        this.screen = screen;
+        this.applySSW();
+    };
+
+    PCG700.prototype.getCGROMDATA = function(code, row) {
+        return mz700scrn.CGROMDATA[code][row];
+    };
+
+    PCG700.prototype.readMMIO = function(addr, value) {}
+
+    PCG700.prototype.writeMMIO = function(addr, value) {
+        //console.info("PCG700.writeMMIO(" + addr.HEX(4) + "h, " + value.HEX(4) + "h)");
+        switch(addr) {
+            case 0xE010:
+                this.pattern = value & 0xff;
+                break;
+            case 0xE011:
+                this.addr = ((this.addr & 0x700) | ((value & 0xff) << 0));
+                break;
+            case 0xE012:
+                this.addr = ((this.addr & 0x0FF) | ((value & PCG700.ADDR) << 8));
+                this.copy = ((value & PCG700.COPY) == 0) ? 0 : 1;
+
+                // Write data on negative edge of WE.
+                {
+                    var we = this.we;
+                    this.we = ((value & PCG700.WE) == 0) ? 0 : 1;
+                    if(we && !this.we) {
+                        this.write();
+                    }
+                }
+                // Software switch
+                {
+                    var ssw = this.ssw;
+                    this.ssw = ((value & PCG700.SSW) == 0) ? 0 : 1;
+                    if(ssw != this.ssw) {
+                        this.applySSW();
+                    }
+                }
+                break;
+            default:
+                //console.warn("PCG700.onPoke unrecognized address ",  addr);
+                break;
+        }
+    };
+
+    PCG700.prototype.applySSW = function() {
+        if(this.ssw == 0) {
+            //console.info("PCG700.applySSW use PCG-700");
+            this.screen.useCG(this.CGRAM);
+        } else {
+            //console.info("PCG700.applySSW use builtin CGROM");
+            this.screen.useCGROM();
+        }
+    };
+
+    PCG700.prototype.write = function() {
+        var atb = (this.addr >> 10) & 0x01;
+        var dispCode = 0x80 + ((this.addr >> 3) & 0x7f);
+        var cpos = atb * 256 + dispCode;
+        var row = (this.addr >> 0) & 0x07;
+        var pattern = ((this.copy == 0) ?
+                this.pattern :
+                this.getCGROMDATA(cpos, row));
+
+        //console.log("PCG700 dispCode "
+        //        + dispCode.HEX(2) + "h[" + row + "] = "
+        //        + pattern.HEX(2) + "h - "
+        //        + pattern.BIN(8) + "b");
+
+        this.CGRAM[cpos][row] = pattern;
+        if(this.ssw == 0) {
+            this.screen.useCG(this.CGRAM);
+            this.screen.redrawChar(atb, dispCode);
+        }
+    };
+
+    module.exports = {
+        "create" : function() {
+            return new PCG700();
+        }
+    }
+}());
+
+},{}],8:[function(require,module,exports){
 (function() {
     var $ = require("jquery");
     var jquery_plugin_class = require("../lib/jquery_plugin_class");
@@ -29863,7 +30076,7 @@ return jQuery;
     };
 }());
 
-},{"../lib/jquery_plugin_class":12,"jquery":5}],7:[function(require,module,exports){
+},{"../lib/jquery_plugin_class":14,"jquery":6}],9:[function(require,module,exports){
 /*
  * jquery.mz700scrn.js - MZ-700 Screen
  *
@@ -29952,6 +30165,14 @@ THE SOFTWARE.
             }
         }, this);
 
+        // Create text/attr vram
+        this.vramText = [];
+        this.vramAttr = [];
+        for(var i = 0; i < this.opt.cols * this.opt.rows; i++) {
+            this.vramText.push(0x00);
+            this.vramAttr.push(0x71);
+        }
+
         //Create canvas object
         var canvas = document.createElement("CANVAS");
         canvas.setAttribute("width", mz700scrn.charSize.dotWidth * this.opt.cols + "px");
@@ -29981,31 +30202,7 @@ THE SOFTWARE.
             return idxloc;
         }([], this.opt.cols, this.opt.rows));
 
-        //
-        // Create the font table
-        //
-        this.fonts = (function(THIS, fonts) {
-            //Loop for background-color
-            for(var bg = 0; bg < 8; bg++) {
-                //Loop for fore-ground-color
-                for(var fg = 0; fg < 8; fg++) {
-                    //Loop for attributes(case of character)
-                    for(var atb = 0; atb < 2; atb++) {
-                        //the value of ATTRIUTE VRAM
-                        var attr = (atb << 7)|(fg << 4) | bg;
-                        //Display code
-                        for(var dispCode = 0; dispCode < 256; dispCode++) {
-                            //Font table's key
-                            var code = attr << 8 | dispCode;
-                            //Drawing (initially creating) routine
-                            fonts[code] = THIS.getInitDrawFunction(
-                                        atb, fg, bg, attr, dispCode, code);
-                        }
-                    }
-                }
-            }
-            return fonts;
-        }(this, {}));
+        this.createFontTable();
     };
 
     mz700scrn.prototype.write = function(relAddrToChars) {
@@ -30014,8 +30211,76 @@ THE SOFTWARE.
             var loc = this.idxloc[relAddr];
             var code = charData.attr << 8 | charData.dispcode;
             this.fonts[code](this._ctx, loc.x, loc.y);
+            this.vramText[relAddr] = charData.dispcode;
+            this.vramAttr[relAddr] = charData.attr;
         }, this);
-    }
+    };
+
+    // Change Character Generator
+    mz700scrn.prototype.useCG = function(cgData) {
+        this.opt.CG = cgData;
+        this.createFontTable();
+        this.redraw();
+    };
+
+    mz700scrn.prototype.redrawChar = function(atb, dispCode) {
+        var abit = atb << 7;
+        var chars = {};
+        for(var i = 0; i < this.opt.cols * this.opt.rows; i++) {
+            if(this.vramText[i] == dispCode && (this.vramAttr[i] & 0x80) == abit) {
+                chars[i] = { dispcode: dispCode, attr: this.vramAttr[i] };
+            }
+        }
+        this.write(chars);
+    };
+
+    // Change CG to default CGROM
+    mz700scrn.prototype.useCGROM = function() {
+        this.useCG(mz700scrn.CGROMDATA);
+    };
+
+    // Create the font table
+    mz700scrn.prototype.createFontTable = function() {
+        this.fonts = {};
+        for(var atb = 0; atb < 2; atb++) {
+            for(var dispCode = 0; dispCode < 256; dispCode++) {
+                this.createFont(atb, dispCode);
+            }
+        }
+    };
+
+    // Create a font of all color combinations
+    //
+    // atb      : Attribute Bit     0 or 1
+    // dispCode : Display Code      0x00 to 0xff
+    //
+    mz700scrn.prototype.createFont = function(atb, dispCode) {
+        //Loop for background-color
+        for(var bg = 0; bg < 8; bg++) {
+            //Loop for fore-ground-color
+            for(var fg = 0; fg < 8; fg++) {
+                //the value of ATTRIBUTE VRAM
+                var attr = (atb << 7)|(fg << 4) | bg;
+                //Font table's key
+                var code = attr << 8 | dispCode;
+                //Drawing (initially creating) routine
+                this.fonts[code] = this.getInitDrawFunction(
+                            atb, fg, bg, attr, dispCode, code);
+            }
+        }
+    };
+
+    // Redraw VRAM
+    mz700scrn.prototype.redraw = function() {
+        var dispData = {};
+        for(var i = 0; i < this.opt.cols * this.opt.rows; i++) {
+            dispData[i] = {
+                dispcode: this.vramText[i],
+                attr: this.vramAttr[i],
+            };
+        }
+        this.write(dispData);
+    };
 
     mz700scrn.TableDispCode2Char = [
         [
@@ -30154,7 +30419,7 @@ THE SOFTWARE.
             width: charSize * chars.length + "px"
         }).mz700scrn("clear").mz700scrn("puts", text, padding, padding);
         $(element).find("canvas").css("display", "inherit");
-    }
+    };
 
     //
     // Font bit pattern data for standard MZ-700
@@ -30748,7 +31013,7 @@ THE SOFTWARE.
 
 }());
 
-},{"../lib/jquery_plugin_class":12,"jquery":5}],8:[function(require,module,exports){
+},{"../lib/jquery_plugin_class":14,"jquery":6}],10:[function(require,module,exports){
 (function() {
     var $ = require("jquery");
     var jquery_plugin_class = require("../lib/jquery_plugin_class");
@@ -30956,7 +31221,7 @@ THE SOFTWARE.
     };
 }());
 
-},{"../lib/jquery_plugin_class":12,"jquery":5}],9:[function(require,module,exports){
+},{"../lib/jquery_plugin_class":14,"jquery":6}],11:[function(require,module,exports){
 (function() {
     var $ = require("jquery");
     var jquery_plugin_class = require("../lib/jquery_plugin_class");
@@ -31249,7 +31514,7 @@ THE SOFTWARE.
     };
 }());
 
-},{"../lib/jquery_plugin_class":12,"jquery":5}],10:[function(require,module,exports){
+},{"../lib/jquery_plugin_class":14,"jquery":6}],12:[function(require,module,exports){
 (function() {
     var $ = require("jquery");
     var jquery_plugin_class = require("../lib/jquery_plugin_class");
@@ -31322,7 +31587,7 @@ THE SOFTWARE.
     };
 }());
 
-},{"../lib/jquery_plugin_class":12,"jquery":5}],11:[function(require,module,exports){
+},{"../lib/jquery_plugin_class":14,"jquery":6}],13:[function(require,module,exports){
 (function() {
     var $ = require("jquery");
     var jquery_plugin_class = require("../lib/jquery_plugin_class");
@@ -31445,7 +31710,7 @@ THE SOFTWARE.
     };
 }());
 
-},{"../lib/jquery_plugin_class":12,"jquery":5}],12:[function(require,module,exports){
+},{"../lib/jquery_plugin_class":14,"jquery":6}],14:[function(require,module,exports){
 (function() {
     "use strict";
     var jQuery = require("jquery");
@@ -31479,4 +31744,4 @@ THE SOFTWARE.
     }
 }());
 
-},{"jquery":5}]},{},[1]);
+},{"jquery":6}]},{},[1]);

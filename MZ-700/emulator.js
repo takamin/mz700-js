@@ -19,9 +19,22 @@ function MZ700(opt) {
 
     opt = opt || {};
     opt.onVramUpdate = opt.onVramUpdate || function(){};
+    opt.onMmioRead = opt.onMmioRead || function(){};
+    opt.onMmioWrite = opt.onMmioWrite || function(){};
+
+    this.mmioMap = [];
+    for(var address = 0xE000; address < 0xE800; address++) {
+        this.mmioMap.push({ "r": false, "w": false });
+    }
     this.memory = new MZ700_Memory({
         onVramUpdate: opt.onVramUpdate,
         onMappedIoRead: function(address, value) {
+
+            //MMIO: Input from memory mapped peripherals
+            if(THIS.mmioIsMappedToRead(address)) {
+                opt.onMmioRead(address, value);
+            }
+
             switch(address) {
                 case 0xE001:
                     break;
@@ -78,6 +91,12 @@ function MZ700(opt) {
             return value;
         },
         onMappedIoUpdate: function(address, value) {
+
+            //MMIO: Output to memory mapped peripherals
+            if(THIS.mmioIsMappedToWrite(address)) {
+                opt.onMmioWrite(address, value);
+            }
+
             switch(address) {
                 case 0xE000:
                     this.poke(0xE001, THIS.keymatrix.getKeyData(value));
@@ -136,7 +155,22 @@ function MZ700(opt) {
         }
     });
 }
-
+MZ700.prototype.mmioMapToRead = function(address) {
+    address.forEach(function(a) {
+        this.mmioMap[a - 0xE000].r = true;
+    }, this);
+};
+MZ700.prototype.mmioMapToWrite = function(address) {
+    address.forEach(function(a) {
+        this.mmioMap[a - 0xE000].w = true;
+    }, this);
+};
+MZ700.prototype.mmioIsMappedToRead = function(address) {
+    return this.mmioMap[address - 0xE000].r;
+};
+MZ700.prototype.mmioIsMappedToWrite = function(address) {
+    return this.mmioMap[address - 0xE000].w;
+};
 MZ700.prototype.writeAsmCode = function(assembled) {
     var asm_list = assembled.list;
     var entry_point = -1;

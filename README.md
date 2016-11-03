@@ -69,9 +69,16 @@ ROADMAP
     * v0.1.1 - It can run on the Microsoft Edge.
     * v0.1.4 - Edit this README
     * v0.1.6 - Update screen layouts.
-    * __v0.1.7__ - Some scripts are changed to a node module.
+    * v0.1.7 - Some scripts are changed to a node module.
     And on development environment, the packages of grunt, bower and browserify
     are installed.
+    * __v0.1.8__ - Add PCG-700 emulation.
+    It is mapped to the addresses where from E010H to E012H in memory mapped I/O area.
+    Details of the I/O is described at
+    [MZ-700 I/O](http://www.maroon.dti.ne.jp/youkan/mz700/mziomap.html)(Japanese)
+    or [PCG700 operation](http://www.sharpmz.org/mz-700/pcg700_03.htm).
+    But I cannot do the tests enough.
+    Because I don't have a binary that use this feature.
 * v0.2.0 - A flexisible screen layout with multi columns that contains multi rows.
 Both of the column and row are movable, resizable, addable and removable. The pane
 can contain one screen object like a screen, a keyboard, a register indicator or a
