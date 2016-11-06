@@ -7,6 +7,7 @@
     require("../lib/jquery.Z80-reg.js");
     require("../lib/jquery.MZ-700-vram");
     require("../lib/jquery.MZ-700-kb.js");
+
     var MZ700Js = function() {
         this.opt = {
             "urlPrefix": ""
@@ -217,6 +218,8 @@
             //
             // Create MZ-700 Worker
             //
+
+            this.MMIO = require("../MZ-700/mmio").create();
             this.mz700comworker = TransWorker.create(
                 this.opt.urlPrefix + "MZ-700/worker.js", MZ700, this, {
                     'running': function() { this.showStatus(); },
@@ -225,10 +228,22 @@
 
                     'updateScreen': (mz700scrn == null) ? function() {} :
                         function(updateData) { mz700scrn.write(updateData); },
+                    'onMmioRead': function(param) {
+                        this.MMIO.read(param.address, param.value);
+                    },
+                    'onMmioWrite': function(param) {
+                        this.MMIO.write(param.address, param.value);
+                    },
                     'startSound': function(freq) { sound.startSound(freq); },
                     'stopSound': function() { sound.stopSound(); }
                 }
             );
+            this.PCG700 = require("../lib/PCG-700").create();
+            this.PCG700.setScreen(mz700scrn);
+            this.PCG700.writeMMIO(0xE010, 0x00);
+            this.PCG700.writeMMIO(0xE011, 0x00);
+            this.PCG700.writeMMIO(0xE012, 0x18);
+            this.mmioMapPeripheral(this.PCG700, [], [0xE010, 0xE011, 0xE012]);
 
             //
             // Register viewers
@@ -379,7 +394,11 @@
                 .DropDownPanel("create", { "caption" : "Execute Z80 Instruction" });
         }
     };
-
+    MZ700Js.prototype.mmioMapPeripheral = function(peripheral, mapToRead, mapToWrite) {
+        this.MMIO.entry(peripheral, mapToRead, mapToWrite);
+        this.mz700comworker.mmioMapToWrite(mapToRead, function(){});
+        this.mz700comworker.mmioMapToWrite(mapToWrite, function(){});
+    };
     /**
      *
      * Download and Run a MZT file that is placed on server.

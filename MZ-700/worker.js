@@ -50,6 +50,18 @@ if("importScripts" in this) {
                     }, 100);
                 }
             },
+            onMmioRead: function(address, value) {
+                transworker.postNotify(
+                        'onMmioRead',
+                        { address: address, value: value }
+                );
+            },
+            onMmioWrite: function(address, value) {
+                transworker.postNotify(
+                        'onMmioWrite',
+                        { address: address, value: value }
+                );
+            },
             startSound: function(freq) {
                 transworker.postNotify('startSound',[ freq ]);
             },
