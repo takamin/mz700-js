@@ -67,6 +67,12 @@ if("importScripts" in this) {
             },
             stopSound: function() {
                 transworker.postNotify('stopSound');
+            },
+            onStartDataRecorder: function(state) {
+                transworker.postNotify('onStartDataRecorder');
+            },
+            onStopDataRecorder: function(state) {
+                transworker.postNotify('onStopDataRecorder');
             }
         });
         transworker.create(mz700);

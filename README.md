@@ -72,13 +72,16 @@ ROADMAP
     * v0.1.7 - Some scripts are changed to a node module.
     And on development environment, the packages of grunt, bower and browserify
     are installed.
-    * __v0.1.8__ - Add PCG-700 emulation.
+    * v0.1.8 - Add PCG-700 emulation.
     It is mapped to the addresses where from E010H to E012H in memory mapped I/O area.
     Details of the I/O is described at
     [MZ-700 I/O](http://www.maroon.dti.ne.jp/youkan/mz700/mziomap.html)(Japanese)
     or [PCG700 operation](http://www.sharpmz.org/mz-700/pcg700_03.htm).
     But I cannot do the tests enough.
     Because I don't have a binary that use this feature.
+    * __v0.1.9__ - 'S' command is available on monitor.
+    Type `*S1200,1260,1200,PCG-CURSOR-MZ[CR]` and click `RECPLAY` button, and
+    you can download a MZT file named `PCG-CURSOR-MZ.MZT`.
 * v0.2.0 - A flexisible screen layout with multi columns that contains multi rows.
 Both of the column and row are movable, resizable, addable and removable. The pane
 can contain one screen object like a screen, a keyboard, a register indicator or a

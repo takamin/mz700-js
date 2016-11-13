@@ -129,6 +129,68 @@
                 .append(this.btnStep);
 
             //
+            // Data Recorder Control
+            //
+            var dataRecorder = $(".MZ-700 .data-recorder");
+            this.btnCmtRec = $("<button/>").attr("type", "button")
+                .html("RECPLAY").click(function() {
+                    this.cmtMessageArea.empty();
+                    this.mz700comworker.dataRecorder_pushRec(
+                        function() {
+                            console.log("REC callback");
+                        }.bind(this));
+                }.bind(this));
+            this.btnCmtPlay = $("<button/>").attr("type", "button")
+                .html("PLAY").click(function() {
+                    this.mz700comworker.dataRecorder_pushPlay(
+                        function() { console.log("PLAY callback"); });
+                }.bind(this));
+            this.btnCmtStop = $("<button/>").attr("type", "button")
+                .html("STOP").click(function() {
+                    this.mz700comworker.dataRecorder_pushStop(
+                        function() { console.log("STOP callback"); });
+                }.bind(this));
+            this.btnCmtEject = $("<button/>").attr("type", "button")
+                .html("EJECT").click(function() {
+                    this.mz700comworker.dataRecorder_ejectCmt(
+                        function(bytes) {
+                            console.log("EJECT callback");
+                            if(bytes == null || bytes.length < 128) {
+                                return;
+                            }
+                            var header = new MZ_TapeHeader(bytes, 0);
+                            var byteArr = new Uint8Array(bytes);
+                            var blob = new Blob([byteArr], {'type': "application/octet-stream"});
+                            this.cmtMessageArea.empty().append(
+                                    $("<a/>")
+                                        .attr("download", header.filename + ".MZT")
+                                        .attr("type", "application/octet-stream")
+                                        .attr("href", URL.createObjectURL(blob))
+                                        .html("<u>↓</u> " + header.filename + ":" +
+                                            header.addr_load.HEX(4) + "-" +
+                                            (header.addr_load + header.file_size - 1).HEX(4) + "-" +
+                                            header.addr_exec.HEX(4)
+                                            )
+                                    );
+                        }.bind(this));
+                }.bind(this));
+            this.btnCmtSet = $("<button/>").attr("type", "button")
+                .html("SET").click(function() {
+                    this.mz700comworker.dataRecorder_setCmt([],
+                        function(bytes) {
+                            console.log("SET callback");
+                        });
+                }.bind(this));
+            this.cmtMessageArea = $("<span/>").addClass("cmt-message");
+            dataRecorder
+                .append(this.btnCmtRec)
+                //.append(this.btnCmtPlay)
+                //.append(this.btnCmtStop)
+                .append(this.btnCmtEject)
+                //.append(this.btnCmtSet)
+                .append(this.cmtMessageArea);
+
+            //
             // Keyboard
             //
             var getKeyMatrix = function() { return {"strobe":0, "bit": 0};};
@@ -235,7 +297,35 @@
                         this.MMIO.write(param.address, param.value);
                     },
                     'startSound': function(freq) { sound.startSound(freq); },
-                    'stopSound': function() { sound.stopSound(); }
+                    'stopSound': function() { sound.stopSound(); },
+                    "onStartDataRecorder": function(){
+                        this.btnCmtRec.prop("disabled", true);
+                        this.btnCmtEject.prop("disabled", true);
+                    }.bind(this),
+                    "onStopDataRecorder": function(){
+                        this.btnCmtRec.prop("disabled", false);
+                        this.btnCmtEject.prop("disabled", false);
+                        this.mz700comworker.dataRecorder_ejectCmt(
+                            function(bytes) {
+                                console.log("EJECT callback");
+                                if(bytes == null || bytes.length < 128) {
+                                    return;
+                                }
+                                var header = new MZ_TapeHeader(bytes, 0);
+                                var byteArr = new Uint8Array(bytes);
+                                var blob = new Blob([byteArr], {'type': "application/octet-stream"});
+                                this.cmtMessageArea.empty().append(
+                                        $("<a/>")
+                                            .attr("download", header.filename + ".MZT")
+                                            .attr("type", "application/octet-stream")
+                                            .attr("href", URL.createObjectURL(blob))
+                                            .html("<u>↓</u> " + header.filename + ":" +
+                                                header.addr_load.HEX(4) + "-" +
+                                                (header.addr_load + header.file_size - 1).HEX(4) + "-" +
+                                                header.addr_exec.HEX(4))
+                                        );
+                            }.bind(this));
+                    }.bind(this)
                 }
             );
             this.PCG700 = require("../lib/PCG-700").create();
