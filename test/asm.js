@@ -1,7 +1,12 @@
 var UnitTest = require("./UnitTest");
 var fs = require('fs');
 eval(fs.readFileSync('../lib/ex_number.js')+'');
+eval(fs.readFileSync('../Z80/emulator.js')+'');
+eval(fs.readFileSync('../Z80/register.js')+'');
 eval(fs.readFileSync('../Z80/assembler.js')+'');
+eval(fs.readFileSync('../Z80/memory.js')+'');
+eval(fs.readFileSync('../MZ-700/emulator.js')+'');
+eval(fs.readFileSync('../MZ-700/mztape.js')+'');
 var line_asm_test_pattern = [
     { code:[0x00], mnemonic:"NOP" },
     { code:[0x01, 0x34, 0x12], mnemonic:"LD BC,1234H" },
@@ -768,6 +773,90 @@ module.exports = {
                     test_detail += "(" + codes.length + "bytes)"; 
                 }
             }
+            UnitTest.report(test_name, test_result, test_detail);
+        }
+        for(var i = 0; i < line_asm_test_pattern.length; i++) {
+            var code = line_asm_test_pattern[i].code;
+            var test_name = "DISASSEMBLE ["
+                + code.map( function(c) { return c.HEX(2); }).join(' ')
+                + '] to "' + line_asm_test_pattern[i].mnemonic + '"';
+            var test_result = true;
+            var test_detail = "";
+            var buf = new Buffer(code);
+            var dasmlist = Z80.dasm(buf);
+            var addr = 0;
+            dasmlist.forEach(function(mnemonicInfo) {
+                if(!test_result) {
+                    return;
+                }
+                try {
+                    if(isNaN(mnemonicInfo.addr)) {
+                        return;
+                    }
+                    var binsrcCode = line_asm_test_pattern[i].code.map(
+                            function(c) { return c.HEX(2); }).join(' ')
+                    var disasmCode = mnemonicInfo.code.map(
+                            function(c) { return c.HEX(2); }).join(' ')
+                    if(binsrcCode != disasmCode) {
+                        console.log("");
+                        console.log("## " + test_name);
+                        console.log("");
+                        test_result = false;
+                        test_detail = "Disasm codes are not equals to source binary.";
+                        console.log("BINSRC SOURCE:" + binsrcCode);
+                        console.log("DISASM SOURCE:" + disasmCode);
+                        console.log(
+                            mnemonicInfo.addr.HEX(4) + "\t"
+                            + disasmCode + "\t"
+                            + ((mnemonicInfo.mnemonic.length == 0) ? '':
+                                mnemonicInfo.mnemonic[0] + "\t"
+                                + mnemonicInfo.mnemonic.slice(1).join(",")));
+                        return;
+                    }
+                    var disasmMnemonic = '';
+                    if(mnemonicInfo.mnemonic.length > 0) {
+                        disasmMnemonic = mnemonicInfo.mnemonic[0];
+                        if(mnemonicInfo.mnemonic.length > 1) {
+                            disasmMnemonic += " " + mnemonicInfo.mnemonic.slice(1).join(",");
+                        }
+                    }
+                    disasmMnemonic = disasmMnemonic.replace(/;.*$/, '');
+                    disasmMnemonic = disasmMnemonic.toUpperCase();
+                    disasmMnemonic = disasmMnemonic.replace(/\b([0-9]+)\b/,
+                            function() { return parseInt(arguments[1]).HEX(4)+"H"; });
+                    disasmMnemonic = disasmMnemonic.replace(/\b0+([1-9A-F]+H)\b/, function() {return arguments[1] });
+                    disasmMnemonic = disasmMnemonic.replace(/ /g, '');
+                    var sourceMnemonic = line_asm_test_pattern[i].mnemonic
+                    sourceMnemonic = sourceMnemonic.toUpperCase();
+                    sourceMnemonic = sourceMnemonic.replace(/\b([0-9]+)\b/,
+                            function() { return parseInt(arguments[1]).HEX(4)+"H"; });
+                    sourceMnemonic = sourceMnemonic.replace(/\b0+([1-9A-F]+H)\b/, function() {return arguments[1] });
+                    sourceMnemonic = sourceMnemonic.replace(/ /g, '');
+                    if(disasmMnemonic != sourceMnemonic) {
+                        console.log("");
+                        console.log("## " + test_name);
+                        console.log("");
+                        test_result = false;
+                        test_detail = "Disasm Mnemonics are not equals to source.";
+                        console.log("");
+                        console.log("*** DISASSEMBLED RESULT UNMATCH");
+                        console.log("    DISASSEMBLED:" + disasmMnemonic);
+                        console.log("     SOURCE CODE:" + line_asm_test_pattern[i].mnemonic);
+                        console.log(
+                            mnemonicInfo.addr.HEX(4) + "\t"
+                            + disasmCode + "\t"
+                            + ((mnemonicInfo.mnemonic.length == 0) ? '':
+                                mnemonicInfo.mnemonic[0] + "\t"
+                                + mnemonicInfo.mnemonic.slice(1).join(",")));
+                        console.log("");
+                    }
+                }
+                catch(ex) {
+                    console.log("*** EXCEPTION " + ex);
+                    console.log("*** EXCEPTION FAIL to " + test_name);
+                    console.log(JSON.stringify(mnemonicInfo,null,"  "));
+                }
+            });
             UnitTest.report(test_name, test_result, test_detail);
         }
     }
