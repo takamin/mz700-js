@@ -768,14 +768,14 @@ Z80.prototype.createOpecodeTable = function() {
         var d = mem.peek(addr + 2);
         return {
             code: [ mem.peek(addr), mem.peek(addr+1), d ],
-            menmonic: [ "LD", r, "(" + idx + "+" + d.HEX(2) + "H)" ]
+            mnemonic: [ "LD", r, "(" + idx + "+" + d.HEX(2) + "H)" ]
         }
     };
     var disasm_LD_idx_d_r = function(mem, addr, idx, r) {
         var d = mem.peek(addr + 2);
         return {
             code: [ mem.peek(addr), mem.peek(addr+1), d ],
-            menmonic: [ "LD", "(" + idx + "+" + d.HEX(2) + "H)", r ]
+            mnemonic: [ "LD", "(" + idx + "+" + d.HEX(2) + "H)", r ]
         }
     };
 
@@ -1012,7 +1012,7 @@ Z80.prototype.createOpecodeTable = function() {
         proc: function() { THIS.memory.poke(THIS.reg.IY + THIS.fetch(), THIS.reg.A); },
         "cycle": 19,
         disasm: function(mem, addr) {
-            return disasm_LD_idx_d_r(mem, addr, "IY", "L");
+            return disasm_LD_idx_d_r(mem, addr, "IY", "A");
         }
     };
 
@@ -2023,6 +2023,13 @@ Z80.prototype.createOpecodeTable = function() {
         cycle:19,
         proc: function() {
             THIS.reg.addAcc(THIS.memory.peek(THIS.reg.IX + THIS.fetch()));
+        },
+        disasm: function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1), d ],
+                mnemonic: ["ADD", "A", "(IX+" + d.HEX(2) + "H)"]
+            }
         }
     };
     //---------------------------------------------------------------------------------
@@ -2035,6 +2042,13 @@ Z80.prototype.createOpecodeTable = function() {
         cycle:19,
         proc: function() {
             THIS.reg.addAcc(THIS.memory.peek(THIS.reg.IY + THIS.fetch()));
+        },
+        disasm: function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1), d ],
+                mnemonic: ["ADD", "A", "(IY+" + d.HEX(2) + "H)"]
+            }
         }
     };
     //---------------------------------------------------------------------------------
@@ -2145,6 +2159,13 @@ Z80.prototype.createOpecodeTable = function() {
         cycle:19,
         proc: function() {
             THIS.reg.addAccWithCarry(THIS.memory.peek(THIS.reg.IX + THIS.fetch()));
+        },
+        disasm: function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1), d ],
+                mnemonic: ["ADC", "A", "(IX+" + d.HEX(2) + "H)"]
+            }
         }
     };
     opeIY[0216] = {
@@ -2152,6 +2173,13 @@ Z80.prototype.createOpecodeTable = function() {
         cycle:19,
         proc: function() {
             THIS.reg.addAccWithCarry(THIS.memory.peek(THIS.reg.IY + THIS.fetch()));
+        },
+        disasm: function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1), d ],
+                mnemonic: ["ADC", "A", "(IY+" + d.HEX(2) + "H)"]
+            }
         }
     };
     //---------------------------------------------------------------------------------
@@ -2264,6 +2292,13 @@ Z80.prototype.createOpecodeTable = function() {
         cycle:19,
         proc: function() {
             THIS.reg.subAcc(THIS.memory.peek(THIS.reg.IX + THIS.fetch()));
+        },
+        disasm: function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1), d ],
+                mnemonic: ["SUB", "A", "(IX+" + d.HEX(2) + "H)"]
+            }
         }
     };
     opeIY[0226] = {
@@ -2271,6 +2306,13 @@ Z80.prototype.createOpecodeTable = function() {
         cycle:19,
         proc: function() {
             THIS.reg.subAcc(THIS.memory.peek(THIS.reg.IY + THIS.fetch()));
+        },
+        disasm: function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1), d ],
+                mnemonic: ["SUB", "A", "(IY+" + d.HEX(2) + "H)"]
+            }
         }
     };
     //---------------------------------------------------------------------------------
@@ -2381,6 +2423,13 @@ Z80.prototype.createOpecodeTable = function() {
         cycle:19,
         proc: function() {
             THIS.reg.subAccWithCarry(THIS.memory.peek(THIS.reg.IX + THIS.fetch()));
+        },
+        disasm: function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1), d ],
+                mnemonic: ["SBC", "A", "(IX+" + d.HEX(2) + "H)"]
+            }
         }
     };
     opeIY[0236] = {
@@ -2388,6 +2437,13 @@ Z80.prototype.createOpecodeTable = function() {
         cycle:19,
         proc: function() {
             THIS.reg.subAccWithCarry(THIS.memory.peek(THIS.reg.IY + THIS.fetch()));
+        },
+        disasm: function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1), d ],
+                mnemonic: ["SBC", "A", "(IY+" + d.HEX(2) + "H)"]
+            }
         }
     };
     //---------------------------------------------------------------------------------
@@ -2499,6 +2555,13 @@ Z80.prototype.createOpecodeTable = function() {
         cycle:19,
         proc: function() {
             THIS.reg.andAcc(THIS.memory.peek(THIS.reg.IX + THIS.fetch()));
+        },
+        disasm: function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1), d ],
+                mnemonic: ["AND", "(IX+" + d.HEX(2) + "H)"]
+            }
         }
     };
     opeIY[0246] = {
@@ -2506,6 +2569,13 @@ Z80.prototype.createOpecodeTable = function() {
         cycle:19,
         proc: function() {
             THIS.reg.andAcc(THIS.memory.peek(THIS.reg.IY + THIS.fetch()));
+        },
+        disasm: function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1), d ],
+                mnemonic: ["AND", "(IY+" + d.HEX(2) + "H)"]
+            }
         }
     };
     //---------------------------------------------------------------------------------
@@ -2618,6 +2688,13 @@ Z80.prototype.createOpecodeTable = function() {
         cycle:19,
         proc: function() {
             THIS.reg.orAcc(THIS.memory.peek(THIS.reg.IX + THIS.fetch()));
+        },
+        disasm: function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1), d ],
+                mnemonic: ["OR", "(IX+" + d.HEX(2) + "H)"]
+            }
         }
     };
     opeIY[0266] = {
@@ -2625,6 +2702,13 @@ Z80.prototype.createOpecodeTable = function() {
         cycle:19,
         proc: function() {
             THIS.reg.orAcc(THIS.memory.peek(THIS.reg.IY + THIS.fetch()));
+        },
+        disasm: function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1), d ],
+                mnemonic: ["OR", "(IY+" + d.HEX(2) + "H)"]
+            }
         }
     };
     //---------------------------------------------------------------------------------
@@ -2716,7 +2800,8 @@ Z80.prototype.createOpecodeTable = function() {
             return {
                 code:[mem.peek(addr),n],
                     mnemonic: ["XOR", n.HEX(2) + "H"]};
-        }};
+        }
+    };
     this.opecodeTable[0256] = {
         mnemonic:"XOR (HL)",
         cycle:7,
@@ -2733,6 +2818,13 @@ Z80.prototype.createOpecodeTable = function() {
         cycle:19,
         proc: function() {
             THIS.reg.xorAcc(THIS.memory.peek(THIS.reg.IX + THIS.fetch()));
+        },
+        disasm: function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1), d ],
+                mnemonic: ["XOR", "(IX+" + d.HEX(2) + "H)"]
+            }
         }
     };
     opeIY[0256] = {
@@ -2740,6 +2832,13 @@ Z80.prototype.createOpecodeTable = function() {
         cycle:19,
         proc: function() {
             THIS.reg.xorAcc(THIS.memory.peek(THIS.reg.IY + THIS.fetch()));
+        },
+        disasm: function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1), d ],
+                mnemonic: ["XOR", "(IY+" + d.HEX(2) + "H)"]
+            }
         }
     };
     //---------------------------------------------------------------------------------
@@ -2852,6 +2951,13 @@ Z80.prototype.createOpecodeTable = function() {
         cycle:19,
         proc: function() {
             THIS.reg.compareAcc(THIS.memory.peek(THIS.reg.IX + THIS.fetch()));
+        },
+        disasm: function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1), d ],
+                mnemonic: ["CP", "(IX+" + d.HEX(2) + "H)"]
+            }
         }
     };
     opeIY[0276] = {
@@ -2859,6 +2965,13 @@ Z80.prototype.createOpecodeTable = function() {
         cycle:19,
         proc: function() {
             THIS.reg.compareAcc(THIS.memory.peek(THIS.reg.IY + THIS.fetch()));
+        },
+        disasm: function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1), d ],
+                mnemonic: ["CP", "(IY+" + d.HEX(2) + "H)"]
+            }
         }
     };
     //---------------------------------------------------------------------------------
@@ -3505,7 +3618,7 @@ Z80.prototype.createOpecodeTable = function() {
     // INC IX       IX <- IX + 1        11 011 101
     //                                  00 100 011
     //---------------------------------------------------------------------------------
-    opeIX[0043] = {
+    opeIX[0043] = {//0010-0011 0x23
         mnemonic:"INC IX",
         cycle: 10,
         proc: function() {
@@ -3513,7 +3626,7 @@ Z80.prototype.createOpecodeTable = function() {
         },
         disasm: function(mem, addr) {
             return {
-                code:[mem.peek(addr)],
+                code:[mem.peek(addr), mem.peek(addr+1)],
                 mnemonic: ["INC", "IX"]
             };
         }
@@ -3530,7 +3643,7 @@ Z80.prototype.createOpecodeTable = function() {
         },
         disasm: function(mem, addr) {
             return {
-                code:[mem.peek(addr)],
+                code:[mem.peek(addr), mem.peek(addr+1)],
                 mnemonic: ["INC", "IY"]
             };
         }
@@ -3602,7 +3715,7 @@ Z80.prototype.createOpecodeTable = function() {
         },
         disasm: function(mem, addr) {
             return {
-                code:[mem.peek(addr)],
+                code:[mem.peek(addr), mem.peek(addr+1)],
                 mnemonic: ["DEC", "IX"]
             };
         }
@@ -3619,7 +3732,7 @@ Z80.prototype.createOpecodeTable = function() {
         },
         disasm: function(mem, addr) {
             return {
-                code:[mem.peek(addr)],
+                code:[mem.peek(addr), mem.peek(addr+1)],
                 mnemonic: ["DEC", "IY"]
             };
         }
@@ -3673,7 +3786,7 @@ Z80.prototype.createOpecodeTable = function() {
         }
     };
     
-    opeIX[0313] = {
+    opeIX[0313] = {//1100-1011 CB
         mnemonic: function() { return opeRotateIX; },
         proc: function() {
             var d = THIS.fetch();
@@ -3873,6 +3986,12 @@ Z80.prototype.createOpecodeTable = function() {
         proc: function() { var adr = THIS.reg.getHL(); THIS.memory.poke(adr, THIS.reg.RL(THIS.memory.peek(adr))); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RL","(HL)"] };}
     };
+    opeRotate[0027] = {
+        mnemonic:"RL A",
+        cycle: 8,
+        proc: function() { THIS.reg.A = THIS.reg.RL(THIS.reg.A); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RL","A"] };}
+    };
     opeRotateIX[0026] = {
         mnemonic: "RL (IX+d)",
         cycle: 23,
@@ -4008,6 +4127,12 @@ Z80.prototype.createOpecodeTable = function() {
         cycle: 15,
         proc: function() { var adr = THIS.reg.getHL(); THIS.memory.poke(adr, THIS.reg.RR(THIS.memory.peek(adr))); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RR","(HL)"] };}
+    };
+    opeRotate[0037] = {
+        mnemonic:"RR A",
+        cycle: 8,
+        proc: function() { THIS.reg.A = THIS.reg.RR(THIS.reg.A); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RR","A"] };}
     };
     opeRotateIX[0036] = {
         mnemonic: "RR (IX+d)",
@@ -4340,6 +4465,18 @@ Z80.prototype.createOpecodeTable = function() {
             };
         }
     }
+    var disasm_bit_b_IDX_d = function(mem, addr, b, idx) {
+        var d = THIS.memory.peek(addr + 2);
+        return {
+            code:[
+                THIS.memory.peek(addr),
+                THIS.memory.peek(addr + 1),
+                d,
+                THIS.memory.peek(addr + 3),
+            ],
+            mnemonic: ["BIT", "" + b, "(" + idx + "+" + d.HEX(2) + "H)"]
+        };
+    };
     opeRotateIX[0106] = {
         mnemonic:"BIT 0,(IX+d)",
         cycle:20,
@@ -4351,7 +4488,8 @@ Z80.prototype.createOpecodeTable = function() {
             }
             THIS.reg.setFlagH();
             THIS.reg.clearFlagN()
-        }
+        },
+        disasm: function(mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 0, "IX"); }
     };
     opeRotateIX[0116] = {
         mnemonic:"BIT 1,(IX+d)",
@@ -4364,7 +4502,8 @@ Z80.prototype.createOpecodeTable = function() {
             }
             THIS.reg.setFlagH();
             THIS.reg.clearFlagN()
-        }
+        },
+        disasm: function(mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 1, "IX"); }
     };
     opeRotateIX[0126] = {
         mnemonic:"BIT 2,(IX+d)",
@@ -4377,7 +4516,8 @@ Z80.prototype.createOpecodeTable = function() {
             }
             THIS.reg.setFlagH();
             THIS.reg.clearFlagN()
-        }
+        },
+        disasm: function(mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 2, "IX"); }
     };
     opeRotateIX[0136] = {
         mnemonic:"BIT 3,(IX+d)",
@@ -4390,7 +4530,8 @@ Z80.prototype.createOpecodeTable = function() {
             }
             THIS.reg.setFlagH();
             THIS.reg.clearFlagN()
-        }
+        },
+        disasm: function(mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 3, "IX"); }
     };
     opeRotateIX[0146] = {
         mnemonic:"BIT 4,(IX+d)",
@@ -4403,7 +4544,8 @@ Z80.prototype.createOpecodeTable = function() {
             }
             THIS.reg.setFlagH();
             THIS.reg.clearFlagN()
-        }
+        },
+        disasm: function(mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 4, "IX"); }
     };
     opeRotateIX[0156] = {
         mnemonic:"BIT 5,(IX+d)",
@@ -4416,7 +4558,8 @@ Z80.prototype.createOpecodeTable = function() {
             }
             THIS.reg.setFlagH();
             THIS.reg.clearFlagN()
-        }
+        },
+        disasm: function(mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 5, "IX"); }
     };
     opeRotateIX[0166] = {
         mnemonic:"BIT 6,(IX+d)",
@@ -4429,7 +4572,8 @@ Z80.prototype.createOpecodeTable = function() {
             }
             THIS.reg.setFlagH();
             THIS.reg.clearFlagN()
-        }
+        },
+        disasm: function(mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 6, "IX"); }
     };
     opeRotateIX[0176] = {
         mnemonic:"BIT 7,(IX+d)",
@@ -4442,7 +4586,8 @@ Z80.prototype.createOpecodeTable = function() {
             }
             THIS.reg.setFlagH();
             THIS.reg.clearFlagN()
-        }
+        },
+        disasm: function(mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 7, "IX"); }
     };
 
     opeRotateIY[0106] = {
@@ -4456,7 +4601,8 @@ Z80.prototype.createOpecodeTable = function() {
             }
             THIS.reg.setFlagH();
             THIS.reg.clearFlagN()
-        }
+        },
+        disasm: function(mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 0, "IY"); }
     };
     opeRotateIY[0116] = {
         mnemonic:"BIT 1,(IY+d)",
@@ -4469,7 +4615,8 @@ Z80.prototype.createOpecodeTable = function() {
             }
             THIS.reg.setFlagH();
             THIS.reg.clearFlagN()
-        }
+        },
+        disasm: function(mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 1, "IY"); }
     };
     opeRotateIY[0126] = {
         mnemonic:"BIT 2,(IY+d)",
@@ -4482,7 +4629,8 @@ Z80.prototype.createOpecodeTable = function() {
             }
             THIS.reg.setFlagH();
             THIS.reg.clearFlagN()
-        }
+        },
+        disasm: function(mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 2, "IY"); }
     };
     opeRotateIY[0136] = {
         mnemonic:"BIT 3,(IY+d)",
@@ -4495,7 +4643,8 @@ Z80.prototype.createOpecodeTable = function() {
             }
             THIS.reg.setFlagH();
             THIS.reg.clearFlagN()
-        }
+        },
+        disasm: function(mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 3, "IY"); }
     };
     opeRotateIY[0146] = {
         mnemonic:"BIT 4,(IY+d)",
@@ -4508,7 +4657,8 @@ Z80.prototype.createOpecodeTable = function() {
             }
             THIS.reg.setFlagH();
             THIS.reg.clearFlagN()
-        }
+        },
+        disasm: function(mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 4, "IY"); }
     };
     opeRotateIY[0156] = {
         mnemonic:"BIT 5,(IY+d)",
@@ -4521,7 +4671,8 @@ Z80.prototype.createOpecodeTable = function() {
             }
             THIS.reg.setFlagH();
             THIS.reg.clearFlagN()
-        }
+        },
+        disasm: function(mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 5, "IY"); }
     };
     opeRotateIY[0166] = {
         mnemonic:"BIT 6,(IY+d)",
@@ -4534,7 +4685,8 @@ Z80.prototype.createOpecodeTable = function() {
             }
             THIS.reg.setFlagH();
             THIS.reg.clearFlagN()
-        }
+        },
+        disasm: function(mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 6, "IY"); }
     };
     opeRotateIY[0176] = {
         mnemonic:"BIT 7,(IY+d)",
@@ -4547,7 +4699,8 @@ Z80.prototype.createOpecodeTable = function() {
             }
             THIS.reg.setFlagH();
             THIS.reg.clearFlagN()
-        }
+        },
+        disasm: function(mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 7, "IY"); }
     };
 
     for(var regI = 0; regI < reg8.length; regI++) {
@@ -4579,20 +4732,34 @@ Z80.prototype.createOpecodeTable = function() {
             };
         }
     }
-    opeRotateIX[0306] = {
+    var disasm_set_b_IDX_d = function(mem, addr, b, idx) {
+        var d = THIS.memory.peek(addr + 2);
+        return {
+            code:[
+                THIS.memory.peek(addr + 0),
+                THIS.memory.peek(addr + 1),
+                d,
+                THIS.memory.peek(addr + 3),
+            ],
+            mnemonic: ["SET", "" + b, "(" + idx + "+" + d.HEX(2) + "H)"]
+        };
+    };
+    opeRotateIX[0306] = {//11 000 110
         mnemonic:"SET 0,(IX+d)",
         cycle:23,
         proc: function(d) {
             var adr = THIS.reg.IX+d;
             THIS.memory.poke(adr, THIS.memory.peek(adr) | (1 << 0));
-        }
+        },
+        disasm: function(mem, addr) { return disasm_set_b_IDX_d(mem, addr, 0, "IX"); }
     };
     opeRotateIX[0316] = {
         mnemonic:"SET 1,(IX+d)",
         cycle:23,
         proc: function(d) {
             var adr = THIS.reg.IX+d; THIS.memory.poke(adr, THIS.memory.peek(adr) | (1 << 1));
-        }
+        },
+        disasm: function(mem, addr) { return disasm_set_b_IDX_d(mem, addr, 1, "IX"); }
     };
     opeRotateIX[0326] = {
         mnemonic:"SET 2,(IX+d)",
@@ -4600,7 +4767,8 @@ Z80.prototype.createOpecodeTable = function() {
         proc: function(d) {
             var adr = THIS.reg.IX+d;
             THIS.memory.poke(adr, THIS.memory.peek(adr) | (1 << 2));
-        }
+        },
+        disasm: function(mem, addr) { return disasm_set_b_IDX_d(mem, addr, 2, "IX"); }
     };
     opeRotateIX[0336] = {
         mnemonic:"SET 3,(IX+d)",
@@ -4608,7 +4776,8 @@ Z80.prototype.createOpecodeTable = function() {
         proc: function(d) {
             var adr = THIS.reg.IX+d;
             THIS.memory.poke(adr, THIS.memory.peek(adr) | (1 << 3));
-        }
+        },
+        disasm: function(mem, addr) { return disasm_set_b_IDX_d(mem, addr, 3, "IX"); }
     };
     opeRotateIX[0346] = {
         mnemonic:"SET 4,(IX+d)",
@@ -4616,7 +4785,8 @@ Z80.prototype.createOpecodeTable = function() {
         proc: function(d) {
             var adr = THIS.reg.IX+d;
             THIS.memory.poke(adr, THIS.memory.peek(adr) | (1 << 4));
-        }
+        },
+        disasm: function(mem, addr) { return disasm_set_b_IDX_d(mem, addr, 4, "IX"); }
     };
     opeRotateIX[0356] = {
         mnemonic:"SET 5,(IX+d)",
@@ -4624,7 +4794,8 @@ Z80.prototype.createOpecodeTable = function() {
         proc: function(d) {
             var adr = THIS.reg.IX+d;
             THIS.memory.poke(adr, THIS.memory.peek(adr) | (1 << 5));
-        }
+        },
+        disasm: function(mem, addr) { return disasm_set_b_IDX_d(mem, addr, 5, "IX"); }
     };
     opeRotateIX[0366] = {
         mnemonic:"SET 6,(IX+d)",
@@ -4632,7 +4803,8 @@ Z80.prototype.createOpecodeTable = function() {
         proc: function(d) {
             var adr = THIS.reg.IX+d;
             THIS.memory.poke(adr, THIS.memory.peek(adr) | (1 << 6));
-        }
+        },
+        disasm: function(mem, addr) { return disasm_set_b_IDX_d(mem, addr, 6, "IX"); }
     };
     opeRotateIX[0376] = {
         mnemonic:"SET 7,(IX+d)",
@@ -4640,7 +4812,8 @@ Z80.prototype.createOpecodeTable = function() {
         proc: function(d) {
             var adr = THIS.reg.IX+d;
             THIS.memory.poke(adr, THIS.memory.peek(adr) | (1 << 7));
-        }
+        },
+        disasm: function(mem, addr) { return disasm_set_b_IDX_d(mem, addr, 7, "IX"); }
     };
 
     opeRotateIY[0306] = {
@@ -4649,7 +4822,8 @@ Z80.prototype.createOpecodeTable = function() {
         proc: function(d) {
             var adr = THIS.reg.IY+d;
             THIS.memory.poke(adr, THIS.memory.peek(adr) | (1 << 0));
-        }
+        },
+        disasm: function(mem, addr) { return disasm_set_b_IDX_d(mem, addr, 0, "IY"); }
     };
     opeRotateIY[0316] = {
         mnemonic:"SET 1,(IY+d)",
@@ -4657,7 +4831,8 @@ Z80.prototype.createOpecodeTable = function() {
         proc: function(d) {
             var adr = THIS.reg.IY+d;
             THIS.memory.poke(adr, THIS.memory.peek(adr) | (1 << 1));
-        }
+        },
+        disasm: function(mem, addr) { return disasm_set_b_IDX_d(mem, addr, 1, "IY"); }
     };
     opeRotateIY[0326] = {
         mnemonic:"SET 2,(IY+d)",
@@ -4665,7 +4840,8 @@ Z80.prototype.createOpecodeTable = function() {
         proc: function(d) {
             var adr = THIS.reg.IY+d;
             THIS.memory.poke(adr, THIS.memory.peek(adr) | (1 << 2));
-        }
+        },
+        disasm: function(mem, addr) { return disasm_set_b_IDX_d(mem, addr, 2, "IY"); }
     };
     opeRotateIY[0336] = {
         mnemonic:"SET 3,(IY+d)",
@@ -4673,7 +4849,8 @@ Z80.prototype.createOpecodeTable = function() {
         proc: function(d) {
             var adr = THIS.reg.IY+d;
             THIS.memory.poke(adr, THIS.memory.peek(adr) | (1 << 3));
-        }
+        },
+        disasm: function(mem, addr) { return disasm_set_b_IDX_d(mem, addr, 3, "IY"); }
     };
     opeRotateIY[0346] = {
         mnemonic:"SET 4,(IY+d)",
@@ -4681,7 +4858,8 @@ Z80.prototype.createOpecodeTable = function() {
         proc: function(d) {
             var adr = THIS.reg.IY+d;
             THIS.memory.poke(adr, THIS.memory.peek(adr) | (1 << 4));
-        }
+        },
+        disasm: function(mem, addr) { return disasm_set_b_IDX_d(mem, addr, 4, "IY"); }
     };
     opeRotateIY[0356] = {
         mnemonic:"SET 5,(IY+d)",
@@ -4689,7 +4867,8 @@ Z80.prototype.createOpecodeTable = function() {
         proc: function(d) {
             var adr = THIS.reg.IY+d;
             THIS.memory.poke(adr, THIS.memory.peek(adr) | (1 << 5));
-        }
+        },
+        disasm: function(mem, addr) { return disasm_set_b_IDX_d(mem, addr, 5, "IY"); }
     };
     opeRotateIY[0366] = {
         mnemonic:"SET 6,(IY+d)",
@@ -4697,7 +4876,8 @@ Z80.prototype.createOpecodeTable = function() {
         proc: function(d) {
             var adr = THIS.reg.IY+d;
             THIS.memory.poke(adr, THIS.memory.peek(adr) | (1 << 6));
-        }
+        },
+        disasm: function(mem, addr) { return disasm_set_b_IDX_d(mem, addr, 6, "IY"); }
     };
     opeRotateIY[0376] = {
         mnemonic:"SET 7,(IY+d)",
@@ -4705,7 +4885,8 @@ Z80.prototype.createOpecodeTable = function() {
         proc: function(d) {
             var adr = THIS.reg.IY+d;
             THIS.memory.poke(adr, THIS.memory.peek(adr) | (1 << 7));
-        }
+        },
+        disasm: function(mem, addr) { return disasm_set_b_IDX_d(mem, addr, 7, "IY"); }
     };
 
     var procRES_8bit = function(b,r) {
@@ -5498,7 +5679,7 @@ Z80.prototype.createOpecodeTable = function() {
             };
         }
     };
-    opeMisc[0160] = {
+    opeMisc[0170] = {//001110000
         mnemonic:"IN A,(C)",
         cycle:12,
         proc: function() { THIS.reg.A = THIS.readIoPort(THIS.reg.C); },
@@ -5654,7 +5835,7 @@ Z80.prototype.createOpecodeTable = function() {
             };
         }
     };
-    opeMisc[0161] = {
+    opeMisc[0171] = {
         mnemonic:"OUT (C),A",
         cycle:12,
         proc: function() { THIS.writeIoPort(THIS.reg.C, THIS.reg.A); },
