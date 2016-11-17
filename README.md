@@ -79,9 +79,10 @@ ROADMAP
     or [PCG700 operation](http://www.sharpmz.org/mz-700/pcg700_03.htm).
     But I cannot do the tests enough.
     Because I don't have a binary that use this feature.
-    * __v0.1.9__ - 'S' command is available on monitor.
+    * v0.1.9 - 'S' command is available on monitor.
     Type `*S1200,1260,1200,PCG-CURSOR-MZ[CR]` and click `RECPLAY` button, and
     you can download a MZT file named `PCG-CURSOR-MZ.MZT`.
+    * __v0.1.10__ - cycles and disassembling-features are added completely.
 * v0.2.0 - A flexisible screen layout with multi columns that contains multi rows.
 Both of the column and row are movable, resizable, addable and removable. The pane
 can contain one screen object like a screen, a keyboard, a register indicator or a
