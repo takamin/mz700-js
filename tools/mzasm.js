@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 getopt = require('node-getopt').create([
         ['m',   'map=ARG',  'map file to resolve addresses'],
         ['z',   'output-MZT-header', 'output MZT header'],
@@ -12,14 +13,14 @@ if(getopt.options.version) {
     console.log("Z80 assembler v0.0");
     return;
 }
+require("../lib/ex_number.js");
+require("../Z80/emulator.js");
+require("../Z80/register.js");
+require("../Z80/assembler.js");
+require('../Z80/memory.js');
+require('../MZ-700/emulator.js');
+require('../MZ-700/mztape.js');
 var fs = require('fs');
-eval(fs.readFileSync('../lib/ex_number.js')+'');
-eval(fs.readFileSync('../Z80/emulator.js')+'');
-eval(fs.readFileSync('../Z80/register.js')+'');
-eval(fs.readFileSync('../Z80/assembler.js')+'');
-eval(fs.readFileSync('../Z80/memory.js')+'');
-eval(fs.readFileSync('../MZ-700/emulator.js')+'');
-eval(fs.readFileSync('../MZ-700/mztape.js')+'');
 if(getopt.argv.length < 1) {
     console.error('error: no input file');
     return -1;

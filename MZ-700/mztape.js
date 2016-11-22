@@ -1,4 +1,4 @@
-function MZ_TapeHeader(buf, offset) {
+MZ_TapeHeader = function(buf, offset) {
     var arrayToString = function(arr, start, end) {
         var s = "";
         for(var i = start; i < end; i++) {
@@ -31,7 +31,8 @@ function MZ_TapeHeader(buf, offset) {
         header_buffer.push(buf[offset + i]);
     }
     this.buffer = header_buffer;
-}
+};
+
 MZ_TapeHeader.createNew = function() {
     var buf = new Array(128);
     for(var i = 0; i < 128; i++) {
@@ -40,6 +41,7 @@ MZ_TapeHeader.createNew = function() {
     buf[0] = 1;
     return new MZ_TapeHeader(buf, 0);
 };
+
 MZ_TapeHeader.prototype.setFilename = function(filename) {
     while(filename.length < 11) {
         filename += ' ';
@@ -49,16 +51,19 @@ MZ_TapeHeader.prototype.setFilename = function(filename) {
         this.buffer[0x01 + i] = (filename.charCodeAt(i) & 0xff);
     }
 };
+
 MZ_TapeHeader.prototype.setFilesize = function(filesize) {
     this.file_size = filesize
     this.buffer[0x12] = ((filesize >> 0) & 0xff);
     this.buffer[0x13] = ((filesize >> 8) & 0xff);
 };
+
 MZ_TapeHeader.prototype.setAddrLoad = function(addr) {
     this.addr_load = addr;
     this.buffer[0x14] = ((addr >> 0) & 0xff);
     this.buffer[0x15] = ((addr >> 8) & 0xff);
 };
+
 MZ_TapeHeader.prototype.setAddrExec = function(addr) {
     this.addr_exec = addr;
     this.buffer[0x16] = ((addr >> 0) & 0xff);
@@ -66,10 +71,11 @@ MZ_TapeHeader.prototype.setAddrExec = function(addr) {
 };
 
 
-function MZ_Tape(tapeData) {
+MZ_Tape = function(tapeData) {
     this._index = 0;
     this._tapeData = tapeData;
-}
+};
+
 MZ_Tape.prototype.isThereSignal = function(signal, n) {
     for(var i = 0; i < n; i++) {
         if(this._tapeData[this._index + i] != signal) {
@@ -101,6 +107,7 @@ MZ_Tape.prototype.recognizeStartingMark = function() {
     }
     return true;
 };
+
 MZ_Tape.prototype.recognizeStarting2Mark = function() {
     // START MARK
     if(!this.isThereSignal(false, 2750)) {
@@ -128,6 +135,7 @@ MZ_Tape.prototype.readSignal = function() {
     }
     return null;
 };
+
 MZ_Tape.prototype.writeSignal = function() {
     this._tapeData.push(signal);
 };
@@ -152,6 +160,7 @@ MZ_Tape.prototype.writeBlock = function(data) {
     this.writeByte((cs >> 8) & 0xff);
     this.writeSignal(true);
 };
+
 MZ_Tape.prototype.writeDuplexBlock = function(data) {
     this.writeBlock(data);
     for(var i = 0; i < 256; i++) {
@@ -213,6 +222,7 @@ MZ_Tape.prototype.countOnBit = function(blockBytes) {
     onBitCount &= 0xffff;
     return onBitCount;
 };
+
 MZ_Tape.prototype.readBlock = function(n) {
     
     // Read block bytes
@@ -367,7 +377,7 @@ MZ_Tape.fromBytes = function(bytes) {
     return writer._tapeData;
 };
 
-function MZ_DataRecorder(motorCallback) {
+MZ_DataRecorder = function(motorCallback) {
     this._m_on = false;
     this._play = false;
     this._rec = false;
@@ -380,9 +390,11 @@ function MZ_DataRecorder(motorCallback) {
     this._pos = 0;
     this._motorCallback = motorCallback;
 };
+
 MZ_DataRecorder.prototype.isCmtSet = function() {
     return (this._cmt != null);
 };
+
 MZ_DataRecorder.prototype.setCmt = function(cmt) {
     var m = this.motor();
     if(m) {
@@ -391,6 +403,7 @@ MZ_DataRecorder.prototype.setCmt = function(cmt) {
     this._cmt = cmt;
     this._pos = 0;
 };
+
 MZ_DataRecorder.prototype.play = function() {
     var m = this.motor();
     if(this._cmt != null) {
@@ -400,6 +413,7 @@ MZ_DataRecorder.prototype.play = function() {
         this._motorCallback(true);
     }
 };
+
 MZ_DataRecorder.prototype.rec = function() {
     var m = this.motor();
     if(this._cmt != null) {
@@ -410,6 +424,7 @@ MZ_DataRecorder.prototype.rec = function() {
         this._motorCallback(true);
     }
 };
+
 MZ_DataRecorder.prototype.stop = function() {
     var m = this.motor();
     this._play = false;
@@ -418,6 +433,7 @@ MZ_DataRecorder.prototype.stop = function() {
         this._motorCallback(false);
     }
 };
+
 MZ_DataRecorder.prototype.ejectCmt = function() {
     this.stop();
     var cmt = this._cmt;
@@ -425,6 +441,7 @@ MZ_DataRecorder.prototype.ejectCmt = function() {
     this._pos = 0;
     return cmt;
 };
+
 MZ_DataRecorder.prototype.m_on = function(state) {
     var m = this.motor();
     if(!this._m_on && state) {
@@ -438,9 +455,11 @@ MZ_DataRecorder.prototype.m_on = function(state) {
         this._motorCallback(false);
     }
 };
+
 MZ_DataRecorder.prototype.motor = function() {
     return this._cmt != null && this._play && this._motor;
 };
+
 MZ_DataRecorder.prototype.wdata = function(wdata, tick) {
     if(this.motor() && this._rec) {
         if(this._wdata != wdata) {
@@ -493,4 +512,3 @@ MZ_DataRecorder.prototype.rdata = function(tick) {
     }
     return null;
 };
-

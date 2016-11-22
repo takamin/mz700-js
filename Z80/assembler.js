@@ -1,4 +1,4 @@
-function Z80_assemble(asm_source) {
+Z80_assemble = function(asm_source) {
     if(asm_source == undefined) {
         return;
     }
@@ -69,7 +69,8 @@ function Z80_assemble(asm_source) {
             }
         }
     }
-}
+};
+
 Z80_assemble.prototype.tokenize = function(line) {
     var LEX_IDLE=0;
     var LEX_WHITESPACE=1;
@@ -178,7 +179,8 @@ Z80_assemble.prototype.tokenize = function(line) {
         toks.push(tok);
     }
     return toks;
-}
+};
+
 Z80_assemble.prototype.assembleMnemonic = function(toks, label) {
     if(match_token(toks,['ORG', null])) {
         this.address = this._parseNumLiteral(toks[1]);
@@ -753,7 +755,7 @@ Z80_assemble.prototype.assembleMnemonic = function(toks, label) {
     }
     console.warn("**** ERROR: CANNOT ASSEMBLE:" + toks.join(" / "));
     return [];
-}
+};
 function getSubopeIXIY(tok) {
     var subope = 0;
     switch(tok) {
@@ -761,7 +763,7 @@ function getSubopeIXIY(tok) {
         case 'IY': subope = 0375; break;
     }
     return subope;
-}
+};
 function getArithmeticSubOpecode(opecode) {
     var subseq = 0;
     switch(opecode) {
@@ -775,7 +777,7 @@ function getArithmeticSubOpecode(opecode) {
         case 'CP': subseq = 7; break;
     }
     return subseq;
-}
+};
 function get16bitRegId_dd(name) {
     var r = null;
     switch(name) {
@@ -786,7 +788,7 @@ function get16bitRegId_dd(name) {
         default: break;
     }
     return r;
-}
+};
 function get16bitRegId_qq(name) {
     var r = null;
     switch(name) {
@@ -797,7 +799,7 @@ function get16bitRegId_qq(name) {
         default: break;
     }
     return r;
-}
+};
 function get8bitRegId(name) {
     var r = null;
     switch(name) {
@@ -811,7 +813,7 @@ function get8bitRegId(name) {
         default: break;
     }
     return r;
-}
+};
 function match_token(toks, pattern) {
     if(toks.length != pattern.length) {
         return false;
@@ -832,7 +834,7 @@ function match_token(toks, pattern) {
         }
     }
     return true;
-}
+};
 Z80_assemble.prototype.parseNumLiteral = function(tok) {
     var n = this._parseNumLiteral(tok);
     if(typeof(n) == 'number') {
@@ -844,7 +846,7 @@ Z80_assemble.prototype.parseNumLiteral = function(tok) {
     return (function(THIS, token) { return function() {
         return THIS.dereferLowByte(token);
     }; })(this, tok);
-}
+};
 Z80_assemble.prototype.parseNumLiteralPair = function(tok) {
     var n = this._parseNumLiteral(tok);
     if(typeof(n) == 'number') {
@@ -861,7 +863,7 @@ Z80_assemble.prototype.parseNumLiteralPair = function(tok) {
             return THIS.dereferHighByte(token);
         };})(this, tok),
     ];
-}
+};
 Z80_assemble.prototype.parseRelAddr = function(tok, fromAddr) {
     var n = this._parseNumLiteral(tok);
     if(typeof(n) == 'number') {
@@ -878,19 +880,19 @@ Z80_assemble.prototype.parseRelAddr = function(tok, fromAddr) {
     return (function(THIS, token, fromAddr) { return function() {
         return (THIS.derefer(token) - fromAddr) & 0xff;
     }; })(this, tok, fromAddr);
-}
+};
 Z80_assemble.prototype.dereferLowByte = function(label) {
     return this.derefer(label) & 0xff;
-}
+};
 Z80_assemble.prototype.dereferHighByte = function(label) {
     return (this.derefer(label) >> 8) & 0xff;
-}
+};
 Z80_assemble.prototype.derefer = function(label) {
     if(label in this.label2value) {
         return this.label2value[label];
     }
     return 0;
-}
+};
 Z80_assemble.prototype._parseNumLiteral = function(tok) {
     if(/^[\+\-]?[0-9]+$/.test(tok) || /^[\+\-]?[0-9A-F]+H$/i.test(tok)) {
         var n = 0;
@@ -908,7 +910,7 @@ Z80_assemble.prototype._parseNumLiteral = function(tok) {
         return s * n;
     }
     return tok;
-}
+};
 Z80_assemble.prototype.parseAddress = function(addrToken) {
     var bytes = this.parseNumLiteralPair(addrToken);
     if(bytes == null) {
@@ -918,4 +920,4 @@ Z80_assemble.prototype.parseAddress = function(addrToken) {
     var L = bytes[0]; if(typeof(L) == 'function') { L = L(); }
     var addr = Z80.pair(H,L);
     return addr;
-}
+};

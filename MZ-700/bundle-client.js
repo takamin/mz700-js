@@ -19,9 +19,849 @@ window.jQuery = require("jquery");
     });
 }(window.jQuery));
 
-},{"./index.js":2,"jquery":6,"jquery-ui":5}],2:[function(require,module,exports){
+},{"./index.js":3,"jquery":12,"jquery-ui":11}],2:[function(require,module,exports){
+MZ700 = function(opt) {
+    "use strict";
+    var THIS = this;
+
+    //MZ700 Key Matrix
+    this.keymatrix = new mz700keymatrix();
+
+    //HBLNK F/F in 15.7 kHz
+    this.hblank = new FlipFlopCounter(15700);
+
+    //VBLNK F/F in 50 Hz
+    this.vblank = new FlipFlopCounter(50);
+
+    // create IC 556 to create HBLNK(cursor blink) by 3 Hz?
+    this.ic556 = new IC556(3);
+
+    this.INTMSK = false;
+
+    this.MLDST = false;
+
+    var motorOffDelayTid = null;
+    this.dataRecorder = new MZ_DataRecorder(function(motorState){
+        if(motorState) {
+            if(motorOffDelayTid != null) {
+                clearTimeout(motorOffDelayTid);
+                motorOffDelayTid = null;
+            }
+            this.opt.onStartDataRecorder();
+        } else {
+            motorOffDelayTid = setTimeout(function() {
+                motorOffDelayTid = null;
+                this.opt.onStopDataRecorder();
+            }.bind(this), 100);
+        }
+    }.bind(this));
+
+    opt = opt || {};
+    this.opt = {
+        "onVramUpdate": function(){},
+        "onMmioRead": function(){},
+        "onMmioWrite": function(){},
+        "startSound": function(){},
+        "stopSound": function(){},
+        "onStartDataRecorder": function(){},
+        "onStopDataRecorder": function(){}
+    };
+    Object.keys(this.opt).forEach(function (key) {
+        if(key in opt) {
+            this.opt[key] = opt[key];
+        }
+    }, this);
+
+    this.mmioMap = [];
+    for(var address = 0xE000; address < 0xE800; address++) {
+        this.mmioMap.push({ "r": false, "w": false });
+    }
+
+    this.memory = new MZ700_Memory({
+        onVramUpdate: opt.onVramUpdate,
+        onMappedIoRead: function(address, value) {
+
+            //MMIO: Input from memory mapped peripherals
+            if(THIS.mmioIsMappedToRead(address)) {
+                opt.onMmioRead(address, value);
+            }
+
+            switch(address) {
+                case 0xE001:
+                    break;
+                case 0xE002:
+                    // [VBLK~] [556OUT] [RDATA] [MOTOR] [M-ON] [INTMSK] [WDATA] [*****]
+                    //    |        |       |       |       |       |       |       |
+                    //    |        |       |       |       |       |       |       +---- b0. --- (undefined)
+                    //    |        |       |       |       |       |       +------------ b1. OUT CMT WRITE DATA
+                    //    |        |       |       |       |       +-------------------- b2. OUT CLOCK INT MASK
+                    //    |        |       |       |       +---------------------------- b3. OUT DRIVE CMT MOTOR
+                    //    |        |       |       +------------------------------------ b4. IN  CMT MOTOR FEEDBACK
+                    //    |        |       +-------------------------------------------- b5. IN  CMT READ DATA
+                    //    |        +---------------------------------------------------- b6. IN  BLINK CURSOR
+                    //    +------------------------------------------------------------- b7. IN  VERTICAL BLANK
+
+                    value = value & 0x0f; // 入力上位4ビットをオフ
+
+                    // PC4 - MOTOR : The motor driving state (high active)
+                    if(THIS.dataRecorder.motor()) {
+                        value = value | 0x10;
+                    } else {
+                        value = value & 0xef;
+                    }
+
+                    // PC5 - RDATA : A bit data to read
+                    if(THIS.dataRecorder_readBit()) {
+                        value = value | 0x20;
+                    } else {
+                        value = value & 0xdf;
+                    }
+
+                    // PC6 - 556_OUT : A signal to blink cursor on the screen
+                    if(THIS.ic556.readOutput()) {
+                        value = value | 0x40;
+                    } else {
+                        value = value & 0xbf;
+                    }
+
+                    // PC7 - VBLK : A virtical blanking signal
+                    // set V-BLANK bit
+                    if(THIS.vblank.readOutput()) {
+                        value = value | 0x80;
+                    } else {
+                        value = value & 0x7f;
+                    }
+                    return value;
+                    break;
+                case 0xE004:
+                    return THIS.intel8253.counter[0].read();
+                    break;
+                case 0xE005:
+                    return THIS.intel8253.counter[1].read();
+                    break;
+                case 0xE006:
+                    return THIS.intel8253.counter[2].read();
+                    break;
+                case 0xE007:
+                    break;
+                case 0xE008:
+                    value = value & 0xfe; // MSBをオフ
+                    // set H-BLANK bit
+                    if(THIS.hblank.readOutput()) {
+                        value = value | 0x01;
+                    } else {
+                        value = value & 0xfe;
+                    }
+                    return value;
+                    break;
+            }
+            return value;
+        },
+        onMappedIoUpdate: function(address, value) {
+
+            //MMIO: Output to memory mapped peripherals
+            if(THIS.mmioIsMappedToWrite(address)) {
+                opt.onMmioWrite(address, value);
+            }
+
+            switch(address) {
+                case 0xE000:
+                    this.poke(0xE001, THIS.keymatrix.getKeyData(value));
+                    THIS.ic556.loadReset(value & 0x80);
+                    break;
+                case 0xE002:
+                    //上位4ビットは読み取り専用。
+                    //下位4ビットへの書き込みは、
+                    //8255コントロール(E003H)のビット操作によって行う
+                    break;
+                case 0xE003:
+                    // MSB==0の場合、PortCへのビット単位の書き込みを指示する。
+                    //
+                    // [ 7   6   5   4   3   2   1   0 ]
+                    //  ---             ----------- ---
+                    //   0   -   -   -  ビット番号  値
+                    //
+                    // MSB==1の場合は、モードセット
+                    //
+                    // [ 7   6   5   4   3   2   1   0 ]
+                    //  --- ------- --- --- --- --- ---
+                    //   1   ModeA   |   |   |   |   |
+                    //       PortA --+   |   |   |   |
+                    //       PortCH------+   |   |   +----- PortCL
+                    //               ModeB --+   +--------- PortB
+                    //
+                    //  ModeA: 1x - モード2、01 - モード1、00 - モード0
+                    //  ModeB: 1  - モード1、0  - モード0
+                    //  PortA: Port A 入出力設定 0 - 出力、1 - 入力
+                    //  PortB: Port B 入出力設定 0 - 出力、1 - 入力
+                    //  PortCH: Port C 上位ニブル入出力設定 0 - 出力、1 - 入力
+                    //  PortCL: Port C 下位ニブル入出力設定 0 - 出力、1 - 入力
+                    //
+                    if((value & 0x80) == 0) {
+                        var bit = ((value & 0x01) != 0);
+                        var bitno = (value & 0x0e) >> 1;
+                        //var name = [
+                        //    "SOUNDMSK(MZ-1500)",
+                        //    "WDATA","INTMSK","M-ON",
+                        //    "MOTOR","RDATA", "556 OUT", "VBLK"][bitno];
+                        //console.log("$E003 8255 CTRL BITSET", name, bit);
+                        switch(bitno) {
+                            case 0://SOUNDMSK
+                                break;
+                            case 1://WDATA
+                                THIS.dataRecorder_writeBit(bit);
+                                break;
+                            case 2://INTMSK
+                                THIS.INTMSK = bit;//trueで割り込み許可
+                                break;
+                            case 3://M-ON
+                                THIS.dataRecorder_motorOn(bit);
+                                break;
+                        }
+                    } else {
+                        console.log("$E003 8255 MODE SET 0x" + value.HEX(2));
+                    }
+                    break;
+                case 0xE004:
+                    if(THIS.intel8253.counter[0].load(value) && THIS.MLDST) {
+                        THIS.opt.startSound(895000 / THIS.intel8253.counter[0].value);
+                    }
+                    break;
+                case 0xE005: THIS.intel8253.counter[1].load(value); break;
+                case 0xE006: THIS.intel8253.counter[2].load(value); break;
+                case 0xE007: THIS.intel8253.setCtrlWord(value); break;
+                case 0xE008:
+                    if((THIS.MLDST = ((value & 0x01) != 0)) == true) {
+                        THIS.opt.startSound(895000 / THIS.intel8253.counter[0].value);
+                    } else {
+                        THIS.opt.stopSound();
+                    }
+                    break;
+            }
+
+            return value;
+        }
+    });
+
+    // create 8253
+    this.intel8253 = new Intel8253();
+
+    this.z80 = new Z80({
+        memory: THIS.memory,
+        onWriteIoPort: function(port, value) {
+            switch(port) {
+                case 0xe0: this.memory.changeBlock0_DRAM(); break;
+                case 0xe1: this.memory.changeBlock1_DRAM(); break;
+                case 0xe2: this.memory.changeBlock0_MONITOR(); break;
+                case 0xe3: this.memory.changeBlock1_VRAM(); break;
+                case 0xe4: this.memory.changeBlock0_MONITOR(); 
+                           this.memory.changeBlock1_VRAM(); 
+                           break;
+                case 0xe5: this.memory.disableBlock1(); break;
+                case 0xe6: this.memory.enableBlock1(); break;
+            }
+            THIS.showStatus();
+        }
+    });
+};
+
+MZ700.prototype.mmioMapToRead = function(address) {
+    address.forEach(function(a) {
+        this.mmioMap[a - 0xE000].r = true;
+    }, this);
+};
+
+MZ700.prototype.mmioMapToWrite = function(address) {
+    address.forEach(function(a) {
+        this.mmioMap[a - 0xE000].w = true;
+    }, this);
+};
+
+MZ700.prototype.mmioIsMappedToRead = function(address) {
+    return this.mmioMap[address - 0xE000].r;
+};
+
+MZ700.prototype.mmioIsMappedToWrite = function(address) {
+    return this.mmioMap[address - 0xE000].w;
+};
+
+MZ700.prototype.writeAsmCode = function(assembled) {
+    var asm_list = assembled.list;
+    var entry_point = -1;
+    for(var i = 0; i < asm_list.length; i++) {
+        var bytes = asm_list[i].bytecode;
+        if(bytes != null && bytes.length > 0) {
+            var address = asm_list[i].address;
+            for(var j = 0; j < bytes.length; j++) {
+                if(entry_point < 0) {
+                    entry_point = address + j;
+                }
+                this.memory.poke(address + j, bytes[j]);
+            }
+        }
+    }
+    return entry_point;
+};
+
+MZ700.prototype.exec = function(execCount) {
+    execCount = execCount || 1;
+    try {
+        for(var i = 0; i < execCount; i++) {
+            this.z80.exec();
+            this.clock();
+        }
+    } catch(ex) {
+        return -1;
+    }
+    return 0;
+};
+
+MZ700.prototype.clock = function() {
+    // HBLNK - 15.7 kHz clock
+    if(this.hblank.count()) {
+        // Load 15.7kHz clock to 8253 #1
+        if(this.hblank.readOutput()) {
+            var ctr1_out0 = this.intel8253.counter[1].out;
+            this.intel8253.counter[1].count(1 * 4);
+            var ctr1_out1 = this.intel8253.counter[1].out;
+            if(!ctr1_out0 && ctr1_out1) {
+                var ctr2_out0 = this.intel8253.counter[2].out;
+                this.intel8253.counter[2].count(1);
+                var ctr2_out1 = this.intel8253.counter[2].out;
+                if(this.INTMSK && !ctr2_out0 && ctr2_out1) {
+                    this.z80.interrupt();
+                }
+            }
+        }
+    }
+
+    // VBLNK - 50 Hz
+    this.vblank.count();
+
+    // CURSOR BLNK - 1 Hz
+    this.ic556.count();
+
+};
+
+MZ700.prototype.setCassetteTape = function(tape_data) {
+    this.tape_data = tape_data;
+    if(tape_data.length <= 128) {
+        console.error("error buf.length <= 128");
+        return null;
+    }
+    this.mzt_array = MZ700.parseMZT(tape_data);
+    if(this.mzt_array == null || this.mzt_array.length < 1) {
+        console.error("setCassetteTape fail to parse");
+        return null;
+    }
+    return this.mzt_array;
+};
+
+MZ700.prototype.loadCassetteTape = function() {
+    for(var i = 0; i < this.mzt_array.length; i++) {
+        var mzt = this.mzt_array[i];
+        for(var j = 0; j < mzt.header.file_size; j++) {
+            this.memory.poke(mzt.header.addr_load + j, mzt.body.buffer[j]);
+        }
+    }
+};
+
+MZ700.prototype.reset = function() {
+    this.memory.enableBlock1();
+    this.memory.enableBlock1();
+    this.memory.changeBlock0_MONITOR();
+    this.memory.changeBlock1_VRAM();
+    return this.z80.reset();
+};
+
+MZ700.prototype.getRegister = function() {
+    return this.z80.reg;
+};
+
+MZ700.prototype.getRegisterB = function() {
+    return this.z80.regB;
+};
+
+MZ700.prototype.setPC = function(addr) {
+    this.z80.reg.PC = addr;
+};
+
+MZ700.prototype.getIFF1 = function() {
+    return this.z80.IFF1;
+};
+
+MZ700.prototype.getIFF2 = function() {
+    return this.z80.IFF2;
+};
+
+MZ700.prototype.getIM = function() {
+    return this.z80.IM;
+};
+
+MZ700.prototype.getHALT = function() {
+    return this.z80.HALT;
+};
+
+MZ700.prototype.readMemory = function(addr) {
+    return this.memory.peek(addr);
+};
+
+MZ700.prototype.setKeyState = function(strobe, bit, state) {
+    this.keymatrix.setKeyMatrixState(strobe, bit, state);
+};
+
+MZ700.prototype.clearBreakPoints = function(callback) {
+    this.z80.clearBreakPoints();
+};
+
+MZ700.prototype.getBreakPoints = function(callback) {
+    return this.z80.getBreakPoints();
+};
+
+MZ700.prototype.removeBreak = function(addr, size) {
+    this.z80.removeBreak(addr, size);
+};
+
+MZ700.prototype.addBreak = function(addr, size) {
+    this.z80.setBreak(addr, size);
+};
+
+MZ700.parseMZT = function(buf) {
+    var sections = [];
+    var offset = 0;
+    while(offset + 128 <= buf.length) {
+        var header = new MZ_TapeHeader(buf, offset);
+        offset += 128;
+
+        var body_buffer = [];
+        for(var i = 0; i < header.file_size; i++) {
+            body_buffer.push(buf[offset + i]);
+        }
+        offset += header.file_size;
+
+        sections.push({
+            "header": header,
+            "body": {
+                "buffer": body_buffer
+            }
+        });
+    }
+    return sections;
+};
+
+//
+// MZ-700 Key Matrix
+//
+mz700keymatrix = function() {
+    this.keymap = new Array(10);
+    for(var i = 0; i < this.keymap.length; i++) {
+        this.keymap[i] = 0xff;
+    }
+};
+
+mz700keymatrix.prototype.getKeyData = function(strobe) {
+    var keydata = 0xff;
+    strobe &= 0x0f;
+    if(strobe < this.keymap.length) {
+        keydata = this.keymap[strobe];
+    }
+    return keydata;
+};
+
+mz700keymatrix.prototype.setKeyMatrixState = function(strobe, bit, state) {
+    if(state) {
+        // clear bit
+        this.keymap[strobe] &= ((~(1 << bit)) & 0xff);
+    } else {
+        // set bit
+        this.keymap[strobe] |= ((1 << bit) & 0xff);
+    }
+};
+
+//
+// FlipFlopCounter
+//
+FlipFlopCounter = function(freq) {
+    this.initialize();
+    this.setFrequency(freq);
+};
+
+FlipFlopCounter.SPEED_FACTOR = 1.5;
+FlipFlopCounter.CPU_CLOCK = 4.0 * 1000 * 1000;
+FlipFlopCounter.MNEMONIC_AVE_CYCLE = 6;
+FlipFlopCounter.prototype.initialize = function() {
+    this._out = false;
+    this._counter = 0;
+};
+
+FlipFlopCounter.prototype.setFrequency = function(freq) {
+    this._counter_max =
+        FlipFlopCounter.CPU_CLOCK /
+        FlipFlopCounter.MNEMONIC_AVE_CYCLE /
+        freq;
+};
+
+FlipFlopCounter.prototype.readOutput = function() {
+    return this._out;
+};
+
+FlipFlopCounter.prototype.count = function() {
+    this._counter += FlipFlopCounter.SPEED_FACTOR;
+    if(this._counter >= this._counter_max / 2) {
+        this._out = !this._out;
+        this._counter = 0;
+        return true;
+    }
+    return false;
+};
+
+//
+// IC BJ 556
+//
+IC556 = function(freq) {
+    this._reset = false;
+    this.initialize();
+    this.setFrequency(freq);
+};
+
+IC556.prototype = new FlipFlopCounter();
+
+IC556.prototype.count = function() {
+    if(this._reset) {
+        return FlipFlopCounter.prototype.count.call(this);
+    }
+    return false;
+};
+
+IC556.prototype.loadReset = function(value) {
+    if(!value) {
+        if(this._reset) {
+            this._reset = false;
+            this.initialize();
+        }
+    } else {
+        if(!this._reset) {
+            this._reset = true;
+        }
+    }
+};
+
+//
+// Intel 8253 Programmable Interval Timer
+//
+Intel8253 = function() {
+    this.counter = [ new Intel8253Counter(), new Intel8253Counter(), new Intel8253Counter() ];
+};
+
+Intel8253.prototype.setCtrlWord = function(ctrlword) {
+    var index = (ctrlword & 0xc0) >> 6;
+    this.counter[index].setCtrlWord(ctrlword & 0x3f);
+};
+
+//
+//   8253 MODE CTRL WORD
+//
+//       $E007 Memory Mapped I/O
+//
+//       ---------------------------------
+//       b7  b6  b5  b4  b3  b2  b1  b0
+//       [ SC ]  [ RL ]  [  MODE  ]  [BCD]
+//       ---------------------------------
+//
+//       SC:     0: Select counter 0
+//               1: Select counter 1
+//               2: Select counter 2
+//               3: Illegal
+//
+//       RL:     0: Counter latching operation
+//               1: Read/load LSB only
+//               2: Read/load MSB only
+//               3: Read/load LSB first, then MSB
+//
+//       MODE:   0: Mode 0   Interrupt on terminal count
+//               1: Mode 1   Programmable one shot
+//               2: Mode 2   Rate Generator
+//               3: Mode 3   Square wave rate Generator
+//               4: Mode 4   Software triggered strobe
+//               5: Mode 5   Hardware triggered strobe
+//               6: Mode 2
+//               7: Mode 3
+//
+//       BCD:    0: Binary counter
+//               1: BCD counter
+//
+Intel8253Counter = function() {
+    this.RL = 0;
+    this.MODE = 0;
+    this.BCD = 0;
+    this.value = 0;
+    this.counter = 0;
+    this._written = true;
+    this._read = true;
+    this.out = false;
+    this.gate = false;
+};
+
+Intel8253Counter.prototype.setCtrlWord = function(ctrlword) {
+    this.RL = (ctrlword & 0x30) >> 4;
+    this.MODE = (ctrlword & 0x0e) >> 1;
+    this.BCD = ((ctrlword & 0x01) != 0);
+    this.value = 0;
+    this.counter = 0;
+    this._written = true;
+    this._read = true;
+    this.out = false;
+    this.gate = false;
+};
+
+Intel8253Counter.prototype.load = function(value) {
+    this.counter = 0;
+    var set_comp = false;
+    switch(this.RL) {
+        case 0:
+            break;
+        case 1:
+            this.value = (value & 0x00ff);
+            this.counter = this.value;
+            this.out = false;
+            set_comp = true;
+            break;
+        case 2:
+            this.value = (value & 0x00ff) << 8;
+            this.counter = this.value;
+            set_comp = true;
+            break;
+        case 3:
+            if(this._written) {
+                this._written = false;
+                this.value = (this.value & 0xff00) | (value & 0x00ff);
+                this.counter = this.value;
+                set_comp = false;
+            } else {
+                this._written = true;
+                this.value = (this.value & 0x00ff) | ((value & 0x00ff) << 8);
+                this.counter = this.value;
+                this.out = false;
+                set_comp = true;
+            }
+            break;
+    }
+    if(set_comp) {
+        switch(this.MODE) {
+            case 0:
+                this.out = false;
+                break;
+            case 1:
+                break;
+            case 2: case 6:
+                this.out = true;
+                break;
+            case 3: case 7:
+                this.out = true;
+                break;
+            case 4:
+                break;
+            case 5:
+                break;
+        }
+    }
+    return set_comp;
+};
+
+Intel8253Counter.prototype.read = function() {
+    switch(this.RL) {
+        case 0:
+            break;
+        case 1:
+            return (this.counter & 0x00ff);
+            break;
+        case 2:
+            return (this.counter & 0x00ff) << 8;
+            break;
+        case 3:
+            if(this._read) {
+                this._read = false;
+                return (this.counter & 0x00ff);
+            } else {
+                this._read = true;
+                return ((this.counter >> 8) & 0x00ff);
+            }
+            break;
+    }
+};
+
+Intel8253Counter.prototype.setGate = function(gate) {
+    this.gate = gate;
+};
+
+Intel8253Counter.prototype.count = function(count) {
+    switch(this.MODE) {
+        case 0:
+            if(this.counter > 0) {
+                this.counter -= count;
+                if(this.counter <= 0) {
+                    this.counter = 0;
+                    if(!this.out) {
+                        this.out = true;
+                    }
+                }
+            } else {
+                this.counter = this.value;
+            }
+            break;
+        case 1:
+            break;
+        case 2: case 6:
+            this.counter -= count;
+            if(this.out && this.counter <= 0) {
+                this.out = false;
+                this.counter = this.value;
+            } else if(!this.out) {
+                this.out = true;
+            }
+            break;
+        case 3: case 7:
+            this.counter -= count;
+            if(this.out && this.counter <= 0) {
+                this.out = false;
+                this.counter = this.value;
+            } else if(!this.out && this.counter <= this.value / 2) {
+                this.out = true;
+            }
+            break;
+        case 4:
+            break;
+        case 5:
+            break;
+    }
+};
+
+//
+// For TransWorker
+//
+MZ700.prototype.start = function() {
+    this.tid = null;
+    this.NUM_OF_EXEC_OPCODE = 1000;
+    this.RUNNING_INTERVAL = 7;
+    this.tid = setInterval((function(app) { return function() {
+        app.run();
+    };}(this)), this.RUNNING_INTERVAL);
+};
+
+MZ700.prototype.stop = function() {
+    if(this.tid != null) {
+        clearInterval(this.tid);
+        this.tid = null;
+    }
+};
+
+MZ700.prototype.run = function() {
+    try {
+        for(var i = 0; i < this.NUM_OF_EXEC_OPCODE; i++) {
+            this.z80.exec();
+            this.clock();
+        }
+    } catch(ex) {
+        console.log("MZ700.run exception:", ex);
+        this.stop();
+    }
+};
+
+//
+// Assemble
+//
+MZ700.prototype.assemble = function(text_asm) {
+    return new Z80_assemble(text_asm);
+};
+
+//
+// Disassemble
+//
+MZ700.prototype.disassemble = function(mztape_array) {
+    var outbuf = "";
+    var dasmlist = [];
+    mztape_array.forEach(function(mzt) {
+        outbuf += ";======================================================\n"
+        outbuf += "; attribute :   " + mzt.header.attr.HEX(2) + "H\n";
+        outbuf += "; filename  :   '" + mzt.header.filename + "'\n";
+        outbuf += "; filesize  :   " + mzt.header.file_size + " bytes\n";
+        outbuf += "; load addr :   " + mzt.header.addr_load.HEX(4) + "H\n";
+        outbuf += "; start addr:   " + mzt.header.addr_exec.HEX(4) + "H\n";
+        outbuf += ";======================================================\n"
+        var lines = Z80.dasm(
+            mzt.body.buffer, 0,
+            mzt.header.file_size,
+            mzt.header.addr_load);
+        lines.forEach(function(line) {
+            dasmlist.push(line);
+        });
+    });
+    Z80.processAddressReference(dasmlist);
+    var dasmlines = Z80.dasmlines(dasmlist);
+    outbuf += dasmlines.join("\n") + "\n";
+    return {"outbuf": outbuf, "dasmlines": dasmlines};
+};
+
+MZ700.prototype.dataRecorder_setCmt = function(bytes) {
+    var cmt = null;
+    if(bytes == null || bytes.length == 0) {
+        cmt = [];
+    } else {
+        cmt = MZ_Tape.fromBytes(bytes);
+    }
+    this.dataRecorder.setCmt(cmt);
+    return cmt;
+};
+
+MZ700.prototype.dataRecorder_ejectCmt = function() {
+    if(this.dataRecorder.isCmtSet()) {
+        this.dataRecorder.stop();
+        var cmt = this.dataRecorder.ejectCmt();
+        if(cmt != null && cmt.length >= 128) {
+            return MZ_Tape.toBytes(cmt);
+        }
+    }
+    return [];
+};
+
+MZ700.prototype.dataRecorder_pushPlay = function() {
+    this.dataRecorder.play();
+};
+
+MZ700.prototype.dataRecorder_pushRec = function() {
+    if(this.dataRecorder.isCmtSet()) {
+        this.dataRecorder.ejectCmt();
+    }
+    this.dataRecorder.setCmt([]);
+    this.dataRecorder.rec();
+};
+
+MZ700.prototype.dataRecorder_pushStop = function() {
+    this.dataRecorder.stop();
+};
+
+MZ700.prototype.dataRecorder_motorOn = function(state) {
+    this.dataRecorder.m_on(state);
+};
+
+MZ700.prototype.dataRecorder_readBit = function() {
+    return this.dataRecorder.rdata(this.z80.tick);
+};
+
+MZ700.prototype.dataRecorder_writeBit = function(state) {
+    this.dataRecorder.wdata(state, this.z80.tick);
+};
+
+},{}],3:[function(require,module,exports){
 (function() {
     var $ = require("jquery");
+    require("../lib/ex_number.js");
+    require("../Z80/memory.js");
+    require("../Z80/register.js");
+    require("../Z80/assembler.js");
+    require("../Z80/emulator.js");
+    require("../MZ-700/mztape.js");
+    require("../MZ-700/emulator.js");
     var MZ700_Sound = require("../MZ-700/sound.js");
     require("../lib/jquery.ddpanel.js");
     require("../lib/jquery.soundctrl.js");
@@ -818,7 +1658,7 @@ window.jQuery = require("jquery");
     module.exports = MZ700Js;
 }());
 
-},{"../MZ-700/mmio":3,"../MZ-700/sound.js":4,"../lib/PCG-700":7,"../lib/jquery.MZ-700-kb.js":8,"../lib/jquery.MZ-700-vram":9,"../lib/jquery.Z80-mem.js":10,"../lib/jquery.Z80-reg.js":11,"../lib/jquery.ddpanel.js":12,"../lib/jquery.soundctrl.js":13,"jquery":6}],3:[function(require,module,exports){
+},{"../MZ-700/emulator.js":2,"../MZ-700/mmio":4,"../MZ-700/mztape.js":5,"../MZ-700/sound.js":6,"../Z80/assembler.js":7,"../Z80/emulator.js":8,"../Z80/memory.js":9,"../Z80/register.js":10,"../lib/PCG-700":13,"../lib/ex_number.js":14,"../lib/jquery.MZ-700-kb.js":15,"../lib/jquery.MZ-700-vram":16,"../lib/jquery.Z80-mem.js":17,"../lib/jquery.Z80-reg.js":18,"../lib/jquery.ddpanel.js":19,"../lib/jquery.soundctrl.js":20,"jquery":12}],4:[function(require,module,exports){
 (function() {
     "use strict";
 
@@ -881,7 +1721,523 @@ window.jQuery = require("jquery");
 }());
 
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
+MZ_TapeHeader = function(buf, offset) {
+    var arrayToString = function(arr, start, end) {
+        var s = "";
+        for(var i = start; i < end; i++) {
+            s += String.fromCharCode(arr[i]);
+        }
+        return s;
+    };
+    var readArrayUInt8 = function(arr, offset) {
+        return (0xff & arr[offset]);
+    };
+    var readArrayUInt16LE = function(arr, offset) {
+        return (0xff & arr[offset]) + (0xff & arr[offset + 1]) * 256;
+    };
+    // header 128 bytes
+    //      00h     attribute
+    //      01h-11h filename
+    //      12h-13h file size
+    //      14h-15h address to load
+    //      16h-17h execution address
+    //      18h-7Fh patch and zero pad
+    this.attr = readArrayUInt8(buf, offset + 0);
+    var filename = arrayToString(buf, offset + 0x01, offset + 0x12);
+    filename = filename.replace(/[^a-zA-Z0-9_!\"#\$%&'\(\)-=^~<>,\.]+$/, '');
+    this.filename = filename;
+    this.file_size = readArrayUInt16LE(buf, offset + 0x12);
+    this.addr_load = readArrayUInt16LE(buf, offset + 0x14);
+    this.addr_exec = readArrayUInt16LE(buf, offset + 0x16);
+    var header_buffer = [];
+    for(var i = 0; i < 128; i++) {
+        header_buffer.push(buf[offset + i]);
+    }
+    this.buffer = header_buffer;
+};
+
+MZ_TapeHeader.createNew = function() {
+    var buf = new Array(128);
+    for(var i = 0; i < 128; i++) {
+        buf[i] = 0;
+    }
+    buf[0] = 1;
+    return new MZ_TapeHeader(buf, 0);
+};
+
+MZ_TapeHeader.prototype.setFilename = function(filename) {
+    while(filename.length < 11) {
+        filename += ' ';
+    }
+    this.filename = filename;
+    for(var i = 0; i < 11; i++) {
+        this.buffer[0x01 + i] = (filename.charCodeAt(i) & 0xff);
+    }
+};
+
+MZ_TapeHeader.prototype.setFilesize = function(filesize) {
+    this.file_size = filesize
+    this.buffer[0x12] = ((filesize >> 0) & 0xff);
+    this.buffer[0x13] = ((filesize >> 8) & 0xff);
+};
+
+MZ_TapeHeader.prototype.setAddrLoad = function(addr) {
+    this.addr_load = addr;
+    this.buffer[0x14] = ((addr >> 0) & 0xff);
+    this.buffer[0x15] = ((addr >> 8) & 0xff);
+};
+
+MZ_TapeHeader.prototype.setAddrExec = function(addr) {
+    this.addr_exec = addr;
+    this.buffer[0x16] = ((addr >> 0) & 0xff);
+    this.buffer[0x17] = ((addr >> 8) & 0xff);
+};
+
+
+MZ_Tape = function(tapeData) {
+    this._index = 0;
+    this._tapeData = tapeData;
+};
+
+MZ_Tape.prototype.isThereSignal = function(signal, n) {
+    for(var i = 0; i < n; i++) {
+        if(this._tapeData[this._index + i] != signal) {
+            console.warn("MZ_Tape.isThereSignal signal", signal, "x", i, "but not", n);
+            return false;
+        }
+    }
+    this._index += n;
+    return true;
+};
+
+MZ_Tape.prototype.recognizeStartingMark = function() {
+    // START MARK
+    if(!this.isThereSignal(false, 11000)) {
+        console.error("NO STARTING MARK: Short x 11000.");
+        return false;
+    }
+    if(!this.isThereSignal(true, 40)) {
+        console.error("NO STARTING MARK: Long x 40.");
+        return false;
+    }
+    if(!this.isThereSignal(false, 40)) {
+        console.error("NO STARTING MARK: Short x 40.");
+        return false;
+    }
+    if(!this.isThereSignal(true, 1)) {
+        console.error("NO STARTING MARK: Long x 1.");
+        return false;
+    }
+    return true;
+};
+
+MZ_Tape.prototype.recognizeStarting2Mark = function() {
+    // START MARK
+    if(!this.isThereSignal(false, 2750)) {
+        console.error("NO STARTING MARK: Short x 2750.");
+        return false;
+    }
+    if(!this.isThereSignal(true, 20)) {
+        console.error("NO STARTING MARK: Long x 20.");
+        return false;
+    }
+    if(!this.isThereSignal(false, 20)) {
+        console.error("NO STARTING MARK: Short x 20.");
+        return false;
+    }
+    if(!this.isThereSignal(true, 1)) {
+        console.error("NO STARTING MARK: Long x 1.");
+        return false;
+    }
+    return true;
+};
+
+MZ_Tape.prototype.readSignal = function() {
+    if(this._index < this._tapeData.length) {
+        return this._tapeData[this._index++];
+    }
+    return null;
+};
+
+MZ_Tape.prototype.writeSignal = function() {
+    this._tapeData.push(signal);
+};
+
+MZ_Tape.prototype.writeByte = function(data) {
+    this.writeSignal(true);
+    for(var j = 0; j < 8; j++) {
+        if((data & (0x01 << j)) != 0) {
+            this.writeSignal(true);
+        } else {
+            this.writeSignal(false);
+        }
+    }
+};
+
+MZ_Tape.prototype.writeBlock = function(data) {
+    data.forEach(function(d) {
+        this.writeByte(d);
+    }, this);
+    var cs = this.countOnBit(data);
+    this.writeByte((cs >> 0) & 0xff);
+    this.writeByte((cs >> 8) & 0xff);
+    this.writeSignal(true);
+};
+
+MZ_Tape.prototype.writeDuplexBlock = function(data) {
+    this.writeBlock(data);
+    for(var i = 0; i < 256; i++) {
+        this.writeSignal(false);
+    }
+    this.writeBlock(data);
+};
+
+MZ_Tape.prototype.readByte = function() {
+
+    //fast forward to starting bit
+    var startBit = null;
+    do {
+        startBit = this.readSignal();
+        if(startBit == null) {
+            return null; // End Of Stream
+        }
+        if(!startBit) {
+            console.log("NO START BIT");
+        }
+    } while(!startBit);
+
+    // Read 8 bits and build 1 byte.
+    // The bits are read from MSB to LSB.
+    var buf = 0x00;
+    for(var i = 0; i < 8; i++) {
+        var bit = this.readSignal();
+        if(bit == null) {
+            return null;
+        } else if(bit) {
+            buf |= (0x01 << (7 - i));
+        }
+    }
+    return buf;
+};
+
+MZ_Tape.prototype.readBytes = function(n) {
+    var buf = [];
+    for(var i = 0; i < n; i++) {
+        var data = this.readByte();
+        if(data == null) {
+            break;
+        }
+        buf.push(data);
+    }
+    return buf;
+};
+
+MZ_Tape.prototype.countOnBit = function(blockBytes) {
+    var onBitCount = 0;
+    var bitno = [0,1,2,3,4,5,6,7];
+    blockBytes.forEach(function(data) {
+        bitno.forEach(function(n) {
+            if((data & (1 << n)) != 0) {
+                onBitCount++;
+            }
+        });
+    });
+    onBitCount &= 0xffff;
+    return onBitCount;
+};
+
+MZ_Tape.prototype.readBlock = function(n) {
+    
+    // Read block bytes
+    var blockBytes = this.readBytes(n);
+
+    // read 2 bytes of checksum
+    var checkBytes = this.readBytes(2);
+    if(checkBytes.length != 2) {
+        console.error("NO BLOCK CHECKSUM");
+        return null;
+    }
+    var checksum = (checkBytes[0] * 256) + checkBytes[1];
+    console.log("CHECKSUM:", checksum.HEX(4) + "H");
+
+    // Read block end signal(long)
+    if(!this.isThereSignal(true,1)) {
+        console.error("NO BLOCK END BIT");
+        return null;
+    }
+
+    var onBitCount = this.countOnBit(blockBytes);
+    console.log("BIT COUNT", onBitCount.HEX(4) + "H");
+    if(onBitCount != checksum) {
+        console.error("CHECKSUM ERROR");
+        return null;
+    }
+    return blockBytes;
+};
+
+MZ_Tape.prototype.readDuplexBlocks = function(n) {
+    console.log("BLOCK[1]");
+    var bytes = this.readBlock(n);
+    if(bytes == null) {
+        console.error("FAIL TO READ BLOCK[1]");
+        return null;
+    }
+
+    // Block delimitor
+    if(!this.isThereSignal(false, 256)) {
+        console.error("NO DELIMITOR: Short x 256.");
+        return null;
+    }
+
+    console.log("BLOCK[2]");
+    var bytes2 = this.readBlock(n);
+    if(bytes2 == null) {
+        console.error("FAIL TO READ BLOCK[2]");
+        return null;
+    }
+
+    //Check each bytes
+    for(var i = 0; i < bytes.length; i++) {
+        if(bytes[i] != bytes2[i]) {
+            return null;
+        }
+    }
+    return bytes;
+};
+
+MZ_Tape.prototype.readHeader = function() {
+
+    // Header starting block
+    if(!this.recognizeStartingMark()) {
+        console.error("NO STARTING MARK recognized");
+        return null;
+    }
+
+    // MZT header
+    var mztBytes = this.readDuplexBlocks(128);
+    if(mztBytes == null) {
+        console.error("CANNOT READ MZT HEADER");
+    }
+
+    return new MZ_TapeHeader(mztBytes, 0);
+};
+
+MZ_Tape.prototype.readDataBlock = function(n) {
+    // Data starting mark
+    if(!this.recognizeStarting2Mark()) {
+        console.error("NO STARTING MARK 2 recognized");
+        return null;
+    }
+    // Read duplexed data bytes
+    return this.readDuplexBlocks(n);
+};
+
+MZ_Tape.toBytes = function(bits) {
+    var reader = new MZ_Tape(bits);
+
+    var header = reader.readHeader();
+    if(header == null) {
+        console.error("FAIL TO READ HEADER");
+    }
+    console.log("MZT HEADER:");
+    console.log("  FILENAME:", header.filename);
+    console.log("  FILESIZE:", header.file_size.HEX(4)+"H");
+    console.log("  ADDRLOAD:", header.addr_load.HEX(4)+"H");
+    console.log("  ADDREXEC:", header.addr_exec.HEX(4)+"H");
+
+    var body = reader.readDataBlock(header.file_size);
+    if(body == null) {
+        console.error("FAIL TO READ DATA");
+    }
+
+    var extra = [];
+    var extraByte;
+    while((extraByte = reader.readByte()) != null) {
+        console.warn(
+                "MZ_Tape.toBytes rest bytes["
+                + bytes.length + "] =",
+                extraByte.HEX(2));
+        extra.push(extraByte);
+    }
+
+    //MZT + body
+    return header.buffer.concat(body);
+};
+
+MZ_Tape.fromBytes = function(bytes) {
+    var writer = new MZ_Tape([]);
+
+    // Header mark
+    for(var i = 0; i < 11000; i++) {
+        writer.writeSignal(false);
+    }
+    for(var i = 0; i < 40; i++) {
+        writer.writeSignal(true);
+    }
+    for(var i = 0; i < 40; i++) {
+        writer.writeSignal(false);
+    }
+    writer.writeSignal(true);
+
+    // Header
+    writer.writeDuplexBlock(bytes.slice(0,128));
+
+    // Body mark
+    for(var i = 0; i < 2750; i++) {
+        writer.writeSignal(false);
+    }
+    for(var i = 0; i < 20; i++) {
+        writer.writeSignal(true);
+    }
+    for(var i = 0; i < 20; i++) {
+        writer.writeSignal(false);
+    }
+    writer.writeSignal(true);
+
+    // Body
+    writer.writeDuplexBlock(bytes.slice(128));
+
+    return writer._tapeData;
+};
+
+MZ_DataRecorder = function(motorCallback) {
+    this._m_on = false;
+    this._play = false;
+    this._rec = false;
+    this._motor = false;
+    this._wdata = null;
+    this._rbit = null;
+    this._twdata = 0;
+    this._trdata = 0;
+    this._cmt = null;
+    this._pos = 0;
+    this._motorCallback = motorCallback;
+};
+
+MZ_DataRecorder.prototype.isCmtSet = function() {
+    return (this._cmt != null);
+};
+
+MZ_DataRecorder.prototype.setCmt = function(cmt) {
+    var m = this.motor();
+    if(m) {
+        this.stop();
+    }
+    this._cmt = cmt;
+    this._pos = 0;
+};
+
+MZ_DataRecorder.prototype.play = function() {
+    var m = this.motor();
+    if(this._cmt != null) {
+        this._play = true;
+    }
+    if(!m && this.motor()) {
+        this._motorCallback(true);
+    }
+};
+
+MZ_DataRecorder.prototype.rec = function() {
+    var m = this.motor();
+    if(this._cmt != null) {
+        this._play = true;
+        this._rec = true;
+    }
+    if(!m && this.motor()) {
+        this._motorCallback(true);
+    }
+};
+
+MZ_DataRecorder.prototype.stop = function() {
+    var m = this.motor();
+    this._play = false;
+    this._rec = false;
+    if(m && !this.motor()) {
+        this._motorCallback(false);
+    }
+};
+
+MZ_DataRecorder.prototype.ejectCmt = function() {
+    this.stop();
+    var cmt = this._cmt;
+    this._cmt = null;
+    this._pos = 0;
+    return cmt;
+};
+
+MZ_DataRecorder.prototype.m_on = function(state) {
+    var m = this.motor();
+    if(!this._m_on && state) {
+        this._motor = !this._motor;
+    }
+    this._m_on = state;
+    if(!m && this.motor()) {
+        this._motorCallback(true);
+    }
+    if(m && !this.motor()) {
+        this._motorCallback(false);
+    }
+};
+
+MZ_DataRecorder.prototype.motor = function() {
+    return this._cmt != null && this._play && this._motor;
+};
+
+MZ_DataRecorder.prototype.wdata = function(wdata, tick) {
+    if(this.motor() && this._rec) {
+        if(this._wdata != wdata) {
+            this._wdata = wdata;
+            if(wdata) {
+                this._twdata = tick;
+            } else {
+                var bit = (tick - this._twdata > 1400);
+                if(this._pos < this._cmt.length) {
+                    this._cmt[this._pos] = bit;
+                    this._pos++;
+                } else {
+                    this._cmt.push(bit);
+                    this._pos = this._cmt.length;
+                }
+            }
+        }
+    }
+};
+
+MZ_DataRecorder.prototype.rdata = function(tick) {
+    if(this.motor()) {
+        if(this._pos < this._cmt.length) {
+            if(this._rbit == null) {
+                var bit = 0;
+                if(this._pos < this._cmt.length) {
+                    bit = this._cmt[this._pos];
+                    this._pos++;
+                }
+                this._rbit = bit;
+            }
+            var rdata = this._rbit;
+            if(this._trdata == null) {
+                this._trdata = tick;
+            }
+            var ticks = tick - this._trdata;
+            if(this._rbit) {
+                if(ticks > 1500) {
+                    this._rbit = null;
+                    this._trdata = null;
+                }
+            } else {
+                if(ticks > 700) {
+                    this._rbit = null;
+                    this._trdata = null;
+                }
+            }
+            return rdata;
+        }
+    }
+    return null;
+};
+
+},{}],6:[function(require,module,exports){
 (function() {
     var MZ700_Sound = function() {
         window.AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -948,8 +2304,7886 @@ window.jQuery = require("jquery");
     module.exports = MZ700_Sound;
 }());
 
-},{}],5:[function(require,module,exports){
-/*! jQuery UI - v1.12.1 - 2016-09-14
+},{}],7:[function(require,module,exports){
+Z80_assemble = function(asm_source) {
+    if(asm_source == undefined) {
+        return;
+    }
+    var source_lines = asm_source.split(/\r{0,1}\n/);
+    this.list = [];
+    this.label2value = {};
+    this.address = 0;
+    for(var i = 0; i < source_lines.length; i++) {
+        var label = null;
+        var mnemonic = null;
+        var operand = [];
+        var comment = null;
+        var bytecode = [];
+        var tokens = this.tokenize(source_lines[i]);
+        var found_label = -1;
+        var found_comment = -1;
+        for(var j = 0; j < tokens.length; j++) {
+            switch(tokens[j]) {
+                case ':':
+                    if(found_label < 0 && found_comment < 0) {
+                        found_label = j;
+                    }
+                    break;
+                case ';':
+                    if(found_comment < 0) {
+                        found_comment = j;
+                    }
+                    break;
+            }
+        }
+        if(found_label >= 0) {
+            label = tokens.slice(0, found_label).join('');
+            tokens.splice(0, found_label + 1);
+            found_comment -= (found_label + 1);
+        }
+        if(found_comment >= 0) {
+            comment = tokens.slice(found_comment).join('');
+            tokens.splice(found_comment);
+        }
+        if(tokens.length > 0) {
+            mnemonic = tokens[0];
+            operand = tokens.slice(1).join('');
+        }
+        if(tokens.length > 0) {
+            try {
+                bytecode = this.assembleMnemonic(tokens, label);
+            } catch(e) {
+                comment += "*** ASSEMBLE ERROR - " + e;
+            }
+        }
+        var assembled_code = {
+            address: this.address,
+            bytecode: bytecode,
+            label: label,
+            mnemonic: mnemonic,
+            operand: operand,
+            comment:comment
+        };
+        this.list.push(assembled_code);
+        if(assembled_code.bytecode != null) {
+            this.address += assembled_code.bytecode.length;
+        }
+    }
+    for(var i = 0; i < this.list.length; i++) {
+        for(var j = 0; j < this.list[i].bytecode.length; j++) {
+            if(typeof(this.list[i].bytecode[j]) == 'function') {
+                this.list[i].bytecode[j] = this.list[i].bytecode[j]();
+            }
+        }
+    }
+};
+
+Z80_assemble.prototype.tokenize = function(line) {
+    var LEX_IDLE=0;
+    var LEX_WHITESPACE=1;
+    var LEX_NUMBER=2;
+    var LEX_IDENT=3;
+    var LEX_CHAR=4;
+    var currstat = LEX_IDLE;
+    var L = line.length;
+    var i = 0;
+    var toks = [];
+    var tok = '';
+    line = line.toUpperCase();
+    while(i < L) {
+        var ch = line.charAt(i);
+        switch(currstat) {
+            case LEX_IDLE:
+                if(/\s/.test(ch)) {
+                    i++;
+                } else {
+                    if(ch == '-' || ch =='+') {
+                        tok += ch;
+                        i++;
+                        currstat = LEX_NUMBER;
+                    } else if(/[0-9]/.test(ch)) {
+                        currstat = LEX_NUMBER;
+                    }
+                    else if(/[A-Z_\?\.\*#!\$]/.test(ch)) {
+                        tok += ch;
+                        i++;
+                        currstat = LEX_IDENT;
+                    }
+                    else if(ch == "'") {
+                        tok += ch;
+                        i++;
+                        currstat = LEX_CHAR;
+                    }
+                    else if( ch == '(' || ch == ')' || ch == ',' || ch == '+' || ch == ':') {
+                        toks.push(ch);
+                        i++;
+                    }
+                    else if( ch == ';') {
+                        toks.push(ch);
+                        i++;
+                        var comment = line.substr(i);
+                        toks.push(comment);
+                        i += comment.length;
+                        tok = '';
+                    }
+                    else {
+                        throw 'unrecognized char ' + ch + ' at column ' + i;
+                    }
+                }
+                break;
+            case LEX_NUMBER:
+                if(/[0-9A-F]/.test(ch)) {
+                    tok += ch;
+                    i++;
+                } else if(ch == 'H') {
+                    tok += ch;
+                    i++;
+                    toks.push(tok);
+                    tok = '';
+                    currstat = LEX_IDLE;
+                } else {
+                    toks.push(tok);
+                    tok = '';
+                    currstat = LEX_IDLE;
+                }
+                break;
+            case LEX_IDENT:
+                if(/[A-Z_0-9\?\.\*#!\$']/.test(ch)) {
+                    tok += ch;
+                    i++;
+                } else {
+                    toks.push(tok);
+                    tok = '';
+                    currstat = LEX_IDLE;
+                }
+                break;
+            case LEX_CHAR:
+                if(ch == "\\") {
+                    ++i;
+                    if(i < L) {
+                        ch = line.charAt(i);
+                        tok += ch;
+                        i++;
+                    }
+                } else if(ch != "'") {
+                    tok += ch;
+                    i++;
+                } else {
+                    tok += ch;
+                    i++;
+                    toks.push(tok);
+                    tok = '';
+                    currstat = LEX_IDLE;
+                }
+                break;
+            default:
+                throw 'unrecognized status ';
+                break;
+
+        } 
+    }
+    if(tok != '') {
+        toks.push(tok);
+    }
+    return toks;
+};
+
+Z80_assemble.prototype.assembleMnemonic = function(toks, label) {
+    if(match_token(toks,['ORG', null])) {
+        this.address = this._parseNumLiteral(toks[1]);
+        return [];
+    }
+    if(match_token(toks,['ENT'])) {
+        this.label2value[label] = this.address;
+        return [];
+    }
+    if(match_token(toks,['EQU', null])) {
+        if(label == null || label == "") {
+            throw "empty label for EQU";
+        }
+        this.label2value[label] = this._parseNumLiteral(toks[1]);
+        return [];
+    }
+    if(match_token(toks,['DEFB', null])) {
+        return [this.parseNumLiteral(toks[1])];
+    }
+    if(match_token(toks,['DEFW', null])) {
+        return this.parseNumLiteralPair(toks[1]);
+    }
+    if(match_token(toks,['DEFS', null])) {
+        var n = this._parseNumLiteral(toks[1]);
+        if(n < 0) {
+            throw "negative DEFS number " + tok[1];
+        }
+        this.address += n;
+        return [];
+    }
+	//=================================================================================
+	//
+	// 8bit load group
+	//
+	//=================================================================================
+    if(match_token(toks,['LD', 'A', ',', 'I'])) { return [0355, 0127]; }
+    if(match_token(toks,['LD', 'A', ',', 'R'])) { return [0355, 0137]; }
+    if(match_token(toks,['LD', 'I', ',', 'A'])) { return [0355, 0107]; }
+    if(match_token(toks,['LD', 'R', ',', 'A'])) { return [0355, 0117]; }
+    if(match_token(toks,['LD', /^[BCDEHLA]$/, ',', /^[BCDEHLA]$/])) {
+        var dst_r = get8bitRegId(toks[1]);
+        var src_r = get8bitRegId(toks[3]);
+        return [0100 | (dst_r << 3) | (src_r) << 0];
+    }
+    if(match_token(toks,['LD', /^[BCDEHLA]$/, ',', null])) {
+        var r = get8bitRegId(toks[1]);
+        var n = this.parseNumLiteral(toks[3]);
+        return [0006 | (r << 3), n];
+    }
+    if(match_token(toks,['LD', /^[BCDEHLA]$/, ',', '(','HL',')'])) {
+        var r = get8bitRegId(toks[1]);
+        return [0106 | (r << 3)];
+    }
+    if(match_token(toks,['LD', '(','HL',')', ',', /^[BCDEHLA]$/])) {
+        var r = get8bitRegId(toks[5]);
+        return [0160 | r];
+    }
+    if(match_token(toks,['LD', '(','HL',')', ',', null])) {
+        var n = this.parseNumLiteral(toks[5]);
+        return [0066, n];
+    }
+    if(match_token(toks,['LD', 'A', ',', '(', /^(BC|DE)$/, ')'])) {
+        var dd = get16bitRegId_dd(toks[4]);
+        return [0012 | (dd << 4)];
+    }
+    if(match_token(toks,['LD', 'A', ',', '(', null, ')'])) {
+        var n = this.parseNumLiteralPair(toks[4]);
+        return [0072, n[0], n[1]];
+    }
+    if(match_token(toks,['LD', '(', /^(BC|DE)$/, ')', ',', 'A'])) {
+        var dd = get16bitRegId_dd(toks[2]);
+        return [0002 | (dd << 4)];
+    }
+    if(match_token(toks,['LD', '(', null, ')', ',', 'A'])) {
+        var n = this.parseNumLiteralPair(toks[2]);
+        return [0062, n[0], n[1]];
+    }
+	//=================================================================================
+	//
+	// 16bit load group
+	//
+	//=================================================================================
+    if(match_token(toks,['LD', 'SP', ',', 'HL'])) { return [0371]; }
+    if(match_token(toks,['LD', 'SP', ',', 'IX'])) { return [0xDD, 0xF9]; }
+    if(match_token(toks,['LD', 'SP', ',', 'IY'])) { return [0xfd, 0xF9]; }
+    if(match_token(toks,['LD', /^(BC|DE|HL|SP)$/, ',', null])) {
+        var dd = get16bitRegId_dd(toks[1]);
+        var n = this.parseNumLiteralPair(toks[3]);
+        return [0001 | (dd << 4), n[0], n[1]];
+    }
+    if(match_token(toks,['LD', 'HL', ',', '(', null, ')'])) {
+        var n = this.parseNumLiteralPair(toks[4]);
+        return [0052, n[0], n[1]];
+    }
+    if(match_token(toks,['LD', 'BC', ',', '(', null, ')'])) {
+        var n = this.parseNumLiteralPair(toks[4]);
+        return [0355, 0113, n[0], n[1]];
+    }
+    if(match_token(toks,['LD', 'DE', ',', '(', null, ')'])) {
+        var n = this.parseNumLiteralPair(toks[4]);
+        return [0355, 0133, n[0], n[1]];
+    }
+    if(match_token(toks,['LD', 'SP', ',', '(', null, ')'])) {
+        var n = this.parseNumLiteralPair(toks[4]);
+        return [0355, 0173, n[0], n[1]];
+    }
+    if(match_token(toks,['LD', '(', null, ')', ',', 'HL'])) {
+        var n = this.parseNumLiteralPair(toks[2]);
+        return [0042, n[0], n[1]];
+    }
+    if(match_token(toks,['LD', '(', null, ')', ',', 'BC'])) {
+        var n = this.parseNumLiteralPair(toks[2]);
+        return [0355, 0103, n[0], n[1]];
+    }
+    if(match_token(toks,['LD', '(', null, ')', ',', 'DE'])) {
+        var n = this.parseNumLiteralPair(toks[2]);
+        return [0355, 0123, n[0], n[1]];
+    }
+    if(match_token(toks,['LD', '(', null, ')', ',', 'SP'])) {
+        var n = this.parseNumLiteralPair(toks[2]);
+        return [0355, 0163, n[0], n[1]];
+    }
+    if(match_token(toks,['PUSH', /^(BC|DE|HL|AF)$/])) {
+        var qq = get16bitRegId_qq(toks[1]);
+        return [0305 | (qq << 4)];
+    }
+    if(match_token(toks,['POP', /^(BC|DE|HL|AF)$/])) {
+        var qq = get16bitRegId_qq(toks[1]);
+        return [0301 | (qq << 4)];
+    }
+	//=================================================================================
+    //
+    // エクスチェンジグループ、ブロック転送および、サーチグループ
+    //
+	//=================================================================================
+    if(match_token(toks,['EX', 'DE', ',', 'HL'])) { return [0xEB]; }
+    if(match_token(toks,['EX', 'AF', ',', "AF'"])) { return [0x08]; }
+    if(match_token(toks,['EXX'])) { return [0xD9]; }
+    if(match_token(toks,['EX', '(', 'SP', ')', ',', 'HL'])) { return [0xE3]; }
+    if(match_token(toks,['LDI']))   { return [0355,0240]; }
+    if(match_token(toks,['LDIR']))  { return [0355,0260]; }
+    if(match_token(toks,['LDD']))   { return [0355,0250]; }
+    if(match_token(toks,['LDDR']))  { return [0355,0270]; }
+    if(match_token(toks,['CPI']))   { return [0355,0241]; }
+    if(match_token(toks,['CPIR']))  { return [0355,0261]; }
+    if(match_token(toks,['CPD']))   { return [0355,0251]; }
+    if(match_token(toks,['CPDR']))  { return [0355,0271]; }
+    
+    //=================================================================================
+    // 一般目的の演算、及びCPUコントロールグループ
+    //=================================================================================
+    if(match_token(toks,['DAA']))   { return [0047]; }
+    if(match_token(toks,['CPL']))   { return [0057]; }
+    if(match_token(toks,['NEG']))   { return [0355,0104]; }
+    if(match_token(toks,['CCF']))   { return [0077]; }
+    if(match_token(toks,['SCF']))   { return [0067]; }
+    if(match_token(toks,['NOP']))   { return [0000]; }
+    if(match_token(toks,['HALT']))  { return [0166]; }
+    if(match_token(toks,['DI']))    { return [0363]; }
+    if(match_token(toks,['EI']))    { return [0373]; }
+    if(match_token(toks,['IM0']))   { return [0355,0106]; }
+    if(match_token(toks,['IM1']))   { return [0355,0126]; }
+    if(match_token(toks,['IM2']))   { return [0355,0136]; }
+    if(match_token(toks,['IM','0']))   { return [0355,0106]; }
+    if(match_token(toks,['IM','1']))   { return [0355,0126]; }
+    if(match_token(toks,['IM','2']))   { return [0355,0136]; }
+
+    //=================================================================================
+    // 16ビット演算グループ
+    //=================================================================================
+    if(match_token(toks,[/^(ADD|ADC|SBC)$/, 'HL', ',', /^(BC|DE|HL|SP)$/]))   {
+        var ss = 0;
+        switch(toks[3]) {
+            case 'BC': ss = 0; break;
+            case 'DE': ss = 1; break;
+            case 'HL': ss = 2; break;
+            case 'SP': ss = 3; break;
+        }
+        switch(toks[0]) {
+            case 'ADD': return [0011 | (ss << 4)];
+            case 'ADC': return [0355, 0112 | (ss << 4)];
+            case 'SBC': return [0355, 0102 | (ss << 4)];
+        }
+        return [];
+    }
+    if(match_token(toks,['ADD', 'IX', ',', /^(BC|DE|IX|SP)$/]))   {
+        switch(toks[3]) {
+            case 'BC': return [0335, 0011]; break;
+            case 'DE': return [0335, 0031]; break;
+            case 'IX': return [0335, 0051]; break;
+            case 'SP': return [0335, 0071]; break;
+        }
+        return [];
+    }
+    if(match_token(toks,['ADD', 'IY', ',', /^(BC|DE|IY|SP)$/]))   {
+        switch(toks[3]) {
+            case 'BC': return [0375, 0011]; break;
+            case 'DE': return [0375, 0031]; break;
+            case 'IY': return [0375, 0051]; break;
+            case 'SP': return [0375, 0071]; break;
+        }
+        return [];
+    }
+    if(match_token(toks,[/^(INC|DEC)$/, /^(BC|DE|HL|SP|IX|IY)$/]))   {
+        switch(toks[0]) {
+            case 'INC':
+                switch(toks[1]) {
+                    case 'BC': return [0003];
+                    case 'DE': return [0023];
+                    case 'HL': return [0043];
+                    case 'SP': return [0063];
+                    case 'IX': return [0335,0043];
+                    case 'IY': return [0375,0043];
+                }
+            case 'DEC':
+                switch(toks[1]) {
+                    case 'BC': return [0013];
+                    case 'DE': return [0033];
+                    case 'HL': return [0053];
+                    case 'SP': return [0073];
+                    case 'IX': return [0335,0053];
+                    case 'IY': return [0375,0053];
+                }
+        }
+        return [];
+    }
+
+    //=================================================================================
+    // ローテイト・シフトグループ
+    //=================================================================================
+    if(match_token(toks,['RLCA']))  { return [0007]; }
+    if(match_token(toks,['RLA']))   { return [0027]; }
+    if(match_token(toks,['RRCA']))  { return [0017]; }
+    if(match_token(toks,['RRA']))   { return [0037]; }
+
+    if(match_token(toks,[/^(RLC|RL|RRC|RR|SLA|SRA|SRL)$/,/^[BCDEHLA]$/])) {
+        switch(toks[0]) {
+            case 'RLC': return [0313, 0000 | get8bitRegId(toks[1])];
+            case 'RL':  return [0313, 0020 | get8bitRegId(toks[1])];
+            case 'RRC': return [0313, 0010 | get8bitRegId(toks[1])];
+            case 'RR':  return [0313, 0030 | get8bitRegId(toks[1])];
+            case 'SLA': return [0313, 0040 | get8bitRegId(toks[1])];
+            case 'SRA': return [0313, 0050 | get8bitRegId(toks[1])];
+            case 'SRL': return [0313, 0070 | get8bitRegId(toks[1])];
+        }
+        return [];
+    }
+    if(match_token(toks,[/^(RLC|RL|RRC|RR|SLA|SRA|SRL)$/,'(','HL',')']))  {
+        switch(toks[0]) {
+            case 'RLC': return [0313, 0006];
+            case 'RL':  return [0313, 0026];
+            case 'RRC': return [0313, 0016];
+            case 'RR':  return [0313, 0036];
+            case 'SLA': return [0313, 0046];
+            case 'SRA': return [0313, 0056];
+            case 'SRL': return [0313, 0076];
+        }
+        return [];
+    }
+    if(match_token(toks,[/^(RLC|RL|RRC|RR|SLA|SRA|SRL)$/,'(',/^(IX|IY)$/,'+',null, ')'])
+    || match_token(toks,[/^(RLC|RL|RRC|RR|SLA|SRA|SRL)$/,'(',/^(IX|IY)$/,/^\+.*/, ')']))  {
+        var index_d = ((toks[3] == '+') ? 4 : 3);
+        var prefix = 0;
+        switch(toks[2]) {
+            case 'IX': prefix = 0335; break;
+            case 'IY': prefix = 0375; break;
+        }
+        var d = this.parseNumLiteral(toks[index_d]);
+        switch(toks[0]) {
+            case 'RLC': return [prefix, 0313, d, 0006];
+            case 'RL':  return [prefix, 0313, d, 0026];
+            case 'RRC': return [prefix, 0313, d, 0016];
+            case 'RR':  return [prefix, 0313, d, 0036];
+            case 'SLA': return [prefix, 0313, d, 0046];
+            case 'SRA': return [prefix, 0313, d, 0056];
+            case 'SRL': return [prefix, 0313, d, 0076];
+        }
+        return [];
+    }
+    if(match_token(toks,['RLD']))  { return [0355, 0157]; }
+    if(match_token(toks,['RRD']))  { return [0355, 0147]; }
+
+    //=================================================================================
+    // ビットセット・リセット及びテストグループ
+    //=================================================================================
+
+    if(match_token(toks,[/^(BIT|SET|RES)$/, /^[0-7]$/, ',', /^[BCDEHLA]$/])) {
+        switch(toks[0]) {
+            case 'BIT': return [0313, 0100 | (toks[1] << 3) | get8bitRegId(toks[3])];
+            case 'SET': return [0313, 0300 | (toks[1] << 3) | get8bitRegId(toks[3])];
+            case 'RES': return [0313, 0200 | (toks[1] << 3) | get8bitRegId(toks[3])];
+        }
+        return [];
+    }
+    if(match_token(toks,[/^(BIT|SET|RES)$/, /^[0-7]$/, ',', '(','HL',')']))  {
+        switch(toks[0]) {
+            case 'BIT': return [0313, 0106 | (toks[1] << 3)];
+            case 'SET': return [0313, 0306 | (toks[1] << 3)];
+            case 'RES': return [0313, 0206 | (toks[1] << 3)];
+        }
+        return [];
+    }
+    if(match_token(toks,[/^(BIT|SET|RES)$/, /^[0-7]$/, ',', '(',/^(IX|IY)$/,'+',null,')'])
+    || match_token(toks,[/^(BIT|SET|RES)$/, /^[0-7]$/, ',', '(',/^(IX|IY)$/,/^\+.*$/,')'])) {
+        var index_d = ((toks[5] == '+') ? 6 : 5);
+        var prefix = 0;
+        switch(toks[4]) {
+            case 'IX': prefix = 0335; break;
+            case 'IY': prefix = 0375; break;
+        }
+        var d = this.parseNumLiteral(toks[index_d]);
+        switch(toks[0]) {
+            case 'BIT': return [prefix, 0313, d, 0106 | (toks[1] << 3)];
+            case 'SET': return [prefix, 0313, d, 0306 | (toks[1] << 3)];
+            case 'RES': return [prefix, 0313, d, 0206 | (toks[1] << 3)];
+        }
+        return [];
+    }
+
+    //=================================================================================
+    // ジャンプグループ
+    //=================================================================================
+
+    if(match_token(toks,['JP', null]))  {
+        var nn = this.parseNumLiteralPair(toks[1]);
+        return [0303, nn[0], nn[1]];
+    }
+    if(match_token(toks,['JP', /^(NZ|Z|NC|C|PO|PE|P|M)$/, ',',  null]))  {
+        var nn = this.parseNumLiteralPair(toks[3]);
+        switch(toks[1]) {
+            case 'NZ':  return [0302, nn[0], nn[1]];
+            case 'Z':   return [0312, nn[0], nn[1]];
+            case 'NC':  return [0322, nn[0], nn[1]];
+            case 'C':   return [0332, nn[0], nn[1]];
+            case 'PO':  return [0342, nn[0], nn[1]];
+            case 'PE':  return [0352, nn[0], nn[1]];
+            case 'P':   return [0362, nn[0], nn[1]];
+            case 'M':   return [0372, nn[0], nn[1]];
+        }
+        return [];
+    }
+    if(match_token(toks,['JR', null]))  {
+        var e = this.parseRelAddr(toks[1], this.address + 2);
+        return [0030, e];
+    }
+    if(match_token(toks,['JR', /^(NZ|Z|NC|C)$/, ',',  null]))  {
+        var e = this.parseRelAddr(toks[3], this.address + 2);
+        switch(toks[1]) {
+            case 'NZ':  return [0040, e];
+            case 'Z':   return [0050, e];
+            case 'NC':  return [0060, e];
+            case 'C':   return [0070, e];
+        }
+        return [];
+    }
+    if(match_token(toks,['JP', '(', /^(HL|IX|IY)$/, ')']))  {
+        switch(toks[2]) {
+            case 'HL':  return [0351];
+            case 'IX':  return [0335, 0351];
+            case 'IY':  return [0375, 0351];
+        }
+        return [];
+    }
+    if(match_token(toks,['DJNZ', null]))  {
+        var e = this.parseRelAddr(toks[1], this.address + 2);
+        return [0020, e];
+    }
+
+    //=================================================================================
+    // コールリターングループ
+    //=================================================================================
+
+    if(match_token(toks,['CALL', null]))  {
+        var nn = this.parseNumLiteralPair(toks[1]);
+        return [0315, nn[0], nn[1]];
+    }
+    if(match_token(toks,['CALL', /^(NZ|Z|NC|C|PO|PE|P|M)$/, ',',  null]))  {
+        var nn = this.parseNumLiteralPair(toks[3]);
+        switch(toks[1]) {
+            case 'NZ':  return [0304, nn[0], nn[1]];
+            case 'Z':   return [0314, nn[0], nn[1]];
+            case 'NC':  return [0324, nn[0], nn[1]];
+            case 'C':   return [0334, nn[0], nn[1]];
+            case 'PO':  return [0344, nn[0], nn[1]];
+            case 'PE':  return [0354, nn[0], nn[1]];
+            case 'P':   return [0364, nn[0], nn[1]];
+            case 'M':   return [0374, nn[0], nn[1]];
+        }
+        return [];
+    }
+    if(match_token(toks,['RET']))  { return [0311]; }
+    if(match_token(toks,['RET', /^(NZ|Z|NC|C|PO|PE|P|M)$/]))  {
+        switch(toks[1]) {
+            case 'NZ':  return [0300];
+            case 'Z':   return [0310];
+            case 'NC':  return [0320];
+            case 'C':   return [0330];
+            case 'PO':  return [0340];
+            case 'PE':  return [0350];
+            case 'P':   return [0360];
+            case 'M':   return [0370];
+        }
+        return [];
+    }
+    if(match_token(toks,['RETI']))  { return [0355, 0115]; }
+    if(match_token(toks,['RETN']))  { return [0355, 0105]; }
+    if(match_token(toks,['RST', /^(00H|08H|10H|18H|20H|28H|30H|38H)$/]))  {
+        switch(toks[1]) {
+            case '00H':  return [0307];
+            case '08H':  return [0317];
+            case '10H':  return [0327];
+            case '18H':  return [0337];
+            case '20H':  return [0347];
+            case '28H':  return [0357];
+            case '30H':  return [0367];
+            case '38H':  return [0377];
+        }
+        return [];
+    }
+
+    //=================================================================================
+    // 入力・出力グループ
+    //=================================================================================
+    if(match_token(toks,['IN', /^[BCDEHLA]$/, ',', '(','C',')']))  {
+        var r = get8bitRegId(toks[1]);
+        return [0355, 0100 | (r << 3)];
+    }
+    if(match_token(toks,['IN', 'A', ',', '(', null, ')']))  {
+        var n = this.parseNumLiteral(toks[4]);
+        return [0333, n];
+    }
+    if(match_token(toks,['OUT', '(','C',')', ',', /^[BCDEHLA]$/]))  {
+        var r = get8bitRegId(toks[5]);
+        return [0355, 0101 | (r << 3)];
+    }
+    if(match_token(toks,['OUT', '(', null, ')', ',', 'A']))  {
+        var n = this.parseNumLiteral(toks[2]);
+        return [0323, n];
+    }
+    if(match_token(toks,['INI']))   { return [0355, 0242]; }
+    if(match_token(toks,['INIR']))  { return [0355, 0262]; }
+    if(match_token(toks,['IND']))   { return [0355, 0252]; }
+    if(match_token(toks,['INDR']))  { return [0355, 0272]; }
+    if(match_token(toks,['OUTI']))  { return [0355, 0243]; }
+    if(match_token(toks,['OTIR']))  { return [0355, 0263]; }
+    if(match_token(toks,['OUTD']))  { return [0355, 0253]; }
+    if(match_token(toks,['OTDR']))  { return [0355, 0273]; }
+
+	//=================================================================================
+	//
+    // IX/IY
+    //
+	//=================================================================================
+    if(match_token(toks,['LD', /^[BCDEHLA]$/, ',', '(', /^(IX|IY)$/, '+', null, ')'])
+    || match_token(toks,['LD', /^[BCDEHLA]$/, ',', '(', /^(IX|IY)$/, null, ')'])) {
+        var index_d = ((toks[5] == '+') ? 6 : 5);
+        var r = get8bitRegId(toks[1]);
+        var d = this.parseNumLiteral(toks[index_d]);
+        var subope = getSubopeIXIY(toks[4]);
+        return [subope, 0106 | (r << 3), d];
+    }
+    if(match_token(toks,['LD', '(', /^(IX|IY)$/, '+', null, ')', ',', /^[BCDEHLA]$/])
+    || match_token(toks,['LD', '(', /^(IX|IY)$/, /^\+.*$/, ')', ',', /^[BCDEHLA]$/])) {
+        var index_d = ((toks[3] == '+') ? 4 : 3);
+        var index_r = ((toks[3] == '+') ? 7 : 6);
+        var d = this.parseNumLiteral(toks[index_d]);
+        var r = get8bitRegId(toks[index_r]);
+        var subope = getSubopeIXIY(toks[2]);
+        return [subope, 0160 | r, d];
+    }
+    if(match_token(toks,['LD', '(', /^(IX|IY)$/, '+', null, ')', ',', null])
+    || match_token(toks,['LD', '(', /^(IX|IY)$/, /^\+.*$/, ')', ',', null])) {
+        var index_d = ((toks[3] == '+') ? 4 : 3);
+        var index_n = ((toks[3] == '+') ? 7 : 6);
+        var d = this.parseNumLiteral(toks[index_d]);
+        var n = this.parseNumLiteral(toks[index_n]);
+        var subope = getSubopeIXIY(toks[2]);
+        return [subope, 0x36, d, n];
+    }
+    if(match_token(toks,['LD', /^(IX|IY)$/, ',', null])) {
+        var nn = this.parseNumLiteralPair(toks[3]);
+        var subope = getSubopeIXIY(toks[1]);
+        return [subope, 0x21, nn[0], nn[1]];
+    }
+    if(match_token(toks,['LD', /^(IX|IY)$/, ',', '(', null, ')'])) {
+        var nn = this.parseNumLiteralPair(toks[4]);
+        var subope = getSubopeIXIY(toks[1]);
+        return [subope, 0x2A, nn[0], nn[1]];
+    }
+    if(match_token(toks,['PUSH', /^(IX|IY)$/])) {
+        var subope = getSubopeIXIY(toks[1]);
+        return [subope, 0xE5];
+    }
+    if(match_token(toks,['POP', /^(IX|IY)$/])) {
+        var subope = getSubopeIXIY(toks[1]);
+        return [subope, 0xE1];
+    }
+    if(match_token(toks,['EX', '(','SP',')', ',', /^(IX|IY)$/])) {
+        var subope = getSubopeIXIY(toks[5]);
+        return [subope, 0xE3];
+    }
+
+    //=================================================================================
+    // 8ビット演算
+    //=================================================================================
+    if(match_token(toks,[/^(ADD|ADC|SUB|SBC)$/, 'A', ',', /^[BCDEHLA]$/])) {
+        var subseq = getArithmeticSubOpecode(toks[0]);
+        var r = get8bitRegId(toks[3]);
+        return [0200 | (subseq << 3) | r];
+    }
+    if(match_token(toks,[/^(ADD|ADC|SUB|SBC)$/, 'A', ',', null])) {
+        var subseq = getArithmeticSubOpecode(toks[0]);
+        var n = this.parseNumLiteral(toks[3]);
+        return [0306 | (subseq << 3), n];
+    }
+    if(match_token(toks,[/^(ADD|ADC|SUB|SBC)$/, 'A', ',', '(', 'HL', ')'])) {
+        var subseq = getArithmeticSubOpecode(toks[0]);
+        return [0206 | (subseq << 3)];
+    }
+    if(match_token(toks,[/^(ADD|ADC|SUB|SBC)$/, 'A', ',', '(', /^(IX|IY)$/, '+', null,  ')'])
+    || match_token(toks,[/^(ADD|ADC|SUB|SBC)$/, 'A', ',', '(', /^(IX|IY)$/, /^\+.*/,  ')'])) {
+        var index_d = ((toks[5] == '+') ? 6 : 5);
+        var subseq = getArithmeticSubOpecode(toks[0]);
+        var d = this.parseNumLiteral(toks[index_d]);
+        var subope = getSubopeIXIY(toks[4]);
+        return [subope, 0206 | (subseq << 3), d];
+    }
+    if(match_token(toks,[/^(AND|OR|XOR|CP)$/, /^[BCDEHLA]$/])) {
+        var subseq = getArithmeticSubOpecode(toks[0]);
+        var r = get8bitRegId(toks[1]);
+        return [0200 | (subseq << 3) | r];
+    }
+    if(match_token(toks,[/^(AND|OR|XOR|CP)$/, null])) {
+        var subseq = getArithmeticSubOpecode(toks[0]);
+        var n = this.parseNumLiteral(toks[1]);
+        return [0306 | (subseq << 3), n];
+    }
+    if(match_token(toks,[/^(AND|OR|XOR|CP)$/, '(', 'HL', ')'])) {
+        var subseq = getArithmeticSubOpecode(toks[0]);
+        return [0206 | (subseq << 3)];
+    }
+    if(match_token(toks,[/^(AND|OR|XOR|CP)$/, '(', /^(IX|IY)$/, '+', null,  ')'])
+    || match_token(toks,[/^(AND|OR|XOR|CP)$/, '(', /^(IX|IY)$/, /^\+.*$/,  ')'])) {
+        var index_d = ((toks[3] == '+') ? 4 : 3);
+        var subseq = getArithmeticSubOpecode(toks[0]);
+        var d = this.parseNumLiteral(toks[index_d]);
+        var subope = getSubopeIXIY(toks[2]);
+        return [subope, 0206 | (subseq << 3), d];
+    }
+    if(match_token(toks,[/^(INC|DEC)$/, /^[BCDEHLA]$/])) {
+        var r = get8bitRegId(toks[1]);
+        switch(toks[0]) {
+            case 'INC': return [0004 | (r << 3)]; break;
+            case 'DEC': return [0005 | (r << 3)]; break;
+        }
+    }
+    if(match_token(toks,[/^(INC|DEC)$/, '(', 'HL', ')'])) {
+        switch(toks[0]) {
+            case 'INC': return [0064]; break;
+            case 'DEC': return [0065]; break;
+        }
+    }
+    if(match_token(toks,[/^(INC|DEC)$/, '(', /^(IX|IY)$/, '+', null,  ')'])
+    || match_token(toks,[/^(INC|DEC)$/, '(', /^(IX|IY)$/, /^\+.*$/,  ')'])) {
+        var subope = getSubopeIXIY(toks[2]);
+        var index_d = ((toks[3] == '+') ? 4 : 3);
+        var d = this.parseNumLiteral(toks[index_d]);
+        switch(toks[0]) {
+            case 'INC': return [subope, 0064, d]; break;
+            case 'DEC': return [subope, 0065, d]; break;
+        }
+    }
+    console.warn("**** ERROR: CANNOT ASSEMBLE:" + toks.join(" / "));
+    return [];
+};
+function getSubopeIXIY(tok) {
+    var subope = 0;
+    switch(tok) {
+        case 'IX': subope = 0335; break;
+        case 'IY': subope = 0375; break;
+    }
+    return subope;
+};
+function getArithmeticSubOpecode(opecode) {
+    var subseq = 0;
+    switch(opecode) {
+        case 'ADD': subseq = 0; break;
+        case 'ADC': subseq = 1; break;
+        case 'SUB': subseq = 2; break;
+        case 'SBC': subseq = 3; break;
+        case 'AND': subseq = 4; break;
+        case 'OR': subseq = 6; break;
+        case 'XOR': subseq = 5; break;
+        case 'CP': subseq = 7; break;
+    }
+    return subseq;
+};
+function get16bitRegId_dd(name) {
+    var r = null;
+    switch(name) {
+        case 'BC': r = 0; break;
+        case 'DE': r = 1; break;
+        case 'HL': r = 2; break;
+        case 'SP': r = 3; break;
+        default: break;
+    }
+    return r;
+};
+function get16bitRegId_qq(name) {
+    var r = null;
+    switch(name) {
+        case 'BC': r = 0; break;
+        case 'DE': r = 1; break;
+        case 'HL': r = 2; break;
+        case 'AF': r = 3; break;
+        default: break;
+    }
+    return r;
+};
+function get8bitRegId(name) {
+    var r = null;
+    switch(name) {
+        case 'B': r = 0; break;
+        case 'C': r = 1; break;
+        case 'D': r = 2; break;
+        case 'E': r = 3; break;
+        case 'H': r = 4; break;
+        case 'L': r = 5; break;
+        case 'A': r = 7; break;
+        default: break;
+    }
+    return r;
+};
+function match_token(toks, pattern) {
+    if(toks.length != pattern.length) {
+        return false;
+    }
+    for (var i = 0; i < toks.length; i++) {
+        if(pattern[i] != null) {
+            if(typeof(pattern[i]) == 'string') {
+                if(toks[i] != pattern[i]) {
+                    return false;
+                }
+            } else if(typeof(pattern[i]) == 'object') {
+                if(pattern[i].constructor.name == 'RegExp') {
+                    if(!pattern[i].test(toks[i])) {
+                        return false;
+                    }
+                }
+            }
+        }
+    }
+    return true;
+};
+Z80_assemble.prototype.parseNumLiteral = function(tok) {
+    var n = this._parseNumLiteral(tok);
+    if(typeof(n) == 'number') {
+        if(n < -128 || 256 <= n) {
+            throw 'operand ' + tok + ' out of range';
+        }
+        return n & 0xff;
+    }
+    return (function(THIS, token) { return function() {
+        return THIS.dereferLowByte(token);
+    }; })(this, tok);
+};
+Z80_assemble.prototype.parseNumLiteralPair = function(tok) {
+    var n = this._parseNumLiteral(tok);
+    if(typeof(n) == 'number') {
+        if(n < -32768 || 65535 < n) {
+            throw 'operand ' + tok + ' out of range';
+        }
+        return [n & 0xff, (n >> 8) & 0xff];
+    }
+    return [
+        (function(THIS, token) { return function(){
+            return THIS.dereferLowByte(token);
+        };})(this, tok),
+        (function(THIS, token) { return function(){
+            return THIS.dereferHighByte(token);
+        };})(this, tok),
+    ];
+};
+Z80_assemble.prototype.parseRelAddr = function(tok, fromAddr) {
+    var n = this._parseNumLiteral(tok);
+    if(typeof(n) == 'number') {
+        var c0 = tok.charAt(0);
+        if(c0 != '+' && c0 != '-') {
+            n = n - fromAddr + 2;
+        }
+        n -= 2;
+        if(n < -128 || 256 <= n) {
+            throw 'operand ' + tok + ' out of range';
+        }
+        return n & 0xff;
+    }
+    return (function(THIS, token, fromAddr) { return function() {
+        return (THIS.derefer(token) - fromAddr) & 0xff;
+    }; })(this, tok, fromAddr);
+};
+Z80_assemble.prototype.dereferLowByte = function(label) {
+    return this.derefer(label) & 0xff;
+};
+Z80_assemble.prototype.dereferHighByte = function(label) {
+    return (this.derefer(label) >> 8) & 0xff;
+};
+Z80_assemble.prototype.derefer = function(label) {
+    if(label in this.label2value) {
+        return this.label2value[label];
+    }
+    return 0;
+};
+Z80_assemble.prototype._parseNumLiteral = function(tok) {
+    if(/^[\+\-]?[0-9]+$/.test(tok) || /^[\+\-]?[0-9A-F]+H$/i.test(tok)) {
+        var n = 0;
+        var s = (/^\-/.test(tok) ? -1:1);
+        if(/[hH]$/.test(tok)) {
+            var matches = tok.match(/^[\+\-]?([0-9a-fA-F]+)[hH]$/);
+            n = parseInt(matches[1], 16);
+        } else if(/^[\+\-]?0/.test(tok)) {
+            var matches = tok.match(/^[\+\-]?([0-7]+)$/);
+            n = parseInt(matches[1], 8);
+        } else {
+            var matches = tok.match(/^[\+\-]?([0-9]+)$/);
+            n = parseInt(matches[1], 10);
+        }
+        return s * n;
+    }
+    return tok;
+};
+Z80_assemble.prototype.parseAddress = function(addrToken) {
+    var bytes = this.parseNumLiteralPair(addrToken);
+    if(bytes == null) {
+        return null;
+    }
+    var H = bytes[1]; if(typeof(H) == 'function') { H = H(); }
+    var L = bytes[0]; if(typeof(L) == 'function') { L = L(); }
+    var addr = Z80.pair(H,L);
+    return addr;
+};
+
+},{}],8:[function(require,module,exports){
+Z80 = function(opt) {
+    opt = opt || { memory: null, };
+    this.memory = opt.memory;
+	this.createOpecodeTable();
+    if(opt.memory == null) {
+        this.memory = new MemoryBlock();
+        this.memory.create();
+    }
+    this.IFF1 = 0;
+    this.IFF2 = 0;
+    this.IM = 0;
+    this.HALT = 0;
+    this.ioPort = new Array(256);
+    for(var i = 0; i < 256; i++) { this.ioPort[i] = 0; };
+	this.reg = new Z80_Register();
+	this.regB = new Z80_Register();
+    this.onReadIoPort = function(port) {};
+    this.onReadIoPort = opt.onReadIoPort || function(port, value) {};
+    this.onWriteIoPort = opt.onWriteIoPort || function(port, value) {};
+    this.bpmap = new Array(0x10000);
+    this.tick = 0;
+}
+Z80.getSignedByte = function(e) {
+    e &= 0xff;
+    if(e & 0x80) {
+        e = ((~e) & 0xff) + 1;
+        return -e;
+    }
+    return e;
+}
+Z80.pair = function(h,l) { return (0xff & h) * 256 + (0xff & l); };
+Z80.hibyte = function(nn) { return (0xff & Math.floor(nn / 256)); };
+Z80.lobyte = function(nn) { return nn % 256; };
+Z80.prototype.readIoPort = function(port) {
+    var value = this.ioPort[port];
+    this.reg.onReadIoPort(value);
+    this.onReadIoPort(port, value);
+    return value;
+}
+Z80.prototype.writeIoPort = function(port, value) {
+    this.ioPort[port] = value;
+    this.onWriteIoPort(port, value);
+}
+Z80.prototype.reset = function() {
+    this.IFF1 = 0;
+    this.IFF2 = 0;
+    this.IM = 0;
+    this.HALT = 0;
+    this.reg.clear();
+    this.regB.clear();
+    this.exec = Z80.prototype.exec;
+    this.tick = 0;
+};
+Z80.prototype.interrupt = function() {
+    if(this.IFF1) {
+        //this.IFF1 = 0;
+        this.pushPair(this.reg.PC);
+        this.reg.PC = 0x0038;
+    }
+}
+Z80.prototype.exec = function() {
+    this.reg.R = (this.reg.R + 1) & 255;
+    var instruction = this.opecodeTable[this.fetch()];
+    var cycle = instruction.proc() || instruction.cycle || 4;
+    this.tick += cycle;
+    if(this.bpmap[this.reg.PC] != null) {
+        console.log("*** BREAK AT $" + this.reg.PC.HEX(4));
+        throw "break";
+    }
+}
+
+Z80.prototype.clearBreakPoints = function() {
+    this.bpmap = new Array(0x10000);
+};
+Z80.prototype.getBreakPoints = function() {
+    return this.bpmap;
+};
+Z80.prototype.removeBreak = function(address, size) {
+    for(var i = 0; i < size; i++) {
+        this.bpmap[address + i] = null; 
+    }
+}
+Z80.prototype.setBreak = function(address, size) {
+    for(var i = 0; i < size; i++) {
+        this.bpmap[address + i] = true; 
+    }
+}
+
+Z80.prototype.fetch = function() {
+	var value = this.memory.peek(this.reg.PC);
+	this.reg.PC++;
+	if(this.reg.PC > 0xffff) {
+		this.reg.PC = 0;
+	};
+    return value;
+}
+
+Z80.prototype.fetchPair = function() {
+	var value = this.memory.peekPair(this.reg.PC);
+	this.reg.PC += 2;
+	if(this.reg.PC > 0xffff) {
+		this.reg.PC -= 0xffff;
+	};
+    return value;
+}
+
+Z80.prototype.pushPair = function(nn) {
+	this.memory.poke(--this.reg.SP, Z80.hibyte(nn));
+	this.memory.poke(--this.reg.SP, Z80.lobyte(nn));
+}
+Z80.prototype.popPair = function(nn) {
+	var lo = this.memory.peek(this.reg.SP++);
+	var hi = this.memory.peek(this.reg.SP++);
+    return Z80.pair(hi, lo);
+}
+
+Z80.prototype.incrementAt = function(addr) {
+    var preval = this.memory.peek(addr);
+    var result = this.reg.getINCValue(preval);
+    this.memory.poke(addr, result);
+};
+Z80.prototype.decrementAt = function(addr) {
+    var preval = this.memory.peek(addr);
+    var result = this.reg.getDECValue(preval);
+    this.memory.poke(addr, result);
+};
+
+Z80.dasm = function (buf, offset, size, addr) {
+    offset = offset || 0;
+    size = size || buf.length - offset;
+    addr = addr || 0;
+    if(addr - offset < 0) {
+        console.error("Z80.dasm: parameter error : (addr - offset) - out of range");
+        return;
+    }
+    if(size < 0 || offset + size > buf.length) {
+        console.error("Z80.dasm: parameter error : size - out of range");
+        return;
+    }
+    var dasmlist = [];
+    var memory_block = new MemoryBlock();
+    memory_block.create({ startAddr: addr - offset, size: size });
+    memory_block.mem = buf;
+    var cpu = new Z80({memory: memory_block});
+    cpu.reg.PC = memory_block.startAddr;
+    dasmlist.push({ code:[], mnemonic:["ORG", memory_block.startAddr.HEX(4) + "H"] });
+    while(cpu.reg.PC < memory_block.startAddr + memory_block.size) {
+        var dis = cpu.disassemble(cpu.reg.PC, addr - offset + size);
+        dis.addr = cpu.reg.PC;
+        dis.refs = 0;
+        dasmlist.push( dis );
+        cpu.reg.PC += dis.code.length;
+    }
+    return dasmlist;
+}
+Z80.prototype.disassemble = function(addr, last_addr) {
+    var disasm = null;
+    var errmsg = "";
+    var opecode = this.memory.peek(addr);
+    try {
+        var opecodeEntry = this.opecodeTable[opecode];
+        if(opecodeEntry == null) {
+            errmsg = "UNKNOWN OPECODE";
+        } else if(opecodeEntry.disasm == null) {
+            errmsg = "NO DISASSEMBLER";
+        } else if((disasm = opecodeEntry.disasm(this.memory, addr)) == null) {
+            errmsg = "NULL RETURNED";
+        } else if(addr + disasm.code.length > last_addr) {
+            disasm = null;
+        }
+    } catch(e) {
+        errmsg = "EXCEPTION THROWN";
+    }
+    if(disasm == null) {
+        disasm = {
+            code:[opecode],
+            mnemonic:["DEFB", opecode.HEX(2) + "H; *** UNKNOWN OPCODE: " + errmsg]
+        }
+    }
+    return disasm;
+}
+Z80.processAddressReference = function(dasmlist) {
+    var addr2dis = {};
+    for(var i = 0; i < dasmlist.length; i++) {
+        var dis = dasmlist[i];
+        addr2dis[dis.addr] = i;
+    }
+    for(var i = 0; i < dasmlist.length; i++) {
+        var dis = dasmlist[i];
+        if("ref_addr" in dis) {
+            if(dis.ref_addr in addr2dis) {
+                var j = addr2dis[dis.ref_addr];
+                dasmlist[j].refs++;
+            }
+        }
+    }
+    return dasmlist;
+}
+Z80.dasmlines = function(dasmlist) {
+    var dasmlines = [];
+    for(var j = 0; j < dasmlist.length; j++) {
+        var dis = dasmlist[j];
+        var addr;
+        if(dis.refs > 0) {
+            addr = "$" + dis.addr.HEX(4) + "H:";
+        } else {
+            addr = "       ";
+        }
+        addr += "   ";
+
+        var mne = dis.mnemonic[0];
+        if(dis.mnemonic.length > 1) {
+            while(mne.length < 8) {
+                mne += " ";
+            }
+        }
+        var operands = "";
+        for(var i = 1; i < dis.mnemonic.length; i++) {
+            var operand = dis.mnemonic[i];
+            operands += operand;
+            if(i < dis.mnemonic.length - 1) {
+                operands += ",";
+            }
+        }
+        var line = addr + '      ' + mne + operands;
+        while(line.length < 40) {
+            line += ' ';
+        }
+
+        var codes = [];
+        for(var i = 0; i < dis.code.length; i++) {
+            codes.push(dis.code[i].HEX(2));
+        }
+        if(codes.length > 0) {
+            line += '; ' + dis.addr.HEX(4) + "H " + codes.join(' ');
+        }
+        dasmlines.push(line);
+    }
+    return dasmlines;
+}
+
+/**
+ * -----------------------------------------------------------------------------------
+ * ニーモニック		実行内容					命令コード1	命令コード2	命令コード3	命令コード4
+ *										76 543 210	76 543 210	76 543 210	76 543 210
+ * -----------------------------------------------------------------------------------
+ * 8ビットロードグループ
+ * -----------------------------------------------------------------------------------
+OK * LD r,n		r<-n					00  r  110	<-  n   ->
+OK * LD (BC),A	(BC)<-A					00 000 010
+OK * LD A,(BC)	A<-(BC)					00 001 010
+OK * LD (DE),A	(DE)<-A					00 010 010
+OK * LD A,(DE)	A<-(DE)					00 011 010
+OK * LD (nn),A	(nn)<-A					00 110 010	<-  n   ->	<-  n   ->
+OK * LD (HL),n	(HL)<-n					00 110 110	<-  n   ->
+OK * LD A,(nn)	A<-(nn)					00 111 010	<-  n   ->	<-  n   ->
+OK * LD r,r'	r<-r'					01  r   r'
+OK * LD r,(HL)	r<-(HL)					01  r  110
+OK * LD (HL),r	(HL)<-r					01 110  r 
+ 
+ * LD r,(IX+d)	r<-(IX+d)				11 011 101	01  r  110	<-  d   ->
+ * LD (IX+d),r	(IX+d)<-r				11 011 101	01 110  r	<-  d   ->
+ * LD (IX+d),n	(IX+d)<-n				11 011 101	00 110 110	<-  d   ->	<-  n   ->
+ * LD A,I		A<-I					11 101 101	01 010 111
+ * LD A,R		A<-R					11 101 101	01 011 111
+ * LD I,A		I<-A					11 101 101	01 000 111
+ * LD R,A		R<-A					11 101 101	01 001 111
+ * LD (IY+d),n	(IY+d)<-n				11 111 101	00 110 110	<-  d   ->	<-  n   ->
+ * LD r,(IY+d)	r<-(IY+d)				11 111 101	01  r  110	<-  d   ->
+ * LD (IY+d),r	(IY+d)<-r				11 111 101	01 110  r	<-  d   ->
+ * -----------------------------------------------------------------------------------
+ * ニーモニック		実行内容					命令コード1	命令コード2	命令コード3	命令コード4
+ *										76 543 210	76 543 210	76 543 210	76 543 210
+ * -----------------------------------------------------------------------------------
+ * 16ビットロードグループ
+ * -----------------------------------------------------------------------------------
+OK * LD (nn),HL		(nn+1)<-H,(nn)<-L		00 100 010	<-  n   ->	<-  n   ->
+OK * LD HL,(nn)		H<-(nn+1),L<-(nn)		00 101 010	<-  n   ->	<-  n   ->
+OK * LD dd,nn		dd<-nn					00 dd0 001	<-  n   ->	<-  n   ->
+OK * PUSH qq		(SP-2)<-qqL,(SP-1)<-qqH	11 qq0 101
+OK * POP qq			qqL<-(SP-2),qqH<-(SP-1)	11 qq0 001
+OK * LD SP,HL		SP<-HL					11 111 001
+
+ * LD IX,nn		IX<-nn					11 011 101	00 100 001	<-  n   ->	<-  n   ->
+ * LD (nn),IX	(nn+1)<-IXH,(nn)<-IXL	11 011 101	00 100 010	<-  n   ->	<-  n   ->
+ * LD IX,(nn)	IXH<-(nn+1),IXL<-(nn)	11 011 101	00 101 010	<-  n   ->	<-  n   ->
+ * POP IX		IXL<-(SP-2),IXH<-(SP-1)	11 011 101	11 100 001
+ * PUSH IX		(SP-2)<-IXL,(SP-1)<-IXH	11 011 101	11 100 101
+ * LD SP,IX		SP<-IX					11 011 101	11 111 001
+ * LD (nn),dd	(nn+1)<-ddH,(nn)<-ddL	11 101 101	01 dd0 011	<-  n   ->	<-  n   ->
+ * LD dd,(nn)	ddH<-(nn+1),ddL<-(nn)	11 101 101	01 dd1 011	<-  n   ->	<-  n   ->
+ * LD IY,nn		IY<-nn					11 111 101	00 100 001	<-  n   ->	<-  n   ->
+ * LD (nn),IY	(nn+1)<-IYH,(nn)<-IYL	11 111 101	00 100 010	<-  n   ->	<-  n   ->
+ * LD IY,(nn)	IYH<-(nn+1),IYL<-(nn)	11 111 101	00 101 010	<-  n   ->	<-  n   ->
+ * POP IY		IYL<-(SP-2),IYH<-(SP-1)	11 111 101	11 100 001
+ * PUSH IY		(SP-2)<-IYL,(SP-1)<-IYH	11 111 101	11 100 101
+ * LD SP,IY		SP<-IY					11 111 101	11 111 001
+ * 				 
+ */
+Z80.prototype.createOpecodeTable = function() {
+	var THIS = this;
+	this.opecodeTable = new Array(256);
+    var opeIX = new Array(256);
+    var opeIY = new Array(256);
+    var opeRotate = new Array(256);
+    var opeRotateIX = new Array(256);
+    var opeRotateIY = new Array(256);
+    var opeMisc = new Array(256);
+    for(var i = 0; i < 256; i++) {
+        this.opecodeTable[i] = {
+            mnemonic: null,
+            proc: function() { throw "ILLEGAL OPCODE"; },
+            disasm: (function(i) { return function(mem, addr) {
+                return {
+                    code:[i],
+                    mnemonic:["DEFB", i.HEX(2) + "H; *** UNKNOWN OPCODE"]
+                };
+            }; }(i))
+        };
+        opeIX[i] = { mnemonic: null,
+            proc: (function(i) {
+                return function() {
+                    throw "ILLEGAL OPCODE DD " + i.HEX(2) + " for IX command subset";
+                };
+            }(i)),
+            disasm: (function(i) { return function(mem, addr) {
+                return {
+                    code:[0xDD],
+                    mnemonic:["DEFB", "DDh; *** UNKNOWN OPCODE " + i.HEX(2) + "H"]
+                };
+            }; }(i))
+        };
+        opeIY[i] = {
+            mnemonic: null,
+            proc: (function(i) {
+                return function() {
+                    throw "ILLEGAL OPCODE FD " + i.HEX(2) + " for IY command subset";
+                }
+            }(i)),
+            disasm: (function(i) { return function(mem, addr) {
+                return {
+                    code:[0xFD],
+                    mnemonic:["DEFB", "FDh; *** UNKNOWN OPCODE " + i.HEX(2) + "H"]
+                };
+            }; }(i))
+        };
+        opeRotate[i] = {
+            mnemonic: null,
+            proc: (function(i) {
+                return function() {
+                    throw "ILLEGAL OPCODE CB " + i.HEX(2) + " for Rotate command subset";
+                };
+            }(i)),
+            disasm: (function(i) { return function(mem, addr) {
+                return {
+                    code:[0xCB],
+                    mnemonic:["DEFB", "CBh; *** UNKNOWN OPCODE " + i.HEX(2) + "H"]
+                };
+            }; }(i))
+        };
+        opeRotateIX[i] = {
+            mnemonic: null,
+            proc: (function(i) {
+                return function() {
+                    throw "ILLEGAL OPCODE DD CB " + i.HEX(2) + " for Rotate IX command subset";
+                }
+            }(i)),
+            disasm: (function(i) { return function(mem, addr) {
+                return {
+                    code:[0xDD, 0xCB],
+                    mnemonic:["DEFW", "CBDDh; *** UNKNOWN OPCODE " + i.HEX(2) + "H"]
+                };
+            }; }(i))
+        };
+        opeRotateIY[i] = { mnemonic: null,
+            proc: (function(i) {
+                return function() {
+                    throw "ILLEGAL OPCODE FD CB " + i.HEX(2) + " for Rotate IY command subset";
+                }
+            }(i)),
+            disasm: (function(i) { return function(mem, addr) {
+                return {
+                    code:[0xFD,0xCB],
+                    mnemonic:["DEFW", "CBFDh; *** UNKNOWN OPCODE " + i.HEX(2) + "H"]
+                };
+            }; }(i))
+        };
+        opeMisc[i] = {
+            mnemonic: null,
+            proc: (function(i) {
+                return function() {
+                    throw "ILLEGAL OPCODE ED " + i.HEX(2) + " for Misc command subset";
+                }
+            }(i)),
+            disasm: (function(i) { return function(mem, addr) {
+                return {
+                    code:[0xED],
+                    mnemonic:["DEFB", "EDh; *** UNKNOWN OPCODE " + i.HEX(2) + "H"]
+                };
+            }; }(i))
+        };
+    }
+
+    // IX command
+    this.opecodeTable[0xDD] = {
+        mnemonic:function() { return opeIX; },
+        proc: function () { opeIX[THIS.fetch()].proc(); },
+        disasm: function(mem, addr) { return opeIX[mem.peek(addr+1)].disasm(mem, addr); }
+    }
+
+    // IY command
+    this.opecodeTable[0xFD] = {
+        mnemonic: function(){ return opeIY; },
+        proc: function () { opeIY[THIS.fetch()].proc(); },
+        disasm: function(mem, addr) { return opeIY[mem.peek(addr+1)].disasm(mem, addr); }
+    }
+
+    // Rotate
+    this.opecodeTable[0xCB] = {
+        mnemonic:function() { return opeRotate; },
+        proc: function () { opeRotate[THIS.fetch()].proc(); },
+        disasm: function(mem, addr) {
+            return opeRotate[mem.peek(addr+1)].disasm(mem, addr);
+        }
+    }
+
+    // Misc
+    this.opecodeTable[0xED] = {
+        mnemonic:function() { return opeMisc; },
+        proc: function () { opeMisc[THIS.fetch()].proc(); },
+        disasm: function(mem, addr) {
+            return opeMisc[mem.peek(addr+1)].disasm(mem, addr);
+        }
+    }
+
+	//=================================================================================
+	//
+	// 8bit load group
+	//
+	//=================================================================================
+	
+	//---------------------------------------------------------------------------------
+	// LD r,r'		r<-r'					01  r   r'
+	//---------------------------------------------------------------------------------
+	for(var dstRegId in Z80_Register.REG_r_ID2NAME) {
+		dstRegName = Z80_Register.REG_r_ID2NAME[dstRegId];
+		for(var srcRegId in Z80_Register.REG_r_ID2NAME) {
+			srcRegName = Z80_Register.REG_r_ID2NAME[srcRegId];
+			var opecode = (0x01 << 6) | (dstRegId << 3) | srcRegId;
+			this.opecodeTable[opecode] = {
+					mnemonic:"LD " + dstRegName + "," + srcRegName,
+					proc:
+						function (opecode, dstRegName, srcRegName) {
+							return function() {
+                                THIS.reg[dstRegName] = THIS.reg[srcRegName];
+							}
+						}(opecode, dstRegName, srcRegName),
+                    "cycle": 4,
+                    disasm:
+						function (opecode, dstRegName, srcRegName) {
+                            return function(mem, addr) {
+                                return {
+                                    code:       [opecode],
+                                    mnemonic:   ["LD", dstRegName, srcRegName] 
+                                };
+                            }
+						}(opecode, dstRegName, srcRegName)
+			}
+		}
+	}
+	//---------------------------------------------------------------------------------
+	// LD r,n		r<-n					00  r  110	<-  n   ->
+	// LD r,(HL)	r<-(HL)					01  r  110
+	// LD (HL),r	(HL)<-r					01 110  r 
+	// LD (HL),n	(HL)<-n					00 110 110	<-  n   ->
+	//---------------------------------------------------------------------------------
+    var disa_0x_r_110 = function(mem, addr) {
+        var opecode = mem.peek(addr);
+        var code = [opecode];
+        var x = ((opecode & 0x40) != 0) ? 1 : 0;
+        var r1 = (opecode >> 3) & 0x07;
+        var r2 = (opecode >> 0) & 0x07;
+		var operand = ["???","???"];
+        
+        operand[0] = ((r1 == 6)? "(HL)" : Z80_Register.REG_r_ID2NAME[r1]);
+
+        switch(x) {
+            case 0:
+                n = mem.peek(addr + 1);
+                code.push(n);
+                operand[1] = n.HEX(2) + "H";
+                break;
+            case 1:
+                operand[1] = ((r2 == 6)? "(HL)" : Z80_Register.REG_r_ID2NAME[r2]);
+                break;
+        }
+        return {
+            code:       code,
+            mnemonic:   ["LD", operand[0], operand[1]] 
+        };
+    };
+	//---------------------------------------------------------------------------------
+	// LD r,n		r<-n					00  r  110	<-  n   ->
+	//---------------------------------------------------------------------------------
+    this.opecodeTable[0006] = {
+        mnemonic:"LD B,n",
+        proc: function() { THIS.reg.B = THIS.fetch(); },
+        "cycle": 7,
+        disasm: disa_0x_r_110
+    };
+    this.opecodeTable[0016] = {
+        mnemonic:"LD C,n",
+        proc: function() { THIS.reg.C = THIS.fetch(); },
+        "cycle": 7,
+        disasm: disa_0x_r_110
+    };
+    this.opecodeTable[0026] = {
+        mnemonic:"LD D,n",
+        proc: function() { THIS.reg.D = THIS.fetch(); },
+        "cycle": 7,
+        disasm: disa_0x_r_110
+    };
+    this.opecodeTable[0036] = {
+        mnemonic:"LD E,n",
+        proc: function() { THIS.reg.E = THIS.fetch(); },
+        "cycle": 7,
+        disasm: disa_0x_r_110
+    };
+    this.opecodeTable[0046] = {
+        mnemonic:"LD H,n",
+        proc: function() { THIS.reg.H = THIS.fetch(); },
+        "cycle": 7,
+        disasm: disa_0x_r_110
+    };
+    this.opecodeTable[0056] = {
+        mnemonic:"LD L,n",
+        proc: function() { THIS.reg.L = THIS.fetch(); },
+        "cycle": 7,
+        disasm: disa_0x_r_110
+    };
+    this.opecodeTable[0076] = {
+        mnemonic:"LD A,n",
+        proc: function() { THIS.reg.A = THIS.fetch(); },
+        "cycle": 7,
+        disasm: disa_0x_r_110
+    };
+	//---------------------------------------------------------------------------------
+	// LD r,(HL)	r<-(HL)					01  r  110
+	//---------------------------------------------------------------------------------
+    this.opecodeTable[0106] = {
+        mnemonic:"LD B,(HL)",
+        proc: function() { THIS.reg.B = THIS.memory.peek(THIS.reg.getHL()); },
+        "cycle": 7,
+        disasm: disa_0x_r_110
+    };
+    this.opecodeTable[0116] = {
+        mnemonic:"LD C,(HL)",
+        proc: function() { THIS.reg.C = THIS.memory.peek(THIS.reg.getHL()); },
+        "cycle": 7,
+        disasm: disa_0x_r_110
+    };
+    this.opecodeTable[0126] = {
+        mnemonic:"LD D,(HL)",
+        proc: function() { THIS.reg.D = THIS.memory.peek(THIS.reg.getHL()); },
+        "cycle": 7,
+        disasm: disa_0x_r_110
+    };
+    this.opecodeTable[0136] = {
+        mnemonic:"LD E,(HL)",
+        proc: function() { THIS.reg.E = THIS.memory.peek(THIS.reg.getHL()); },
+        "cycle": 7,
+        disasm: disa_0x_r_110
+    };
+    this.opecodeTable[0146] = {
+        mnemonic:"LD H,(HL)",
+        proc: function() { THIS.reg.H = THIS.memory.peek(THIS.reg.getHL()); },
+        "cycle": 7,
+        disasm: disa_0x_r_110
+    };
+    this.opecodeTable[0156] = {
+        mnemonic:"LD L,(HL)",
+        proc: function() { THIS.reg.L = THIS.memory.peek(THIS.reg.getHL()); },
+        "cycle": 7,
+        disasm: disa_0x_r_110
+    };
+    this.opecodeTable[0176] = {
+        mnemonic:"LD A,(HL)",
+        proc: function() { THIS.reg.A = THIS.memory.peek(THIS.reg.getHL()); },
+        "cycle": 7,
+        disasm: disa_0x_r_110
+    };
+	//---------------------------------------------------------------------------------
+	// LD (HL),r	(HL)<-r					01 110  r 
+	//---------------------------------------------------------------------------------
+    this.opecodeTable[0160] = {
+        mnemonic:"LD (HL),B",
+        proc: function() { THIS.memory.poke(THIS.reg.getHL(), THIS.reg.B); },
+        "cycle": 10,
+        disasm: disa_0x_r_110
+    };
+    this.opecodeTable[0161] = {
+        mnemonic:"LD (HL),C",
+        proc: function() { THIS.memory.poke(THIS.reg.getHL(), THIS.reg.C); },
+        "cycle": 10,
+        disasm: disa_0x_r_110
+    };
+    this.opecodeTable[0162] = {
+        mnemonic:"LD (HL),D",
+        proc: function() { THIS.memory.poke(THIS.reg.getHL(), THIS.reg.D); },
+        "cycle": 10,
+        disasm: disa_0x_r_110
+    };
+    this.opecodeTable[0163] = {
+        mnemonic:"LD (HL),E",
+        proc: function() { THIS.memory.poke(THIS.reg.getHL(), THIS.reg.E); },
+        "cycle": 10,
+        disasm: disa_0x_r_110
+    };
+    this.opecodeTable[0164] = {
+        mnemonic:"LD (HL),H",
+        proc: function() { THIS.memory.poke(THIS.reg.getHL(), THIS.reg.H); },
+        "cycle": 10,
+        disasm: disa_0x_r_110
+    };
+    this.opecodeTable[0165] = {
+        mnemonic:"LD (HL),L",
+        proc: function() { THIS.memory.poke(THIS.reg.getHL(), THIS.reg.L); },
+        "cycle": 10,
+        disasm: disa_0x_r_110
+    };
+    this.opecodeTable[0167] = {
+        mnemonic:"LD (HL),A",
+        proc: function() { THIS.memory.poke(THIS.reg.getHL(), THIS.reg.A); },
+        "cycle": 10,
+        disasm: disa_0x_r_110
+    };
+	//---------------------------------------------------------------------------------
+	// LD (HL),n	(HL)<-n					00 110 110	<-  n   ->
+	//---------------------------------------------------------------------------------
+	this.opecodeTable[0066] = {
+        mnemonic:"LD (HL),n",
+        proc: function() { THIS.memory.poke(THIS.reg.getHL(), THIS.fetch()); },
+        "cycle": 10,
+        disasm: disa_0x_r_110
+    };
+	//---------------------------------------------------------------------------------
+	// LD A,(BC)	A<-(BC)					00 001 010
+	//---------------------------------------------------------------------------------
+	this.opecodeTable[0012] = {
+        mnemonic:"LD A,(BC)",
+        proc: function() { THIS.reg.A = THIS.memory.peek(THIS.reg.getBC()); },
+        "cycle": 7,
+        disasm: function(mem,addr) {return {code:[mem.peek(addr)], mnemonic: ["LD", "A", "(BC)"]};}
+    };
+	//---------------------------------------------------------------------------------
+	// LD A,(DE)	A<-(DE)					00 011 010
+	//---------------------------------------------------------------------------------
+	this.opecodeTable[0032] = {
+        mnemonic:"LD A,(DE)",
+        proc: function() { THIS.reg.A = THIS.memory.peek(THIS.reg.getDE()); },
+        "cycle": 7,
+        disasm: function(mem,addr) {return {code:[mem.peek(addr)], mnemonic: ["LD", "A", "(DE)"]};}
+    };
+	//---------------------------------------------------------------------------------
+	// LD A,(nn)	A<-(nn)					00 111 010	<-  n   ->	<-  n   ->
+	//---------------------------------------------------------------------------------
+	this.opecodeTable[0072] = { mnemonic:"LD A,(nn)",
+        proc: function() { THIS.reg.A = THIS.memory.peek(THIS.fetchPair()); },
+        "cycle": 13,
+        disasm: function(mem,addr) {
+            return {
+                code:[mem.peek(addr), mem.peek(addr+1), mem.peek(addr+2)],
+                mnemonic: ["LD", "A","(" + mem.peekPair(addr+1).HEX(4) + "H)"]};
+        }
+    };
+	//--------------------------------------------------------------------------------
+	// LD (BC),A	(BC)<-A					00 000 010
+	//---------------------------------------------------------------------------------
+	this.opecodeTable[0002] = { mnemonic:"LD (BC),A",
+        proc: function() { THIS.memory.poke(THIS.reg.getBC(), THIS.reg.A); },
+        "cycle": 7,
+        disasm: function(mem,addr) {return {code:[mem.peek(addr)], mnemonic: ["LD", "(BC)","A"]};} };
+	//---------------------------------------------------------------------------------
+	// LD (DE),A	(DE)<-A					00 010 010
+	//---------------------------------------------------------------------------------
+	this.opecodeTable[0022] = { mnemonic:"LD (DE),A",
+        proc: function() { THIS.memory.poke(THIS.reg.getDE(), THIS.reg.A); },
+        "cycle": 7,
+        disasm: function(mem,addr) {return {code:[mem.peek(addr)], mnemonic: ["LD", "(DE)","A"]};} };
+	//---------------------------------------------------------------------------------
+	// LD (nn),A	(nn)<-A					00 110 010	<-  n   ->	<-  n   ->
+	//---------------------------------------------------------------------------------
+	this.opecodeTable[0062] = { mnemonic:"LD (nn),A",
+        proc: function() { THIS.memory.poke(THIS.fetchPair(), THIS.reg.A); },
+        "cycle": 13,
+        disasm: function(mem,addr) {
+            return {
+                code:[mem.peek(addr), mem.peek(addr+1), mem.peek(addr+2)],
+                mnemonic: ["LD", "(" + mem.peekPair(addr+1).HEX(4) + "H)","A"]};
+        }
+    };
+	
+    //---------------------------------------------------------------------------------
+    // LD A,I		A<-I					11 101 101	01 010 111          S,Z,H=0,P/V=IFF,N=0
+    //---------------------------------------------------------------------------------
+	opeMisc[0127] = {
+        mnemonic:"LD A,I",
+        proc: function() {
+            THIS.reg.LD_A_I(THIS.IFF2);
+        },
+        "cycle": 9,
+        disasm: function(mem,addr) {
+            return {
+                code:[mem.peek(addr), mem.peek(addr+1)],
+                mnemonic: ["LD", "A","I"]
+            };
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // LD A,R		A<-R					11 101 101	01 011 111          S,Z,H=0,P/V=IFF,N=0
+    //---------------------------------------------------------------------------------
+	opeMisc[0137] = {
+        mnemonic:"LD A,R",
+        proc: function() {
+            THIS.reg.LD_A_R(THIS.IFF2, THIS.regB.R);
+        },
+        "cycle": 9,
+        disasm: function(mem,addr) {
+            return {
+                code:[mem.peek(addr), mem.peek(addr+1)],
+                mnemonic: ["LD", "A","R"]
+            };
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // LD I,A		I<-A					11 101 101	01 000 111
+    //---------------------------------------------------------------------------------
+	opeMisc[0107] = {
+        mnemonic:"LD I,A",
+        proc: function() { THIS.reg.I = THIS.reg.A; },
+        "cycle": 9,
+        disasm: function(mem,addr) {
+            return {
+                code:[mem.peek(addr), mem.peek(addr+1)],
+                mnemonic: ["LD", "I","A"]
+            };
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // LD R,A		R<-A					11 101 101	01 001 111
+    //---------------------------------------------------------------------------------
+	opeMisc[0117] = {
+        mnemonic:"LD R,A",
+        proc: function() { THIS.reg.R = THIS.regB.R = THIS.reg.A; },
+        "cycle": 9,
+        disasm: function(mem,addr) {
+            return {
+                code:[mem.peek(addr), mem.peek(addr+1)],
+                mnemonic: ["LD", "R","A"]
+            };
+        }
+    };
+
+    //---------------------------------------------------------------------------------
+    // LD r, (IX+d)
+    //---------------------------------------------------------------------------------
+    var disasm_LD_r_idx_d = function(mem, addr, r, idx) {
+        var d = mem.peek(addr + 2);
+        return {
+            code: [ mem.peek(addr), mem.peek(addr+1), d ],
+            mnemonic: [ "LD", r, "(" + idx + "+" + d.HEX(2) + "H)" ]
+        }
+    };
+    var disasm_LD_idx_d_r = function(mem, addr, idx, r) {
+        var d = mem.peek(addr + 2);
+        return {
+            code: [ mem.peek(addr), mem.peek(addr+1), d ],
+            mnemonic: [ "LD", "(" + idx + "+" + d.HEX(2) + "H)", r ]
+        }
+    };
+
+    opeIX[0106] = {
+        mnemonic:"LD B,(IX+d)",
+        proc: function() { THIS.reg.B = THIS.memory.peek(THIS.reg.IX + THIS.fetch()); },
+        "cycle": 19,
+        disasm: function(mem, addr) {
+            return disasm_LD_r_idx_d(mem, addr, "B", "IX");
+        }
+    };
+    opeIX[0116] = {
+        mnemonic:"LD C,(IX+d)",
+        proc: function() { THIS.reg.C = THIS.memory.peek(THIS.reg.IX + THIS.fetch()); },
+        "cycle": 19,
+        disasm: function(mem, addr) {
+            return disasm_LD_r_idx_d(mem, addr, "C", "IX");
+        }
+    };
+    opeIX[0126] = {
+        mnemonic:"LD D,(IX+d)",
+        proc: function() { THIS.reg.D = THIS.memory.peek(THIS.reg.IX + THIS.fetch()); },
+        "cycle": 19,
+        disasm: function(mem, addr) {
+            return disasm_LD_r_idx_d(mem, addr, "D", "IX");
+        }
+    };
+    opeIX[0136] = {
+        mnemonic:"LD E,(IX+d)",
+        proc: function() { THIS.reg.E = THIS.memory.peek(THIS.reg.IX + THIS.fetch()); },
+        "cycle": 19,
+        disasm: function(mem, addr) {
+            return disasm_LD_r_idx_d(mem, addr, "E", "IX");
+        }
+    };
+    opeIX[0146] = {
+        mnemonic:"LD H,(IX+d)",
+        proc: function() { THIS.reg.H = THIS.memory.peek(THIS.reg.IX + THIS.fetch()); },
+        "cycle": 19,
+        disasm: function(mem, addr) {
+            return disasm_LD_r_idx_d(mem, addr, "H", "IX");
+        }
+    };
+    opeIX[0156] = {
+        mnemonic:"LD L,(IX+d)",
+        proc: function() { THIS.reg.L = THIS.memory.peek(THIS.reg.IX + THIS.fetch()); },
+        "cycle": 19,
+        disasm: function(mem, addr) {
+            return disasm_LD_r_idx_d(mem, addr, "L", "IX");
+        }
+    };
+    opeIX[0176] = {
+        mnemonic:"LD A,(IX+d)",
+        proc: function() { THIS.reg.A = THIS.memory.peek(THIS.reg.IX + THIS.fetch()); },
+        "cycle": 19,
+        disasm: function(mem, addr) {
+            return disasm_LD_r_idx_d(mem, addr, "A", "IX");
+        }
+    };
+    
+    //---------------------------------------------------------------------------------
+    // LD (IX+d), r
+    //---------------------------------------------------------------------------------
+    opeIX[0160] = {
+        mnemonic:"LD (IX+d),B",
+        proc: function() { THIS.memory.poke(THIS.reg.IX + THIS.fetch(), THIS.reg.B); },
+        "cycle": 19,
+        disasm: function(mem, addr) {
+            return disasm_LD_idx_d_r(mem, addr, "IX", "B");
+        }
+    };
+    opeIX[0161] = {
+        mnemonic:"LD (IX+d),C",
+        proc: function() { THIS.memory.poke(THIS.reg.IX + THIS.fetch(), THIS.reg.C); },
+        "cycle": 19,
+        disasm: function(mem, addr) {
+            return disasm_LD_idx_d_r(mem, addr, "IX", "C");
+        }
+    };
+    opeIX[0162] = {
+        mnemonic:"LD (IX+d),D",
+        proc: function() { THIS.memory.poke(THIS.reg.IX + THIS.fetch(), THIS.reg.D); },
+        "cycle": 19,
+        disasm: function(mem, addr) {
+            return disasm_LD_idx_d_r(mem, addr, "IX", "D");
+        }
+    };
+    opeIX[0163] = {
+        mnemonic:"LD (IX+d),E",
+        proc: function() { THIS.memory.poke(THIS.reg.IX + THIS.fetch(), THIS.reg.E); },
+        "cycle": 19,
+        disasm: function(mem, addr) {
+            return disasm_LD_idx_d_r(mem, addr, "IX", "E");
+        }
+    };
+    opeIX[0164] = {
+        mnemonic:"LD (IX+d),H",
+        proc: function() { THIS.memory.poke(THIS.reg.IX + THIS.fetch(), THIS.reg.H); },
+        "cycle": 19,
+        disasm: function(mem, addr) {
+            return disasm_LD_idx_d_r(mem, addr, "IX", "H");
+        }
+    };
+    opeIX[0165] = {
+        mnemonic:"LD (IX+d),L",
+        proc: function() { THIS.memory.poke(THIS.reg.IX + THIS.fetch(), THIS.reg.L); },
+        "cycle": 19,
+        disasm: function(mem, addr) {
+            return disasm_LD_idx_d_r(mem, addr, "IX", "L");
+        }
+    };
+    opeIX[0167] = {
+        mnemonic:"LD (IX+d),A",
+        proc: function() { THIS.memory.poke(THIS.reg.IX + THIS.fetch(), THIS.reg.A); },
+        "cycle": 19,
+        disasm: function(mem, addr) {
+            return disasm_LD_idx_d_r(mem, addr, "IX", "A");
+        }
+    };
+
+    //---------------------------------------------------------------------------------
+    // LD r, (IX+d)
+    //---------------------------------------------------------------------------------
+    opeIY[0106] = {
+        mnemonic:"LD B,(IY+d)",
+        proc: function() { THIS.reg.B = THIS.memory.peek(THIS.reg.IY + THIS.fetch()); },
+        "cycle": 19,
+        disasm: function(mem, addr) {
+            return disasm_LD_r_idx_d(mem, addr, "B", "IY");
+        }
+    };
+    opeIY[0116] = {
+        mnemonic:"LD C,(IY+d)",
+        proc: function() { THIS.reg.C = THIS.memory.peek(THIS.reg.IY + THIS.fetch()); },
+        "cycle": 19,
+        disasm: function(mem, addr) {
+            return disasm_LD_r_idx_d(mem, addr, "C", "IY");
+        }
+    };
+    opeIY[0126] = {
+        mnemonic:"LD D,(IY+d)",
+        proc: function() { THIS.reg.D = THIS.memory.peek(THIS.reg.IY + THIS.fetch()); },
+        "cycle": 19,
+        disasm: function(mem, addr) {
+            return disasm_LD_r_idx_d(mem, addr, "D", "IY");
+        }
+    };
+    opeIY[0136] = {
+        mnemonic:"LD E,(IY+d)",
+        proc: function() { THIS.reg.E = THIS.memory.peek(THIS.reg.IY + THIS.fetch()); },
+        "cycle": 19,
+        disasm: function(mem, addr) {
+            return disasm_LD_r_idx_d(mem, addr, "E", "IY");
+        }
+    };
+    opeIY[0146] = {
+        mnemonic:"LD H,(IY+d)",
+        proc: function() { THIS.reg.H = THIS.memory.peek(THIS.reg.IY + THIS.fetch()); },
+        "cycle": 19,
+        disasm: function(mem, addr) {
+            return disasm_LD_r_idx_d(mem, addr, "H", "IY");
+        }
+    };
+    opeIY[0156] = {
+        mnemonic:"LD L,(IY+d)",
+        proc: function() { THIS.reg.L = THIS.memory.peek(THIS.reg.IY + THIS.fetch()); },
+        "cycle": 19,
+        disasm: function(mem, addr) {
+            return disasm_LD_r_idx_d(mem, addr, "L", "IY");
+        }
+    };
+    opeIY[0176] = {
+        mnemonic:"LD A,(IY+d)",
+        proc: function() { THIS.reg.A = THIS.memory.peek(THIS.reg.IY + THIS.fetch()); },
+        "cycle": 19,
+        disasm: function(mem, addr) {
+            return disasm_LD_r_idx_d(mem, addr, "A", "IY");
+        }
+    };
+
+    //---------------------------------------------------------------------------------
+    // LD (IY+d), r
+    //---------------------------------------------------------------------------------
+    opeIY[0160] = {
+        mnemonic:"LD (IY+d),B",
+        proc: function() { THIS.memory.poke(THIS.reg.IY + THIS.fetch(), THIS.reg.B); },
+        "cycle": 19,
+        disasm: function(mem, addr) {
+            return disasm_LD_idx_d_r(mem, addr, "IY", "B");
+        }
+    };
+    opeIY[0161] = {
+        mnemonic:"LD (IY+d),C",
+        proc: function() { THIS.memory.poke(THIS.reg.IY + THIS.fetch(), THIS.reg.C); },
+        "cycle": 19,
+        disasm: function(mem, addr) {
+            return disasm_LD_idx_d_r(mem, addr, "IY", "C");
+        }
+    };
+    opeIY[0162] = {
+        mnemonic:"LD (IY+d),D",
+        proc: function() { THIS.memory.poke(THIS.reg.IY + THIS.fetch(), THIS.reg.D); },
+        "cycle": 19,
+        disasm: function(mem, addr) {
+            return disasm_LD_idx_d_r(mem, addr, "IY", "D");
+        }
+    };
+    opeIY[0163] = {
+        mnemonic:"LD (IY+d),E",
+        proc: function() { THIS.memory.poke(THIS.reg.IY + THIS.fetch(), THIS.reg.E); },
+        "cycle": 19,
+        disasm: function(mem, addr) {
+            return disasm_LD_idx_d_r(mem, addr, "IY", "E");
+        }
+    };
+    opeIY[0164] = {
+        mnemonic:"LD (IY+d),H",
+        proc: function() { THIS.memory.poke(THIS.reg.IY + THIS.fetch(), THIS.reg.H); },
+        "cycle": 19,
+        disasm: function(mem, addr) {
+            return disasm_LD_idx_d_r(mem, addr, "IY", "H");
+        }
+    };
+    opeIY[0165] = {
+        mnemonic:"LD (IY+d),L",
+        proc: function() { THIS.memory.poke(THIS.reg.IY + THIS.fetch(), THIS.reg.L); },
+        "cycle": 19,
+        disasm: function(mem, addr) {
+            return disasm_LD_idx_d_r(mem, addr, "IY", "L");
+        }
+    };
+    opeIY[0167] = {
+        mnemonic:"LD (IY+d),A",
+        proc: function() { THIS.memory.poke(THIS.reg.IY + THIS.fetch(), THIS.reg.A); },
+        "cycle": 19,
+        disasm: function(mem, addr) {
+            return disasm_LD_idx_d_r(mem, addr, "IY", "A");
+        }
+    };
+
+	//=================================================================================
+	//
+	// 16bit load group
+	//
+	//=================================================================================
+	
+	//---------------------------------------------------------------------------------
+	// LD dd,nn		dd<-nn					00 dd0 001	<-  n   ->	<-  n   ->
+	//---------------------------------------------------------------------------------
+    disasm_LD_dd_nn = function(mem,addr) {
+        var opcode = mem.peek(addr);
+        var nnL = mem.peek(addr+1);
+        var nnH = mem.peek(addr+2);
+        var nn = Z80.pair(nnH,nnL);
+        var dd = ((opcode >> 4) & 0x03);
+        switch(dd) {
+            case 0: dd = "BC"; break;
+            case 1: dd = "DE"; break;
+            case 2: dd = "HL"; break;
+            case 3: dd = "SP"; break;
+            default: throw "*** LD dd,nn; but unknown dd."; break;
+        }
+        return {
+            code:[opcode,nnL,nnH],
+            mnemonic: ["LD", dd, nn.HEX(4) + "H" ]};
+    };
+    this.opecodeTable[0001] = {
+        mnemonic:"LD BC,nn",
+        cycle: 10,
+        proc: function() {
+            THIS.reg.C = THIS.fetch();
+            THIS.reg.B = THIS.fetch();
+        },
+        disasm: disasm_LD_dd_nn
+    };
+    this.opecodeTable[0021] = {
+        mnemonic:"LD DE,nn",
+        cycle: 10,
+        proc: function() {
+            THIS.reg.E = THIS.fetch();
+            THIS.reg.D = THIS.fetch();
+        },
+        disasm: disasm_LD_dd_nn
+    };
+    this.opecodeTable[0041] = {
+        mnemonic:"LD HL,nn",
+        cycle: 10,
+        proc: function() {
+            THIS.reg.L = THIS.fetch();
+            THIS.reg.H = THIS.fetch();
+        },
+        disasm: disasm_LD_dd_nn
+    };
+    this.opecodeTable[0061] = {
+        mnemonic:"LD SP,nn",
+        cycle: 10,
+        proc: function() {
+            THIS.reg.SP = THIS.fetchPair();
+        },
+        disasm: disasm_LD_dd_nn
+    };
+	
+	//---------------------------------------------------------------------------------
+	// LD HL,(nn)	H<-(nn+1),L<-(nn)		00 101 010	<-  n   ->	<-  n   ->
+	//---------------------------------------------------------------------------------
+	this.opecodeTable[0052] = {
+        mnemonic:"LD HL,(nn)",
+        cycle:16,
+        proc: function() {
+            var nn = THIS.fetchPair();
+            THIS.reg.L = THIS.memory.peek(nn + 0);
+            THIS.reg.H = THIS.memory.peek(nn + 1);
+        },
+        disasm: function(mem, addr) {
+            var opcode = mem.peek(addr);
+            var nnL = mem.peek(addr+1);
+            var nnH = mem.peek(addr+2);
+            var nn = Z80.pair(nnH,nnL);
+            return {
+                code:[opcode,nnL,nnH],
+                mnemonic: ["LD", "HL","(" + nn.HEX(4) + "H)" ]};
+        }
+	};
+    opeMisc[0113] = {
+        mnemonic:"LD BC,(nn)",
+        cycle:20,
+        proc: function() {
+            var nn = THIS.fetchPair();
+            THIS.reg.C = THIS.memory.peek(nn + 0);
+            THIS.reg.B = THIS.memory.peek(nn + 1);
+        },
+        disasm: function(mem, addr) {
+            var opcode = mem.peek(addr);
+            var operand = mem.peek(addr+1);
+            var nnL = mem.peek(addr+2);
+            var nnH = mem.peek(addr+3);
+            var nn = Z80.pair(nnH,nnL);
+            return {
+                code:[opcode,operand,nnL,nnH],
+                mnemonic: ["LD", "BC","(" + nn.HEX(4) + "H)" ]};
+        }
+	};
+    opeMisc[0133] = {
+        mnemonic:"LD DE,(nn)",
+        cycle:20,
+        proc: function() {
+            var nn = THIS.fetchPair();
+            THIS.reg.E = THIS.memory.peek(nn + 0);
+            THIS.reg.D = THIS.memory.peek(nn + 1);
+        },
+        disasm: function(mem, addr) {
+            var opcode = mem.peek(addr);
+            var operand = mem.peek(addr+1);
+            var nnL = mem.peek(addr+2);
+            var nnH = mem.peek(addr+3);
+            var nn = Z80.pair(nnH,nnL);
+            return {
+                code:[opcode,operand,nnL,nnH],
+                    mnemonic: ["LD", "DE","(" + nn.HEX(4) + "H)" ]};
+            }
+	};
+    opeMisc[0153] = {
+        mnemonic:"LD HL,(nn)",
+        cycle:20,
+        proc: function() {
+            var nn = THIS.fetchPair();
+            THIS.reg.L = THIS.memory.peek(nn + 0);
+            THIS.reg.H = THIS.memory.peek(nn + 1);
+        },
+        disasm: function(mem, addr) {
+            var opcode = mem.peek(addr);
+            var operand = mem.peek(addr+1);
+            var nnL = mem.peek(addr+2);
+            var nnH = mem.peek(addr+3);
+            var nn = Z80.pair(nnH,nnL);
+            return {
+                code:[opcode,operand,nnL,nnH],
+                    mnemonic: ["LD", "HL","(" + nn.HEX(4) + "H)" ]};
+            }
+	};
+    opeMisc[0173] = {
+        mnemonic:"LD SP,(nn)",
+        cycle:20,
+        proc: function() {
+            THIS.reg.SP = THIS.fetchPair();
+        },
+        disasm: function(mem, addr) {
+            var opcode = mem.peek(addr);
+            var operand = mem.peek(addr+1);
+            var nnL = mem.peek(addr+2);
+            var nnH = mem.peek(addr+3);
+            var nn = Z80.pair(nnH,nnL);
+            return {
+                code:[opcode,operand,nnL,nnH],
+                mnemonic: ["LD", "SP","(" + nn.HEX(4) + "H)" ]};
+        }
+	};
+
+	//---------------------------------------------------------------------------------
+	// LD (nn),HL	(nn+1)<-H,(nn)<-L		00 100 010	<-  n   ->	<-  n   ->
+	//---------------------------------------------------------------------------------
+	this.opecodeTable[0042] = {
+        mnemonic:"LD (nn), HL",
+        cycle:16,
+        proc: function() {
+            var nn = THIS.fetchPair();
+            THIS.memory.poke(nn + 0, THIS.reg.L); 
+            THIS.memory.poke(nn + 1, THIS.reg.H);
+        },
+        disasm: function(mem, addr) {
+            var opcode = mem.peek(addr);
+            var nnL = mem.peek(addr+1);
+            var nnH = mem.peek(addr+2);
+            var nn = Z80.pair(nnH,nnL);
+            return {
+                code:[opcode,nnL,nnH],
+                mnemonic: ["LD", "(" + nn.HEX(4) + "H)","HL" ]};
+        }
+	}
+    opeMisc[0103] = {
+        mnemonic:"LD (nn),BC",
+        cycle:20,
+        proc: function() {
+            var nn = THIS.fetchPair();
+            THIS.memory.poke(nn + 0, THIS.reg.C);
+            THIS.memory.poke(nn + 1, THIS.reg.B);
+        },
+        disasm: function(mem, addr) {
+            var opcode = mem.peek(addr);
+            var operand = mem.peek(addr+1);
+            var nnL = mem.peek(addr+2);
+            var nnH = mem.peek(addr+3);
+            var nn = Z80.pair(nnH,nnL);
+            return {
+                code:[opcode,operand,nnL,nnH],
+                mnemonic: ["LD","(" + nn.HEX(4) + "H)", "BC" ]};
+        }
+	};
+    opeMisc[0123] = {
+        mnemonic:"LD (nn),DE",
+        cycle:20,
+        proc: function() {
+            var nn = THIS.fetchPair();
+            THIS.memory.poke(nn + 0, THIS.reg.E);
+            THIS.memory.poke(nn + 1, THIS.reg.D);
+        },
+        disasm: function(mem, addr) {
+            var opcode = mem.peek(addr);
+            var operand = mem.peek(addr+1);
+            var nnL = mem.peek(addr+2);
+            var nnH = mem.peek(addr+3);
+            var nn = Z80.pair(nnH,nnL);
+            return {
+                code:[opcode,operand,nnL,nnH],
+                mnemonic: ["LD","(" + nn.HEX(4) + "H)", "DE" ]};
+        }
+	};
+    opeMisc[0143] = {
+        mnemonic:"LD (nn),HL",
+        cycle:20,
+        proc: function() {
+            var nn = THIS.fetchPair();
+            THIS.memory.poke(nn + 0, THIS.reg.L);
+            THIS.memory.poke(nn + 1, THIS.reg.H);
+        },
+        disasm: function(mem, addr) {
+            var opcode = mem.peek(addr);
+            var operand = mem.peek(addr+1);
+            var nnL = mem.peek(addr+2);
+            var nnH = mem.peek(addr+3);
+            var nn = Z80.pair(nnH,nnL);
+            return {
+                code:[opcode,operand,nnL,nnH],
+                mnemonic: ["LD","(" + nn.HEX(4) + "H)", "HL" ]};
+        }
+	};
+    opeMisc[0163] = {
+        mnemonic:"LD (nn),SP",
+        cycle:20,
+        proc: function() {
+            var nn = THIS.fetchPair();
+            THIS.memory.poke(nn + 0, (THIS.reg.SP >> 0) & 0xff);
+            THIS.memory.poke(nn + 1, (THIS.reg.SP >> 8) & 0xff);
+        },
+        disasm: function(mem, addr) {
+            var opcode = mem.peek(addr);
+            var operand = mem.peek(addr+1);
+            var nnL = mem.peek(addr+2);
+            var nnH = mem.peek(addr+3);
+            var nn = Z80.pair(nnH,nnL);
+            return {
+                code:[opcode,operand,nnL,nnH],
+                mnemonic: ["LD","(" + nn.HEX(4) + "H)", "SP" ]};
+        }
+	};
+	//---------------------------------------------------------------------------------
+	// LD SP,HL		SP<-HL					11 111 001
+	//---------------------------------------------------------------------------------
+	this.opecodeTable[0371] = {
+        mnemonic:"LD SP,HL",
+        cycle: 6,
+        proc: function() {
+            THIS.reg.SP = THIS.reg.getHL();
+        },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["LD", "SP","HL" ]
+            };
+        }
+    };
+	//---------------------------------------------------------------------------------
+	// PUSH qq		(SP-2)<-qqL,(SP-1)<-qqH	11 qq0 101
+	//---------------------------------------------------------------------------------
+    this.opecodeTable[0xc0 + (0 << 4) + 0x05] = {
+        mnemonic:"PUSH BC",
+        cycle:11,
+        proc: function() {
+            THIS.memory.poke(--THIS.reg.SP, THIS.reg.B);
+            THIS.memory.poke(--THIS.reg.SP, THIS.reg.C); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["PUSH", "BC" ]
+            };
+        }
+    };
+    this.opecodeTable[0xc0 + (1 << 4) + 0x05] = {
+        mnemonic:"PUSH DE",
+        cycle:11,
+        proc: function() {
+            THIS.memory.poke(--THIS.reg.SP, THIS.reg.D);
+            THIS.memory.poke(--THIS.reg.SP, THIS.reg.E); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["PUSH", "DE" ]
+            };
+        }
+    };
+    this.opecodeTable[0xc0 + (2 << 4) + 0x05] = {
+        mnemonic:"PUSH HL",
+        cycle:11,
+        proc: function() {
+            THIS.memory.poke(--THIS.reg.SP, THIS.reg.H);
+            THIS.memory.poke(--THIS.reg.SP, THIS.reg.L); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["PUSH", "HL" ]
+            };
+        }
+    };
+    this.opecodeTable[0xc0 + (3 << 4) + 0x05] = {
+        mnemonic:"PUSH AF",
+        cycle:11,
+        proc: function() {
+            THIS.memory.poke(--THIS.reg.SP, THIS.reg.A);
+            THIS.memory.poke(--THIS.reg.SP, THIS.reg.F); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["PUSH", "AF" ]
+            };
+        }
+    };
+	//---------------------------------------------------------------------------------
+	// POP qq		qqL<-(SP),qqH<-(SP+1)	11 qq0 001
+	//---------------------------------------------------------------------------------
+    this.opecodeTable[0xc0 + (0 << 4) + 0x01] = {
+        mnemonic:"POP BC",
+        cycle:10,
+        proc: function() {
+            THIS.reg.C = THIS.memory.peek(THIS.reg.SP++);
+            THIS.reg.B = THIS.memory.peek(THIS.reg.SP++); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["POP", "BC" ]
+            };
+        }
+    };
+    this.opecodeTable[0xc0 + (1 << 4) + 0x01] = {
+        mnemonic:"POP DE",
+        cycle:10,
+        proc: function() {
+            THIS.reg.E = THIS.memory.peek(THIS.reg.SP++);
+            THIS.reg.D = THIS.memory.peek(THIS.reg.SP++); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["POP", "DE" ]
+            };
+        }
+    };
+    this.opecodeTable[0xc0 + (2 << 4) + 0x01] = {
+        mnemonic:"POP HL",
+        cycle:10,
+        proc: function() {
+            THIS.reg.L = THIS.memory.peek(THIS.reg.SP++);
+            THIS.reg.H = THIS.memory.peek(THIS.reg.SP++); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["POP", "HL" ]
+            };
+        }
+    };
+    this.opecodeTable[0xc0 + (3 << 4) + 0x01] = {
+        mnemonic:"POP AF",
+        cycle:10,
+        proc: function() {
+            THIS.reg.F = THIS.memory.peek(THIS.reg.SP++);
+            THIS.reg.A = THIS.memory.peek(THIS.reg.SP++); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["POP", "AF" ]
+            };
+        }
+    };
+
+    opeIX[0x21] = {
+        mnemonic:"LD IX,nn",
+        cycle:14,
+        proc: function() {
+           THIS.reg.IX = THIS.fetchPair();
+        },
+        disasm: function(mem, addr) {
+            return {
+                "code" : [
+                    0xDD, 0x21,
+                    mem.peek(addr + 2),
+                    mem.peek(addr + 3)
+                ],
+                "mnemonic" : [
+                    "LD", "IX", mem.peekPair(addr + 2).HEX(4) + "H"
+                ]
+            };
+        }
+    };
+    opeIX[0x2A] = {
+        mnemonic:"LD IX,(nn)",
+        cycle:20,
+        proc: function() {
+            THIS.reg.IX = THIS.memory.peekPair(THIS.fetchPair());
+        },
+        disasm: function(mem, addr) {
+            return {
+                "code" : [
+                    0xDD, 0x2A,
+                    mem.peek(addr + 2),
+                    mem.peek(addr + 3)
+                ],
+                "mnemonic" : [
+                    "LD", "IX", "(" + mem.peekPair(addr + 2).HEX(4) + "H)"
+                ]
+            };
+        }
+    };
+    opeIX[0x36] = {
+        mnemonic:"LD (IX+d),n",
+        cycle:19,
+        proc: function() {
+            var d = THIS.fetch();
+            var n = THIS.fetch();
+            THIS.memory.poke(THIS.reg.IX + d, n);
+        },
+        disasm: function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            var n = mem.peek(addr + 3);
+            return {
+                "code" : [ 0xDD, 0x36, d, n ],
+                "mnemonic" : [
+                    "LD", "(IX + " + d.HEX(2) + "H)", n.HEX(2) + "H"
+                ]
+            };
+        }
+    };
+    opeIX[0xF9] = {
+        mnemonic:"LD SP,IX",
+        cycle:10,
+        proc: function() {
+            THIS.reg.SP = THIS.reg.IX;
+        },
+        disasm: function(mem, addr) {
+            return {
+                "code" : [ 0xDD, 0xF9 ],
+                "mnemonic" : [ "LD", "SP", "IX" ]
+            };
+        }
+    };
+    opeIX[0xE5] = {
+        mnemonic:"PUSH IX",
+        cycle: 15,
+        proc: function() {
+            THIS.memory.poke(--THIS.reg.SP, Z80.hibyte(THIS.reg.IX));
+            THIS.memory.poke(--THIS.reg.SP, Z80.lobyte(THIS.reg.IX));
+        },
+        disasm: function(mem, addr) {
+            return {
+                "code" : [ 0xDD, 0xE5 ],
+                "mnemonic" : [ "PUSH", "IX" ]
+            };
+        }
+    };
+    opeIX[0xE1] = {
+        mnemonic:"POP IX",
+        cycle: 14,
+        proc: function() {
+            THIS.reg.IX = THIS.memory.peekPair(THIS.reg.SP);
+            THIS.reg.SP += 2;
+        },
+        disasm: function(mem, addr) {
+            return {
+                "code" : [ 0xDD, 0xE1 ],
+                "mnemonic" : [ "POP", "IX" ]
+            };
+        }
+    };
+    opeIX[0xE3] = {
+        mnemonic:"EX (SP),IX",
+        cycle:23,
+        proc: function () {
+            var tmpH = THIS.memory.peek(THIS.reg.SP + 1);
+            THIS.memory.poke(THIS.reg.SP + 1, Z80.hibyte(THIS.reg.IX));
+            var tmpL = THIS.memory.peek(THIS.reg.SP);
+            THIS.memory.poke(THIS.reg.SP, Z80.lobyte(THIS.reg.IX));
+            THIS.reg.IX = Z80.pair(tmpH, tmpL);
+        },
+        disasm: function(mem, addr) {
+            return {
+                "code" : [ 0xDD, 0xE3 ],
+                "mnemonic" : [ "EX", "(SP)", "IX" ]
+            };
+        }
+    };
+
+    opeIY[0x21] = {
+        mnemonic:"LD IY,nn",
+        cycle:14,
+        proc: function() {
+            THIS.reg.IY = THIS.fetchPair();
+        },
+        disasm: function(mem, addr) {
+            return {
+                "code" : [
+                    0xFD, 0x21,
+                    mem.peek(addr + 2),
+                    mem.peek(addr + 3)
+                ],
+                "mnemonic" : [
+                    "LD", "IY", mem.peekPair(addr + 2).HEX(4) + "H"
+                ]
+            };
+        }
+    };
+    opeIY[0x2A] = {
+        mnemonic:"LD IY,(nn)",
+        cycle:20,
+        proc: function() {
+            THIS.reg.IY = THIS.memory.peekPair(THIS.fetchPair());
+        },
+        disasm: function(mem, addr) {
+            return {
+                "code" : [
+                    0xFD, 0x2A,
+                    mem.peek(addr + 2),
+                    mem.peek(addr + 3)
+                ],
+                "mnemonic" : [
+                    "LD", "IY", "(" + mem.peekPair(addr + 2).HEX(4) + "H)"
+                ]
+            };
+        }
+    };
+    opeIY[0x36] = {
+        mnemonic:"LD (IY+d),n",
+        cycle:19,
+        proc: function() {
+            var d = THIS.fetch();
+            var n = THIS.fetch();
+            THIS.memory.poke(THIS.reg.IY + d, n);
+        },
+        disasm: function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            var n = mem.peek(addr + 3);
+            return {
+                "code" : [ 0xFD, 0x36, d, n ],
+                "mnemonic" : [
+                    "LD", "(IY + " + d.HEX(2) + "H)", n.HEX(2) + "H"
+                ]
+            };
+        }
+    };
+    opeIY[0xF9] = {
+        mnemonic:"LD SP,IY",
+        cycle:10,
+        proc: function() {
+            THIS.reg.SP = THIS.reg.IY;
+        },
+        disasm: function(mem, addr) {
+            return { "code" : [ 0xFD, 0xF9 ], "mnemonic" : [ "LD", "SP", "IY" ] };
+        }
+    };
+    opeIY[0xE5] = {
+        mnemonic:"PUSH IY",
+        cycle: 15,
+        proc: function() {
+            THIS.memory.poke(--THIS.reg.SP, Z80.hibyte(THIS.reg.IY));
+            THIS.memory.poke(--THIS.reg.SP, Z80.lobyte(THIS.reg.IY));
+        },
+        disasm: function(mem, addr) {
+            return { "code" : [ 0xFD, 0xE5 ], "mnemonic" : [ "PUSH", "IY" ] };
+        }
+    };
+    opeIY[0xE1] = {
+        mnemonic:"POP IY",
+        cycle: 14,
+        proc: function() {
+            THIS.reg.IY = THIS.memory.peekPair(THIS.reg.SP);
+            THIS.reg.SP += 2;
+        },
+        disasm: function(mem, addr) {
+            return { "code" : [ 0xFD, 0xE1 ], "mnemonic" : [ "POP", "IY" ] };
+        }
+    };
+    opeIY[0xE3] = {
+        mnemonic:"EX (SP),IY",
+        cycle:23,
+        proc: function () {
+            var tmpH = THIS.memory.peek(THIS.reg.SP + 1);
+            THIS.memory.poke(THIS.reg.SP + 1, (THIS.reg.IY >> 8) & 0xff);
+            var tmpL = THIS.memory.peek(THIS.reg.SP);
+            THIS.memory.poke(THIS.reg.SP, (THIS.reg.IY >> 0) & 0xff);
+            THIS.reg.IY = (tmpH << 8) + tmpL;
+        },
+        disasm: function(mem, addr) {
+            return { "code" : [ 0xFD, 0xE3 ], "mnemonic" : [ "EX", "(SP)", "IY" ] };
+        }
+    };
+
+	//=================================================================================
+    //
+    // エクスチェンジグループ、ブロック転送および、サーチグループ
+    //
+	//=================================================================================
+
+    //---------------------------------------------------------------------------------
+    // EX DE,HL
+    //---------------------------------------------------------------------------------
+    this.opecodeTable[0xEB] = {
+        mnemonic:"EX DE,HL ",
+        cycle:4,
+        proc: function () {
+            var tmp = THIS.reg.D;
+            THIS.reg.D = THIS.reg.H;
+            THIS.reg.H = tmp;
+            tmp = THIS.reg.E;
+            THIS.reg.E = THIS.reg.L;
+            THIS.reg.L = tmp;
+        },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["EX", "DE","HL" ]
+            };
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // EX AF,AF'
+    //---------------------------------------------------------------------------------
+    this.opecodeTable[0x08] = {
+        mnemonic:"EX AF,AF'",
+        cycle:4,
+        proc: function () {
+            var tmp = THIS.reg.A;
+            THIS.reg.A = THIS.regB.A;
+            THIS.regB.A = tmp;
+            tmp = THIS.reg.F;
+            THIS.reg.F = THIS.regB.F;
+            THIS.regB.F = tmp;
+        },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["EX", "AF","AF'" ]
+            };
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // EXX
+    //---------------------------------------------------------------------------------
+    this.opecodeTable[0xD9] = {
+        mnemonic:"EXX",
+        cycle:4,
+        proc: function () {
+            var tmp = THIS.reg.B;
+            THIS.reg.B = THIS.regB.B;
+            THIS.regB.B = tmp;
+            tmp = THIS.reg.C;
+            THIS.reg.C = THIS.regB.C;
+            THIS.regB.C = tmp;
+
+            tmp = THIS.reg.D;
+            THIS.reg.D = THIS.regB.D;
+            THIS.regB.D = tmp;
+            tmp = THIS.reg.E;
+            THIS.reg.E = THIS.regB.E;
+            THIS.regB.E = tmp;
+
+            tmp = THIS.reg.H;
+            THIS.reg.H = THIS.regB.H;
+            THIS.regB.H = tmp;
+            tmp = THIS.reg.L;
+            THIS.reg.L = THIS.regB.L;
+            THIS.regB.L = tmp;
+        },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["EXX"]
+            };
+        }
+    };
+    //---------------------------------------------------------------------------------
+    //  EX (SP),HL
+    //---------------------------------------------------------------------------------
+    this.opecodeTable[0xE3] = {
+        mnemonic:"EX (SP),HL",
+        cycle:19,
+        proc: function () {
+            var tmp = THIS.memory.peek(THIS.reg.SP + 1);
+            THIS.memory.poke(THIS.reg.SP + 1, THIS.reg.H);
+            THIS.reg.H = tmp;
+
+            tmp = THIS.memory.peek(THIS.reg.SP);
+            THIS.memory.poke(THIS.reg.SP, THIS.reg.L);
+            THIS.reg.L = tmp;
+        },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["EX", "(SP)","HL"]
+            };
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // LDI                  (DE) <- (HL)        11 101 101
+    //                      DE <- DE + 1        10 100 000
+    //                      HL <- HL + 1
+    //                      BC <- BC - 1
+    //---------------------------------------------------------------------------------
+	opeMisc[0240] = {
+        mnemonic:"LDI",
+        cycle: 16,
+        proc: function() {
+            THIS.memory.poke(THIS.reg.getDE(), THIS.memory.peek(THIS.reg.getHL()));
+            THIS.reg.onLDI();
+        },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic: ["LDI"]};
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // LDIR                 (DE) <- (HL)        11 101 101
+    //                      DE <- DE + 1        10 110 000
+    //                      HL <- HL + 1
+    //                      BC <- BC - 1
+    //                      BC=0まで繰り返す
+    //---------------------------------------------------------------------------------
+	opeMisc[0260] = {
+        mnemonic:"LDIR",
+        cycle: "BC≠0→21, BC=0→16",
+        proc: function() {
+            THIS.memory.poke(THIS.reg.getDE(), THIS.memory.peek(THIS.reg.getHL()));
+            THIS.reg.onLDI();
+            if(THIS.reg.getBC() != 0) {
+                THIS.reg.PC -= 2;
+                return 21;
+            }
+            return 16;
+        },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic: ["LDIR"]
+            };
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // LDD                  (DE) <- (HL)        11 101 101
+    //                      DE <- DE - 1        10 101 000
+    //                      HL <- HL - 1
+    //                      BC <- BC - 1
+    //---------------------------------------------------------------------------------
+	opeMisc[0250] = {
+        mnemonic:"LDD",
+        cycle: 16,
+        proc: function() {
+            THIS.memory.poke(THIS.reg.getDE(), THIS.memory.peek(THIS.reg.getHL()));
+            THIS.reg.onLDD();
+        },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic: ["LDD"]
+            };
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // LDDR                 (DE) <- (HL)        11 101 101
+    //                      DE <- DE - 1        10 111 000
+    //                      HL <- HL - 1
+    //                      BC <- BC - 1
+    //                      BC=0まで繰り返す
+    //---------------------------------------------------------------------------------
+	opeMisc[0270] = {
+        mnemonic:"LDDR",
+        cycle: "BC≠0→21, BC=0→16",
+        proc: function() {
+            THIS.memory.poke(THIS.reg.getDE(), THIS.memory.peek(THIS.reg.getHL()));
+            THIS.reg.onLDD();
+            if(THIS.reg.getBC() != 0) {
+                THIS.reg.PC -= 2;
+                return 21;
+            }
+            return 16;
+        },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic: ["LDDR"]
+            };
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // CPI                  A-(HL)              11 101 101
+    //                      HL <- HL + 1        10 100 001
+    //                      BC <- BC - 1
+    //---------------------------------------------------------------------------------
+	opeMisc[0241] = {
+        mnemonic:"CPI",
+        cycle: 16,
+        proc: function() {
+            THIS.reg.CPI(THIS.memory.peek(THIS.reg.getHL()));
+        },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic: ["CPI"]
+            };
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // CPIR                 A-(HL)              11 101 101
+    //                      HL <- HL + 1        10 110 001
+    //                      BC <- BC - 1
+    //                      BC=0まで繰り返す
+    //---------------------------------------------------------------------------------
+	opeMisc[0261] = {
+        mnemonic:"CPIR",
+        cycle: "{BC≠0 && A≠(HL)}→21, {BC=0 || A=(HL)}→16",
+        proc: function() {
+            THIS.reg.CPI(THIS.memory.peek(THIS.reg.getHL()));
+            if(THIS.reg.getBC() != 0 && !THIS.reg.flagZ()) {
+                THIS.reg.PC -= 2;
+                return 21;
+            }
+            return 16;
+        },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic: ["CPIR"]
+            };
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // CPD                  A-(HL)              11 101 101
+    //                      HL <- HL - 1        10 101 001
+    //                      BC <- BC - 1
+    //---------------------------------------------------------------------------------
+	opeMisc[0251] = {
+        mnemonic:"CPD",
+        cycle: 16,
+        proc: function() {
+            THIS.reg.CPD(THIS.memory.peek(THIS.reg.getHL()));
+        },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic: ["CPD"]
+            };
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // CPDR                 A-(HL)              11 101 101
+    //                      HL <- HL - 1        10 111 001
+    //                      BC <- BC - 1
+    //                      BC=0まで繰り返す
+    //---------------------------------------------------------------------------------
+	opeMisc[0271] = {
+        mnemonic:"CPDR",
+        cycle: "{BC≠0 && A≠(HL)}→21, {BC=0 || A=(HL)}→16",
+        proc: function() {
+            THIS.reg.CPD(THIS.memory.peek(THIS.reg.getHL()));
+            if(THIS.reg.getBC() != 0 && !THIS.reg.flagZ()) {
+                THIS.reg.PC -= 2;
+                return 21;
+            }
+            return 16;
+        },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic: ["CPDR"]
+            };
+        }
+    };
+
+    //=================================================================================
+    // 8ビット演算・論理グループ
+    //=================================================================================
+
+    //---------------------------------------------------------------------------------
+    // ADD A,r      A <- A + r          10[000]<r>
+    //---------------------------------------------------------------------------------
+    this.opecodeTable[0200] = {
+        mnemonic:"ADD A,B",
+        cycle:4,
+        proc: function() { THIS.reg.addAcc(THIS.reg.B); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["ADD", "A","B"]
+            };
+        }
+    };
+    this.opecodeTable[0201] = {
+        mnemonic:"ADD A,C",
+        cycle:4,
+        proc: function() { THIS.reg.addAcc(THIS.reg.C); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["ADD", "A","C"]
+            };
+        }
+    };
+    this.opecodeTable[0202] = {
+        mnemonic:"ADD A,D",
+        cycle:4,
+        proc: function() { THIS.reg.addAcc(THIS.reg.D); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["ADD", "A","D"]
+            };
+        }
+    };
+    this.opecodeTable[0203] = {
+        mnemonic:"ADD A,E",
+        cycle:4,
+        proc: function() { THIS.reg.addAcc(THIS.reg.E); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["ADD", "A","E"]
+            };
+        }
+    };
+    this.opecodeTable[0204] = {
+        mnemonic:"ADD A,H",
+        cycle:4,
+        proc: function() { THIS.reg.addAcc(THIS.reg.H); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["ADD", "A","H"]
+            };
+        }
+    };
+    this.opecodeTable[0205] = {
+        mnemonic:"ADD A,L",
+        cycle:4,
+        proc: function() { THIS.reg.addAcc(THIS.reg.L); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["ADD", "A","L"]
+            };
+        }
+    };
+    this.opecodeTable[0207] = {
+        mnemonic:"ADD A,A",
+        cycle:4,
+        proc: function() { THIS.reg.addAcc(THIS.reg.A); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["ADD", "A","A"]
+            };
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // ADD A,n       A <- A + n         11[000]110
+    //                                  <---n---->
+    //---------------------------------------------------------------------------------
+    this.opecodeTable[0306] = {
+        mnemonic:"ADD A,n",
+        cycle:7,
+        proc: function() { THIS.reg.addAcc(THIS.fetch()); },
+        disasm: function(mem, addr) {
+            var n = mem.peek(addr + 1);
+            return {
+                code:[mem.peek(addr),n],
+                    mnemonic: ["ADD", "A", n.HEX(2) + "H"]
+            };
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // ADD A,(HL)    A <- A + (HL)      10[000]110
+    //---------------------------------------------------------------------------------
+    this.opecodeTable[0206] = {
+        mnemonic:"ADD A,(HL)",
+        cycle:7,
+        proc: function() { THIS.reg.addAcc(THIS.memory.peek(THIS.reg.getHL())); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["ADD", "A","(HL)"]
+            };
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // ADD A,(IX+d)  A <- A + (IX+d)    11 011 101
+    //                                  10[000]110
+    //                                  <---d---->
+    //---------------------------------------------------------------------------------
+    opeIX[0206] = {
+        mnemonic:"ADD A,(IX+d)",
+        cycle:19,
+        proc: function() {
+            THIS.reg.addAcc(THIS.memory.peek(THIS.reg.IX + THIS.fetch()));
+        },
+        disasm: function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1), d ],
+                mnemonic: ["ADD", "A", "(IX+" + d.HEX(2) + "H)"]
+            }
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // ADD A,(IY+d)  A <- A + (IY+d)    11 111 101
+    //                                  10[000]110
+    //                                  <---d---->
+    //---------------------------------------------------------------------------------
+    opeIY[0206] = {
+        mnemonic:"ADD A,(IY+d)",
+        cycle:19,
+        proc: function() {
+            THIS.reg.addAcc(THIS.memory.peek(THIS.reg.IY + THIS.fetch()));
+        },
+        disasm: function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1), d ],
+                mnemonic: ["ADD", "A", "(IY+" + d.HEX(2) + "H)"]
+            }
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // ADC A,s      A <- A + s + CY       [001]
+    //---------------------------------------------------------------------------------
+    this.opecodeTable[0210] = {
+        mnemonic:"ADC A,B",
+        cycle:4,
+        proc: function() { THIS.reg.addAccWithCarry(THIS.reg.B); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["ADC", "A", "B"]
+            };
+        }
+    };
+    this.opecodeTable[0211] = {
+        mnemonic:"ADC A,C",
+        cycle:4,
+        proc: function() { THIS.reg.addAccWithCarry(THIS.reg.C); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["ADC", "A", "C"]
+            };
+        }
+    };
+    this.opecodeTable[0212] = {
+        mnemonic:"ADC A,D",
+        cycle:4,
+        proc: function() { THIS.reg.addAccWithCarry(THIS.reg.D); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["ADC", "A", "D"]
+            };
+        }
+    };
+    this.opecodeTable[0213] = {
+        mnemonic:"ADC A,E",
+        cycle:4,
+        proc: function() { THIS.reg.addAccWithCarry(THIS.reg.E); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["ADC", "A", "E"]
+            };
+        }
+    };
+    this.opecodeTable[0214] = {
+        mnemonic:"ADC A,H",
+        cycle:4,
+        proc: function() { THIS.reg.addAccWithCarry(THIS.reg.H); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["ADC", "A", "H"]
+            };
+        }
+    };
+    this.opecodeTable[0215] = {
+        mnemonic:"ADC A,L",
+        cycle:4,
+        proc: function() { THIS.reg.addAccWithCarry(THIS.reg.L); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["ADC", "A", "L"]
+            };
+        }
+    };
+    this.opecodeTable[0217] = {
+        mnemonic:"ADC A,A",
+        cycle:4,
+        proc: function() { THIS.reg.addAccWithCarry(THIS.reg.A); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["ADC", "A", "A"]
+            };
+        }
+    };
+    this.opecodeTable[0316] = {
+        mnemonic:"ADC A,n",
+        cycle:7,
+        proc: function() { THIS.reg.addAccWithCarry(THIS.fetch()); },
+        disasm: function(mem, addr) {
+            var n = mem.peek(addr + 1);
+            return {
+                code:[mem.peek(addr),n],
+                    mnemonic: ["ADC", "A", n.HEX(2) + "H"]
+            };
+        }
+    };
+    this.opecodeTable[0216] = {
+        mnemonic:"ADC A,(HL)",
+        cycle:7,
+        proc: function() { THIS.reg.addAccWithCarry(THIS.memory.peek(THIS.reg.getHL())); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["ADC", "A", "(HL)"]
+            };
+        }
+    };
+    opeIX[0216] = {
+        mnemonic:"ADC A,(IX+d)",
+        cycle:19,
+        proc: function() {
+            THIS.reg.addAccWithCarry(THIS.memory.peek(THIS.reg.IX + THIS.fetch()));
+        },
+        disasm: function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1), d ],
+                mnemonic: ["ADC", "A", "(IX+" + d.HEX(2) + "H)"]
+            }
+        }
+    };
+    opeIY[0216] = {
+        mnemonic:"ADC A,(IY+d)",
+        cycle:19,
+        proc: function() {
+            THIS.reg.addAccWithCarry(THIS.memory.peek(THIS.reg.IY + THIS.fetch()));
+        },
+        disasm: function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1), d ],
+                mnemonic: ["ADC", "A", "(IY+" + d.HEX(2) + "H)"]
+            }
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // SUB s        A <- A - s            [010]
+    //---------------------------------------------------------------------------------
+    this.opecodeTable[0220] = {
+        mnemonic:"SUB A,B",
+        cycle:4,
+        proc: function() { THIS.reg.subAcc(THIS.reg.B); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["SUB", "A", "B"]
+            };
+        }
+    };
+    this.opecodeTable[0221] = {
+        mnemonic:"SUB A,C",
+        cycle:4,
+        proc: function() { THIS.reg.subAcc(THIS.reg.C); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["SUB", "A", "C"]
+            };
+        }
+    };
+    this.opecodeTable[0222] = {
+        mnemonic:"SUB A,D",
+        cycle:4,
+        proc: function() { THIS.reg.subAcc(THIS.reg.D); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["SUB", "A", "D"]
+            };
+        }
+    };
+    this.opecodeTable[0223] = {
+        mnemonic:"SUB A,E",
+        cycle:4,
+        proc: function() { THIS.reg.subAcc(THIS.reg.E); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["SUB", "A", "E"]
+            };
+        }
+    };
+    this.opecodeTable[0224] = {
+        mnemonic:"SUB A,H",
+        cycle:4,
+        proc: function() { THIS.reg.subAcc(THIS.reg.H); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["SUB", "A", "H"]
+            };
+        }
+    };
+    this.opecodeTable[0225] = {
+        mnemonic:"SUB A,L",
+        cycle:4,
+        proc: function() { THIS.reg.subAcc(THIS.reg.L); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["SUB", "A", "L"]
+            };
+        }
+    };
+    this.opecodeTable[0227] = {
+        mnemonic:"SUB A,A",
+        cycle:4,
+        proc: function() { THIS.reg.subAcc(THIS.reg.A); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["SUB", "A", "A"]
+            };
+        }
+    };
+    this.opecodeTable[0326] = {
+        mnemonic:"SUB A,n",
+        cycle:7,
+        proc: function() { THIS.reg.subAcc(THIS.fetch()); },
+        disasm: function(mem, addr) {
+            var n = mem.peek(addr + 1);
+            return {
+                code:[mem.peek(addr),n],
+                    mnemonic: ["SUB", "A", n.HEX(2) + "H"]
+            };
+        }
+    };
+    this.opecodeTable[0226] = {
+        mnemonic:"SUB A,(HL)",
+        cycle:7,
+        proc: function() {
+            THIS.reg.subAcc(THIS.memory.peek(THIS.reg.getHL()));
+        },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["SUB", "A", "(HL)"]
+            };
+        }
+    };
+    opeIX[0226] = {
+        mnemonic:"SUB A,(IX+d)",
+        cycle:19,
+        proc: function() {
+            THIS.reg.subAcc(THIS.memory.peek(THIS.reg.IX + THIS.fetch()));
+        },
+        disasm: function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1), d ],
+                mnemonic: ["SUB", "A", "(IX+" + d.HEX(2) + "H)"]
+            }
+        }
+    };
+    opeIY[0226] = {
+        mnemonic:"SUB A,(IY+d)",
+        cycle:19,
+        proc: function() {
+            THIS.reg.subAcc(THIS.memory.peek(THIS.reg.IY + THIS.fetch()));
+        },
+        disasm: function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1), d ],
+                mnemonic: ["SUB", "A", "(IY+" + d.HEX(2) + "H)"]
+            }
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // SBC A,s      A <- A - s - CY       [011]
+    //---------------------------------------------------------------------------------
+    this.opecodeTable[0230] = {
+        mnemonic:"SBC A,B",
+        cycle:4,
+        proc: function() { THIS.reg.subAccWithCarry(THIS.reg.B); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["SBC", "A", "B"]
+            };
+        }
+    };
+    this.opecodeTable[0231] = {
+        mnemonic:"SBC A,C",
+        cycle:4,
+        proc: function() { THIS.reg.subAccWithCarry(THIS.reg.C); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["SBC", "A", "C"]
+            };
+        }
+    };
+    this.opecodeTable[0232] = {
+        mnemonic:"SBC A,D",
+        cycle:4,
+        proc: function() { THIS.reg.subAccWithCarry(THIS.reg.D); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["SBC", "A", "D"]
+            };
+        }
+    };
+    this.opecodeTable[0233] = {
+        mnemonic:"SBC A,E",
+        cycle:4,
+        proc: function() { THIS.reg.subAccWithCarry(THIS.reg.E); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["SBC", "A", "E"]
+            };
+        }
+    };
+    this.opecodeTable[0234] = {
+        mnemonic:"SBC A,H",
+        cycle:4,
+        proc: function() { THIS.reg.subAccWithCarry(THIS.reg.H); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["SBC", "A", "H"]
+            };
+        }
+    };
+    this.opecodeTable[0235] = {
+        mnemonic:"SBC A,L",
+        cycle:4,
+        proc: function() { THIS.reg.subAccWithCarry(THIS.reg.L); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["SBC", "A", "L"]
+            };
+        }
+    };
+    this.opecodeTable[0237] = {
+        mnemonic:"SBC A,A",
+        cycle:4,
+        proc: function() { THIS.reg.subAccWithCarry(THIS.reg.A); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["SBC", "A", "A"]
+            };
+        }
+    };
+    this.opecodeTable[0336] = {
+        mnemonic:"SBC A,n",
+        cycle:7,
+        proc: function() { THIS.reg.subAccWithCarry(THIS.fetch()); },
+        disasm: function(mem, addr) {
+            var n = mem.peek(addr + 1);
+            return {
+                code:[mem.peek(addr),n],
+                    mnemonic: ["SBC", "A," + n.HEX(2) + "H"]};
+        }};
+    this.opecodeTable[0236] = {
+        mnemonic:"SBC A,(HL)",
+        cycle:7,
+        proc: function() {
+            THIS.reg.subAccWithCarry(THIS.memory.peek(THIS.reg.getHL()));
+        },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["SBC", "A", "(HL)"]
+            };
+        }
+    };
+    opeIX[0236] = {
+        mnemonic:"SBC A,(IX+d)",
+        cycle:19,
+        proc: function() {
+            THIS.reg.subAccWithCarry(THIS.memory.peek(THIS.reg.IX + THIS.fetch()));
+        },
+        disasm: function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1), d ],
+                mnemonic: ["SBC", "A", "(IX+" + d.HEX(2) + "H)"]
+            }
+        }
+    };
+    opeIY[0236] = {
+        mnemonic:"SBC A,(IY+d)",
+        cycle:19,
+        proc: function() {
+            THIS.reg.subAccWithCarry(THIS.memory.peek(THIS.reg.IY + THIS.fetch()));
+        },
+        disasm: function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1), d ],
+                mnemonic: ["SBC", "A", "(IY+" + d.HEX(2) + "H)"]
+            }
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // AND s        A <- A & s            [100]
+    //---------------------------------------------------------------------------------
+    this.opecodeTable[0240] = {
+        mnemonic:"AND B",
+        cycle:4,
+        proc: function() { THIS.reg.andAcc(THIS.reg.B); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["AND", "B"]
+            };
+        }
+    };
+    this.opecodeTable[0241] = {
+        mnemonic:"AND C",
+        cycle:4,
+        proc: function() { THIS.reg.andAcc(THIS.reg.C); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["AND", "C"]
+            };
+        }
+    };
+    this.opecodeTable[0242] = {
+        mnemonic:"AND D",
+        cycle:4,
+        proc: function() { THIS.reg.andAcc(THIS.reg.D); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["AND", "D"]
+            };
+        }
+    };
+    this.opecodeTable[0243] = {
+        mnemonic:"AND E",
+        cycle:4,
+        proc: function() { THIS.reg.andAcc(THIS.reg.E); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["AND", "E"]
+            };
+        }
+    };
+    this.opecodeTable[0244] = {
+        mnemonic:"AND H",
+        cycle:4,
+        proc: function() { THIS.reg.andAcc(THIS.reg.H); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["AND", "H"]
+            };
+        }
+    };
+    this.opecodeTable[0245] = {
+        mnemonic:"AND L",
+        cycle:4,
+        proc: function() { THIS.reg.andAcc(THIS.reg.L); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["AND", "L"]
+            };
+        }
+    };
+    this.opecodeTable[0247] = {
+        mnemonic:"AND A",
+        cycle:4,
+        proc: function() { THIS.reg.andAcc(THIS.reg.A); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["AND", "A"]
+            };
+        }
+    };
+    this.opecodeTable[0346] = {
+        mnemonic:"AND n",
+        cycle:7,
+        proc: function() { THIS.reg.andAcc(THIS.fetch()); },
+        disasm: function(mem, addr) {
+            var n = mem.peek(addr + 1);
+            return {
+                code:[mem.peek(addr),n],
+                    mnemonic: ["AND", n.HEX(2) + "H"]
+            };
+        }};
+    this.opecodeTable[0246] = {
+        mnemonic:"AND (HL)",
+        cycle:7,
+        proc: function() {
+            THIS.reg.andAcc(THIS.memory.peek(THIS.reg.getHL()));
+        },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["AND", "(HL)"]
+            };
+        }
+    };
+    opeIX[0246] = {
+        mnemonic:"AND (IX+d)",
+        cycle:19,
+        proc: function() {
+            THIS.reg.andAcc(THIS.memory.peek(THIS.reg.IX + THIS.fetch()));
+        },
+        disasm: function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1), d ],
+                mnemonic: ["AND", "(IX+" + d.HEX(2) + "H)"]
+            }
+        }
+    };
+    opeIY[0246] = {
+        mnemonic:"AND (IY+d)",
+        cycle:19,
+        proc: function() {
+            THIS.reg.andAcc(THIS.memory.peek(THIS.reg.IY + THIS.fetch()));
+        },
+        disasm: function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1), d ],
+                mnemonic: ["AND", "(IY+" + d.HEX(2) + "H)"]
+            }
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // OR s         A <- A | s            [110]
+    //---------------------------------------------------------------------------------
+    this.opecodeTable[0260] = {
+        mnemonic:"OR B",
+        cycle:4,
+        proc: function() { THIS.reg.orAcc(THIS.reg.B); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["OR", "B"]
+            };
+        }
+    };
+    this.opecodeTable[0261] = {
+        mnemonic:"OR C",
+        cycle:4,
+        proc: function() { THIS.reg.orAcc(THIS.reg.C); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["OR", "C"]
+            };
+        }
+    };
+    this.opecodeTable[0262] = {
+        mnemonic:"OR D",
+        cycle:4,
+        proc: function() { THIS.reg.orAcc(THIS.reg.D); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["OR", "D"]
+            };
+        }
+    };
+    this.opecodeTable[0263] = {
+        mnemonic:"OR E",
+        cycle:4,
+        proc: function() { THIS.reg.orAcc(THIS.reg.E); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["OR", "E"]
+            };
+        }
+    };
+    this.opecodeTable[0264] = {
+        mnemonic:"OR H",
+        cycle:4,
+        proc: function() { THIS.reg.orAcc(THIS.reg.H); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["OR", "H"]
+            };
+        }
+    };
+    this.opecodeTable[0265] = {
+        mnemonic:"OR L",
+        cycle:4,
+        proc: function() { THIS.reg.orAcc(THIS.reg.L); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["OR", "L"]
+            };
+        }
+    };
+    this.opecodeTable[0267] = {
+        mnemonic:"OR A",
+        cycle:4,
+        proc: function() { THIS.reg.orAcc(THIS.reg.A); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["OR", "A"]
+            };
+        }
+    };
+    this.opecodeTable[0366] = {
+        mnemonic:"OR n",
+        cycle:7,
+        proc: function() { THIS.reg.orAcc(THIS.fetch()); },
+        disasm: function(mem, addr) {
+            var n = mem.peek(addr + 1);
+            return {
+                code:[mem.peek(addr),n],
+                    mnemonic: ["OR", n.HEX(2) + "H"]
+            };
+        }
+    };
+    this.opecodeTable[0266] = {
+        mnemonic:"OR (HL)",
+        cycle:7,
+        proc: function() {
+            THIS.reg.orAcc(THIS.memory.peek(THIS.reg.getHL()));
+        },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["OR", "(HL)"]
+            };
+        }
+    };
+    opeIX[0266] = {
+        mnemonic:"OR (IX+d)",
+        cycle:19,
+        proc: function() {
+            THIS.reg.orAcc(THIS.memory.peek(THIS.reg.IX + THIS.fetch()));
+        },
+        disasm: function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1), d ],
+                mnemonic: ["OR", "(IX+" + d.HEX(2) + "H)"]
+            }
+        }
+    };
+    opeIY[0266] = {
+        mnemonic:"OR (IY+d)",
+        cycle:19,
+        proc: function() {
+            THIS.reg.orAcc(THIS.memory.peek(THIS.reg.IY + THIS.fetch()));
+        },
+        disasm: function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1), d ],
+                mnemonic: ["OR", "(IY+" + d.HEX(2) + "H)"]
+            }
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // XOR s        A <- A ~ s            [101]
+    //---------------------------------------------------------------------------------
+    this.opecodeTable[0250] = {
+        mnemonic:"XOR B",
+        cycle:4,
+        proc: function() { THIS.reg.xorAcc(THIS.reg.B); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["XOR", "B"]
+            };
+        }
+    };
+    this.opecodeTable[0251] = {
+        mnemonic:"XOR C",
+        cycle:4,
+        proc: function() { THIS.reg.xorAcc(THIS.reg.C); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["XOR", "C"]
+            };
+        }
+    };
+    this.opecodeTable[0252] = {
+        mnemonic:"XOR D",
+        cycle:4,
+        proc: function() { THIS.reg.xorAcc(THIS.reg.D); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["XOR", "D"]
+            };
+        }
+    };
+    this.opecodeTable[0253] = {
+        mnemonic:"XOR E",
+        cycle:4,
+        proc: function() { THIS.reg.xorAcc(THIS.reg.E); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["XOR", "E"]
+            };
+        }
+    };
+    this.opecodeTable[0254] = {
+        mnemonic:"XOR H",
+        cycle:4,
+        proc: function() { THIS.reg.xorAcc(THIS.reg.H); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["XOR", "H"]
+            };
+        }
+    };
+    this.opecodeTable[0255] = {
+        mnemonic:"XOR L",
+        cycle:4,
+        proc: function() { THIS.reg.xorAcc(THIS.reg.L); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["XOR", "L"]
+            };
+        }
+    };
+    this.opecodeTable[0257] = {
+        mnemonic:"XOR A",
+        cycle:4,
+        proc: function() { THIS.reg.xorAcc(THIS.reg.A); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["XOR", "A"]
+            };
+        }
+    };
+    this.opecodeTable[0356] = {
+        mnemonic:"XOR n",
+        cycle:7,
+        proc: function() { THIS.reg.xorAcc(THIS.fetch()); },
+        disasm: function(mem, addr) {
+            var n = mem.peek(addr + 1);
+            return {
+                code:[mem.peek(addr),n],
+                    mnemonic: ["XOR", n.HEX(2) + "H"]};
+        }
+    };
+    this.opecodeTable[0256] = {
+        mnemonic:"XOR (HL)",
+        cycle:7,
+        proc: function() { THIS.reg.xorAcc(THIS.memory.peek(THIS.reg.getHL())); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["XOR", "(HL)"]
+            };
+        }
+    };
+    opeIX[0256] = {
+        mnemonic:"XOR (IX+d)",
+        cycle:19,
+        proc: function() {
+            THIS.reg.xorAcc(THIS.memory.peek(THIS.reg.IX + THIS.fetch()));
+        },
+        disasm: function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1), d ],
+                mnemonic: ["XOR", "(IX+" + d.HEX(2) + "H)"]
+            }
+        }
+    };
+    opeIY[0256] = {
+        mnemonic:"XOR (IY+d)",
+        cycle:19,
+        proc: function() {
+            THIS.reg.xorAcc(THIS.memory.peek(THIS.reg.IY + THIS.fetch()));
+        },
+        disasm: function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1), d ],
+                mnemonic: ["XOR", "(IY+" + d.HEX(2) + "H)"]
+            }
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // CP s         A - s                 [111]
+    //---------------------------------------------------------------------------------
+    this.opecodeTable[0270] = {
+        mnemonic:"CP B",
+        cycle:4,
+        proc: function() { THIS.reg.compareAcc(THIS.reg.B); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["CP", "B"]
+            };
+        }
+    };
+    this.opecodeTable[0271] = {
+        mnemonic:"CP C",
+        cycle:4,
+        proc: function() { THIS.reg.compareAcc(THIS.reg.C); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["CP", "C"]
+            };
+        }
+    };
+    this.opecodeTable[0272] = {
+        mnemonic:"CP D",
+        cycle:4,
+        proc: function() { THIS.reg.compareAcc(THIS.reg.D); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["CP", "D"]
+            };
+        }
+    };
+    this.opecodeTable[0273] = {
+        mnemonic:"CP E",
+        cycle:4,
+        proc: function() { THIS.reg.compareAcc(THIS.reg.E); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["CP", "E"]
+            };
+        }
+    };
+    this.opecodeTable[0274] = {
+        mnemonic:"CP H",
+        cycle:4,
+        proc: function() { THIS.reg.compareAcc(THIS.reg.H); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["CP", "H"]
+            };
+        }
+    };
+    this.opecodeTable[0275] = {
+        mnemonic:"CP L",
+        cycle:4,
+        proc: function() { THIS.reg.compareAcc(THIS.reg.L); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["CP", "L"]
+            };
+        }
+    };
+    this.opecodeTable[0277] = {
+        mnemonic:"CP A",
+        cycle:4,
+        proc: function() { THIS.reg.compareAcc(THIS.reg.A); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["CP", "A"]
+            };
+        }
+    };
+    this.opecodeTable[0376] = {
+        mnemonic:"CP n",
+        cycle:7,
+        proc: function() { THIS.reg.compareAcc(THIS.fetch()); },
+        disasm: function(mem, addr) {
+            var n = mem.peek(addr + 1);
+            return {
+                code:[mem.peek(addr),n],
+                    mnemonic: ["CP", n.HEX(2) + "H"]
+            };
+        }
+    };
+    this.opecodeTable[0276] = {
+        mnemonic:"CP (HL)",
+        cycle:7,
+        proc: function() {
+            THIS.reg.compareAcc(THIS.memory.peek(THIS.reg.getHL()));
+        },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["CP", "(HL)"]
+            };
+        }
+    };
+    opeIX[0276] = {
+        mnemonic:"CP (IX+d)",
+        cycle:19,
+        proc: function() {
+            THIS.reg.compareAcc(THIS.memory.peek(THIS.reg.IX + THIS.fetch()));
+        },
+        disasm: function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1), d ],
+                mnemonic: ["CP", "(IX+" + d.HEX(2) + "H)"]
+            }
+        }
+    };
+    opeIY[0276] = {
+        mnemonic:"CP (IY+d)",
+        cycle:19,
+        proc: function() {
+            THIS.reg.compareAcc(THIS.memory.peek(THIS.reg.IY + THIS.fetch()));
+        },
+        disasm: function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1), d ],
+                mnemonic: ["CP", "(IY+" + d.HEX(2) + "H)"]
+            }
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // INC r        r <- r + 1          00 <r>[100]
+    //---------------------------------------------------------------------------------
+    this.opecodeTable[0004] = {
+        mnemonic:"INC B",
+        "cycle": 4,
+        proc: function() { THIS.reg.increment("B"); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)], mnemonic: ["INC", "B"]
+            };
+        }
+    };
+    this.opecodeTable[0014] = {
+        mnemonic:"INC C",
+        "cycle": 4,
+        proc: function() { THIS.reg.increment("C"); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["INC", "C"]
+            };
+        }
+    };
+    this.opecodeTable[0024] = {
+        mnemonic:"INC D",
+        "cycle": 4,
+        proc: function() { THIS.reg.increment("D"); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["INC", "D"]
+            };
+        }
+    };
+    this.opecodeTable[0034] = {
+        mnemonic:"INC E",
+        "cycle": 4,
+        proc: function() { THIS.reg.increment("E"); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["INC", "E"]
+            };
+        }
+    };
+    this.opecodeTable[0044] = {
+        mnemonic:"INC H",
+        "cycle": 4,
+        proc: function() { THIS.reg.increment("H"); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["INC", "H"]
+            };
+        }
+    };
+    this.opecodeTable[0054] = {
+        mnemonic:"INC L",
+        "cycle": 4,
+        proc: function() { THIS.reg.increment("L"); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["INC", "L"]
+            };
+        }
+    };
+    this.opecodeTable[0074] = {
+        mnemonic:"INC A",
+        "cycle": 4,
+        proc: function() { THIS.reg.increment("A"); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["INC", "A"]
+            };
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // INC (HL)     (HL) <- (HL) + 1    00 110[100]
+    //---------------------------------------------------------------------------------
+    this.opecodeTable[0064] = {
+        mnemonic:"INC (HL)",
+        "cycle": 11,
+        proc: function() { THIS.incrementAt(THIS.reg.getHL()); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["INC", "(HL)"]
+            };
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // INC (IX+d)   (IX+d) <- (IX+d)+1  11 011 101
+    //                                  00 110[100]
+    //                                  <---d---->
+    //---------------------------------------------------------------------------------
+    opeIX[0064] = {
+        mnemonic:"INC (IX+d)",
+        "cycle": 23,
+        proc: function() { THIS.incrementAt(THIS.reg.IX + THIS.fetch()); },
+        disasm: function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            return {
+                code:[mem.peek(addr), mem.peek(addr + 1), d],
+                mnemonic: ["INC", "(IX+ " + d + ")"]
+            };
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // INC (IY+d)   (IY+d) <- (IY+d)+1  11 111 101
+    //                                  00 110[100]
+    //                                  <---d---->
+    //---------------------------------------------------------------------------------
+    opeIY[0064] = {
+        mnemonic:"INC (IY+d)",
+        "cycle": 23,
+        proc: function() { THIS.incrementAt(THIS.reg.IY + THIS.fetch());},
+        disasm: function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            return {
+                code:[mem.peek(addr), mem.peek(addr + 1), d],
+                mnemonic: ["INC", "(IY+ " + d + ")"]
+            };
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // DEC m        m <- m + 1                [100]
+    //---------------------------------------------------------------------------------
+    this.opecodeTable[0005] = {
+        mnemonic:"DEC B", proc: function() { THIS.reg.decrement("B"); }, "cycle": 4,
+        disasm: function(mem, addr) { return { code:[mem.peek(addr)], mnemonic: ["DEC", "B"]}; } };
+    this.opecodeTable[0015] = {
+        mnemonic:"DEC C", proc: function() { THIS.reg.decrement("C"); }, "cycle": 4,
+        disasm: function(mem, addr) { return { code:[mem.peek(addr)], mnemonic: ["DEC", "C"]}; } };
+    this.opecodeTable[0025] = {
+        mnemonic:"DEC D", proc: function() { THIS.reg.decrement("D"); }, "cycle": 4,
+        disasm: function(mem, addr) { return { code:[mem.peek(addr)], mnemonic: ["DEC", "D"]}; } };
+    this.opecodeTable[0035] = {
+        mnemonic:"DEC E", proc: function() { THIS.reg.decrement("E"); }, "cycle": 4,
+        disasm: function(mem, addr) { return { code:[mem.peek(addr)], mnemonic: ["DEC", "E"]}; } };
+    this.opecodeTable[0045] = {
+        mnemonic:"DEC H", proc: function() { THIS.reg.decrement("H"); }, "cycle": 4,
+        disasm: function(mem, addr) { return { code:[mem.peek(addr)], mnemonic: ["DEC", "H"]}; } };
+    this.opecodeTable[0055] = {
+        mnemonic:"DEC L", proc: function() { THIS.reg.decrement("L"); }, "cycle": 4,
+        disasm: function(mem, addr) { return { code:[mem.peek(addr)], mnemonic: ["DEC", "L"]}; } };
+    this.opecodeTable[0075] = {
+        mnemonic:"DEC A", proc: function() { THIS.reg.decrement("A"); }, "cycle": 4,
+        disasm: function(mem, addr) { return { code:[mem.peek(addr)], mnemonic: ["DEC", "A"]}; } };
+    this.opecodeTable[0065] = {
+        mnemonic:"DEC (HL)", proc: function() { THIS.decrementAt(THIS.reg.getHL()); }, "cycle": 11,
+        disasm: function(mem, addr) { return { code:[mem.peek(addr)], mnemonic: ["DEC", "(HL)"]}; } };
+    opeIX[0065] = {
+        mnemonic:"DEC (IX+d)",
+        "cycle": 23,
+        proc: function() { THIS.decrementAt(THIS.reg.IX + THIS.fetch()); },
+        disasm: function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            return {
+                code:[mem.peek(addr), mem.peek(addr + 1), d],
+                mnemonic: ["DEC", "(IX+ " + d + ")"]
+            };
+        }
+    };
+    opeIY[0065] = {
+        mnemonic:"DEC (IY+d)",
+        "cycle": 23,
+        proc: function() { THIS.decrementAt(THIS.reg.IY + THIS.fetch()); },
+        disasm: function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            return {
+                code:[mem.peek(addr), mem.peek(addr + 1), d],
+                mnemonic: ["DEC", "(IY+ " + d + ")"]
+            };
+        }
+    };
+
+    //=================================================================================
+    // 一般目的の演算、及びCPUコントロールグループ
+    //=================================================================================
+    //static void daa(void)
+    //{
+    // int i;
+    // i=R.AF.B.h;
+    // if (R.AF.B.l&C_FLAG) i|=256;
+    // if (R.AF.B.l&H_FLAG) i|=512;
+    // if (R.AF.B.l&N_FLAG) i|=1024;
+    // R.AF.W.l=DAATable[i];
+    //};
+    this.opecodeTable[0047] = {
+        mnemonic:"DAA",
+        cycle:4,
+        proc: function() { THIS.reg.DAA(); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["DAA"]
+            };
+        }
+    };
+    this.opecodeTable[0057] = {
+        mnemonic:"CPL",
+        cycle:4,
+        proc: function() { THIS.reg.CPL(); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["CPL"]
+            };
+        }
+    };
+    this.opecodeTable[0077] = {
+        mnemonic:"CCF",
+        cycle:4,
+        proc: function() {
+            if(THIS.reg.flagC()) {
+                THIS.reg.clearFlagC();
+            } else {
+                THIS.reg.setFlagC();
+            }
+        },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["CCF"]
+            };
+        }
+    };
+    this.opecodeTable[0067] = {
+        mnemonic:"SCF",
+        cycle:4,
+        proc: function() { THIS.reg.setFlagC(); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["SCF"]
+            };
+        }
+    };
+    this.opecodeTable[0000] = {
+        mnemonic:"NOP",
+        cycle: 4,
+        proc: function() {},
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["NOP"]
+            };
+        }
+    };
+    this.opecodeTable[0166] = {
+        mnemonic:"HALT",
+        cycle: 4,
+        proc: function() {
+            THIS.HALT = 1;
+            THIS.reg.PC -= 1;
+            THIS.exec = function() {
+                THIS.reg.R = (THIS.reg.R + 1) & 255;
+                throw "halt";
+            };
+            throw "halt";
+        },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["HALT"]
+            };
+        }
+    };
+    this.opecodeTable[0363] = {
+        mnemonic:"DI",
+        cycle: 4,
+        proc: function() { THIS.IFF1 = THIS.IFF2 = 0; },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["DI"]
+            };
+        }
+    };
+    this.opecodeTable[0373] = {
+        mnemonic:"EI",
+        cycle: 4,
+        proc: function() {
+            if (!THIS.IFF1) {
+                THIS.IFF1 = this.IFF2 = 1;
+                THIS.reg.R = (THIS.reg.R + 1) & 255;
+                THIS.exec();
+                THIS.interrupt();
+            } else {
+                THIS.IFF2 = 1;
+            }
+        },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["EI"]
+            };
+        }
+    };
+    opeMisc[0104] = {
+        mnemonic:"NEG",
+        cycle: 8,
+        proc: function() { THIS.reg.NEG(); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic: ["NEG"]
+            };
+        }
+    };
+    opeMisc[0106] = {
+        mnemonic:"IM0",
+        cycle: 8,
+        proc: function() { THIS.IM = 0; },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic: ["IM0"]
+            };
+        }
+    };
+    opeMisc[0126] = {
+        mnemonic:"IM1",
+        cycle: 8,
+        proc: function() { THIS.IM = 1; },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic: ["IM1"]
+            };
+        }
+    };
+    opeMisc[0136] = {
+        mnemonic:"IM2",
+        cycle: 8,
+        proc: function() { THIS.IM = 2; },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic: ["IM2"]
+            };
+        }
+    };
+
+    //=================================================================================
+    // 16ビット演算グループ
+    //=================================================================================
+
+    //---------------------------------------------------------------------------------
+    // ADD HL,ss    HL <- HL + ss       00 ss1 001
+    //---------------------------------------------------------------------------------
+    this.opecodeTable[0011] = {
+        mnemonic:"ADD HL,BC",
+        cycle: 11,
+        proc: function() { THIS.reg.ADD_HL(THIS.reg.getBC()); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["ADD", "HL", "BC"]
+            };
+        }
+    };
+    this.opecodeTable[0031] = {
+        mnemonic:"ADD HL,DE",
+        cycle: 11,
+        proc: function() { THIS.reg.ADD_HL(THIS.reg.getDE()); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["ADD", "HL", "DE"]};
+        }
+    };
+    this.opecodeTable[0051] = {
+        mnemonic:"ADD HL,HL",
+        cycle: 11,
+        proc: function() { THIS.reg.ADD_HL(THIS.reg.getHL()); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["ADD", "HL", "HL"]
+            };
+        }
+    };
+    this.opecodeTable[0071] = {
+        mnemonic:"ADD HL,SP",
+        cycle: 11,
+        proc: function() { THIS.reg.ADD_HL(THIS.reg.getSP()); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["ADD", "HL", "SP"]
+            };
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // ADC HL,ss    HL <- HL + ss + CY  11 101 101
+    //                                  01 ss1 010
+    //---------------------------------------------------------------------------------
+    opeMisc[0112] = {
+        mnemonic:"ADC HL,BC",
+        cycle: 15,
+        proc: function() { THIS.reg.ADC_HL(THIS.reg.getBC()); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic: ["ADC", "HL", "BC"]
+            };
+        }
+    };
+    opeMisc[0132] = {
+        mnemonic:"ADC HL,DE",
+        cycle: 15,
+        proc: function() { THIS.reg.ADC_HL(THIS.reg.getDE()); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic: ["ADC", "HL", "DE"]
+            };
+        }
+    };
+    opeMisc[0152] = {
+        mnemonic:"ADC HL,HL",
+        cycle: 15,
+        proc: function() { THIS.reg.ADC_HL(THIS.reg.getHL()); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic: ["ADC", "HL", "HL"]
+            };
+        }
+    };
+    opeMisc[0172] = {
+        mnemonic:"ADC HL,SP",
+        cycle: 15,
+        proc: function() { THIS.reg.ADC_HL(THIS.reg.getSP()); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic: ["ADC", "HL", "SP"]
+            };
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // SBC HL,ss    HL <- HL - ss - CY  11 101 101
+    //                                  01 ss0 010
+    //---------------------------------------------------------------------------------
+    opeMisc[0102] = {
+        mnemonic:"SBC HL,BC",
+        cycle: 15,
+        proc: function() { THIS.reg.SBC_HL(THIS.reg.getBC()); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic: ["SBC", "HL", "BC"]
+            };
+        }
+    };
+    opeMisc[0122] = {
+        mnemonic:"SBC HL,DE",
+        cycle: 15,
+        proc: function() { THIS.reg.SBC_HL(THIS.reg.getDE()); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic: ["SBC", "HL", "DE"]
+            };
+        }
+    };
+    opeMisc[0142] = {
+        mnemonic:"SBC HL,HL",
+        cycle: 15,
+        proc: function() { THIS.reg.SBC_HL(THIS.reg.getHL()); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic: ["SBC", "HL", "HL"]
+            };
+        }
+    };
+    opeMisc[0162] = {
+        mnemonic:"SBC HL,SP",
+        cycle: 15,
+        proc: function() { THIS.reg.SBC_HL(THIS.reg.getSP()); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic: ["SBC", "HL", "SP"]
+            };
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // ADD IX,pp    IX <- IX + pp       11 011 101
+    //                                  00 pp1 001
+    //---------------------------------------------------------------------------------
+    opeIX[0011] = {
+        mnemonic:"ADD IX,BC",
+        cycle: 15,
+        proc: function() { THIS.reg.ADD_IX(THIS.reg.getBC()); },
+        disasm: function(mem, addr) {
+            return {
+                code: [ 0xDD, 0x09 ],
+                mnemonic: ["ADD", "IX", "BC"]
+            };
+        }
+    };
+    opeIX[0031] = {
+        mnemonic:"ADD IX,DE",
+        cycle: 15,
+        proc: function() { THIS.reg.ADD_IX(THIS.reg.getDE()); },
+        disasm: function(mem, addr) {
+            return {
+                code: [ 0xDD, 0x19 ],
+                mnemonic: ["ADD", "IX", "DE"]
+            };
+        }
+    };
+    opeIX[0051] = {
+        mnemonic:"ADD IX,IX",
+        cycle: 15,
+        proc: function() { THIS.reg.ADD_IX(THIS.reg.IX); },
+        disasm: function(mem, addr) {
+            return {
+                code: [ 0xDD, 0x29 ],
+                mnemonic: ["ADD", "IX", "IX"]
+            };
+        }
+    };
+    opeIX[0071] = {
+        mnemonic:"ADD IX,SP",
+        cycle: 15,
+        proc: function() { THIS.reg.ADD_IX(THIS.reg.SP); },
+        disasm: function(mem, addr) {
+            return {
+                code: [ 0xDD, 0x39 ],
+                mnemonic: ["ADD", "IX", "SP"]
+            };
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // ADD IY,pp    IY <- IY + rr       11 111 101
+    //                                  00 rr1 001
+    //---------------------------------------------------------------------------------
+    opeIY[0011] = {
+        mnemonic:"ADD IY,BC",
+        cycle: 15,
+        proc: function() { THIS.reg.ADD_IY(THIS.reg.getBC()); },
+        disasm: function(mem, addr) {
+            return {
+                code: [ 0xFD, 0x09 ],
+                mnemonic: ["ADD", "IY", "BC"]
+            };
+        }
+    };
+    opeIY[0031] = {
+        mnemonic:"ADD IY,DE",
+        cycle: 15,
+        proc: function() { THIS.reg.ADD_IY(THIS.reg.getDE()); },
+        disasm: function(mem, addr) {
+            return {
+                code: [ 0xFD, 0x19 ],
+                mnemonic: ["ADD", "IY", "DE"]
+            };
+        }
+    };
+    opeIY[0051] = {
+        mnemonic:"ADD IY,IY",
+        cycle: 15,
+        proc: function() { THIS.reg.ADD_IY(THIS.reg.IY); },
+        disasm: function(mem, addr) {
+            return {
+                code: [ 0xFD, 0x29 ],
+                mnemonic: ["ADD", "IY", "IY"]
+            };
+        }
+    };
+    opeIY[0071] = {
+        mnemonic:"ADD IY,SP",
+        cycle: 15,
+        proc: function() { THIS.reg.ADD_IY(THIS.reg.SP); },
+        disasm: function(mem, addr) {
+            return {
+                code: [ 0xFD, 0x39 ],
+                mnemonic: ["ADD", "IY", "SP"]
+            };
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // INC ss       ss <- ss + 1        00 ss0 011
+    //---------------------------------------------------------------------------------
+    this.opecodeTable[0003] = {
+        mnemonic:"INC BC",
+        cycle: 6,
+        proc: function() {
+            THIS.reg.incBC();
+        },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["INC", "BC"]};
+        }
+    };
+    this.opecodeTable[0023] = {
+        mnemonic:"INC DE",
+        cycle: 6,
+        proc: function() {
+            THIS.reg.incDE();
+        },
+        disasm: function(mem, addr) {
+            return { code:[mem.peek(addr)],
+                mnemonic: ["INC", "DE"]
+            };
+        }
+    };
+    this.opecodeTable[0043] = {
+        mnemonic:"INC HL",
+        cycle: 6,
+        proc: function() {
+            THIS.reg.incHL();
+        },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["INC", "HL"]
+            };
+        }
+    };
+    this.opecodeTable[0063] = {
+        mnemonic:"INC SP",
+        cycle: 6,
+        proc: function() { THIS.reg.SP = (THIS.reg.SP + 1) & 0xffff; },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["INC", "SP"]
+            };
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // INC IX       IX <- IX + 1        11 011 101
+    //                                  00 100 011
+    //---------------------------------------------------------------------------------
+    opeIX[0043] = {//0010-0011 0x23
+        mnemonic:"INC IX",
+        cycle: 10,
+        proc: function() {
+            THIS.reg.IX = (THIS.reg.IX + 1) & 0xffff;
+        },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr), mem.peek(addr+1)],
+                mnemonic: ["INC", "IX"]
+            };
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // INC IY       IY <- IY + 1        11 111 101
+    //                                  00 100 011
+    //---------------------------------------------------------------------------------
+    opeIY[0043] = {
+        mnemonic:"INC IY",
+        cycle: 10,
+        proc: function() {
+            THIS.reg.IY = (THIS.reg.IY + 1) & 0xffff;
+        },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr), mem.peek(addr+1)],
+                mnemonic: ["INC", "IY"]
+            };
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // DEC ss       ss <- ss + 1        00 ss1 011
+    //---------------------------------------------------------------------------------
+    this.opecodeTable[0013] = {
+        mnemonic:"DEC BC",
+        cycle: 6,
+        proc: function() {
+            THIS.reg.decBC();
+        },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["DEC", "BC"]
+            };
+        }
+    };
+    this.opecodeTable[0033] = {
+        mnemonic:"DEC DE",
+        cycle: 6,
+        proc: function() {
+            THIS.reg.decDE();
+        },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["DEC", "DE"]
+            };
+        }
+    };
+    this.opecodeTable[0053] = {
+        mnemonic:"DEC HL",
+        cycle: 6,
+        proc: function() {
+            THIS.reg.decHL();
+        },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["DEC", "HL"]
+            };
+        }
+    };
+    this.opecodeTable[0073] = {
+        mnemonic:"DEC SP",
+        cycle: 6,
+        proc: function() {
+            THIS.reg.SP = (THIS.reg.SP - 1) & 0xffff;
+        },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr)],
+                mnemonic: ["DEC", "SP"]
+            };
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // DEC IX       IX <- IX + 1        11 011 101
+    //                                  00 101 011
+    //---------------------------------------------------------------------------------
+    opeIX[0053] = {
+        mnemonic:"DEC IX",
+        cycle:10,
+        proc: function() {
+            THIS.reg.IX = (THIS.reg.IX - 1) & 0xffff;
+        },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr), mem.peek(addr+1)],
+                mnemonic: ["DEC", "IX"]
+            };
+        }
+    };
+    //---------------------------------------------------------------------------------
+    // DEC IY       IY <- IY + 1        11 111 101
+    //                                  00 101 011
+    //---------------------------------------------------------------------------------
+    opeIY[0053] = {
+        mnemonic:"DEC IY",
+        cycle:10,
+        proc: function() {
+            THIS.reg.IY = (THIS.reg.IY - 1) & 0xffff;
+        },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr), mem.peek(addr+1)],
+                mnemonic: ["DEC", "IY"]
+            };
+        }
+    };
+
+    //=================================================================================
+    // ローテイト・シフトグループ
+    //=================================================================================
+    this.opecodeTable[0007] = {
+        mnemonic:"RLCA",
+        cycle: 4,
+        proc: function() { THIS.reg.RLCA(); },
+        disasm: function(mem,addr) {
+            return {
+                code:[0007],
+                mnemonic:["RLCA"]
+            };
+        }
+    };
+    this.opecodeTable[0027] = {
+        mnemonic:"RLA",
+        cycle: 4,
+        proc: function() { THIS.reg.RLA(); },
+        disasm: function(mem,addr) {
+            return {
+                code:[0027],
+                mnemonic:["RLA"]
+            };
+        }
+    };
+    this.opecodeTable[0017] = {
+        mnemonic:"RRCA",
+        cycle: 4,
+        proc: function() { THIS.reg.RRCA(); },
+        disasm: function(mem,addr) {
+            return {
+                code:[0017],
+                mnemonic:["RRCA"]
+            };
+        }
+    };
+    this.opecodeTable[0037] = {
+        mnemonic:"RRA",
+        cycle: 4,
+        proc: function() { THIS.reg.RRA(); },
+        disasm: function(mem,addr) {
+            return {
+                code:[0037],
+                mnemonic:["RRA"]
+            };
+        }
+    };
+    
+    opeIX[0313] = {//1100-1011 CB
+        mnemonic: function() { return opeRotateIX; },
+        proc: function() {
+            var d = THIS.fetch();
+            var feature = THIS.fetch();
+            opeRotateIX[feature].proc(d);
+        },
+        disasm: function(mem, addr) {
+            var feature = mem.peek(addr + 3);
+            return opeRotateIX[feature].disasm(mem, addr);
+        }
+    };
+    opeIY[0313] = {
+        mnemonic: function() { return opeRotateIY; },
+        proc: function() {
+            var d = THIS.fetch();
+            var feature = THIS.fetch();
+            opeRotateIY[feature].proc(d);
+        },
+        disasm: function(mem, addr) {
+            var feature = mem.peek(addr + 3);
+            return opeRotateIY[feature].disasm(mem, addr);
+        }
+    };
+
+    opeRotate[0000] = {
+        mnemonic:"RLC B",
+        cycle: 4,
+        proc: function() {
+            THIS.reg.B = THIS.reg.RLC(THIS.reg.B);
+        },
+        disasm:function(mem, addr) {
+            return {
+                code:[mem.peek(addr), mem.peek(addr+1)],
+                mnemonic:["RLC","B"]
+            };
+        }
+    };
+    opeRotate[0001] = {
+        mnemonic:"RLC C",
+        cycle: 4,
+        proc: function() {
+            THIS.reg.C = THIS.reg.RLC(THIS.reg.C);
+        },
+        disasm:function(mem, addr) {
+            return {
+                code:[mem.peek(addr), mem.peek(addr+1)],
+                mnemonic:["RLC","C"]
+            };
+        }
+    };
+    opeRotate[0002] = {
+        mnemonic:"RLC D",
+        cycle: 4,
+        proc: function() {
+            THIS.reg.D = THIS.reg.RLC(THIS.reg.D);
+        },
+        disasm:function(mem, addr) {
+            return {
+                code:[mem.peek(addr), mem.peek(addr+1)],
+                mnemonic:["RLC","D"]
+            };
+        }
+    };
+    opeRotate[0003] = {
+        mnemonic:"RLC E",
+        cycle: 4,
+        proc: function() {
+            THIS.reg.E = THIS.reg.RLC(THIS.reg.E);
+        },
+        disasm:function(mem, addr) {
+            return {
+                code:[mem.peek(addr), mem.peek(addr+1)],
+                mnemonic:["RLC","E"]
+            };
+        }
+    };
+    opeRotate[0004] = {
+        mnemonic:"RLC H",
+        cycle: 4,
+        proc: function() {
+            THIS.reg.H = THIS.reg.RLC(THIS.reg.H);
+        },
+        disasm:function(mem, addr) {
+            return {
+                code:[mem.peek(addr), mem.peek(addr+1)],
+                mnemonic:["RLC","H"]
+            };
+        }
+    };
+    opeRotate[0005] = {
+        mnemonic:"RLC L",
+        cycle: 4,
+        proc: function() {
+            THIS.reg.L = THIS.reg.RLC(THIS.reg.L);
+        },
+        disasm:function(mem, addr) {
+            return {
+                code:[mem.peek(addr), mem.peek(addr+1)],
+                mnemonic:["RLC","L"]
+            };
+        }
+    };
+    opeRotate[0007] = {
+        mnemonic:"RLC A",
+        cycle: 4,
+        proc: function() {
+            THIS.reg.A = THIS.reg.RLC(THIS.reg.A);
+        },
+        disasm:function(mem, addr) {
+            return {
+                code:[mem.peek(addr), mem.peek(addr+1)],
+                mnemonic:["RLC","A"]
+            };
+        }
+    };
+    opeRotate[0006] = {
+        mnemonic:"RLC (HL)",
+        cycle: 15,
+        proc: function() {
+            var adr = THIS.reg.getHL();
+            THIS.memory.poke(adr, THIS.reg.RLC(THIS.memory.peek(adr)));
+        },
+        disasm:function(mem, addr) {
+            return {
+                code:[mem.peek(addr), mem.peek(addr+1)],
+                mnemonic:["RLC","(HL)"]
+            };
+        }
+    };
+    opeRotateIX[0006] = {
+        mnemonic: "RLC (IX+d)",
+        cycle: 23,
+        proc: function(d) {
+            var adr = THIS.reg.IX + d;
+            THIS.memory.poke(adr, THIS.reg.RLC(THIS.memory.peek(adr)));
+        },
+        disasm:function(mem, addr) {
+            return {
+                code:[mem.peek(addr), mem.peek(addr+1), mem.peek(addr+2), mem.peek(addr+3)],
+                mnemonic:["RLC","(IX+" + mem.peek(addr+2) + ")"]
+            };
+        }
+    };
+    opeRotateIY[0006] = {
+        mnemonic: "RLC (IY+d)",
+        cycle: 23,
+        proc: function(d) {
+            var adr = THIS.reg.IY + d;
+            THIS.memory.poke(adr, THIS.reg.RLC(THIS.memory.peek(adr)));
+        },
+        disasm:function(mem, addr) {
+            return {
+                code:[mem.peek(addr), mem.peek(addr+1), mem.peek(addr+2), mem.peek(addr+3)],
+                mnemonic:["RLC","(IY+" + mem.peek(addr+2) + ")"]
+            };
+        }
+    };
+    opeRotate[0020] = {
+        mnemonic:"RL B",
+        cycle: 8,
+        proc: function() { THIS.reg.B = THIS.reg.RL(THIS.reg.B); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RL","B"] };}
+    };
+    opeRotate[0021] = {
+        mnemonic:"RL C",
+        cycle: 8,
+        proc: function() { THIS.reg.C = THIS.reg.RL(THIS.reg.C); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RL","C"] };}
+    };
+    opeRotate[0022] = {
+        mnemonic:"RL D",
+        cycle: 8,
+        proc: function() { THIS.reg.D = THIS.reg.RL(THIS.reg.D); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RL","D"] };}
+    };
+    opeRotate[0023] = {
+        mnemonic:"RL E",
+        cycle: 8,
+        proc: function() { THIS.reg.E = THIS.reg.RL(THIS.reg.E); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RL","E"] };}
+    };
+    opeRotate[0024] = {
+        mnemonic:"RL H",
+        cycle: 8,
+        proc: function() { THIS.reg.H = THIS.reg.RL(THIS.reg.H); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RL","H"] };}
+    };
+    opeRotate[0025] = {
+        mnemonic:"RL L",
+        cycle: 8,
+        proc: function() { THIS.reg.L = THIS.reg.RL(THIS.reg.L); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RL","L"] };}
+    };
+    opeRotate[0026] = {
+        mnemonic:"RL (HL)",
+        cycle: 15,
+        proc: function() { var adr = THIS.reg.getHL(); THIS.memory.poke(adr, THIS.reg.RL(THIS.memory.peek(adr))); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RL","(HL)"] };}
+    };
+    opeRotate[0027] = {
+        mnemonic:"RL A",
+        cycle: 8,
+        proc: function() { THIS.reg.A = THIS.reg.RL(THIS.reg.A); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RL","A"] };}
+    };
+    opeRotateIX[0026] = {
+        mnemonic: "RL (IX+d)",
+        cycle: 23,
+        proc: function(d) { var adr = THIS.reg.IX + d; THIS.memory.poke(adr, THIS.reg.RL(THIS.memory.peek(adr))); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr), mem.peek(addr+1), mem.peek(addr+2), mem.peek(addr+3)],
+                mnemonic:["RL","(IX+" + mem.peek(addr+2) + ")"]
+            };
+        }
+    };
+    opeRotateIY[0026] = {
+        mnemonic: "RL (IY+d)",
+        cycle: 23,
+        proc: function(d) { var adr = THIS.reg.IY + d; THIS.memory.poke(adr, THIS.reg.RL(THIS.memory.peek(adr))); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr), mem.peek(addr+1), mem.peek(addr+2), mem.peek(addr+3)],
+                mnemonic:["RL","(IY+" + mem.peek(addr+2) + ")"]
+            };
+        }
+    };
+
+    opeRotate[0010] = {
+        mnemonic:"RRC B",
+        cycle: 4,
+        proc: function() { THIS.reg.B = THIS.reg.RRC(THIS.reg.B); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RRC","B"] };}
+    };
+    opeRotate[0011] = {
+        mnemonic:"RRC C",
+        cycle: 4,
+        proc: function() { THIS.reg.C = THIS.reg.RRC(THIS.reg.C); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RRC","C"] };}
+    };
+    opeRotate[0012] = {
+        mnemonic:"RRC D",
+        cycle: 4,
+        proc: function() { THIS.reg.D = THIS.reg.RRC(THIS.reg.D); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RRC","D"] };}
+    };
+    opeRotate[0013] = {
+        mnemonic:"RRC E",
+        cycle: 4,
+        proc: function() { THIS.reg.E = THIS.reg.RRC(THIS.reg.E); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RRC","E"] };}
+    };
+    opeRotate[0014] = {
+        mnemonic:"RRC H",
+        cycle: 4,
+        proc: function() { THIS.reg.H = THIS.reg.RRC(THIS.reg.H); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RRC","H"] };}
+    };
+    opeRotate[0015] = {
+        mnemonic:"RRC L",
+        cycle: 4,
+        proc: function() { THIS.reg.L = THIS.reg.RRC(THIS.reg.L); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RRC","L"] };}
+    };
+    opeRotate[0017] = {
+        mnemonic:"RRC A",
+        cycle: 4,
+        proc: function() { THIS.reg.A = THIS.reg.RRC(THIS.reg.A); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RRC","A"] };}
+    };
+    opeRotate[0016] = {
+        mnemonic:"RRC (HL)",
+        cycle: 15,
+        proc: function() { var adr = THIS.reg.getHL(); THIS.memory.poke(adr, THIS.reg.RRC(THIS.memory.peek(adr))); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RRC","(HL)"] };}
+    };
+    opeRotateIX[0016] = {
+        mnemonic: "RRC (IX+d)",
+        cycle: 23,
+        proc: function(d) { var adr = THIS.reg.IX + d; THIS.memory.poke(adr, THIS.reg.RRC(THIS.memory.peek(adr))); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr), mem.peek(addr+1), mem.peek(addr+2), mem.peek(addr+3)],
+                mnemonic:["RRC","(IX+" + mem.peek(addr+2) + ")"]
+            };
+        }
+    };
+    opeRotateIY[0016] = {
+        mnemonic: "RRC (IY+d)",
+        cycle: 23,
+        proc: function(d) { var adr = THIS.reg.IY + d; THIS.memory.poke(adr, THIS.reg.RRC(THIS.memory.peek(adr))); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr), mem.peek(addr+1), mem.peek(addr+2), mem.peek(addr+3)],
+                mnemonic:["RRC","(IY+" + mem.peek(addr+2) + ")"]
+            };
+        }
+    };
+    
+    opeRotate[0030] = {
+        mnemonic:"RR B",
+        cycle: 8,
+        proc: function() { THIS.reg.B = THIS.reg.RR(THIS.reg.B); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RR","B"] };}
+    };
+    opeRotate[0031] = {
+        mnemonic:"RR C",
+        cycle: 8,
+        proc: function() { THIS.reg.C = THIS.reg.RR(THIS.reg.C); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RR","C"] };}
+    };
+    opeRotate[0032] = {
+        mnemonic:"RR D",
+        cycle: 8,
+        proc: function() { THIS.reg.D = THIS.reg.RR(THIS.reg.D); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RR","D"] };}
+    };
+    opeRotate[0033] = {
+        mnemonic:"RR E",
+        cycle: 8,
+        proc: function() { THIS.reg.E = THIS.reg.RR(THIS.reg.E); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RR","E"] };}
+    };
+    opeRotate[0034] = {
+        mnemonic:"RR H",
+        cycle: 8,
+        proc: function() { THIS.reg.H = THIS.reg.RR(THIS.reg.H); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RR","H"] };}
+    };
+    opeRotate[0035] = {
+        mnemonic:"RR L",
+        cycle: 8,
+        proc: function() { THIS.reg.L = THIS.reg.RR(THIS.reg.L); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RR","L"] };}
+    };
+    opeRotate[0036] = {
+        mnemonic:"RR (HL)",
+        cycle: 15,
+        proc: function() { var adr = THIS.reg.getHL(); THIS.memory.poke(adr, THIS.reg.RR(THIS.memory.peek(adr))); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RR","(HL)"] };}
+    };
+    opeRotate[0037] = {
+        mnemonic:"RR A",
+        cycle: 8,
+        proc: function() { THIS.reg.A = THIS.reg.RR(THIS.reg.A); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RR","A"] };}
+    };
+    opeRotateIX[0036] = {
+        mnemonic: "RR (IX+d)",
+        cycle: 23,
+        proc: function(d) { var adr = THIS.reg.IX + d; THIS.memory.poke(adr, THIS.reg.RR(THIS.memory.peek(adr))); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr), mem.peek(addr+1), mem.peek(addr+2), mem.peek(addr+3)],
+                mnemonic:["RR","(IX+" + mem.peek(addr+2) + ")"]
+            };
+        }
+    };
+    opeRotateIY[0036] = {
+        mnemonic: "RR (IY+d)",
+        cycle: 23,
+        proc: function(d) { var adr = THIS.reg.IY + d; THIS.memory.poke(adr, THIS.reg.RR(THIS.memory.peek(adr))); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr), mem.peek(addr+1), mem.peek(addr+2), mem.peek(addr+3)],
+                mnemonic:["RR","(IY+" + mem.peek(addr+2) + ")"]
+            };
+        }
+    };
+
+    opeRotate[0040] = {
+        mnemonic:"SLA B",
+        cycle:8,
+        proc: function() { THIS.reg.B = THIS.reg.SLA(THIS.reg.B); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SLA","B"] };}
+    };
+    opeRotate[0041] = {
+        mnemonic:"SLA C",
+        cycle:8,
+        proc: function() { THIS.reg.C = THIS.reg.SLA(THIS.reg.C); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SLA","C"] };}
+    };
+    opeRotate[0042] = {
+        mnemonic:"SLA D",
+        cycle:8,
+        proc: function() { THIS.reg.D = THIS.reg.SLA(THIS.reg.D); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SLA","D"] };}
+    };
+    opeRotate[0043] = {
+        mnemonic:"SLA E",
+        cycle:8,
+        proc: function() { THIS.reg.E = THIS.reg.SLA(THIS.reg.E); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SLA","E"] };}
+    };
+    opeRotate[0044] = {
+        mnemonic:"SLA H",
+        cycle:8,
+        proc: function() { THIS.reg.H = THIS.reg.SLA(THIS.reg.H); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SLA","H"] };}
+    };
+    opeRotate[0045] = {
+        mnemonic:"SLA L",
+        cycle:8,
+        proc: function() { THIS.reg.L = THIS.reg.SLA(THIS.reg.L); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SLA","L"] };}
+    };
+    opeRotate[0047] = {
+        mnemonic:"SLA A",
+        cycle:8,
+        proc: function() { THIS.reg.A = THIS.reg.SLA(THIS.reg.A); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SLA","A"] };}
+    };
+    opeRotate[0046] = {
+        mnemonic:"SLA (HL)",
+        cycle:15,
+        proc: function() { var adr = THIS.reg.getHL(); THIS.memory.poke(adr, THIS.reg.SLA(THIS.memory.peek(adr))); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SLA","(HL)"] };}
+    };
+    opeRotateIX[0046] = {
+        mnemonic: "SLA (IX+d)",
+        cycle:23,
+        proc: function(d) { var adr = THIS.reg.IX + d; THIS.memory.poke(adr, THIS.reg.SLA(THIS.memory.peek(adr))); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr), mem.peek(addr+1), mem.peek(addr+2), mem.peek(addr+3)],
+                mnemonic:["SLA","(IX+" + mem.peek(addr+2) + ")"]
+            };
+        }
+    };
+    opeRotateIY[0046] = {
+        mnemonic: "SLA (IY+d)",
+        cycle:23,
+        proc: function(d) { var adr = THIS.reg.IY + d; THIS.memory.poke(adr, THIS.reg.SLA(THIS.memory.peek(adr))); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr), mem.peek(addr+1), mem.peek(addr+2), mem.peek(addr+3)],
+                mnemonic:["SLA","(IY+" + mem.peek(addr+2) + ")"]
+            };
+        }
+    };
+
+    opeRotate[0050] = {
+        mnemonic:"SRA B",
+        cycle: 8,
+        proc: function() { THIS.reg.B = THIS.reg.SRA(THIS.reg.B); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SRA","B"] };}
+    };
+    opeRotate[0051] = {
+        mnemonic:"SRA C",
+        cycle: 8,
+        proc: function() { THIS.reg.C = THIS.reg.SRA(THIS.reg.C); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SRA","C"] };}
+    };
+    opeRotate[0052] = {
+        mnemonic:"SRA D",
+        cycle: 8,
+        proc: function() { THIS.reg.D = THIS.reg.SRA(THIS.reg.D); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SRA","D"] };}
+    };
+    opeRotate[0053] = {
+        mnemonic:"SRA E",
+        cycle: 8,
+        proc: function() { THIS.reg.E = THIS.reg.SRA(THIS.reg.E); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SRA","E"] };}
+    };
+    opeRotate[0054] = {
+        mnemonic:"SRA H",
+        cycle: 8,
+        proc: function() { THIS.reg.H = THIS.reg.SRA(THIS.reg.H); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SRA","H"] };}
+    };
+    opeRotate[0055] = {
+        mnemonic:"SRA L",
+        cycle: 8,
+        proc: function() { THIS.reg.L = THIS.reg.SRA(THIS.reg.L); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SRA","L"] };}
+    };
+    opeRotate[0057] = {
+        mnemonic:"SRA A",
+        cycle: 8,
+        proc: function() { THIS.reg.A = THIS.reg.SRA(THIS.reg.A); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SRA","A"] };}
+    };
+    opeRotate[0056] = {
+        mnemonic:"SRA (HL)",
+        cycle: 15,
+        proc: function() { var adr = THIS.reg.getHL(); THIS.memory.poke(adr, THIS.reg.SRA(THIS.memory.peek(adr))); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SRA","(HL)"] };}
+    };
+    opeRotateIX[0056] = {
+        mnemonic: "SRA (IX+d)",
+        cycle: 23,
+        proc: function(d) { var adr = THIS.reg.IX + d; THIS.memory.poke(adr, THIS.reg.SRA(THIS.memory.peek(adr))); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr), mem.peek(addr+1), mem.peek(addr+2), mem.peek(addr+3)],
+                mnemonic:["SRA","(IX+" + mem.peek(addr+2) + ")"]
+            };
+        }
+    };
+    opeRotateIY[0056] = {
+        mnemonic: "SRA (IY+d)",
+        cycle: 23,
+        proc: function(d) { var adr = THIS.reg.IY + d; THIS.memory.poke(adr, THIS.reg.SRA(THIS.memory.peek(adr))); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr), mem.peek(addr+1), mem.peek(addr+2), mem.peek(addr+3)],
+                mnemonic:["SRA","(IY+" + mem.peek(addr+2) + ")"]
+            };
+        }
+    };
+
+    opeRotate[0070] = {
+        mnemonic:"SRL B",
+        cycle: 8,
+        proc: function() { THIS.reg.B = THIS.reg.SRL(THIS.reg.B); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SRL","B"] };}
+    };
+    opeRotate[0071] = {
+        mnemonic:"SRL C",
+        cycle: 8,
+        proc: function() { THIS.reg.C = THIS.reg.SRL(THIS.reg.C); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SRL","C"] };}
+    };
+    opeRotate[0072] = {
+        mnemonic:"SRL D",
+        cycle: 8,
+        proc: function() { THIS.reg.D = THIS.reg.SRL(THIS.reg.D); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SRL","D"] };}
+    };
+    opeRotate[0073] = {
+        mnemonic:"SRL E",
+        cycle: 8,
+        proc: function() { THIS.reg.E = THIS.reg.SRL(THIS.reg.E); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SRL","E"] };}
+    };
+    opeRotate[0074] = {
+        mnemonic:"SRL H",
+        cycle: 8,
+        proc: function() { THIS.reg.H = THIS.reg.SRL(THIS.reg.H); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SRL","H"] };}
+    };
+    opeRotate[0075] = {
+        mnemonic:"SRL L",
+        cycle: 8,
+        proc: function() { THIS.reg.L = THIS.reg.SRL(THIS.reg.L); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SRL","L"] };}
+    };
+    opeRotate[0077] = {
+        mnemonic:"SRL A",
+        cycle: 8,
+        proc: function() { THIS.reg.A = THIS.reg.SRL(THIS.reg.A); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SRL","A"] };}
+    };
+    opeRotate[0076] = {
+        mnemonic:"SRL (HL)",
+        cycle: 15,
+        proc: function() { var adr = THIS.reg.getHL(); THIS.memory.poke(adr, THIS.reg.SRL(THIS.memory.peek(adr))); },
+        disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SRL","(HL)"] };}
+    };
+    opeRotateIX[0076] = {
+        mnemonic: "SRL (IX+d)",
+        cycle: 23,
+        proc: function(d) { var adr = THIS.reg.IX + d; THIS.memory.poke(adr, THIS.reg.SRL(THIS.memory.peek(adr))); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr), mem.peek(addr+1), mem.peek(addr+2), mem.peek(addr+3)],
+                mnemonic:["SRL","(IX+" + mem.peek(addr+2) + ")"]
+            };
+        }
+    };
+    opeRotateIY[0076] = {
+        mnemonic: "SRL (IY+d)",
+        cycle: 23,
+        proc: function(d) { var adr = THIS.reg.IY + d; THIS.memory.poke(adr, THIS.reg.SRL(THIS.memory.peek(adr))); },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr), mem.peek(addr+1), mem.peek(addr+2), mem.peek(addr+3)],
+                mnemonic:["SRL","(IY+" + mem.peek(addr+2) + ")"]
+            };
+        }
+    };
+
+    opeMisc[0157] = {
+        mnemonic:"RLD",
+        cycle: 18,
+        proc: function() {
+            var adr = THIS.reg.getHL();
+            var n = THIS.memory.peek(adr);
+            var AH = THIS.reg.A & 0xf0;
+            var AL = THIS.reg.A & 0x0f;
+            var nH = (n >> 4) & 0x0f;
+            var nL = (n >> 0) & 0x0f;
+            
+            THIS.reg.A = AH | nH;
+            n = (nL << 4) | AL;
+            
+            THIS.memory.poke(adr, n);
+        },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr), mem.peek(addr+1)],
+                mnemonic:["RLD"]
+            };
+        }
+    };
+    opeMisc[0147] = {
+        mnemonic:"RRD",
+        cycle: 18,
+        proc: function() {
+            var adr = THIS.reg.getHL();
+            var n = THIS.memory.peek(adr);
+            var AH = THIS.reg.A & 0xf0;
+            var AL = THIS.reg.A & 0x0F;
+            var nH = (n >> 4) & 0x0f;
+            var nL = (n >> 0) & 0x0f;
+
+            THIS.reg.A = AH | nL;
+            n = (AL << 4) | nH;
+            
+            THIS.memory.poke(adr, n);
+        },
+        disasm: function(mem, addr) {
+            return {
+                code:[mem.peek(addr), mem.peek(addr+1)],
+                mnemonic:["RRD"]
+            };
+        }
+    };
+
+    //=================================================================================
+    // ビットセット・リセット及びテストグループ
+    //=================================================================================
+
+    var reg8=["B","C","D","E","H","L","(HL)","A"];
+    for(var regI = 0; regI < reg8.length; regI++) {
+        for(var bit = 0; bit < 8; bit++) {
+            var code = 0300|(bit<<3)|regI;
+            opeRotate[0100|(bit<<3)|regI] = {
+                mnemonic:"BIT " + bit + "," + reg8[regI],
+                cycle:(function(r){ return r != 6 ? 8:12 }(regI)),
+                proc: (function(b,r) {
+                    if(r != 6) {
+                        return function() {
+                            var value = THIS.reg[reg8[r]];
+                            if( (value & (1 << b)) != 0) {
+                                THIS.reg.clearFlagZ();
+                            } else {
+                                THIS.reg.setFlagZ();
+                            }
+                            THIS.reg.setFlagH();
+                            THIS.reg.clearFlagN();
+                        };
+                    } else {
+                        return function() {
+                            var adr = THIS.reg.getHL();
+                            var value = THIS.memory.peek(adr);
+                            if( (value & (1 << b)) != 0) {
+                                THIS.reg.clearFlagZ();
+                            } else {
+                                THIS.reg.setFlagZ();
+                            }
+                            THIS.reg.setFlagH();
+                            THIS.reg.clearFlagN();
+                        };
+                    }
+                })(bit,regI),
+                disasm: (function(b,n) {
+                    return function(mem, addr) {
+                        return {
+                            code:[mem.peek(addr), mem.peek(addr + 1)],
+                            mnemonic: ["BIT", b, n]
+                        };
+                    };
+                })(bit,reg8[regI])
+            };
+        }
+    }
+    var disasm_bit_b_IDX_d = function(mem, addr, b, idx) {
+        var d = THIS.memory.peek(addr + 2);
+        return {
+            code:[
+                THIS.memory.peek(addr),
+                THIS.memory.peek(addr + 1),
+                d,
+                THIS.memory.peek(addr + 3),
+            ],
+            mnemonic: ["BIT", "" + b, "(" + idx + "+" + d.HEX(2) + "H)"]
+        };
+    };
+    opeRotateIX[0106] = {
+        mnemonic:"BIT 0,(IX+d)",
+        cycle:20,
+        proc: function(d) {
+            if(THIS.memory.peek(THIS.reg.IX+d) & (1 << 0)) {
+                THIS.reg.clearFlagZ();
+            } else {
+                THIS.reg.setFlagZ();
+            }
+            THIS.reg.setFlagH();
+            THIS.reg.clearFlagN()
+        },
+        disasm: function(mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 0, "IX"); }
+    };
+    opeRotateIX[0116] = {
+        mnemonic:"BIT 1,(IX+d)",
+        cycle:20,
+        proc: function(d) {
+            if(THIS.memory.peek(THIS.reg.IX+d) & (1 << 1)) {
+                THIS.reg.clearFlagZ();
+            } else {
+                THIS.reg.setFlagZ();
+            }
+            THIS.reg.setFlagH();
+            THIS.reg.clearFlagN()
+        },
+        disasm: function(mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 1, "IX"); }
+    };
+    opeRotateIX[0126] = {
+        mnemonic:"BIT 2,(IX+d)",
+        cycle:20,
+        proc: function(d) {
+            if(THIS.memory.peek(THIS.reg.IX+d) & (1 << 2)) {
+                THIS.reg.clearFlagZ();
+            } else {
+                THIS.reg.setFlagZ();
+            }
+            THIS.reg.setFlagH();
+            THIS.reg.clearFlagN()
+        },
+        disasm: function(mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 2, "IX"); }
+    };
+    opeRotateIX[0136] = {
+        mnemonic:"BIT 3,(IX+d)",
+        cycle:20,
+        proc: function(d) {
+            if(THIS.memory.peek(THIS.reg.IX+d) & (1 << 3)) {
+                THIS.reg.clearFlagZ();
+            } else {
+                THIS.reg.setFlagZ();
+            }
+            THIS.reg.setFlagH();
+            THIS.reg.clearFlagN()
+        },
+        disasm: function(mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 3, "IX"); }
+    };
+    opeRotateIX[0146] = {
+        mnemonic:"BIT 4,(IX+d)",
+        cycle:20,
+        proc: function(d) {
+            if(THIS.memory.peek(THIS.reg.IX+d) & (1 << 4)) {
+                THIS.reg.clearFlagZ();
+            } else {
+                THIS.reg.setFlagZ();
+            }
+            THIS.reg.setFlagH();
+            THIS.reg.clearFlagN()
+        },
+        disasm: function(mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 4, "IX"); }
+    };
+    opeRotateIX[0156] = {
+        mnemonic:"BIT 5,(IX+d)",
+        cycle:20,
+        proc: function(d) {
+            if(THIS.memory.peek(THIS.reg.IX+d) & (1 << 5)) {
+                THIS.reg.clearFlagZ();
+            } else {
+                THIS.reg.setFlagZ();
+            }
+            THIS.reg.setFlagH();
+            THIS.reg.clearFlagN()
+        },
+        disasm: function(mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 5, "IX"); }
+    };
+    opeRotateIX[0166] = {
+        mnemonic:"BIT 6,(IX+d)",
+        cycle:20,
+        proc: function(d) {
+            if(THIS.memory.peek(THIS.reg.IX+d) & (1 << 6)) {
+                THIS.reg.clearFlagZ();
+            } else {
+                THIS.reg.setFlagZ();
+            }
+            THIS.reg.setFlagH();
+            THIS.reg.clearFlagN()
+        },
+        disasm: function(mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 6, "IX"); }
+    };
+    opeRotateIX[0176] = {
+        mnemonic:"BIT 7,(IX+d)",
+        cycle:20,
+        proc: function(d) {
+            if(THIS.memory.peek(THIS.reg.IX+d) & (1 << 7)) {
+                THIS.reg.clearFlagZ();
+            } else {
+                THIS.reg.setFlagZ();
+            }
+            THIS.reg.setFlagH();
+            THIS.reg.clearFlagN()
+        },
+        disasm: function(mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 7, "IX"); }
+    };
+
+    opeRotateIY[0106] = {
+        mnemonic:"BIT 0,(IY+d)",
+        cycle:20,
+        proc: function(d) {
+            if(THIS.memory.peek(THIS.reg.IY+d) & (1 << 0)) {
+                THIS.reg.clearFlagZ();
+            } else {
+                THIS.reg.setFlagZ();
+            }
+            THIS.reg.setFlagH();
+            THIS.reg.clearFlagN()
+        },
+        disasm: function(mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 0, "IY"); }
+    };
+    opeRotateIY[0116] = {
+        mnemonic:"BIT 1,(IY+d)",
+        cycle:20,
+        proc: function(d) {
+            if(THIS.memory.peek(THIS.reg.IY+d) & (1 << 1)) {
+                THIS.reg.clearFlagZ();
+            } else {
+                THIS.reg.setFlagZ();
+            }
+            THIS.reg.setFlagH();
+            THIS.reg.clearFlagN()
+        },
+        disasm: function(mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 1, "IY"); }
+    };
+    opeRotateIY[0126] = {
+        mnemonic:"BIT 2,(IY+d)",
+        cycle:20,
+        proc: function(d) {
+            if(THIS.memory.peek(THIS.reg.IY+d) & (1 << 2)) {
+                THIS.reg.clearFlagZ();
+            } else {
+                THIS.reg.setFlagZ();
+            }
+            THIS.reg.setFlagH();
+            THIS.reg.clearFlagN()
+        },
+        disasm: function(mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 2, "IY"); }
+    };
+    opeRotateIY[0136] = {
+        mnemonic:"BIT 3,(IY+d)",
+        cycle:20,
+        proc: function(d) {
+            if(THIS.memory.peek(THIS.reg.IY+d) & (1 << 3)) {
+                THIS.reg.clearFlagZ();
+            } else {
+                THIS.reg.setFlagZ();
+            }
+            THIS.reg.setFlagH();
+            THIS.reg.clearFlagN()
+        },
+        disasm: function(mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 3, "IY"); }
+    };
+    opeRotateIY[0146] = {
+        mnemonic:"BIT 4,(IY+d)",
+        cycle:20,
+        proc: function(d) {
+            if(THIS.memory.peek(THIS.reg.IY+d) & (1 << 4)) {
+                THIS.reg.clearFlagZ();
+            } else {
+                THIS.reg.setFlagZ();
+            }
+            THIS.reg.setFlagH();
+            THIS.reg.clearFlagN()
+        },
+        disasm: function(mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 4, "IY"); }
+    };
+    opeRotateIY[0156] = {
+        mnemonic:"BIT 5,(IY+d)",
+        cycle:20,
+        proc: function(d) {
+            if(THIS.memory.peek(THIS.reg.IY+d) & (1 << 5)) {
+                THIS.reg.clearFlagZ();
+            } else {
+                THIS.reg.setFlagZ();
+            }
+            THIS.reg.setFlagH();
+            THIS.reg.clearFlagN()
+        },
+        disasm: function(mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 5, "IY"); }
+    };
+    opeRotateIY[0166] = {
+        mnemonic:"BIT 6,(IY+d)",
+        cycle:20,
+        proc: function(d) {
+            if(THIS.memory.peek(THIS.reg.IY+d) & (1 << 6)) {
+                THIS.reg.clearFlagZ();
+            } else {
+                THIS.reg.setFlagZ();
+            }
+            THIS.reg.setFlagH();
+            THIS.reg.clearFlagN()
+        },
+        disasm: function(mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 6, "IY"); }
+    };
+    opeRotateIY[0176] = {
+        mnemonic:"BIT 7,(IY+d)",
+        cycle:20,
+        proc: function(d) {
+            if(THIS.memory.peek(THIS.reg.IY+d) & (1 << 7)) {
+                THIS.reg.clearFlagZ();
+            } else {
+                THIS.reg.setFlagZ();
+            }
+            THIS.reg.setFlagH();
+            THIS.reg.clearFlagN()
+        },
+        disasm: function(mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 7, "IY"); }
+    };
+
+    for(var regI = 0; regI < reg8.length; regI++) {
+        for(var bit = 0; bit < 8; bit++) {
+            var code = 0300|(bit<<3)|regI;
+            opeRotate[0300|(bit<<3)|regI] = {
+                mnemonic:"SET " + bit + "," + reg8[regI],
+                cycle:(function(r){ return r != 6 ? 4:15 }(regI)),
+                proc: (function(b,r) {
+                    if(r != 6) {
+                        return function() {
+                            THIS.reg[reg8[r]] |= (1 << b);
+                        };
+                    } else {
+                        return function() {
+                            var adr = THIS.reg.getHL();
+                            THIS.memory.poke(adr, THIS.memory.peek(adr) | (1 << b));
+                        };
+                    }
+                })(bit,regI),
+                disasm: (function(b,n) {
+                    return function(mem, addr) {
+                        return {
+                            code:[mem.peek(addr), mem.peek(addr + 1)],
+                            mnemonic: ["SET", b, n]
+                        };
+                    };
+                })(bit,reg8[regI])
+            };
+        }
+    }
+    var disasm_set_b_IDX_d = function(mem, addr, b, idx) {
+        var d = THIS.memory.peek(addr + 2);
+        return {
+            code:[
+                THIS.memory.peek(addr + 0),
+                THIS.memory.peek(addr + 1),
+                d,
+                THIS.memory.peek(addr + 3),
+            ],
+            mnemonic: ["SET", "" + b, "(" + idx + "+" + d.HEX(2) + "H)"]
+        };
+    };
+    opeRotateIX[0306] = {//11 000 110
+        mnemonic:"SET 0,(IX+d)",
+        cycle:23,
+        proc: function(d) {
+            var adr = THIS.reg.IX+d;
+            THIS.memory.poke(adr, THIS.memory.peek(adr) | (1 << 0));
+        },
+        disasm: function(mem, addr) { return disasm_set_b_IDX_d(mem, addr, 0, "IX"); }
+    };
+    opeRotateIX[0316] = {
+        mnemonic:"SET 1,(IX+d)",
+        cycle:23,
+        proc: function(d) {
+            var adr = THIS.reg.IX+d; THIS.memory.poke(adr, THIS.memory.peek(adr) | (1 << 1));
+        },
+        disasm: function(mem, addr) { return disasm_set_b_IDX_d(mem, addr, 1, "IX"); }
+    };
+    opeRotateIX[0326] = {
+        mnemonic:"SET 2,(IX+d)",
+        cycle:23,
+        proc: function(d) {
+            var adr = THIS.reg.IX+d;
+            THIS.memory.poke(adr, THIS.memory.peek(adr) | (1 << 2));
+        },
+        disasm: function(mem, addr) { return disasm_set_b_IDX_d(mem, addr, 2, "IX"); }
+    };
+    opeRotateIX[0336] = {
+        mnemonic:"SET 3,(IX+d)",
+        cycle:23,
+        proc: function(d) {
+            var adr = THIS.reg.IX+d;
+            THIS.memory.poke(adr, THIS.memory.peek(adr) | (1 << 3));
+        },
+        disasm: function(mem, addr) { return disasm_set_b_IDX_d(mem, addr, 3, "IX"); }
+    };
+    opeRotateIX[0346] = {
+        mnemonic:"SET 4,(IX+d)",
+        cycle:23,
+        proc: function(d) {
+            var adr = THIS.reg.IX+d;
+            THIS.memory.poke(adr, THIS.memory.peek(adr) | (1 << 4));
+        },
+        disasm: function(mem, addr) { return disasm_set_b_IDX_d(mem, addr, 4, "IX"); }
+    };
+    opeRotateIX[0356] = {
+        mnemonic:"SET 5,(IX+d)",
+        cycle:23,
+        proc: function(d) {
+            var adr = THIS.reg.IX+d;
+            THIS.memory.poke(adr, THIS.memory.peek(adr) | (1 << 5));
+        },
+        disasm: function(mem, addr) { return disasm_set_b_IDX_d(mem, addr, 5, "IX"); }
+    };
+    opeRotateIX[0366] = {
+        mnemonic:"SET 6,(IX+d)",
+        cycle:23,
+        proc: function(d) {
+            var adr = THIS.reg.IX+d;
+            THIS.memory.poke(adr, THIS.memory.peek(adr) | (1 << 6));
+        },
+        disasm: function(mem, addr) { return disasm_set_b_IDX_d(mem, addr, 6, "IX"); }
+    };
+    opeRotateIX[0376] = {
+        mnemonic:"SET 7,(IX+d)",
+        cycle:23,
+        proc: function(d) {
+            var adr = THIS.reg.IX+d;
+            THIS.memory.poke(adr, THIS.memory.peek(adr) | (1 << 7));
+        },
+        disasm: function(mem, addr) { return disasm_set_b_IDX_d(mem, addr, 7, "IX"); }
+    };
+
+    opeRotateIY[0306] = {
+        mnemonic:"SET 0,(IY+d)",
+        cycle:23,
+        proc: function(d) {
+            var adr = THIS.reg.IY+d;
+            THIS.memory.poke(adr, THIS.memory.peek(adr) | (1 << 0));
+        },
+        disasm: function(mem, addr) { return disasm_set_b_IDX_d(mem, addr, 0, "IY"); }
+    };
+    opeRotateIY[0316] = {
+        mnemonic:"SET 1,(IY+d)",
+        cycle:23,
+        proc: function(d) {
+            var adr = THIS.reg.IY+d;
+            THIS.memory.poke(adr, THIS.memory.peek(adr) | (1 << 1));
+        },
+        disasm: function(mem, addr) { return disasm_set_b_IDX_d(mem, addr, 1, "IY"); }
+    };
+    opeRotateIY[0326] = {
+        mnemonic:"SET 2,(IY+d)",
+        cycle:23,
+        proc: function(d) {
+            var adr = THIS.reg.IY+d;
+            THIS.memory.poke(adr, THIS.memory.peek(adr) | (1 << 2));
+        },
+        disasm: function(mem, addr) { return disasm_set_b_IDX_d(mem, addr, 2, "IY"); }
+    };
+    opeRotateIY[0336] = {
+        mnemonic:"SET 3,(IY+d)",
+        cycle:23,
+        proc: function(d) {
+            var adr = THIS.reg.IY+d;
+            THIS.memory.poke(adr, THIS.memory.peek(adr) | (1 << 3));
+        },
+        disasm: function(mem, addr) { return disasm_set_b_IDX_d(mem, addr, 3, "IY"); }
+    };
+    opeRotateIY[0346] = {
+        mnemonic:"SET 4,(IY+d)",
+        cycle:23,
+        proc: function(d) {
+            var adr = THIS.reg.IY+d;
+            THIS.memory.poke(adr, THIS.memory.peek(adr) | (1 << 4));
+        },
+        disasm: function(mem, addr) { return disasm_set_b_IDX_d(mem, addr, 4, "IY"); }
+    };
+    opeRotateIY[0356] = {
+        mnemonic:"SET 5,(IY+d)",
+        cycle:23,
+        proc: function(d) {
+            var adr = THIS.reg.IY+d;
+            THIS.memory.poke(adr, THIS.memory.peek(adr) | (1 << 5));
+        },
+        disasm: function(mem, addr) { return disasm_set_b_IDX_d(mem, addr, 5, "IY"); }
+    };
+    opeRotateIY[0366] = {
+        mnemonic:"SET 6,(IY+d)",
+        cycle:23,
+        proc: function(d) {
+            var adr = THIS.reg.IY+d;
+            THIS.memory.poke(adr, THIS.memory.peek(adr) | (1 << 6));
+        },
+        disasm: function(mem, addr) { return disasm_set_b_IDX_d(mem, addr, 6, "IY"); }
+    };
+    opeRotateIY[0376] = {
+        mnemonic:"SET 7,(IY+d)",
+        cycle:23,
+        proc: function(d) {
+            var adr = THIS.reg.IY+d;
+            THIS.memory.poke(adr, THIS.memory.peek(adr) | (1 << 7));
+        },
+        disasm: function(mem, addr) { return disasm_set_b_IDX_d(mem, addr, 7, "IY"); }
+    };
+
+    var procRES_8bit = function(b,r) {
+        var bits = ~(1 << b);
+        return function() {
+            THIS.reg[r] &= bits;
+        };
+    };
+    var disaRES_8bit = function(b,r) {
+        var regidx = "BCDEHL A".indexOf(r);
+        var bits = b << 3;
+        return function(mem, addr) {
+            return {
+                code:[0xCB, 0200 | bits | regidx ],
+                mnemonic: ["RES", b, r]
+            };
+        };
+    };
+    var procRES_xHL = function(b) {
+        var bits = (~(1 << b) & 0xff);
+        return (function(bits) { return function() {
+            var adr = THIS.reg.getHL();
+            var v0 = THIS.memory.peek(adr);
+            var v1 = v0 & bits;
+            THIS.memory.poke(adr, v1);
+        };}(bits));
+    };
+    var disaRES_xHL = function(b) {
+        var bits = b << 3;
+        return (function(bits) { return function(mem, addr) {
+            return {
+                code:[0xCB, 0200 | bits | 6 ],
+                mnemonic: ["RES", b, "(HL)"]
+            };
+        };}(bits));
+    };
+    var procRES_xIDXd = function(b, IDX) {
+        var bits = 0xff & ~(1 << b);
+        return (function(bits) { return function(d) {
+            var adr = THIS.reg[IDX] + d;
+            var v0 = THIS.memory.peek(adr);
+            var v1 = v0 & bits;
+            THIS.memory.poke(adr, v1);
+        };}(bits));
+    };
+    var disaRES_xIDXd = function(b, IDX) {
+        var bits = b << 3;
+        var opecode = {"IX" : 0xDD, "IY" : 0xFD }[IDX];
+        return (function(bits, opecode) { return function(mem, addr) {
+            var d = mem.peek(addr + 2);
+            var feature = mem.peek(addr + 3);
+            return {
+                code:[opecode, 0xCB, d, feature],
+                mnemonic: ["RES", b, "(" + IDX + "+" + d.HEX(2) + "H)" ]
+            };
+        };}(bits, opecode));
+    }
+    opeRotate[0200] = { mnemonic:"RES 0,B", cycle:8, proc: procRES_8bit(0,"B"), disasm: disaRES_8bit(0,"B")};
+    opeRotate[0210] = { mnemonic:"RES 1,B", cycle:8, proc: procRES_8bit(1,"B"), disasm: disaRES_8bit(1,"B")};
+    opeRotate[0220] = { mnemonic:"RES 2,B", cycle:8, proc: procRES_8bit(2,"B"), disasm: disaRES_8bit(2,"B")};
+    opeRotate[0230] = { mnemonic:"RES 3,B", cycle:8, proc: procRES_8bit(3,"B"), disasm: disaRES_8bit(3,"B")};
+    opeRotate[0240] = { mnemonic:"RES 4,B", cycle:8, proc: procRES_8bit(4,"B"), disasm: disaRES_8bit(4,"B")};
+    opeRotate[0250] = { mnemonic:"RES 5,B", cycle:8, proc: procRES_8bit(5,"B"), disasm: disaRES_8bit(5,"B")};
+    opeRotate[0260] = { mnemonic:"RES 6,B", cycle:8, proc: procRES_8bit(6,"B"), disasm: disaRES_8bit(6,"B")};
+    opeRotate[0270] = { mnemonic:"RES 7,B", cycle:8, proc: procRES_8bit(7,"B"), disasm: disaRES_8bit(7,"B")};
+
+    opeRotate[0201] = { mnemonic:"RES 0,C", cycle:8, proc: procRES_8bit(0,"C"), disasm: disaRES_8bit(0,"C")};
+    opeRotate[0211] = { mnemonic:"RES 1,C", cycle:8, proc: procRES_8bit(1,"C"), disasm: disaRES_8bit(1,"C")};
+    opeRotate[0221] = { mnemonic:"RES 2,C", cycle:8, proc: procRES_8bit(2,"C"), disasm: disaRES_8bit(2,"C")};
+    opeRotate[0231] = { mnemonic:"RES 3,C", cycle:8, proc: procRES_8bit(3,"C"), disasm: disaRES_8bit(3,"C")};
+    opeRotate[0241] = { mnemonic:"RES 4,C", cycle:8, proc: procRES_8bit(4,"C"), disasm: disaRES_8bit(4,"C")};
+    opeRotate[0251] = { mnemonic:"RES 5,C", cycle:8, proc: procRES_8bit(5,"C"), disasm: disaRES_8bit(5,"C")};
+    opeRotate[0261] = { mnemonic:"RES 6,C", cycle:8, proc: procRES_8bit(6,"C"), disasm: disaRES_8bit(6,"C")};
+    opeRotate[0271] = { mnemonic:"RES 7,C", cycle:8, proc: procRES_8bit(7,"C"), disasm: disaRES_8bit(7,"C")};
+
+    opeRotate[0202] = { mnemonic:"RES 0,D", cycle:8, proc: procRES_8bit(0,"D"), disasm: disaRES_8bit(0,"D")};
+    opeRotate[0212] = { mnemonic:"RES 1,D", cycle:8, proc: procRES_8bit(1,"D"), disasm: disaRES_8bit(1,"D")};
+    opeRotate[0222] = { mnemonic:"RES 2,D", cycle:8, proc: procRES_8bit(2,"D"), disasm: disaRES_8bit(2,"D")};
+    opeRotate[0232] = { mnemonic:"RES 3,D", cycle:8, proc: procRES_8bit(3,"D"), disasm: disaRES_8bit(3,"D")};
+    opeRotate[0242] = { mnemonic:"RES 4,D", cycle:8, proc: procRES_8bit(4,"D"), disasm: disaRES_8bit(4,"D")};
+    opeRotate[0252] = { mnemonic:"RES 5,D", cycle:8, proc: procRES_8bit(5,"D"), disasm: disaRES_8bit(5,"D")};
+    opeRotate[0262] = { mnemonic:"RES 6,D", cycle:8, proc: procRES_8bit(6,"D"), disasm: disaRES_8bit(6,"D")};
+    opeRotate[0272] = { mnemonic:"RES 7,D", cycle:8, proc: procRES_8bit(7,"D"), disasm: disaRES_8bit(7,"D")};
+
+    opeRotate[0203] = { mnemonic:"RES 0,E", cycle:8, proc: procRES_8bit(0,"E"), disasm: disaRES_8bit(0,"E")};
+    opeRotate[0213] = { mnemonic:"RES 1,E", cycle:8, proc: procRES_8bit(1,"E"), disasm: disaRES_8bit(1,"E")};
+    opeRotate[0223] = { mnemonic:"RES 2,E", cycle:8, proc: procRES_8bit(2,"E"), disasm: disaRES_8bit(2,"E")};
+    opeRotate[0233] = { mnemonic:"RES 3,E", cycle:8, proc: procRES_8bit(3,"E"), disasm: disaRES_8bit(3,"E")};
+    opeRotate[0243] = { mnemonic:"RES 4,E", cycle:8, proc: procRES_8bit(4,"E"), disasm: disaRES_8bit(4,"E")};
+    opeRotate[0253] = { mnemonic:"RES 5,E", cycle:8, proc: procRES_8bit(5,"E"), disasm: disaRES_8bit(5,"E")};
+    opeRotate[0263] = { mnemonic:"RES 6,E", cycle:8, proc: procRES_8bit(6,"E"), disasm: disaRES_8bit(6,"E")};
+    opeRotate[0273] = { mnemonic:"RES 7,E", cycle:8, proc: procRES_8bit(7,"E"), disasm: disaRES_8bit(7,"E")};
+
+    opeRotate[0204] = { mnemonic:"RES 0,H", cycle:8, proc: procRES_8bit(0,"H"), disasm: disaRES_8bit(0,"H")};
+    opeRotate[0214] = { mnemonic:"RES 1,H", cycle:8, proc: procRES_8bit(1,"H"), disasm: disaRES_8bit(1,"H")};
+    opeRotate[0224] = { mnemonic:"RES 2,H", cycle:8, proc: procRES_8bit(2,"H"), disasm: disaRES_8bit(2,"H")};
+    opeRotate[0234] = { mnemonic:"RES 3,H", cycle:8, proc: procRES_8bit(3,"H"), disasm: disaRES_8bit(3,"H")};
+    opeRotate[0244] = { mnemonic:"RES 4,H", cycle:8, proc: procRES_8bit(4,"H"), disasm: disaRES_8bit(4,"H")};
+    opeRotate[0254] = { mnemonic:"RES 5,H", cycle:8, proc: procRES_8bit(5,"H"), disasm: disaRES_8bit(5,"H")};
+    opeRotate[0264] = { mnemonic:"RES 6,H", cycle:8, proc: procRES_8bit(6,"H"), disasm: disaRES_8bit(6,"H")};
+    opeRotate[0274] = { mnemonic:"RES 7,H", cycle:8, proc: procRES_8bit(7,"H"), disasm: disaRES_8bit(7,"H")};
+
+    opeRotate[0205] = { mnemonic:"RES 0,L", cycle:8, proc: procRES_8bit(0,"L"), disasm: disaRES_8bit(0,"L")};
+    opeRotate[0215] = { mnemonic:"RES 1,L", cycle:8, proc: procRES_8bit(1,"L"), disasm: disaRES_8bit(1,"L")};
+    opeRotate[0225] = { mnemonic:"RES 2,L", cycle:8, proc: procRES_8bit(2,"L"), disasm: disaRES_8bit(2,"L")};
+    opeRotate[0235] = { mnemonic:"RES 3,L", cycle:8, proc: procRES_8bit(3,"L"), disasm: disaRES_8bit(3,"L")};
+    opeRotate[0245] = { mnemonic:"RES 4,L", cycle:8, proc: procRES_8bit(4,"L"), disasm: disaRES_8bit(4,"L")};
+    opeRotate[0255] = { mnemonic:"RES 5,L", cycle:8, proc: procRES_8bit(5,"L"), disasm: disaRES_8bit(5,"L")};
+    opeRotate[0265] = { mnemonic:"RES 6,L", cycle:8, proc: procRES_8bit(6,"L"), disasm: disaRES_8bit(6,"L")};
+    opeRotate[0275] = { mnemonic:"RES 7,L", cycle:8, proc: procRES_8bit(7,"L"), disasm: disaRES_8bit(7,"L")};
+
+    opeRotate[0207] = { mnemonic:"RES 0,A", cycle:8, proc: procRES_8bit(0,"A"), disasm: disaRES_8bit(0,"A")};
+    opeRotate[0217] = { mnemonic:"RES 1,A", cycle:8, proc: procRES_8bit(1,"A"), disasm: disaRES_8bit(1,"A")};
+    opeRotate[0227] = { mnemonic:"RES 2,A", cycle:8, proc: procRES_8bit(2,"A"), disasm: disaRES_8bit(2,"A")};
+    opeRotate[0237] = { mnemonic:"RES 3,A", cycle:8, proc: procRES_8bit(3,"A"), disasm: disaRES_8bit(3,"A")};
+    opeRotate[0247] = { mnemonic:"RES 4,A", cycle:8, proc: procRES_8bit(4,"A"), disasm: disaRES_8bit(4,"A")};
+    opeRotate[0257] = { mnemonic:"RES 5,A", cycle:8, proc: procRES_8bit(5,"A"), disasm: disaRES_8bit(5,"A")};
+    opeRotate[0267] = { mnemonic:"RES 6,A", cycle:8, proc: procRES_8bit(6,"A"), disasm: disaRES_8bit(6,"A")};
+    opeRotate[0277] = { mnemonic:"RES 7,A", cycle:8, proc: procRES_8bit(7,"A"), disasm: disaRES_8bit(7,"A")};
+
+    opeRotate[0206] = { mnemonic:"RES 0,(HL)", cycle:15, proc: procRES_xHL(0), disasm: disaRES_xHL(0)};
+    opeRotate[0216] = { mnemonic:"RES 1,(HL)", cycle:15, proc: procRES_xHL(1), disasm: disaRES_xHL(1)};
+    opeRotate[0226] = { mnemonic:"RES 2,(HL)", cycle:15, proc: procRES_xHL(2), disasm: disaRES_xHL(2)};
+    opeRotate[0236] = { mnemonic:"RES 3,(HL)", cycle:15, proc: procRES_xHL(3), disasm: disaRES_xHL(3)};
+    opeRotate[0246] = { mnemonic:"RES 4,(HL)", cycle:15, proc: procRES_xHL(4), disasm: disaRES_xHL(4)};
+    opeRotate[0256] = { mnemonic:"RES 5,(HL)", cycle:15, proc: procRES_xHL(5), disasm: disaRES_xHL(5)};
+    opeRotate[0266] = { mnemonic:"RES 6,(HL)", cycle:15, proc: procRES_xHL(6), disasm: disaRES_xHL(6)};
+    opeRotate[0276] = { mnemonic:"RES 7,(HL)", cycle:15, proc: procRES_xHL(7), disasm: disaRES_xHL(7)};
+
+    // 10 000 110
+    opeRotateIX[0206] = { mnemonic:"RES 0,(IX+d)", cycle:23, proc: procRES_xIDXd(0,"IX"), disasm: disaRES_xIDXd(0,"IX")};
+    opeRotateIX[0216] = { mnemonic:"RES 1,(IX+d)", cycle:23, proc: procRES_xIDXd(1,"IX"), disasm: disaRES_xIDXd(1,"IX")};
+    opeRotateIX[0226] = { mnemonic:"RES 2,(IX+d)", cycle:23, proc: procRES_xIDXd(2,"IX"), disasm: disaRES_xIDXd(2,"IX")};
+    opeRotateIX[0236] = { mnemonic:"RES 3,(IX+d)", cycle:23, proc: procRES_xIDXd(3,"IX"), disasm: disaRES_xIDXd(3,"IX")};
+    opeRotateIX[0246] = { mnemonic:"RES 4,(IX+d)", cycle:23, proc: procRES_xIDXd(4,"IX"), disasm: disaRES_xIDXd(4,"IX")};
+    opeRotateIX[0256] = { mnemonic:"RES 5,(IX+d)", cycle:23, proc: procRES_xIDXd(5,"IX"), disasm: disaRES_xIDXd(5,"IX")};
+    opeRotateIX[0266] = { mnemonic:"RES 6,(IX+d)", cycle:23, proc: procRES_xIDXd(6,"IX"), disasm: disaRES_xIDXd(6,"IX")};
+    opeRotateIX[0276] = { mnemonic:"RES 7,(IX+d)", cycle:23, proc: procRES_xIDXd(7,"IX"), disasm: disaRES_xIDXd(7,"IX")};
+
+    opeRotateIY[0206] = { mnemonic:"RES 0,(IY+d)", cycle:23, proc: procRES_xIDXd(0,"IY"), disasm: disaRES_xIDXd(0,"IY")};
+    opeRotateIY[0216] = { mnemonic:"RES 1,(IY+d)", cycle:23, proc: procRES_xIDXd(1,"IY"), disasm: disaRES_xIDXd(1,"IY")};
+    opeRotateIY[0226] = { mnemonic:"RES 2,(IY+d)", cycle:23, proc: procRES_xIDXd(2,"IY"), disasm: disaRES_xIDXd(2,"IY")};
+    opeRotateIY[0236] = { mnemonic:"RES 3,(IY+d)", cycle:23, proc: procRES_xIDXd(3,"IY"), disasm: disaRES_xIDXd(3,"IY")};
+    opeRotateIY[0246] = { mnemonic:"RES 4,(IY+d)", cycle:23, proc: procRES_xIDXd(4,"IY"), disasm: disaRES_xIDXd(4,"IY")};
+    opeRotateIY[0256] = { mnemonic:"RES 5,(IY+d)", cycle:23, proc: procRES_xIDXd(5,"IY"), disasm: disaRES_xIDXd(5,"IY")};
+    opeRotateIY[0266] = { mnemonic:"RES 6,(IY+d)", cycle:23, proc: procRES_xIDXd(6,"IY"), disasm: disaRES_xIDXd(6,"IY")};
+    opeRotateIY[0276] = { mnemonic:"RES 7,(IY+d)", cycle:23, proc: procRES_xIDXd(7,"IY"), disasm: disaRES_xIDXd(7,"IY")};
+
+    //=================================================================================
+    // ジャンプグループ
+    //=================================================================================
+    var disa_0x_r_110 = function(mem, addr) {
+        var opecode = mem.peek(addr);
+        var code = [opecode];
+        var x = ((opecode & 0x40) != 0) ? 1 : 0;
+        var r1 = (opecode >> 3) & 0x07;
+        var r2 = (opecode >> 0) & 0x07;
+		var operand = ["???","???"];
+        
+        operand[0] = ((r1 == 6)? "(HL)" : Z80_Register.REG_r_ID2NAME[r1]);
+
+        switch(x) {
+            case 0:
+                n = mem.peek(addr + 1);
+                code.push(n);
+                operand[1] = n.HEX(2) + "H";
+                break;
+            case 1:
+                operand[1] = ((r2 == 6)? "(HL)" : Z80_Register.REG_r_ID2NAME[r2]);
+                break;
+        }
+        return {
+            code:       code,
+            mnemonic:   ["LD", operand[0] + "," + operand[1]] 
+        };
+    };
+    var disaJumpGroup = function(mem, addr) {
+        var opecode = mem.peek(addr);
+        var code = [opecode];
+        var mnemonic = [];
+        var e,n0,n1;
+        var ref_addr = null;
+
+        switch(opecode & 0300) {
+            case 0000:
+                mnemonic.push("JR");
+                e = Z80.getSignedByte(mem.peek(addr+1));
+                ref_addr = addr + e + 2;
+                code.push(e & 0xff);
+                if(e + 2 >= 0) { e = "+" + (e + 2); } else { e = "" + (e + 2); }
+                switch(opecode & 0070) {
+                    case 0030: break;
+                    case 0070: mnemonic.push("C"); break;
+                    case 0050: mnemonic.push("Z"); break;
+                    case 0060: mnemonic.push("NC"); break;
+                    case 0040: mnemonic.push("NZ"); break;
+                    default:
+                        throw "UNKNOWN OPCODE";
+                }
+                mnemonic.push(ref_addr.HEX(4) + 'H;(' + e + ')' );
+                break;
+            case 0300:
+                mnemonic.push("JP");
+                switch(opecode & 0003) {
+                    case 1: mnemonic.push("(HL)"); break;
+                    case 2:
+                        n0 = mem.peek(addr+1);
+                        n1 = mem.peek(addr+2);
+                        ref_addr = Z80.pair(n1, n0);
+                        code.push(n0);
+                        code.push(n1);
+                        switch(opecode & 0070) {
+                            case 0000: mnemonic.push("NZ"); break;
+                            case 0010: mnemonic.push("Z");  break;
+                            case 0020: mnemonic.push("NC"); break;
+                            case 0030: mnemonic.push("C");  break;
+                            case 0040: mnemonic.push("PO"); break;
+                            case 0050: mnemonic.push("PE"); break;
+                            case 0060: mnemonic.push("P");  break;
+                            case 0070: mnemonic.push("M");  break;
+                        }
+                        mnemonic.push(n1.HEX(2) + n0.HEX(2) + 'H');
+                        break;
+                    case 3:
+                        n0 = mem.peek(addr+1);
+                        n1 = mem.peek(addr+2);
+                        ref_addr = Z80.pair(n1, n0);
+                        code.push(n0);
+                        code.push(n1);
+                        mnemonic.push(n1.HEX(2) + n0.HEX(2) + 'H');
+                        break;
+                }
+                break;
+            default:
+                throw "UNKNOWN OPCODE";
+        }
+        return { code:code, mnemonic:mnemonic, ref_addr: ref_addr };
+    };
+    this.opecodeTable[0303] = {
+        mnemonic:"JP nn",
+        "cycle": 10,
+        proc: function() { var nn = THIS.fetchPair(); THIS.reg.PC = nn; },
+        disasm: disaJumpGroup
+    };
+    this.opecodeTable[0302] = {
+        mnemonic:"JP NZ,nn",
+        "cycle": 10,
+        proc: function() { var nn = THIS.fetchPair(); if(!THIS.reg.flagZ()) { THIS.reg.PC = nn; } },
+        disasm: disaJumpGroup
+    };
+    this.opecodeTable[0312] = {
+        mnemonic:"JP Z,nn",
+        "cycle": 10,
+        proc: function() { var nn = THIS.fetchPair(); if(THIS.reg.flagZ())  { THIS.reg.PC = nn; } },
+        disasm: disaJumpGroup
+    };
+    this.opecodeTable[0322] = {
+        mnemonic:"JP NC,nn",
+        "cycle": 10,
+        proc: function() { var nn = THIS.fetchPair(); if(!THIS.reg.flagC()) { THIS.reg.PC = nn; } },
+        disasm: disaJumpGroup
+    };
+    this.opecodeTable[0332] = {
+        mnemonic:"JP C,nn",
+        "cycle": 10,
+        proc: function() { var nn = THIS.fetchPair(); if(THIS.reg.flagC())  { THIS.reg.PC = nn; } },
+        disasm: disaJumpGroup
+    };
+    this.opecodeTable[0342] = {
+        mnemonic:"JP PO,nn",
+        "cycle": 10,
+        proc: function() { var nn = THIS.fetchPair(); if(!THIS.reg.flagP()) { THIS.reg.PC = nn; } },
+        disasm: disaJumpGroup
+    };
+    this.opecodeTable[0352] = {
+        mnemonic:"JP PE,nn",
+        "cycle": 10,
+        proc: function() { var nn = THIS.fetchPair(); if(THIS.reg.flagP())  { THIS.reg.PC = nn; } },
+        disasm: disaJumpGroup
+    };
+    this.opecodeTable[0362] = {
+        mnemonic:"JP P,nn",
+        "cycle": 10,
+        proc: function() { var nn = THIS.fetchPair(); if(!THIS.reg.flagS()) { THIS.reg.PC = nn; } },
+        disasm: disaJumpGroup
+    };
+    this.opecodeTable[0372] = {
+        mnemonic:"JP M,nn",
+        "cycle": 10,
+        proc: function() { var nn = THIS.fetchPair(); if(THIS.reg.flagS())  { THIS.reg.PC = nn; } },
+        disasm: disaJumpGroup
+    };
+    this.opecodeTable[0030] = {
+        mnemonic:"JR e",
+        "cycle": 12,
+        proc: function() { var e = THIS.fetch(); THIS.reg.jumpRel(e); },
+        disasm: disaJumpGroup
+    };
+    this.opecodeTable[0070] = {
+        mnemonic:"JR C,e",
+        "cycle": 12,
+        proc: function() { var e = THIS.fetch(); if(THIS.reg.flagC())   { THIS.reg.jumpRel(e); } },
+        disasm: disaJumpGroup
+    };
+    this.opecodeTable[0050] = {
+        mnemonic:"JR Z,e",
+        "cycle": 12,
+        proc: function() { var e = THIS.fetch(); if(THIS.reg.flagZ())   { THIS.reg.jumpRel(e); } },
+        disasm: disaJumpGroup
+    };
+    this.opecodeTable[0060] = {
+        mnemonic:"JR NC,e",
+        "cycle": 12,
+        proc: function() { var e = THIS.fetch(); if(!THIS.reg.flagC())  { THIS.reg.jumpRel(e); } },
+        disasm: disaJumpGroup
+    };
+    this.opecodeTable[0040] = {
+        mnemonic:"JR NZ,e",
+        proc: function() { var e = THIS.fetch(); if(!THIS.reg.flagZ())  { THIS.reg.jumpRel(e); } },
+        "cycle": 12,
+        disasm: disaJumpGroup
+    };
+    this.opecodeTable[0351] = {
+        mnemonic:"JP (HL)",
+        "cycle": 4,
+        proc: function() { THIS.reg.PC = THIS.reg.getHL(); },
+        disasm: disaJumpGroup
+    };
+    opeIX[0351] = {
+        mnemonic:"JP (IX)",
+        "cycle": 8,
+        proc: function() { THIS.reg.PC = THIS.reg.IX; },
+        disasm: function(mem,addr) {
+            return {code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:['JP','(IX)'] };
+        }
+    };
+    opeIY[0351] = {
+        mnemonic:"JP (IY)",
+        "cycle": 8,
+        proc: function() { THIS.reg.PC = THIS.reg.IY; },
+        disasm: function(mem,addr) { return {code:[mem.peek(addr), mem.peek(addr+1)],
+            mnemonic:['JP','(IY)'] };
+        }
+    };
+    this.opecodeTable[0020] = {
+        mnemonic:"DJNZ",
+        "cycle": 13,
+        proc: function() {
+            var e = THIS.fetch();
+            THIS.reg.decrement("B");
+            if(THIS.reg.B) {
+                THIS.reg.jumpRel(e);
+            }
+        },
+        disasm: function(mem,addr) {
+            var e = Z80.getSignedByte(mem.peek(addr+1));
+            var ref_addr = addr + e + 2;
+            return {
+                code:[mem.peek(addr), mem.peek(addr + 1)],
+                mnemonic:['DJNZ', ref_addr.HEX(4) + 'H;(' + (((e + 2 >= 0) ? "+" : "" ) + (e + 2)) + ')'],
+                ref_addr: ref_addr
+            };
+        }
+    };
+    //=================================================================================
+    // コールリターングループ
+    //=================================================================================
+    this.opecodeTable[0315] = {
+        mnemonic:"CALL nn",
+        cycle: 17,
+        proc: function() {
+            var nn = THIS.fetchPair();
+            THIS.pushPair(THIS.reg.PC);
+            THIS.reg.PC = nn;
+        },
+        disasm: function(m,a) {
+            var l = m.peek(a+1),h=m.peek(a+2);
+            var addr=Z80.pair(h,l);
+            return {
+                code:[m.peek(a),l,h],
+                mnemonic:["CALL",""+addr.HEX(4)+"H"],
+                ref_addr:addr
+            };
+        }
+    };
+    this.opecodeTable[0304] = {
+        mnemonic:"CALL NZ,nn",
+        cycle: "NZ→17,Z→10",
+        proc: function() {
+            var nn = THIS.fetchPair();
+            if(!THIS.reg.flagZ()) {
+                THIS.pushPair(THIS.reg.PC);
+                THIS.reg.PC = nn;
+                return 17;
+            }
+            return 10;
+        },
+        disasm: function(m,a) {
+            var l=m.peek(a+1),h=m.peek(a+2);
+            var addr=Z80.pair(h,l);
+            return {
+                code:[m.peek(a),l,h],
+                mnemonic:["CALL","NZ",addr.HEX(4)+"H"],
+                ref_addr:addr
+            };
+        }
+    };
+    this.opecodeTable[0314] = {
+        mnemonic:"CALL Z,nn",
+        cycle: "Z→17,NZ→10",
+        proc: function() {
+            var nn = THIS.fetchPair();
+            if(THIS.reg.flagZ())  {
+                THIS.pushPair(THIS.reg.PC);
+                THIS.reg.PC = nn;
+                return 17;
+            }
+            return 10;
+        },
+        disasm: function(m,a) {
+            var l=m.peek(a+1),h=m.peek(a+2);
+            var addr=Z80.pair(h,l);
+            return {
+                code:[m.peek(a),l,h],
+                mnemonic:["CALL","Z",addr.HEX(4)+"H"],
+                ref_addr:addr
+            };
+        }
+    };
+    this.opecodeTable[0324] = {
+        mnemonic:"CALL NC,nn",
+        cycle: "NC→17, C→10",
+        proc: function() {
+            var nn = THIS.fetchPair();
+            if(!THIS.reg.flagC()) {
+                THIS.pushPair(THIS.reg.PC);
+                THIS.reg.PC = nn;
+                return 17;
+            }
+            return 10;
+        },
+        disasm: function(m,a) {
+            var l=m.peek(a+1),h=m.peek(a+2);
+            var addr=Z80.pair(h,l);
+            return {
+                code:[m.peek(a),l,h],
+                mnemonic:["CALL","NC",addr.HEX(4)+"H"],
+                ref_addr:addr
+            };
+        }
+    };
+    this.opecodeTable[0334] = {
+        mnemonic:"CALL C,nn",
+        cycle: "C→17, NC→10",
+        proc: function() {
+            var nn = THIS.fetchPair();
+            if(THIS.reg.flagC())  {
+                THIS.pushPair(THIS.reg.PC);
+                THIS.reg.PC = nn;
+                return 17;
+            }
+            return 10;
+        },
+        disasm: function(m,a) {
+            var l=m.peek(a+1),h=m.peek(a+2);
+            var addr=Z80.pair(h,l);
+            return {
+                code:[m.peek(a),l,h],
+                mnemonic:["CALL","C",addr.HEX(4)+"H"],
+                ref_addr:addr
+            };
+        }
+    };
+    this.opecodeTable[0344] = {
+        mnemonic:"CALL PO,nn",
+        cycle: "Parity Odd→17, Even→10",
+        proc: function() {
+            var nn = THIS.fetchPair();
+            if(!THIS.reg.flagP()) {
+                THIS.pushPair(THIS.reg.PC);
+                THIS.reg.PC = nn;
+                return 17;
+            }
+            return 10;
+        },
+        disasm: function(m,a) {
+            var l=m.peek(a+1),h=m.peek(a+2);
+            var addr=Z80.pair(h,l);
+            return {
+                code:[m.peek(a),l,h],
+                mnemonic:["CALL","PO",addr.HEX(4)+"H"],
+                ref_addr:addr
+            };
+        }
+    };
+    this.opecodeTable[0354] = {
+        mnemonic:"CALL PE,nn",
+        cycle: "Parity Even→17, Odd→10",
+        proc: function() {
+            var nn = THIS.fetchPair();
+            if(THIS.reg.flagP())  {
+                THIS.pushPair(THIS.reg.PC);
+                THIS.reg.PC = nn;
+                return 17;
+            }
+            return 10;
+        },
+        disasm: function(m,a) {
+            var l=m.peek(a+1),h=m.peek(a+2);
+            var addr=Z80.pair(h,l);
+            return {
+                code:[m.peek(a),l,h],
+                mnemonic:["CALL","PE",addr.HEX(4)+"H"],
+                ref_addr:addr
+            };
+        }
+    };
+    this.opecodeTable[0364] = {
+        mnemonic:"CALL P,nn",
+        cycle: "P→17, M→10",
+        proc: function() {
+            var nn = THIS.fetchPair();
+            if(!THIS.reg.flagS()) {
+                THIS.pushPair(THIS.reg.PC);
+                THIS.reg.PC = nn;
+                return 17;
+            }
+            return 10;
+        },
+        disasm: function(m,a) {
+            var l=m.peek(a+1),h=m.peek(a+2);
+            var addr=Z80.pair(h,l);
+            return {
+                code:[m.peek(a),l,h],
+                mnemonic:["CALL","P",addr.HEX(4)+"H"],
+                ref_addr:addr
+            };
+        }
+    };
+    this.opecodeTable[0374] = {
+        mnemonic:"CALL M,nn",
+        cycle: "M→17, P→10",
+        proc: function() {
+            var nn = THIS.fetchPair();
+            if(THIS.reg.flagS())  {
+                THIS.pushPair(THIS.reg.PC);
+                THIS.reg.PC = nn;
+                return 17;
+            }
+            return 10;
+        },
+        disasm: function(m,a) {
+            var l=m.peek(a+1),h=m.peek(a+2);
+            var addr=Z80.pair(h,l);
+            return {
+                code:[m.peek(a),l,h],
+                mnemonic:["CALL","M",addr.HEX(4)+"H"],
+                ref_addr:addr
+            };
+        }
+    };
+
+    this.opecodeTable[0311] = {
+        mnemonic:"RET",
+        "cycle": 10,
+        proc: function() { THIS.reg.PC = THIS.popPair(); },
+        disasm: function(m,a) {
+            return{
+                code:[m.peek(a)],
+                mnemonic:["RET"]
+            };
+        }
+    };
+    this.opecodeTable[0300] = {
+        mnemonic:"RET NZ",
+        "cycle": "NZ→11, Z→5",
+        proc: function() { if(!THIS.reg.flagZ()) { THIS.reg.PC = THIS.popPair(); return 11; } return 5; },
+        disasm: function(m,a) {
+            return{
+                code:[m.peek(a)],
+                mnemonic:["RET","NZ"]
+            };
+        }
+    };
+    this.opecodeTable[0310] = {
+        mnemonic:"RET Z",
+        "cycle": "Z→5, NZ→11",
+        proc: function() { if(THIS.reg.flagZ())  { THIS.reg.PC = THIS.popPair(); return 11; } return 5; },
+        disasm: function(m,a) {
+            return{
+                code:[m.peek(a)],
+                mnemonic:["RET","Z"]
+            };
+        }
+    };
+    this.opecodeTable[0320] = {
+        mnemonic:"RET NC",
+        "cycle": "NC→11,C→5",
+        proc: function() { if(!THIS.reg.flagC()) { THIS.reg.PC = THIS.popPair(); return 11; } return 5; },
+        disasm: function(m,a) {
+            return{
+                code:[m.peek(a)],
+                mnemonic:["RET","NC"]
+            };
+        }
+    };
+    this.opecodeTable[0330] = {
+        mnemonic:"RET C",
+        "cycle": "C→11,NC→5",
+        proc: function() { if(THIS.reg.flagC())  { THIS.reg.PC = THIS.popPair(); return 11; } return 5; },
+        disasm: function(m,a) {
+            return{
+                code:[m.peek(a)],
+                mnemonic:["RET","C"]
+            };
+        }
+    };
+    this.opecodeTable[0340] = {
+        mnemonic:"RET PO",
+        "cycle": "Parity Odd→11, Parity Even→5",
+        proc: function() { if(!THIS.reg.flagP()) { THIS.reg.PC = THIS.popPair(); return 11; } return 5; },
+        disasm: function(m,a) {
+            return{
+                code:[m.peek(a)],
+                mnemonic:["RET","PO"]
+            };
+        }
+    };
+    this.opecodeTable[0350] = {
+        mnemonic:"RET PE",
+        "cycle": "Parity Even→11, Parity Odd→5",
+        proc: function() { if(THIS.reg.flagP())  { THIS.reg.PC = THIS.popPair(); return 11; } return 5; },
+        disasm: function(m,a) {
+            return{
+                code:[m.peek(a)],
+                mnemonic:["RET","PE"]
+            };
+        }
+    };
+    this.opecodeTable[0360] = {
+        mnemonic:"RET P",
+        "cycle": "P→11, M→5",
+        proc: function() { if(!THIS.reg.flagS()) { THIS.reg.PC = THIS.popPair(); return 11; } return 5; },
+        disasm: function(m,a) {
+            return{
+                code:[m.peek(a)],
+                mnemonic:["RET","P"]
+            };
+        }
+    };
+    this.opecodeTable[0370] = {
+        mnemonic:"RET M",
+        "cycle": "M→11, P→5",
+        proc: function() { if(THIS.reg.flagS())  { THIS.reg.PC = THIS.popPair(); return 11; } return 5; },
+        disasm: function(m,a) {
+            return{
+                code:[m.peek(a)],
+                mnemonic:["RET","M"]
+            };
+        }
+    };
+
+    opeMisc[0115] = {
+        mnemonic:"RETI",
+        "cycle": 15,
+        proc: function() {
+            THIS.reg.PC = THIS.popPair();
+            THIS.IFF1 = THIS.IFF2;
+        },
+        disasm: function(m,a) {
+            return{
+                code:[m.peek(a),m.peek(a+1)],
+                mnemonic:["RETI"]
+            };
+        }
+    };
+    opeMisc[0105] = {
+        mnemonic:"RETN",
+        "cycle": 14,
+        proc: function() {
+            THIS.reg.PC = THIS.popPair();
+            THIS.IFF1 = THIS.IFF2;
+        },
+        disasm: function(m,a) {
+            return{
+                code:[m.peek(a),m.peek(a+1)],
+                mnemonic:["RETN"]
+            };
+        }
+    };
+
+    var rstVt=[0x00,0x08,0x10,0x18,0x20,0x28,0x30,0x38];
+    for(var rstI = 0; rstI < rstVt.length; rstI++) {
+        this.opecodeTable[0307 | (rstI << 3)] = {
+            mnemonic: "RST " + rstVt[rstI].HEX(2) + "H",
+            proc: (function(vec) {
+                    return function() {
+                        THIS.pushPair(THIS.reg.PC);
+                        THIS.reg.PC = vec;
+                    }
+                })(rstVt[rstI]),
+            "cycle": 12,
+            disasm: (function(vect) {
+                    return function(mem, addr) {
+                        return {
+                            code:[mem.peek(addr)],
+                            mnemonic:["RST", vect.HEX(2) + "H"]
+                        };
+                    }
+                })(rstVt[rstI])
+        };
+    }
+    //=================================================================================
+    // 入力・出力グループ
+    //=================================================================================
+    this.opecodeTable[0333] = {
+        mnemonic:"IN A,(n)",
+        cycle:11,
+        proc: function() { THIS.reg.A = THIS.readIoPort(THIS.fetch()); },
+        disasm: function(mem,addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic:["IN", "A", "(" + mem.peek(addr+1) + ")"]
+            };
+        }
+    };
+    opeMisc[0100] = {
+        mnemonic:"IN B,(C)",
+        cycle:12,
+        proc: function() { THIS.reg.B = THIS.readIoPort(THIS.reg.C); },
+        disasm: function(mem,addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic:["IN", "B", "(C)"]
+            };
+        }
+    };
+    opeMisc[0110] = {
+        mnemonic:"IN C,(C)",
+        cycle:12,
+        proc: function() { THIS.reg.C = THIS.readIoPort(THIS.reg.C); },
+        disasm: function(mem,addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic:["IN", "C", "(C)"]
+            };
+        }
+    };
+    opeMisc[0120] = {
+        mnemonic:"IN D,(C)",
+        cycle:12,
+        proc: function() { THIS.reg.D = THIS.readIoPort(THIS.reg.C); },
+        disasm: function(mem,addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic:["IN", "D", "(C)"]
+            };
+        }
+    };
+    opeMisc[0130] = {
+        mnemonic:"IN E,(C)",
+        cycle:12,
+        proc: function() { THIS.reg.E = THIS.readIoPort(THIS.reg.C); },
+        disasm: function(mem,addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic:["IN", "E", "(C)"]
+            };
+        }
+    };
+    opeMisc[0140] = {
+        mnemonic:"IN H,(C)",
+        cycle:12,
+        proc: function() { THIS.reg.H = THIS.readIoPort(THIS.reg.C); },
+        disasm: function(mem,addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic:["IN", "H", "(C)"]
+            };
+        }
+    };
+    opeMisc[0150] = {
+        mnemonic:"IN L,(C)",
+        cycle:12,
+        proc: function() { THIS.reg.L = THIS.readIoPort(THIS.reg.C); },
+        disasm: function(mem,addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic:["IN", "L", "(C)"]
+            };
+        }
+    };
+    opeMisc[0170] = {//001110000
+        mnemonic:"IN A,(C)",
+        cycle:12,
+        proc: function() { THIS.reg.A = THIS.readIoPort(THIS.reg.C); },
+        disasm: function(mem,addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic:["IN", "A", "(C)"]
+            };
+        }
+    };
+    opeMisc[0242] = {
+        mnemonic:"INI",
+        cycle:16,
+        proc: function() {
+            THIS.reg.B = (THIS.reg.B - 1) & 0xff;
+            THIS.memory.poke(THIS.reg.getHL(), THIS.readIoPort(THIS.reg.C));
+            THIS.postINI();
+        },
+        disasm: function(mem,addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic:["INI"]
+            };
+        }
+    };
+    opeMisc[0262] = {
+        mnemonic:"INIR",
+        cycle:"21 x reg B",
+        proc: function() {
+            THIS.reg.B = (THIS.reg.B - 1) & 0xff;
+            THIS.memory.poke(THIS.reg.getHL(), THIS.readIoPort(THIS.reg.C));
+            THIS.postINI();
+            if(THIS.reg.B != 0) {
+                THIS.reg.PC -= 2;
+            }
+            return 21;
+        },
+        disasm: function(mem,addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic:["INIR"]
+            };
+        }
+    };
+    opeMisc[0252] = {
+        mnemonic:"IND",
+        cycle:16,
+        proc: function() {
+            THIS.reg.B = (THIS.reg.B - 1) & 0xff;
+            THIS.memory.poke(THIS.reg.getHL(), THIS.readIoPort(THIS.reg.C));
+            THIS.postIND();
+        },
+        disasm: function(mem,addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic:["IND"]
+            };
+        }
+    };
+    opeMisc[0272] = {
+        mnemonic:"INDR",
+        cycle:"21 x reg B",
+        proc: function() {
+            THIS.reg.B = (THIS.reg.B - 1) & 0xff;
+            THIS.memory.poke(THIS.reg.getHL(), THIS.readIoPort(THIS.reg.C));
+            THIS.postIND();
+            if(THIS.reg.B != 0) {
+                THIS.reg.PC -= 2;
+            }
+            return 21;
+        },
+        disasm: function(mem,addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic:["INDR"]
+            };
+        }
+    };
+    this.opecodeTable[0323] = {
+        mnemonic:"OUT (n),A",
+        cycle:11,
+        proc: function() { THIS.writeIoPort(THIS.fetch(), THIS.reg.A); },
+        disasm: function(mem,addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic:["OUT", "(" + mem.peek(addr+1) + ")", "A"]
+            };
+        }
+    };
+    opeMisc[0101] = {
+        mnemonic:"OUT (C),B",
+        cycle:12,
+        proc: function() { THIS.writeIoPort(THIS.reg.C, THIS.reg.B); },
+        disasm: function(mem,addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic:["OUT", "(C)","B"]
+            };
+        }
+    };
+    opeMisc[0111] = {
+        mnemonic:"OUT (C),C",
+        cycle:12,
+        proc: function() { THIS.writeIoPort(THIS.reg.C, THIS.reg.C); },
+        disasm: function(mem,addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic:["OUT", "(C)", "C"]
+            };
+        }
+    };
+    opeMisc[0121] = {
+        mnemonic:"OUT (C),D",
+        cycle:12,
+        proc: function() { THIS.writeIoPort(THIS.reg.C, THIS.reg.D); },
+        disasm: function(mem,addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic:["OUT", "(C)", "D"]
+            };
+        }
+    };
+    opeMisc[0131] = {
+        mnemonic:"OUT (C),E",
+        cycle:12,
+        proc: function() { THIS.writeIoPort(THIS.reg.C, THIS.reg.E); },
+        disasm: function(mem,addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic:["OUT", "(C)", "E"]
+            };
+        }
+    };
+    opeMisc[0141] = {
+        mnemonic:"OUT (C),H",
+        cycle:12,
+        proc: function() { THIS.writeIoPort(THIS.reg.C, THIS.reg.H); },
+        disasm: function(mem,addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic:["OUT", "(C)", "H"]
+            };
+        }
+    };
+    opeMisc[0151] = {
+        mnemonic:"OUT (C),L",
+        cycle:12,
+        proc: function() { THIS.writeIoPort(THIS.reg.C, THIS.reg.L); },
+        disasm: function(mem,addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic:["OUT", "(C)", "L"]
+            };
+        }
+    };
+    opeMisc[0171] = {
+        mnemonic:"OUT (C),A",
+        cycle:12,
+        proc: function() { THIS.writeIoPort(THIS.reg.C, THIS.reg.A); },
+        disasm: function(mem,addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic:["OUT", "(C)", "A"]
+            };
+        }
+    };
+    opeMisc[0243] = {
+        mnemonic:"OUTI",
+        cycle:16,
+        proc: function() {
+            THIS.reg.B = (THIS.reg.B - 1) & 0xff;
+            THIS.writeIoPort(THIS.reg.C, THIS.memory.peek(THIS.reg.getHL()));
+            THIS.postOUTI();
+        },
+        disasm: function(mem,addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic:["OUTI"]
+            };
+        }
+    };
+    opeMisc[0263] = {
+        mnemonic:"OTIR",
+        cycle:"21 x reg B",
+        proc: function() {
+            THIS.reg.B = (THIS.reg.B - 1) & 0xff;
+            THIS.writeIoPort(THIS.reg.C, THIS.memory.peek(THIS.reg.getHL()));
+            THIS.postOUTI();
+            if(THIS.reg.B != 0) {
+                THIS.reg.PC -= 2;
+            }
+            return 21;
+        },
+        disasm: function(mem,addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic:["OTIR"]
+            };
+        }
+    };
+    opeMisc[0253] = {
+        mnemonic:"OUTD",
+        cycle:16,
+        proc: function() {
+            THIS.reg.B = (THIS.reg.B - 1) & 0xff;
+            THIS.writeIoPort(THIS.reg.C, THIS.memory.peek(THIS.reg.getHL()));
+            THIS.postOUTD();
+        },
+        disasm: function(mem,addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic:["OUTD"]
+            };
+        }
+    };
+    opeMisc[0273] = {
+        mnemonic:"OTDR",
+        cycle:"21 x reg B",
+        proc: function() {
+            THIS.reg.B = (THIS.reg.B - 1) & 0xff;
+            THIS.writeIoPort(THIS.reg.C, THIS.memory.peek(THIS.reg.getHL()));
+            THIS.postOUTD();
+            if(THIS.reg.B != 0) {
+                THIS.reg.PC -= 2;
+            }
+            return 21;
+        },
+        disasm: function(mem,addr) {
+            return {
+                code:[mem.peek(addr),mem.peek(addr+1)],
+                mnemonic:["OTDR"]
+            };
+        }
+    };
+}
+
+},{}],9:[function(require,module,exports){
+//
+// IMem
+//
+IMem = function() {
+};
+
+IMem.prototype.create = function(opt) {
+    opt = opt || {};
+    this.onPeek = opt.onPeek || function(address, value) {};
+    this.onPoke = opt.onPoke || function(address, value) {};
+    this.size = opt.size || 0x10000;
+    this.startAddr = opt.startAddr || 0;
+};
+
+//
+// This peekByte is an abstruct called from `peek`.
+//
+// address: address to write value
+//
+IMem.prototype.peekByte = function(address, value) {
+    var msg = "Error: peekByte was not overrided and supported in class of this:" + JSON.stringify(this, null, "    ");
+    log.error(msg);
+    throw new ReferenseError(msg);
+};
+
+//
+// This pokeByte is an abstruct called from `poke`.
+//
+// address: address to write value
+// value: value to write
+//
+IMem.prototype.pokeByte = function(address, value) {
+    var msg = "Error: pokeByte was not overrided and supported in class of this:" + JSON.stringify(this, null, "    ");
+    log.error(msg);
+    throw new ReferenseError(msg);
+};
+
+IMem.prototype.clear = function() {
+    for(var i = 0; i < this.size; i++) {
+        this.pokeByte(0);
+    }
+};
+
+IMem.prototype.peek = function(address) {
+    var value = this.peekByte(address);
+    var override = this.onPeek.call(this, address, value);
+    if(override != null && override != undefined) {
+        value = override;
+    }
+    return value;
+};
+
+IMem.prototype.poke = function(address, value) {
+    this.pokeByte(address, value);
+    this.onPoke.call(this, address, this.peekByte(address));
+};
+
+IMem.prototype.peekPair = function(address) {
+    var H = this.peek(address + 1);
+    var L = this.peek(address + 0);
+    return Z80.pair(H,L);
+};
+
+//
+// MemoryBlock
+//
+MemoryBlock = function(opt) {
+    this.create(opt);
+};
+
+MemoryBlock.prototype = new IMem();
+
+MemoryBlock.prototype.create = function(opt) {
+    IMem.prototype.create.call(this, opt);
+	this.mem = new Array(this.size);
+};
+
+MemoryBlock.prototype.peekByte = function(address) {
+    return this.mem[(address - this.startAddr) & 0xffff] & 0xff;
+};
+
+MemoryBlock.prototype.pokeByte = function(address, value) {
+    this.mem[(address - this.startAddr)  & 0xffff] = value & 0xff;
+};
+
+//
+// MemoryBank
+//
+// TODO: change the type of field `memblk` to `Array` instead of `object`
+// to improve the speed to access.
+//
+MemoryBank = function(opt) {
+    this.create(opt);
+};
+MemoryBank.prototype = new IMem();
+
+MemoryBank.prototype.create = function(opt) {
+    IMem.prototype.create.call(this, opt);
+    this.mem = new Array(this.size);
+    this.memblk = {};
+};
+
+MemoryBank.prototype.setMemoryBlock = function(name, memblk) {
+    if(memblk == null) {
+        if(name in this.memblk) {
+            var size = this.memblk[name].size;
+            var startAddr = this.memblk[name].startAddr;
+            for(var j = 0; j < size; j++) {
+                this.mem[startAddr + j] = null;
+            }
+            delete this.memblk[name];
+        }
+    } else {
+        this.memblk[name] = memblk;
+        var size = this.memblk[name].size;
+        var startAddr = this.memblk[name].startAddr;
+        for(var j = 0; j < size; j++) {
+            this.mem[startAddr + j] = memblk;
+        }
+    }
+};
+
+MemoryBank.prototype.peekByte = function(address) {
+    return (this.mem[(address - this.startAddr) & 0xffff]).peek(address) & 0xff;
+};
+
+MemoryBank.prototype.pokeByte = function(address, value) {
+    (this.mem[(address - this.startAddr) & 0xffff]).poke(address, value & 0xff);
+};
+
+},{}],10:[function(require,module,exports){
+// Z80_Register class for Z80
+Z80_Register = function() {
+	// 8bit register / 16 bit register pair
+	this.B = 0;
+	this.C = 0;
+	this.D = 0;
+	this.E = 0;
+	this.H = 0;
+	this.L = 0;
+	this.A = 0;
+	this.F = 0;
+	
+	//16bit register
+	this.PC = 0;	//プログラムカウンタ
+	this.SP = 0;	//スタックポインタ
+	this.IX = 0;	//インデックスレジスタX
+	this.IY = 0;	//インデックスレジスタY
+	
+	this.R = 0;	//リフレッシュレジスタ
+	this.I = 0;	//割り込みベクタ
+};
+(function() {
+
+/* FLAG MASK BIT CONSTANT */
+var S_FLAG = 0x80;
+var Z_FLAG = 0x40;
+var H_FLAG = 0x10;
+var V_FLAG = 0x04;
+var N_FLAG = 0x02;
+var C_FLAG = 0x01;
+
+//
+// I have ported these codes from https://github.com/marukun700/mz700win/tree/master/z80
+//
+var PTable = new Array(512);
+var ZSTable = new Array(512);
+var ZSPTable = new Array(512);
+for (var i = 0; i < 256; ++i) {
+    var zs = 0;
+    if (i == 0) {
+        zs |= Z_FLAG;
+    }
+    if (i & 0x80) {
+        zs |= S_FLAG;
+    }
+
+    var p = 0;
+    if (i & 1) { ++p; }
+    if (i & 2) { ++p; }
+    if (i & 4) { ++p; }
+    if (i & 8) { ++p; }
+    if (i & 16) { ++p; }
+    if (i & 32) { ++p; }
+    if (i & 64) { ++p; }
+    if (i & 128) { ++p; }
+
+    PTable[i] = (p & 1) ? 0 : V_FLAG;
+    ZSTable[i] = zs;
+    ZSPTable[i] = zs | PTable[i];
+}
+for (var i = 0; i < 256; ++i) {
+    ZSTable[i + 256] = ZSTable[i] | C_FLAG;
+    ZSPTable[i + 256] = ZSPTable[i] | C_FLAG;
+    PTable[i + 256] = PTable[i] | C_FLAG;
+}
+
+Z80_Register.prototype.clear = function() {
+	this.B = 0;
+	this.C = 0;
+	this.D = 0;
+	this.E = 0;
+	this.H = 0;
+	this.L = 0;
+	this.A = 0;
+	this.F = 0;
+	this.PC = 0;
+	this.SP = 0;
+	this.IX = 0;
+	this.IY = 0;
+	this.R = 0;
+	this.I = 0;
+}
+Z80_Register.prototype.setFrom = function(reg) {
+	this.B = reg.B;
+	this.C = reg.C;
+	this.D = reg.D;
+	this.E = reg.E;
+	this.H = reg.H;
+	this.L = reg.L;
+	this.A = reg.A;
+	this.F = reg.F;
+	this.PC = reg.PC;
+	this.SP = reg.SP;
+	this.IX = reg.IX;
+	this.IY = reg.IY;
+	this.R = reg.R;
+	this.I = reg.I;
+}
+Z80_Register.prototype.setPair = function(rr, value) {
+	if(rr == "SP" || rr == "PC" || rr == "IX" || rr == "IY") {
+		this[rr] = value;
+	} else {
+		this[rr.substring(1,2)] = Z80.lobyte(value);
+		this[rr.substring(0,1)] = Z80.hibyte(value);
+	}
+}
+Z80_Register.prototype.debugDump = function() {
+	console.info(
+            "B:" + this.B.HEX(2) + "H " + this.B + " " +
+            "C:" + this.C.HEX(2) + "H " + this.C + " / " + this.getBC());
+	console.info(
+            "D:" + this.D.HEX(2) + "H " + this.D + " " +
+            "E:" + this.E.HEX(2) + "H " + this.E + " / " + this.getDE());
+	console.info(
+            "H:" + this.H.HEX(2) + "H " + this.H + " " +
+            "L:" + this.L.HEX(2) + "H " + this.L + " / " + this.getHL());
+	console.info("A:" + this.A.HEX(2) + "H " + this.A);
+	console.info("SZ-HPN-C");
+	console.info(this.F.bin(8));
+	console.info("PC:" + this.PC.HEX(4) + "H " + this.PC.bin(16) + "(2) " + this.PC);
+	console.info("SP:" + this.SP.HEX(4) + "H " + this.SP.bin(16) + "(2) " + this.SP);
+	console.info("I:" + this.I.HEX(2) + "H " + this.I.bin(8) + "(2) " + this.I + " " +
+	"R:" + this.R.HEX(2) + "H " + this.R.bin(8) + "(2) " + this.R);
+}
+
+
+/* GET 16bit register pair value */
+Z80_Register.prototype.getHL = function() { return Z80.pair(this.H, this.L); };
+Z80_Register.prototype.getBC = function() { return Z80.pair(this.B, this.C); };
+Z80_Register.prototype.getDE = function() { return Z80.pair(this.D, this.E); };
+Z80_Register.prototype.getAF = function() { return Z80.pair(this.A, this.F); };
+
+/* SET 16bit register pair value */
+Z80_Register.prototype.setHL = function(nn) { this.H = Z80.hibyte(nn); this.L = Z80.lobyte(nn); };
+Z80_Register.prototype.setBC = function(nn) { this.B = Z80.hibyte(nn); this.C = Z80.lobyte(nn); };
+Z80_Register.prototype.setDE = function(nn) { this.D = Z80.hibyte(nn); this.E = Z80.lobyte(nn); };
+Z80_Register.prototype.setAF = function(nn) { this.A = Z80.hibyte(nn); this.F = Z80.lobyte(nn); };
+
+/* TEST FLAG BIT */
+Z80_Register.prototype.testFlag	= function(mask) { return (this.F & mask) != 0 ? true : false; };
+Z80_Register.prototype.flagS = function() {return this.testFlag(S_FLAG); }
+Z80_Register.prototype.flagZ = function() {return this.testFlag(Z_FLAG); }
+Z80_Register.prototype.flagH = function() {return this.testFlag(H_FLAG); }
+Z80_Register.prototype.flagP = function() {return this.testFlag(V_FLAG); }
+Z80_Register.prototype.flagN = function() {return this.testFlag(N_FLAG); }
+Z80_Register.prototype.flagC = function() {return this.testFlag(C_FLAG); }
+
+/* SET FLAG BIT */
+Z80_Register.prototype.setFlag = function(mask) {this.F |= mask; }
+Z80_Register.prototype.setFlagS = function() { this.setFlag(S_FLAG); }
+Z80_Register.prototype.setFlagZ = function() { this.setFlag(Z_FLAG); }
+Z80_Register.prototype.setFlagH = function() { this.setFlag(H_FLAG); }
+Z80_Register.prototype.setFlagP = function() { this.setFlag(V_FLAG); }
+Z80_Register.prototype.setFlagN = function() { this.setFlag(N_FLAG); }
+Z80_Register.prototype.setFlagC = function() { this.setFlag(C_FLAG); }
+
+/* CLEAR FLAG BIT */
+Z80_Register.prototype.clearFlag = function(mask) {this.F &= ~mask; }
+Z80_Register.prototype.clearFlagS = function() { this.clearFlag(S_FLAG); }
+Z80_Register.prototype.clearFlagZ = function() { this.clearFlag(Z_FLAG); }
+Z80_Register.prototype.clearFlagH = function() { this.clearFlag(H_FLAG); }
+Z80_Register.prototype.clearFlagP = function() { this.clearFlag(V_FLAG); }
+Z80_Register.prototype.clearFlagN = function() { this.clearFlag(N_FLAG); }
+Z80_Register.prototype.clearFlagC = function() { this.clearFlag(C_FLAG); }
+
+Z80_Register.prototype.ADD_HL = function(n)
+{
+    this.setHL(this._ADD(this.getHL(), n));
+}
+//#define M_ADCW(Reg)                                            \
+//{                                                              \
+// int q;                                                        \
+// q=R.HL.D+R.Reg.D+(R.AF.D&1);                                  \
+// R.AF.B.l=(((R.HL.D^q^R.Reg.D)&0x1000)>>8)|                    \
+//          ((q>>16)&1)|                                         \
+//          ((q&0x8000)>>8)|                                     \
+//          ((q&65535)?0:Z_FLAG)|                                \
+//          (((R.Reg.D^R.HL.D^0x8000)&(R.Reg.D^q)&0x8000)>>13);  \
+// R.HL.W.l=q;                                                   \
+//}
+Z80_Register.prototype.ADC_HL = function(n)
+{
+    var HL = this.getHL();
+    var q = HL + n + (this.F & C_FLAG);
+    this.F = (((HL ^ q ^ n) & 0x1000) >> 8) |
+        ((q >> 16) & 1) |
+        ((q & 0x8000) >> 8) |
+        ((q & 0xffff) ? 0 : Z_FLAG) |
+        (((n ^ HL ^ 0x8000) & (n ^ q) & 0x8000) >> 13);
+    this.setHL(q & 0xffff);
+};
+//#define M_SBCW(Reg)                                    \
+//{                                                      \
+// int q;                                                \
+// q=R.HL.D-R.Reg.D-(R.AF.D&1);                          \
+// R.AF.B.l=(((R.HL.D^q^R.Reg.D)&0x1000)>>8)|            \
+//          ((q>>16)&1)|                                 \
+//          ((q&0x8000)>>8)|                             \
+//          ((q&65535)?0:Z_FLAG)|                        \
+//          (((R.Reg.D^R.HL.D)&(R.Reg.D^q)&0x8000)>>13)| \
+//          N_FLAG;                                      \
+// R.HL.W.l=q;                                           \
+//}
+Z80_Register.prototype.SBC_HL = function(n)
+{
+    var HL = this.getHL();
+    var q = HL - n - (this.F & 1);
+    this.F = (((HL ^ q ^ n) & 0x1000) >> 8) |
+        ((q >> 16) & 1) |
+        ((q & 0x8000) >> 8) |
+        ((q & 0xffff) ? 0 : Z_FLAG) |
+        (((n & HL) & (n ^ q) & 0x8000) >> 13) |
+        N_FLAG;
+    this.setHL(q & 0xffff);
+};
+Z80_Register.prototype.ADD_IX = function(n)
+{
+    this.IX = this._ADD(this.IX, n);
+}
+Z80_Register.prototype.ADD_IY = function(n)
+{
+    this.IY = this._ADD(this.IY, n);
+}
+//#define M_ADDW(Reg1,Reg2)                              \
+//{                                                      \
+// int q;                                                \
+// q=R.Reg1.D+R.Reg2.D;                                  \
+// R.AF.B.l=(R.AF.B.l&(S_FLAG|Z_FLAG|V_FLAG))|           \
+//          (((R.Reg1.D^q^R.Reg2.D)&0x1000)>>8)|         \
+//          ((q>>16)&1);                                 \
+// R.Reg1.W.l=q;                                         \
+//}
+Z80_Register.prototype._ADD = function(a, b)
+{
+    var q = a + b;
+    this.F = (this.F & (S_FLAG | Z_FLAG | V_FLAG)) |
+        (((a ^ q ^ b) & 0x1000) >> 8) |
+        ((q >> 16) & 1);
+    return q & 0xffff;
+};
+Z80_Register.prototype.jumpRel = function(e) {
+    this.PC += Z80.getSignedByte(e);
+}
+//static void cpl(void) {
+//  R.AF.B.h^=0xFF;
+//  R.AF.B.l|=(H_FLAG|N_FLAG);
+//}
+Z80_Register.prototype.CPL = function() {
+    this.A = (this.A ^ 0xff) & 255;
+    this.F = (H_FLAG | N_FLAG);
+}
+//static void neg(void)
+//{
+// byte i;
+// i=R.AF.B.h;
+// R.AF.B.h=0;
+// M_SUB(i);
+//}
+Z80_Register.prototype.NEG = function() {
+    var i = this.A;
+    this.A = 0;
+    this.subAcc(i);
+}
+//  #define M_ADD(Reg)
+//  {
+//      int q;
+//      q=R.AF.B.h+Reg;
+//      R.AF.B.l=ZSTable[q&255]|((q&256)>>8)|
+//          ((R.AF.B.h^q^Reg)&H_FLAG)|
+//          (((Reg^R.AF.B.h^0x80)&(Reg^q)&0x80)>>5);
+//      R.AF.B.h=q;
+//  }
+Z80_Register.prototype.addAcc = function(n) {
+    var q = this.A + n;
+    this.F = ZSTable[q & 255] | ((q & 256) >> 8) |
+        ((this.A ^ q ^ n) & H_FLAG) |
+        (((n ^ this.A ^ 0x80) & (n ^ q) & 0x80) >> 5);
+    this.A = (q & 255);
+}
+//  #define M_ADC(Reg)
+//  {
+//      int q;
+//      q = R.AF.B.h + Reg + (R.AF.B.l & 1);
+//      R.AF.B.l = ZSTable[q & 255] | ((q & 256) >> 8) |
+//            ((R.AF.B.h ^ q ^ Reg) & H_FLAG) |
+//            (((Reg ^ R.AF.B.h ^ 0x80) & (Reg ^ q) & 0x80) >> 5);
+//      R.AF.B.h = q;
+//  }
+//
+Z80_Register.prototype.addAccWithCarry = function(n) {
+    var q = this.A + n + (this.F & C_FLAG);
+    this.F = ZSTable[q & 255] | ((q & 256) >> 8) |
+        ((this.A ^ q ^ n) & H_FLAG) |
+        (((n ^ this.A ^ 0x80) & (n ^ q) & 0x80) >> 5);
+    this.A = (q & 255);
+}
+//  #define M_SUB(Reg)                                      \
+//  {                                                       \
+//   int q;                                                 \
+//   q=R.AF.B.h-Reg;                                        \
+//   R.AF.B.l=ZSTable[q&255]|((q&256)>>8)|N_FLAG|           \
+//            ((R.AF.B.h^q^Reg)&H_FLAG)|                    \
+//            (((Reg^R.AF.B.h)&(Reg^q)&0x80)>>5);           \
+//   R.AF.B.h=q;                                            \
+//  }
+//  
+Z80_Register.prototype.subAcc = function(n) {
+    var q = (this.A - n) & 0x1ff;
+    this.F = ZSTable[q & 255] | ((q & 256) >> 8) | N_FLAG |
+        ((this.A ^ q ^ n) & H_FLAG) |
+        (((n ^ this.A ^ 0x80) & (n ^ q) & 0x80) >> 5);
+    this.A = (q & 255);
+}
+//  #define M_SBC(Reg)                                      \
+//  {                                                       \
+//   int q;                                                 \
+//   q=R.AF.B.h-Reg-(R.AF.B.l&1);                           \
+//   R.AF.B.l=ZSTable[q&255]|((q&256)>>8)|N_FLAG|           \
+//            ((R.AF.B.h^q^Reg)&H_FLAG)|                    \
+//            (((Reg^R.AF.B.h)&(Reg^q)&0x80)>>5);           \
+//   R.AF.B.h=q;                                            \
+//  }
+Z80_Register.prototype.subAccWithCarry = function(n) {
+    var q = (this.A - n - (this.F & C_FLAG)) & 0x1ff;
+    this.F = ZSTable[q & 255] | ((q & 256) >> 8) | N_FLAG |
+        ((this.A ^ q ^ n) & H_FLAG) |
+        (((n ^ this.A ^ 0x80) & (n ^ q) & 0x80) >> 5);
+    this.A = (q & 255);
+}
+//#define M_AND(Reg)
+//  R.AF.B.h &= Reg;
+//  R.AF.B.l = ZSPTable[R.AF.B.h] | H_FLAG
+Z80_Register.prototype.andAcc = function(n) {
+    this.A &= (n & 0xff);
+    this.F = ZSPTable[this.A] | H_FLAG;
+}
+//#define M_OR(Reg)
+//  R.AF.B.h |= Reg;
+//  R.AF.B.l = ZSPTable[R.AF.B.h]
+Z80_Register.prototype.orAcc = function(n) {
+    this.A |= (n & 0xff);
+    this.F = ZSPTable[this.A];
+}
+//#define M_XOR(Reg)
+//  R.AF.B.h ^= Reg;
+//  R.AF.B. l= ZSPTable[R.AF.B.h]
+Z80_Register.prototype.xorAcc = function(n) {
+    this.A ^= (n & 0xff);
+    this.F = ZSPTable[this.A];
+}
+Z80_Register.prototype.increment = function(r) {
+    this[r] = this.getINCValue(this[r]);
+}
+//#define M_INC(Reg)
+// ++Reg;
+// R.AF.B.l=(R.AF.B.l&C_FLAG)|ZSTable[Reg]|
+//          ((Reg==0x80)?V_FLAG:0)|((Reg&0x0F)?0:H_FLAG)
+Z80_Register.prototype.getINCValue = function(n) {
+    n = (n + 1) & 255;
+    this.F = (this.F & C_FLAG) |
+        ZSTable[n] |
+        ((n == 0x80) ? V_FLAG : 0) |
+        ((n & 0x0F) ? 0 : H_FLAG);
+    return n;
+};
+Z80_Register.prototype.decrement = function(r) {
+    this[r] = this.getDECValue(this[r]);
+}
+//#define M_DEC(Reg)
+//  R.AF.B.l=(R.AF.B.l&C_FLAG)|N_FLAG|
+//           ((Reg==0x80)?V_FLAG:0)|((Reg&0x0F)?0:H_FLAG);
+//  R.AF.B.l|=ZSTable[--Reg]
+Z80_Register.prototype.getDECValue = function(n) {
+    this.F = (this.F & C_FLAG) | N_FLAG |
+        ((n == 0x80) ? V_FLAG : 0) |
+        ((n & 0x0F) ? 0 : H_FLAG);
+    n = (n - 1) & 255;
+    this.F |= ZSTable[n];
+    return n;
+};
+//#define M_CP(Reg)
+//{
+// int q;
+// q=R.AF.B.h-Reg;
+// R.AF.B.l=ZSTable[q&255]|((q&256)>>8)|N_FLAG|
+//          ((R.AF.B.h^q^Reg)&H_FLAG)|
+//          (((Reg^R.AF.B.h)&(Reg^q)&0x80)>>5);
+//}
+Z80_Register.prototype.compareAcc = function(n) {
+    var q = this.A - n;
+    this.F = ZSTable[q & 255] | ((q & 256) >> 8) | N_FLAG |
+        ((this.A ^ q ^ n) & H_FLAG) |
+        (((n ^ this.A) & (n ^ q) & 0x80) >> 5);
+}
+//static void cpi(void)
+//{
+// byte i,j;
+// i=M_RDMEM(R.HL.D);
+// j=R.AF.B.h-i;
+// ++R.HL.W.l;
+// --R.BC.W.l;
+// R.AF.B.l=(R.AF.B.l&C_FLAG)|ZSTable[j]|
+//          ((R.AF.B.h^i^j)&H_FLAG)|(R.BC.D? V_FLAG:0)|N_FLAG;
+//}
+Z80_Register.prototype.CPI = function(n) {
+    var q = this.A - n;
+    this.incHL();
+    this.decBC();
+    this.F = (this.F & C_FLAG) | ZSTable[q & 255] |
+        ((this.A ^ n ^ q) & H_FLAG) |
+        (this.getBC() ? V_FLAG : 0) | N_FLAG;
+};
+//static void cpd(void)
+//{
+// byte i,j;
+// i=M_RDMEM(R.HL.D);
+// j=R.AF.B.h-i;
+// --R.HL.W.l;
+// --R.BC.W.l;
+// R.AF.B.l=(R.AF.B.l&C_FLAG)|ZSTable[j]|
+//          ((R.AF.B.h^i^j)&H_FLAG)|(R.BC.D? V_FLAG:0)|N_FLAG;
+//}
+Z80_Register.prototype.CPD = function(n) {
+    var q = this.A - n;
+    this.decHL();
+    this.decBC();
+    this.F = (this.F & C_FLAG) | ZSTable[q & 255] |
+        ((this.A ^ n ^ q) & H_FLAG) |
+        (this.getBC() ? V_FLAG : 0) | N_FLAG;
+}
+//#define M_RLCA
+// R.AF.B.h=(R.AF.B.h<<1)|((R.AF.B.h&0x80)>>7);
+// R.AF.B.l=(R.AF.B.l&0xEC)|(R.AF.B.h&C_FLAG)
+Z80_Register.prototype.RLCA = function() {
+    this.A = ((this.A << 1) | ((this.A & 0x80) >> 7)) & 255;
+    this.F = (this.F & 0xEC) | (this.A & 0x01);
+}
+//#define M_RLC(Reg)
+//{
+// int q;
+// q=Reg>>7;
+// Reg=(Reg<<1)|q;
+// R.AF.B.l=ZSPTable[Reg]|q;
+//}
+Z80_Register.prototype.RLC = function(x) {
+    var q = x >> 7;
+    x = ((x << 1) | q) & 255;
+    this.F = ZSPTable[x] | q;
+    return x;
+}
+//#define M_RLA               \
+//{                           \
+// int i;                     \
+// i=R.AF.B.l&C_FLAG;         \
+// R.AF.B.l=(R.AF.B.l&0xEC)|((R.AF.B.h&0x80)>>7); \
+// R.AF.B.h=(R.AF.B.h<<1)|i;  \
+//}
+Z80_Register.prototype.RLA = function() {
+    var i = this.F & C_FLAG;
+    this.F = (this.F & 0xEC) | ((this.A & 0x80) >> 7);
+    this.A = ((this.A << 1) | i) & 255;
+}
+//#define M_RL(Reg)            \
+//{                            \
+// int q;                      \
+// q=Reg>>7;                   \
+// Reg=(Reg<<1)|(R.AF.B.l&1);  \
+// R.AF.B.l=ZSPTable[Reg]|q;   \
+//}
+Z80_Register.prototype.RL = function(x) {
+    var q = x >> 7;
+    x = ((x << 1) | (this.F & 1)) & 255;
+    this.F = ZSPTable[x] | q;
+    return x;
+}
+//#define M_RRCA              \
+// R.AF.B.l=(R.AF.B.l&0xEC)|(R.AF.B.h&0x01); \
+// R.AF.B.h=(R.AF.B.h>>1)|(R.AF.B.h<<7)
+Z80_Register.prototype.RRCA = function() {
+    this.F = (this.F & 0xEC) | (this.A & 0x01);
+    this.A = (this.A >> 1) | ((this.A << 7) & 255);
+}
+//#define M_RRC(Reg)         \
+//{                          \
+// int q;                    \
+// q=Reg&1;                  \
+// Reg=(Reg>>1)|(q<<7);      \
+// R.AF.B.l=ZSPTable[Reg]|q; \
+//}
+Z80_Register.prototype.RRC = function(x) {
+    var q = x & 1;
+    x = (x >> 1) | ((q << 7) & 255);
+    this.F = ZSPTable[x] | q;
+    return x;
+}
+//#define M_RRA               \
+//{                           \
+// int i;                     \
+// i=R.AF.B.l&C_FLAG;         \
+// R.AF.B.l=(R.AF.B.l&0xEC)|(R.AF.B.h&0x01); \
+// R.AF.B.h=(R.AF.B.h>>1)|(i<<7);            \
+//}
+Z80_Register.prototype.RRA = function() {
+    var i = this.F & C_FLAG;
+    this.F = (this.F & 0xEC) | (this.A & 0x01);
+    this.A = (this.A >> 1) | (i << 7);
+}
+//#define M_RR(Reg)            \
+//{                            \
+// int q;                      \
+// q=Reg&1;                    \
+// Reg=(Reg>>1)|(R.AF.B.l<<7); \
+// R.AF.B.l=ZSPTable[Reg]|q;   \
+//}
+Z80_Register.prototype.RR = function(x) {
+    var q = x & 1;
+    x = (x >> 1) | ((this.F << 7) & 255);
+    this.F = ZSPTable[x] | q;
+    return x;
+}
+//#define M_SLA(Reg)           \
+//{                            \
+// int q;                      \
+// q=Reg>>7;                   \
+// Reg<<=1;                    \
+// R.AF.B.l=ZSPTable[Reg]|q;   \
+//}
+Z80_Register.prototype.SLA = function(x) {
+    var q = x >> 7;
+    x = (x << 1) & 255;
+    this.F = ZSPTable[x] | q;
+    return x;
+}
+//#define M_SRA(Reg)           \
+//{                            \
+// int q;                      \
+// q=Reg&1;                    \
+// Reg=(Reg>>1)|(Reg&0x80);    \
+// R.AF.B.l=ZSPTable[Reg]|q;   \
+//}
+Z80_Register.prototype.SRA = function(x) {
+    var q = x & 1;
+    x = (x >> 1) | (x & 0x80);
+    this.F = ZSPTable[x] | q;
+    return x;
+}
+//#define M_SRL(Reg)           \
+//{                            \
+// int q;                      \
+// q=Reg&1;                    \
+// Reg>>=1;                    \
+// R.AF.B.l=ZSPTable[Reg]|q;   \
+//}
+Z80_Register.prototype.SRL = function(x) {
+    var q = x & 1;
+    x >>= 1;
+    this.F = ZSPTable[x] | q;
+    return x;
+}
+//#define DoIn(lo,hi)     Z80_In( (word) ((lo)|((word) ((hi)<<8) )))
+//#define M_IN(Reg)           \
+//        Reg=DoIn(R.BC.B.l,R.BC.B.h); \
+//        R.AF.B.l=(R.AF.B.l&C_FLAG)|ZSPTable[Reg]
+Z80_Register.prototype.onReadIoPort = function(Reg) {
+    this.F = (this.F & C_FLAG) | ZSPTable[Reg];
+};
+//static void ind(void)
+//{
+// --R.BC.B.h;
+// M_WRMEM(R.HL.D,DoIn(R.BC.B.l,R.BC.B.h));
+// --R.HL.W.l;
+// R.AF.B.l=(R.BC.B.h)? N_FLAG:(N_FLAG|Z_FLAG);
+//}
+Z80_Register.prototype.postIND = function() {
+    this.decHL();
+    this.F = (this.B) ? N_FLAG : (N_FLAG | Z_FLAG);
+};
+//static void ini(void)
+//{
+// --R.BC.B.h;
+// M_WRMEM(R.HL.D,DoIn(R.BC.B.l,R.BC.B.h));
+// ++R.HL.W.l;
+// R.AF.B.l=(R.BC.B.h)? N_FLAG:(N_FLAG|Z_FLAG);
+//}
+Z80_Register.prototype.postINI = function() {
+    this.incHL();
+    this.F = (this.B) ? N_FLAG : (N_FLAG | Z_FLAG);
+};
+//static void outd(void)
+//{
+// --R.BC.B.h;
+// DoOut (R.BC.B.l,R.BC.B.h,(word)M_RDMEM(R.HL.D));
+// --R.HL.W.l;
+// R.AF.B.l=(R.BC.B.h)? N_FLAG:(Z_FLAG|N_FLAG);
+//}
+Z80_Register.prototype.postOUTD = function() {
+    this.decHL();
+    this.F = (this.B) ? N_FLAG : (N_FLAG | Z_FLAG);
+};
+//static void outi(void)
+//{
+// --R.BC.B.h;
+// DoOut (R.BC.B.l,R.BC.B.h,(word)M_RDMEM(R.HL.D));
+// ++R.HL.W.l;
+// R.AF.B.l=(R.BC.B.h)? N_FLAG:(Z_FLAG|N_FLAG);
+//}
+Z80_Register.prototype.postOUTI = function() {
+    this.incHL();
+    this.F = (this.B) ? N_FLAG : (N_FLAG | Z_FLAG);
+};
+//static void ld_a_i(void)
+//{
+// R.AF.B.h=R.I;
+// R.AF.B.l=(R.AF.B.l&C_FLAG)|ZSTable[R.I]|(R.IFF2<<2);
+//}
+Z80_Register.prototype.LD_A_I = function(iff2) {
+    this.A = this.I;
+    this.F = (this.F & C_FLAG) | ZSTable[this.I] | (iff2 << 2)
+};
+//static void ld_a_r(void)
+//{
+// R.AF.B.h=(R.R&127)|(R.R2&128);
+// R.AF.B.l=(R.AF.B.l&C_FLAG)|ZSTable[R.AF.B.h]|(R.IFF2<<2);
+//}
+Z80_Register.prototype.LD_A_R = function(iff2,r2) {
+    this.A = (this.R & 127) | (r2 & 128);
+    this.F = (this.F & C_FLAG) | ZSTable[this.A] | (iff2 << 2)
+};
+Z80_Register.prototype.incBC = function() {
+    this.setBC((this.getBC() + 1) & 0xffff);
+}
+Z80_Register.prototype.decBC = function() {
+    this.setBC((this.getBC() - 1) & 0xffff);
+}
+Z80_Register.prototype.incHL = function() {
+    this.setHL((this.getHL() + 1) & 0xffff);
+}
+Z80_Register.prototype.decHL = function() {
+    this.setHL((this.getHL() - 1) & 0xffff);
+}
+Z80_Register.prototype.incDE = function() {
+    this.setDE((this.getDE() + 1) & 0xffff);
+}
+Z80_Register.prototype.decDE = function() {
+    this.setDE((this.getDE() - 1) & 0xffff);
+}
+//static void ldd(void)
+//{
+// M_WRMEM(R.DE.D,M_RDMEM(R.HL.D));
+// --R.DE.W.l;
+// --R.HL.W.l;
+// --R.BC.W.l;
+// R.AF.B.l=(R.AF.B.l&0xE9)|(R.BC.D? V_FLAG:0);
+//}
+Z80_Register.prototype.onLDD = function() {
+    this.decDE();
+    this.decHL();
+    this.decBC();
+    this.F = (this.F & 0xE9) | (this.getBC() ? V_FLAG : 0);
+};
+//static void ldi(void)
+//{
+// M_WRMEM(R.DE.D,M_RDMEM(R.HL.D));
+// ++R.DE.W.l;
+// ++R.HL.W.l;
+// --R.BC.W.l;
+// R.AF.B.l=(R.AF.B.l&0xE9)|(R.BC.D? V_FLAG:0);
+//}
+Z80_Register.prototype.onLDI = function() {
+    this.incDE();
+    this.incHL();
+    this.decBC();
+    this.F = (this.F & 0xE9) | (this.getBC() ? V_FLAG : 0);
+};
+
+/* -------------------
+ * r,r'		レジスタ
+ * -------------------
+ * 000		B
+ * 001		C
+ * 010		D
+ * 011		E
+ * 100		H
+ * 101		L
+ * 111		A
+ */
+Z80_Register.REG_r_ID2NAME = {0:"B",1:"C",2:"D",3:"E",4:"H",5:"L",7:"A"};
+/* -------------------
+ * dd,ss	ペアレジスタ
+ * -------------------
+ * 00		BC
+ * 01		DE
+ * 10		HL
+ * 11		SP
+ */
+/* -------------------
+ * qq		ペアレジスタ
+ * -------------------
+ * 00		BC
+ * 01		DE
+ * 10		HL
+ * 11		AF
+ */
+
+/* -------------------
+ * pp		ペアレジスタ
+ * -------------------
+ * 00		BC
+ * 01		DE
+ * 10		IX
+ * 11		SP
+ */
+
+/* -------------------
+ * rr		ペアレジスタ
+ * -------------------
+ * 00		BC
+ * 01		DE
+ * 10		IY
+ * 11		SP
+ */
+
+/* -------------------
+ * b		ビットセット
+ * -------------------
+ * 000		0
+ * 001		1
+ * 010		2
+ * 011		3
+ * 100		4
+ * 101		5
+ * 110		6
+ * 111		7
+ */
+/* ---------------------------
+ * cc		コンディション
+ * ---------------------------
+ * 000		NZ	Non Zero
+ * 001		Z	Zero
+ * 010		NC	Non Carry
+ * 011		C	Carry
+ * 100		PO	Parity Odd
+ * 101		PE	Parity Even
+ * 110		P	sign Positive
+ * 111		N	sign Negative
+ */
+Z80_Register.CONDITION_INDEX = { NZ:0, Z:1, NC:2, C:3, PO:4, PE:5, P:6, N:7 };
+
+/* -------------------
+ * t		p
+ * -------------------
+ * 000		00H
+ * 001		08H
+ * 010		10H
+ * 011		18H
+ * 100		20H
+ * 101		28H
+ * 110		30H
+ * 111		38H
+ */
+Z80_Register.prototype.DAA = function() {
+    var i = this.A;
+    if(this.F & C_FLAG) { i |= 0x100; }
+    if(this.F & H_FLAG) { i |= 0x200; }
+    if(this.F & N_FLAG) { i |= 0x400; }
+    var AF = DAATable[i] & 0xffff;
+    this.A = (AF >> 8) & 0xff;
+    this.F = (AF >> 0) & 0xff;
+};
+var DAATable = [
+    68, 256, 512, 772, 1024, 1284, 1540, 1792, 2056, 2316, 4112, 4372, 4628, 4880, 5140, 5392,
+    4096, 4356, 4612, 4864, 5124, 5376, 5632, 5892, 6156, 6408, 8240, 8500, 8756, 9008, 9268, 9520,
+    8224, 8484, 8740, 8992, 9252, 9504, 9760, 10020, 10284, 10536, 12340, 12592, 12848, 13108, 13360, 13620,
+    12324, 12576, 12832, 13092, 13344, 13604, 13860, 14112, 14376, 14636, 16400, 16660, 16916, 17168, 17428, 17680,
+    16384, 16644, 16900, 17152, 17412, 17664, 17920, 18180, 18444, 18696, 20500, 20752, 21008, 21268, 21520, 21780,
+    20484, 20736, 20992, 21252, 21504, 21764, 22020, 22272, 22536, 22796, 24628, 24880, 25136, 25396, 25648, 25908,
+    24612, 24864, 25120, 25380, 25632, 25892, 26148, 26400, 26664, 26924, 28720, 28980, 29236, 29488, 29748, 30000,
+    28704, 28964, 29220, 29472, 29732, 29984, 30240, 30500, 30764, 31016, -32624, -32364, -32108, -31856, -31596, -31344,
+    -32640, -32380, -32124, -31872, -31612, -31360, -31104, -30844, -30580, -30328, -28524, -28272, -28016, -27756, -27504, -27244,
+    -28540, -28288, -28032, -27772, -27520, -27260, -27004, -26752, -26488, -26228, 85, 273, 529, 789, 1041, 1301,
+    69, 257, 513, 773, 1025, 1285, 1541, 1793, 2057, 2317, 4113, 4373, 4629, 4881, 5141, 5393,
+    4097, 4357, 4613, 4865, 5125, 5377, 5633, 5893, 6157, 6409, 8241, 8501, 8757, 9009, 9269, 9521,
+    8225, 8485, 8741, 8993, 9253, 9505, 9761, 10021, 10285, 10537, 12341, 12593, 12849, 13109, 13361, 13621,
+    12325, 12577, 12833, 13093, 13345, 13605, 13861, 14113, 14377, 14637, 16401, 16661, 16917, 17169, 17429, 17681,
+    16385, 16645, 16901, 17153, 17413, 17665, 17921, 18181, 18445, 18697, 20501, 20753, 21009, 21269, 21521, 21781,
+    20485, 20737, 20993, 21253, 21505, 21765, 22021, 22273, 22537, 22797, 24629, 24881, 25137, 25397, 25649, 25909,
+    24613, 24865, 25121, 25381, 25633, 25893, 26149, 26401, 26665, 26925, 28721, 28981, 29237, 29489, 29749, 30001,
+    28705, 28965, 29221, 29473, 29733, 29985, 30241, 30501, 30765, 31017, -32623, -32363, -32107, -31855, -31595, -31343,
+    -32639, -32379, -32123, -31871, -31611, -31359, -31103, -30843, -30579, -30327, -28523, -28271, -28015, -27755, -27503, -27243,
+    -28539, -28287, -28031, -27771, -27519, -27259, -27003, -26751, -26487, -26227, -24395, -24143, -23887, -23627, -23375, -23115,
+    -24411, -24159, -23903, -23643, -23391, -23131, -22875, -22623, -22359, -22099, -20303, -20043, -19787, -19535, -19275, -19023,
+    -20319, -20059, -19803, -19551, -19291, -19039, -18783, -18523, -18259, -18007, -16235, -15983, -15727, -15467, -15215, -14955,
+    -16251, -15999, -15743, -15483, -15231, -14971, -14715, -14463, -14199, -13939, -12143, -11883, -11627, -11375, -11115, -10863,
+    -12159, -11899, -11643, -11391, -11131, -10879, -10623, -10363, -10099, -9847, -8015, -7755, -7499, -7247, -6987, -6735,
+    -8031, -7771, -7515, -7263, -7003, -6751, -6495, -6235, -5971, -5719, -3915, -3663, -3407, -3147, -2895, -2635,
+    -3931, -3679, -3423, -3163, -2911, -2651, -2395, -2143, -1879, -1619, 85, 273, 529, 789, 1041, 1301,
+    69, 257, 513, 773, 1025, 1285, 1541, 1793, 2057, 2317, 4113, 4373, 4629, 4881, 5141, 5393,
+    4097, 4357, 4613, 4865, 5125, 5377, 5633, 5893, 6157, 6409, 8241, 8501, 8757, 9009, 9269, 9521,
+    8225, 8485, 8741, 8993, 9253, 9505, 9761, 10021, 10285, 10537, 12341, 12593, 12849, 13109, 13361, 13621,
+    12325, 12577, 12833, 13093, 13345, 13605, 13861, 14113, 14377, 14637, 16401, 16661, 16917, 17169, 17429, 17681,
+    16385, 16645, 16901, 17153, 17413, 17665, 17921, 18181, 18445, 18697, 20501, 20753, 21009, 21269, 21521, 21781,
+    20485, 20737, 20993, 21253, 21505, 21765, 22021, 22273, 22537, 22797, 24629, 24881, 25137, 25397, 25649, 25909,
+    1540, 1792, 2056, 2316, 2572, 2824, 3084, 3336, 3592, 3852, 4112, 4372, 4628, 4880, 5140, 5392,
+    5632, 5892, 6156, 6408, 6664, 6924, 7176, 7436, 7692, 7944, 8240, 8500, 8756, 9008, 9268, 9520,
+    9760, 10020, 10284, 10536, 10792, 11052, 11304, 11564, 11820, 12072, 12340, 12592, 12848, 13108, 13360, 13620,
+    13860, 14112, 14376, 14636, 14892, 15144, 15404, 15656, 15912, 16172, 16400, 16660, 16916, 17168, 17428, 17680,
+    17920, 18180, 18444, 18696, 18952, 19212, 19464, 19724, 19980, 20232, 20500, 20752, 21008, 21268, 21520, 21780,
+    22020, 22272, 22536, 22796, 23052, 23304, 23564, 23816, 24072, 24332, 24628, 24880, 25136, 25396, 25648, 25908,
+    26148, 26400, 26664, 26924, 27180, 27432, 27692, 27944, 28200, 28460, 28720, 28980, 29236, 29488, 29748, 30000,
+    30240, 30500, 30764, 31016, 31272, 31532, 31784, 32044, 32300, 32552, -32624, -32364, -32108, -31856, -31596, -31344,
+    -31104, -30844, -30580, -30328, -30072, -29812, -29560, -29300, -29044, -28792, -28524, -28272, -28016, -27756, -27504, -27244,
+    -27004, -26752, -26488, -26228, -25972, -25720, -25460, -25208, -24952, -24692, 85, 273, 529, 789, 1041, 1301,
+    1541, 1793, 2057, 2317, 2573, 2825, 3085, 3337, 3593, 3853, 4113, 4373, 4629, 4881, 5141, 5393,
+    5633, 5893, 6157, 6409, 6665, 6925, 7177, 7437, 7693, 7945, 8241, 8501, 8757, 9009, 9269, 9521,
+    9761, 10021, 10285, 10537, 10793, 11053, 11305, 11565, 11821, 12073, 12341, 12593, 12849, 13109, 13361, 13621,
+    13861, 14113, 14377, 14637, 14893, 15145, 15405, 15657, 15913, 16173, 16401, 16661, 16917, 17169, 17429, 17681,
+    17921, 18181, 18445, 18697, 18953, 19213, 19465, 19725, 19981, 20233, 20501, 20753, 21009, 21269, 21521, 21781,
+    22021, 22273, 22537, 22797, 23053, 23305, 23565, 23817, 24073, 24333, 24629, 24881, 25137, 25397, 25649, 25909,
+    26149, 26401, 26665, 26925, 27181, 27433, 27693, 27945, 28201, 28461, 28721, 28981, 29237, 29489, 29749, 30001,
+    30241, 30501, 30765, 31017, 31273, 31533, 31785, 32045, 32301, 32553, -32623, -32363, -32107, -31855, -31595, -31343,
+    -31103, -30843, -30579, -30327, -30071, -29811, -29559, -29299, -29043, -28791, -28523, -28271, -28015, -27755, -27503, -27243,
+    -27003, -26751, -26487, -26227, -25971, -25719, -25459, -25207, -24951, -24691, -24395, -24143, -23887, -23627, -23375, -23115,
+    -22875, -22623, -22359, -22099, -21843, -21591, -21331, -21079, -20823, -20563, -20303, -20043, -19787, -19535, -19275, -19023,
+    -18783, -18523, -18259, -18007, -17751, -17491, -17239, -16979, -16723, -16471, -16235, -15983, -15727, -15467, -15215, -14955,
+    -14715, -14463, -14199, -13939, -13683, -13431, -13171, -12919, -12663, -12403, -12143, -11883, -11627, -11375, -11115, -10863,
+    -10623, -10363, -10099, -9847, -9591, -9331, -9079, -8819, -8563, -8311, -8015, -7755, -7499, -7247, -6987, -6735,
+    -6495, -6235, -5971, -5719, -5463, -5203, -4951, -4691, -4435, -4183, -3915, -3663, -3407, -3147, -2895, -2635,
+    -2395, -2143, -1879, -1619, -1363, -1111, -851, -599, -343, -83, 85, 273, 529, 789, 1041, 1301,
+    1541, 1793, 2057, 2317, 2573, 2825, 3085, 3337, 3593, 3853, 4113, 4373, 4629, 4881, 5141, 5393,
+    5633, 5893, 6157, 6409, 6665, 6925, 7177, 7437, 7693, 7945, 8241, 8501, 8757, 9009, 9269, 9521,
+    9761, 10021, 10285, 10537, 10793, 11053, 11305, 11565, 11821, 12073, 12341, 12593, 12849, 13109, 13361, 13621,
+    13861, 14113, 14377, 14637, 14893, 15145, 15405, 15657, 15913, 16173, 16401, 16661, 16917, 17169, 17429, 17681,
+    17921, 18181, 18445, 18697, 18953, 19213, 19465, 19725, 19981, 20233, 20501, 20753, 21009, 21269, 21521, 21781,
+    22021, 22273, 22537, 22797, 23053, 23305, 23565, 23817, 24073, 24333, 24629, 24881, 25137, 25397, 25649, 25909,
+    70, 258, 514, 774, 1026, 1286, 1542, 1794, 2058, 2318, 1026, 1286, 1542, 1794, 2058, 2318,
+    4098, 4358, 4614, 4866, 5126, 5378, 5634, 5894, 6158, 6410, 5126, 5378, 5634, 5894, 6158, 6410,
+    8226, 8486, 8742, 8994, 9254, 9506, 9762, 10022, 10286, 10538, 9254, 9506, 9762, 10022, 10286, 10538,
+    12326, 12578, 12834, 13094, 13346, 13606, 13862, 14114, 14378, 14638, 13346, 13606, 13862, 14114, 14378, 14638,
+    16386, 16646, 16902, 17154, 17414, 17666, 17922, 18182, 18446, 18698, 17414, 17666, 17922, 18182, 18446, 18698,
+    20486, 20738, 20994, 21254, 21506, 21766, 22022, 22274, 22538, 22798, 21506, 21766, 22022, 22274, 22538, 22798,
+    24614, 24866, 25122, 25382, 25634, 25894, 26150, 26402, 26666, 26926, 25634, 25894, 26150, 26402, 26666, 26926,
+    28706, 28966, 29222, 29474, 29734, 29986, 30242, 30502, 30766, 31018, 29734, 29986, 30242, 30502, 30766, 31018,
+    -32638, -32378, -32122, -31870, -31610, -31358, -31102, -30842, -30578, -30326, -31610, -31358, -31102, -30842, -30578, -30326,
+    -28538, -28286, -28030, -27770, -27518, -27258, -27002, -26750, -26486, -26226, 13347, 13607, 13863, 14115, 14379, 14639,
+    16387, 16647, 16903, 17155, 17415, 17667, 17923, 18183, 18447, 18699, 17415, 17667, 17923, 18183, 18447, 18699,
+    20487, 20739, 20995, 21255, 21507, 21767, 22023, 22275, 22539, 22799, 21507, 21767, 22023, 22275, 22539, 22799,
+    24615, 24867, 25123, 25383, 25635, 25895, 26151, 26403, 26667, 26927, 25635, 25895, 26151, 26403, 26667, 26927,
+    28707, 28967, 29223, 29475, 29735, 29987, 30243, 30503, 30767, 31019, 29735, 29987, 30243, 30503, 30767, 31019,
+    -32637, -32377, -32121, -31869, -31609, -31357, -31101, -30841, -30577, -30325, -31609, -31357, -31101, -30841, -30577, -30325,
+    -28537, -28285, -28029, -27769, -27517, -27257, -27001, -26749, -26485, -26225, -27517, -27257, -27001, -26749, -26485, -26225,
+    -24409, -24157, -23901, -23641, -23389, -23129, -22873, -22621, -22357, -22097, -23389, -23129, -22873, -22621, -22357, -22097,
+    -20317, -20057, -19801, -19549, -19289, -19037, -18781, -18521, -18257, -18005, -19289, -19037, -18781, -18521, -18257, -18005,
+    -16249, -15997, -15741, -15481, -15229, -14969, -14713, -14461, -14197, -13937, -15229, -14969, -14713, -14461, -14197, -13937,
+    -12157, -11897, -11641, -11389, -11129, -10877, -10621, -10361, -10097, -9845, -11129, -10877, -10621, -10361, -10097, -9845,
+    -8029, -7769, -7513, -7261, -7001, -6749, -6493, -6233, -5969, -5717, -7001, -6749, -6493, -6233, -5969, -5717,
+    -3929, -3677, -3421, -3161, -2909, -2649, -2393, -2141, -1877, -1617, -2909, -2649, -2393, -2141, -1877, -1617,
+    71, 259, 515, 775, 1027, 1287, 1543, 1795, 2059, 2319, 1027, 1287, 1543, 1795, 2059, 2319,
+    4099, 4359, 4615, 4867, 5127, 5379, 5635, 5895, 6159, 6411, 5127, 5379, 5635, 5895, 6159, 6411,
+    8227, 8487, 8743, 8995, 9255, 9507, 9763, 10023, 10287, 10539, 9255, 9507, 9763, 10023, 10287, 10539,
+    12327, 12579, 12835, 13095, 13347, 13607, 13863, 14115, 14379, 14639, 13347, 13607, 13863, 14115, 14379, 14639,
+    16387, 16647, 16903, 17155, 17415, 17667, 17923, 18183, 18447, 18699, 17415, 17667, 17923, 18183, 18447, 18699,
+    20487, 20739, 20995, 21255, 21507, 21767, 22023, 22275, 22539, 22799, 21507, 21767, 22023, 22275, 22539, 22799,
+    24615, 24867, 25123, 25383, 25635, 25895, 26151, 26403, 26667, 26927, 25635, 25895, 26151, 26403, 26667, 26927,
+    28707, 28967, 29223, 29475, 29735, 29987, 30243, 30503, 30767, 31019, 29735, 29987, 30243, 30503, 30767, 31019,
+    -32637, -32377, -32121, -31869, -31609, -31357, -31101, -30841, -30577, -30325, -31609, -31357, -31101, -30841, -30577, -30325,
+    -28537, -28285, -28029, -27769, -27517, -27257, -27001, -26749, -26485, -26225, -27517, -27257, -27001, -26749, -26485, -26225,
+    -1346, -1094, -834, -582, -326, -66, 70, 258, 514, 774, 1026, 1286, 1542, 1794, 2058, 2318,
+    2590, 2842, 3102, 3354, 3610, 3870, 4098, 4358, 4614, 4866, 5126, 5378, 5634, 5894, 6158, 6410,
+    6682, 6942, 7194, 7454, 7710, 7962, 8226, 8486, 8742, 8994, 9254, 9506, 9762, 10022, 10286, 10538,
+    10810, 11070, 11322, 11582, 11838, 12090, 12326, 12578, 12834, 13094, 13346, 13606, 13862, 14114, 14378, 14638,
+    14910, 15162, 15422, 15674, 15930, 16190, 16386, 16646, 16902, 17154, 17414, 17666, 17922, 18182, 18446, 18698,
+    18970, 19230, 19482, 19742, 19998, 20250, 20486, 20738, 20994, 21254, 21506, 21766, 22022, 22274, 22538, 22798,
+    23070, 23322, 23582, 23834, 24090, 24350, 24614, 24866, 25122, 25382, 25634, 25894, 26150, 26402, 26666, 26926,
+    27198, 27450, 27710, 27962, 28218, 28478, 28706, 28966, 29222, 29474, 29734, 29986, 30242, 30502, 30766, 31018,
+    31290, 31550, 31802, 32062, 32318, 32570, -32638, -32378, -32122, -31870, -31610, -31358, -31102, -30842, -30578, -30326,
+    -30054, -29794, -29542, -29282, -29026, -28774, -28538, -28286, -28030, -27770, 13347, 13607, 13863, 14115, 14379, 14639,
+    14911, 15163, 15423, 15675, 15931, 16191, 16387, 16647, 16903, 17155, 17415, 17667, 17923, 18183, 18447, 18699,
+    18971, 19231, 19483, 19743, 19999, 20251, 20487, 20739, 20995, 21255, 21507, 21767, 22023, 22275, 22539, 22799,
+    23071, 23323, 23583, 23835, 24091, 24351, 24615, 24867, 25123, 25383, 25635, 25895, 26151, 26403, 26667, 26927,
+    27199, 27451, 27711, 27963, 28219, 28479, 28707, 28967, 29223, 29475, 29735, 29987, 30243, 30503, 30767, 31019,
+    31291, 31551, 31803, 32063, 32319, 32571, -32637, -32377, -32121, -31869, -31609, -31357, -31101, -30841, -30577, -30325,
+    -30053, -29793, -29541, -29281, -29025, -28773, -28537, -28285, -28029, -27769, -27517, -27257, -27001, -26749, -26485, -26225,
+    -25953, -25701, -25441, -25189, -24933, -24673, -24409, -24157, -23901, -23641, -23389, -23129, -22873, -22621, -22357, -22097,
+    -21825, -21573, -21313, -21061, -20805, -20545, -20317, -20057, -19801, -19549, -19289, -19037, -18781, -18521, -18257, -18005,
+    -17733, -17473, -17221, -16961, -16705, -16453, -16249, -15997, -15741, -15481, -15229, -14969, -14713, -14461, -14197, -13937,
+    -13665, -13413, -13153, -12901, -12645, -12385, -12157, -11897, -11641, -11389, -11129, -10877, -10621, -10361, -10097, -9845,
+    -9573, -9313, -9061, -8801, -8545, -8293, -8029, -7769, -7513, -7261, -7001, -6749, -6493, -6233, -5969, -5717,
+    -5445, -5185, -4933, -4673, -4417, -4165, -3929, -3677, -3421, -3161, -2909, -2649, -2393, -2141, -1877, -1617,
+    -1345, -1093, -833, -581, -325, -65, 71, 259, 515, 775, 1027, 1287, 1543, 1795, 2059, 2319,
+    2591, 2843, 3103, 3355, 3611, 3871, 4099, 4359, 4615, 4867, 5127, 5379, 5635, 5895, 6159, 6411,
+    6683, 6943, 7195, 7455, 7711, 7963, 8227, 8487, 8743, 8995, 9255, 9507, 9763, 10023, 10287, 10539,
+    10811, 11071, 11323, 11583, 11839, 12091, 12327, 12579, 12835, 13095, 13347, 13607, 13863, 14115, 14379, 14639,
+    14911, 15163, 15423, 15675, 15931, 16191, 16387, 16647, 16903, 17155, 17415, 17667, 17923, 18183, 18447, 18699,
+    18971, 19231, 19483, 19743, 19999, 20251, 20487, 20739, 20995, 21255, 21507, 21767, 22023, 22275, 22539, 22799,
+    23071, 23323, 23583, 23835, 24091, 24351, 24615, 24867, 25123, 25383, 25635, 25895, 26151, 26403, 26667, 26927,
+    27199, 27451, 27711, 27963, 28219, 28479, 28707, 28967, 29223, 29475, 29735, 29987, 30243, 30503, 30767, 31019,
+    31291, 31551, 31803, 32063, 32319, 32571, -32637, -32377, -32121, -31869, -31609, -31357, -31101, -30841, -30577, -30325,
+    -30053, -29793, -29541, -29281, -29025, -28773, -28537, -28285, -28029, -27769, -27517, -27257, -27001, -26749, -26485, -26225
+];
+}());
+
+
+},{}],11:[function(require,module,exports){
+/*! jQuery UI - v1.12.0 - 2016-07-08
 * http://jqueryui.com
 * Includes: widget.js, position.js, data.js, disable-selection.js, effect.js, effects/effect-blind.js, effects/effect-bounce.js, effects/effect-clip.js, effects/effect-drop.js, effects/effect-explode.js, effects/effect-fade.js, effects/effect-fold.js, effects/effect-highlight.js, effects/effect-puff.js, effects/effect-pulsate.js, effects/effect-scale.js, effects/effect-shake.js, effects/effect-size.js, effects/effect-slide.js, effects/effect-transfer.js, focusable.js, form-reset-mixin.js, jquery-1-7.js, keycode.js, labels.js, scroll-parent.js, tabbable.js, unique-id.js, widgets/accordion.js, widgets/autocomplete.js, widgets/button.js, widgets/checkboxradio.js, widgets/controlgroup.js, widgets/datepicker.js, widgets/dialog.js, widgets/draggable.js, widgets/droppable.js, widgets/menu.js, widgets/mouse.js, widgets/progressbar.js, widgets/resizable.js, widgets/selectable.js, widgets/selectmenu.js, widgets/slider.js, widgets/sortable.js, widgets/spinner.js, widgets/tabs.js, widgets/tooltip.js
 * Copyright jQuery Foundation and other contributors; Licensed MIT */
@@ -968,11 +10202,11 @@ window.jQuery = require("jquery");
 
 $.ui = $.ui || {};
 
-var version = $.ui.version = "1.12.1";
+var version = $.ui.version = "1.12.0";
 
 
 /*!
- * jQuery UI Widget 1.12.1
+ * jQuery UI Widget 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -1178,42 +10412,35 @@ $.widget.bridge = function( name, object ) {
 		var returnValue = this;
 
 		if ( isMethodCall ) {
+			this.each( function() {
+				var methodValue;
+				var instance = $.data( this, fullName );
 
-			// If this is an empty collection, we need to have the instance method
-			// return undefined instead of the jQuery instance
-			if ( !this.length && options === "instance" ) {
-				returnValue = undefined;
-			} else {
-				this.each( function() {
-					var methodValue;
-					var instance = $.data( this, fullName );
+				if ( options === "instance" ) {
+					returnValue = instance;
+					return false;
+				}
 
-					if ( options === "instance" ) {
-						returnValue = instance;
-						return false;
-					}
+				if ( !instance ) {
+					return $.error( "cannot call methods on " + name +
+						" prior to initialization; " +
+						"attempted to call method '" + options + "'" );
+				}
 
-					if ( !instance ) {
-						return $.error( "cannot call methods on " + name +
-							" prior to initialization; " +
-							"attempted to call method '" + options + "'" );
-					}
+				if ( !$.isFunction( instance[ options ] ) || options.charAt( 0 ) === "_" ) {
+					return $.error( "no such method '" + options + "' for " + name +
+						" widget instance" );
+				}
 
-					if ( !$.isFunction( instance[ options ] ) || options.charAt( 0 ) === "_" ) {
-						return $.error( "no such method '" + options + "' for " + name +
-							" widget instance" );
-					}
+				methodValue = instance[ options ].apply( instance, args );
 
-					methodValue = instance[ options ].apply( instance, args );
-
-					if ( methodValue !== instance && methodValue !== undefined ) {
-						returnValue = methodValue && methodValue.jquery ?
-							returnValue.pushStack( methodValue.get() ) :
-							methodValue;
-						return false;
-					}
-				} );
-			}
+				if ( methodValue !== instance && methodValue !== undefined ) {
+					returnValue = methodValue && methodValue.jquery ?
+						returnValue.pushStack( methodValue.get() ) :
+						methodValue;
+					return false;
+				}
+			} );
 		} else {
 
 			// Allow multiple hashes to be passed on init
@@ -1477,10 +10704,6 @@ $.Widget.prototype = {
 			}
 		}
 
-		this._on( options.element, {
-			"remove": "_untrackClassesElement"
-		} );
-
 		if ( options.keys ) {
 			processClassString( options.keys.match( /\S+/g ) || [], true );
 		}
@@ -1489,15 +10712,6 @@ $.Widget.prototype = {
 		}
 
 		return full.join( " " );
-	},
-
-	_untrackClassesElement: function( event ) {
-		var that = this;
-		$.each( that.classesElementLookup, function( key, value ) {
-			if ( $.inArray( event.target, value ) !== -1 ) {
-				that.classesElementLookup[ key ] = $( value.not( event.target ).get() );
-			}
-		} );
 	},
 
 	_removeClass: function( element, keys, extra ) {
@@ -1695,7 +10909,7 @@ var widget = $.widget;
 
 
 /*!
- * jQuery UI Position 1.12.1
+ * jQuery UI Position 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -1713,15 +10927,36 @@ var widget = $.widget;
 
 
 ( function() {
-var cachedScrollbarWidth,
+var cachedScrollbarWidth, supportsOffsetFractions,
 	max = Math.max,
 	abs = Math.abs,
+	round = Math.round,
 	rhorizontal = /left|center|right/,
 	rvertical = /top|center|bottom/,
 	roffset = /[\+\-]\d+(\.[\d]+)?%?/,
 	rposition = /^\w+/,
 	rpercent = /%$/,
 	_position = $.fn.position;
+
+// Support: IE <=9 only
+supportsOffsetFractions = function() {
+	var element = $( "<div>" )
+			.css( "position", "absolute" )
+			.appendTo( "body" )
+			.offset( {
+				top: 1.5,
+				left: 1.5
+			} ),
+		support = element.offset().top === 1.5;
+
+	element.remove();
+
+	supportsOffsetFractions = function() {
+		return support;
+	};
+
+	return support;
+};
 
 function getOffsets( offsets, width, height ) {
 	return [
@@ -1930,6 +11165,12 @@ $.fn.position = function( options ) {
 
 		position.left += myOffset[ 0 ];
 		position.top += myOffset[ 1 ];
+
+		// If the browser doesn't support fractions, then round for consistent results
+		if ( !supportsOffsetFractions() ) {
+			position.left = round( position.left );
+			position.top = round( position.top );
+		}
 
 		collisionPosition = {
 			marginLeft: marginLeft,
@@ -2183,7 +11424,7 @@ var position = $.ui.position;
 
 
 /*!
- * jQuery UI :data 1.12.1
+ * jQuery UI :data 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -2212,7 +11453,7 @@ var data = $.extend( $.expr[ ":" ], {
 } );
 
 /*!
- * jQuery UI Disable Selection 1.12.1
+ * jQuery UI Disable Selection 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -2248,7 +11489,7 @@ var disableSelection = $.fn.extend( {
 
 
 /*!
- * jQuery UI Effects 1.12.1
+ * jQuery UI Effects 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -3307,7 +12548,7 @@ if ( $.uiBackCompat !== false ) {
 }
 
 $.extend( $.effects, {
-	version: "1.12.1",
+	version: "1.12.0",
 
 	define: function( name, mode, effect ) {
 		if ( !effect ) {
@@ -3873,7 +13114,7 @@ var effect = $.effects;
 
 
 /*!
- * jQuery UI Effects Blind 1.12.1
+ * jQuery UI Effects Blind 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -3929,7 +13170,7 @@ var effectsEffectBlind = $.effects.define( "blind", "hide", function( options, d
 
 
 /*!
- * jQuery UI Effects Bounce 1.12.1
+ * jQuery UI Effects Bounce 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -4025,7 +13266,7 @@ var effectsEffectBounce = $.effects.define( "bounce", function( options, done ) 
 
 
 /*!
- * jQuery UI Effects Clip 1.12.1
+ * jQuery UI Effects Clip 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -4076,7 +13317,7 @@ var effectsEffectClip = $.effects.define( "clip", "hide", function( options, don
 
 
 /*!
- * jQuery UI Effects Drop 1.12.1
+ * jQuery UI Effects Drop 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -4131,7 +13372,7 @@ var effectsEffectDrop = $.effects.define( "drop", "hide", function( options, don
 
 
 /*!
- * jQuery UI Effects Explode 1.12.1
+ * jQuery UI Effects Explode 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -4228,7 +13469,7 @@ var effectsEffectExplode = $.effects.define( "explode", "hide", function( option
 
 
 /*!
- * jQuery UI Effects Fade 1.12.1
+ * jQuery UI Effects Fade 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -4261,7 +13502,7 @@ var effectsEffectFade = $.effects.define( "fade", "toggle", function( options, d
 
 
 /*!
- * jQuery UI Effects Fold 1.12.1
+ * jQuery UI Effects Fold 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -4336,7 +13577,7 @@ var effectsEffectFold = $.effects.define( "fold", "hide", function( options, don
 
 
 /*!
- * jQuery UI Effects Highlight 1.12.1
+ * jQuery UI Effects Highlight 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -4379,7 +13620,7 @@ var effectsEffectHighlight = $.effects.define( "highlight", "show", function( op
 
 
 /*!
- * jQuery UI Effects Size 1.12.1
+ * jQuery UI Effects Size 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -4556,7 +13797,7 @@ var effectsEffectSize = $.effects.define( "size", function( options, done ) {
 
 
 /*!
- * jQuery UI Effects Scale 1.12.1
+ * jQuery UI Effects Scale 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -4597,7 +13838,7 @@ var effectsEffectScale = $.effects.define( "scale", function( options, done ) {
 
 
 /*!
- * jQuery UI Effects Puff 1.12.1
+ * jQuery UI Effects Puff 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -4624,7 +13865,7 @@ var effectsEffectPuff = $.effects.define( "puff", "hide", function( options, don
 
 
 /*!
- * jQuery UI Effects Pulsate 1.12.1
+ * jQuery UI Effects Pulsate 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -4674,7 +13915,7 @@ var effectsEffectPulsate = $.effects.define( "pulsate", "show", function( option
 
 
 /*!
- * jQuery UI Effects Shake 1.12.1
+ * jQuery UI Effects Shake 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -4734,7 +13975,7 @@ var effectsEffectShake = $.effects.define( "shake", function( options, done ) {
 
 
 /*!
- * jQuery UI Effects Slide 1.12.1
+ * jQuery UI Effects Slide 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -4796,7 +14037,7 @@ var effectsEffectSlide = $.effects.define( "slide", "show", function( options, d
 
 
 /*!
- * jQuery UI Effects Transfer 1.12.1
+ * jQuery UI Effects Transfer 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -4822,7 +14063,7 @@ var effectsEffectTransfer = effect;
 
 
 /*!
- * jQuery UI Focusable 1.12.1
+ * jQuery UI Focusable 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -4906,7 +14147,7 @@ var form = $.fn.form = function() {
 
 
 /*!
- * jQuery UI Form Reset Mixin 1.12.1
+ * jQuery UI Form Reset Mixin 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -4969,7 +14210,7 @@ var formResetMixin = $.ui.formResetMixin = {
 
 
 /*!
- * jQuery UI Support for jQuery core 1.7.x 1.12.1
+ * jQuery UI Support for jQuery core 1.7.x 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -5048,7 +14289,7 @@ if ( $.fn.jquery.substring( 0, 3 ) === "1.7" ) {
 
 ;
 /*!
- * jQuery UI Keycode 1.12.1
+ * jQuery UI Keycode 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -5094,7 +14335,7 @@ var escapeSelector = $.ui.escapeSelector = ( function() {
 
 
 /*!
- * jQuery UI Labels 1.12.1
+ * jQuery UI Labels 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -5146,7 +14387,7 @@ var labels = $.fn.labels = function() {
 
 
 /*!
- * jQuery UI Scroll Parent 1.12.1
+ * jQuery UI Scroll Parent 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -5181,7 +14422,7 @@ var scrollParent = $.fn.scrollParent = function( includeHidden ) {
 
 
 /*!
- * jQuery UI Tabbable 1.12.1
+ * jQuery UI Tabbable 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -5206,7 +14447,7 @@ var tabbable = $.extend( $.expr[ ":" ], {
 
 
 /*!
- * jQuery UI Unique ID 1.12.1
+ * jQuery UI Unique ID 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -5245,7 +14486,7 @@ var uniqueId = $.fn.extend( {
 
 
 /*!
- * jQuery UI Accordion 1.12.1
+ * jQuery UI Accordion 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -5267,7 +14508,7 @@ var uniqueId = $.fn.extend( {
 
 
 var widgetsAccordion = $.widget( "ui.accordion", {
-	version: "1.12.1",
+	version: "1.12.0",
 	options: {
 		active: 0,
 		animate: {},
@@ -5872,7 +15113,7 @@ var safeActiveElement = $.ui.safeActiveElement = function( document ) {
 
 
 /*!
- * jQuery UI Menu 1.12.1
+ * jQuery UI Menu 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -5892,7 +15133,7 @@ var safeActiveElement = $.ui.safeActiveElement = function( document ) {
 
 
 var widgetsMenu = $.widget( "ui.menu", {
-	version: "1.12.1",
+	version: "1.12.0",
 	defaultElement: "<ul>",
 	delay: 300,
 	options: {
@@ -6091,11 +15332,8 @@ var widgetsMenu = $.widget( "ui.menu", {
 		default:
 			preventDefault = false;
 			prev = this.previousFilter || "";
+			character = String.fromCharCode( event.keyCode );
 			skip = false;
-
-			// Support number pad values
-			character = event.keyCode >= 96 && event.keyCode <= 105 ?
-				( event.keyCode - 96 ).toString() : String.fromCharCode( event.keyCode );
 
 			clearTimeout( this.filterTimer );
 
@@ -6527,7 +15765,7 @@ var widgetsMenu = $.widget( "ui.menu", {
 
 
 /*!
- * jQuery UI Autocomplete 1.12.1
+ * jQuery UI Autocomplete 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -6547,7 +15785,7 @@ var widgetsMenu = $.widget( "ui.menu", {
 
 
 $.widget( "ui.autocomplete", {
-	version: "1.12.1",
+	version: "1.12.0",
 	defaultElement: "<input>",
 	options: {
 		appendTo: null,
@@ -7191,7 +16429,7 @@ var widgetsAutocomplete = $.ui.autocomplete;
 
 
 /*!
- * jQuery UI Controlgroup 1.12.1
+ * jQuery UI Controlgroup 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -7212,7 +16450,7 @@ var widgetsAutocomplete = $.ui.autocomplete;
 var controlgroupCornerRegex = /ui-corner-([a-z]){2,6}/g;
 
 var widgetsControlgroup = $.widget( "ui.controlgroup", {
-	version: "1.12.1",
+	version: "1.12.0",
 	defaultElement: "<div>",
 	options: {
 		direction: "horizontal",
@@ -7288,8 +16526,6 @@ var widgetsControlgroup = $.widget( "ui.controlgroup", {
 			// first / last elements until all enhancments are done.
 			if ( that[ "_" + widget + "Options" ] ) {
 				options = that[ "_" + widget + "Options" ]( "middle" );
-			} else {
-				options = { classes: {} };
 			}
 
 			// Find instances of this widget inside controlgroup and init them
@@ -7413,7 +16649,7 @@ var widgetsControlgroup = $.widget( "ui.controlgroup", {
 		var result = {};
 		$.each( classes, function( key ) {
 			var current = instance.options.classes[ key ] || "";
-			current = $.trim( current.replace( controlgroupCornerRegex, "" ) );
+			current = current.replace( controlgroupCornerRegex, "" ).trim();
 			result[ key ] = ( current + " " + classes[ key ] ).replace( /\s+/g, " " );
 		} );
 		return result;
@@ -7476,7 +16712,7 @@ var widgetsControlgroup = $.widget( "ui.controlgroup", {
 } );
 
 /*!
- * jQuery UI Checkboxradio 1.12.1
+ * jQuery UI Checkboxradio 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -7497,7 +16733,7 @@ var widgetsControlgroup = $.widget( "ui.controlgroup", {
 
 
 $.widget( "ui.checkboxradio", [ $.ui.formResetMixin, {
-	version: "1.12.1",
+	version: "1.12.0",
 	options: {
 		disabled: null,
 		label: null,
@@ -7530,7 +16766,7 @@ $.widget( "ui.checkboxradio", [ $.ui.formResetMixin, {
 
 		// We need to get the label text but this may also need to make sure it does not contain the
 		// input itself.
-		this.label.contents().not( this.element[ 0 ] ).each( function() {
+		this.label.contents().not( this.element ).each( function() {
 
 			// The label contents could be text, html, or a mix. We concat each element to get a
 			// string representation of the label, without the input as part of it.
@@ -7713,15 +16949,7 @@ $.widget( "ui.checkboxradio", [ $.ui.formResetMixin, {
 	_updateLabel: function() {
 
 		// Remove the contents of the label ( minus the icon, icon space, and input )
-		var contents = this.label.contents().not( this.element[ 0 ] );
-		if ( this.icon ) {
-			contents = contents.not( this.icon[ 0 ] );
-		}
-		if ( this.iconSpace ) {
-			contents = contents.not( this.iconSpace[ 0 ] );
-		}
-		contents.remove();
-
+		this.label.contents().not( this.element.add( this.icon ).add( this.iconSpace ) ).remove();
 		this.label.append( this.options.label );
 	},
 
@@ -7746,7 +16974,7 @@ var widgetsCheckboxradio = $.ui.checkboxradio;
 
 
 /*!
- * jQuery UI Button 1.12.1
+ * jQuery UI Button 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -7766,7 +16994,7 @@ var widgetsCheckboxradio = $.ui.checkboxradio;
 
 
 $.widget( "ui.button", {
-	version: "1.12.1",
+	version: "1.12.0",
 	defaultElement: "<button>",
 	options: {
 		classes: {
@@ -8114,7 +17342,7 @@ var widgetsButton = $.ui.button;
 // jscs:disable maximumLineLength
 /* jscs:disable requireCamelCaseOrUpperCaseIdentifiers */
 /*!
- * jQuery UI Datepicker 1.12.1
+ * jQuery UI Datepicker 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -8133,7 +17361,7 @@ var widgetsButton = $.ui.button;
 
 
 
-$.extend( $.ui, { datepicker: { version: "1.12.1" } } );
+$.extend( $.ui, { datepicker: { version: "1.12.0" } } );
 
 var datepicker_instActive;
 
@@ -10212,7 +19440,7 @@ $.fn.datepicker = function( options ) {
 $.datepicker = new Datepicker(); // singleton instance
 $.datepicker.initialized = false;
 $.datepicker.uuid = new Date().getTime();
-$.datepicker.version = "1.12.1";
+$.datepicker.version = "1.12.0";
 
 var widgetsDatepicker = $.datepicker;
 
@@ -10223,7 +19451,7 @@ var widgetsDatepicker = $.datepicker;
 var ie = $.ui.ie = !!/msie [\w.]+/.exec( navigator.userAgent.toLowerCase() );
 
 /*!
- * jQuery UI Mouse 1.12.1
+ * jQuery UI Mouse 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -10244,7 +19472,7 @@ $( document ).on( "mouseup", function() {
 } );
 
 var widgetsMouse = $.widget( "ui.mouse", {
-	version: "1.12.1",
+	version: "1.12.0",
 	options: {
 		cancel: "input, textarea, button, select, option",
 		distance: 1,
@@ -10479,7 +19707,7 @@ var safeBlur = $.ui.safeBlur = function( element ) {
 
 
 /*!
- * jQuery UI Draggable 1.12.1
+ * jQuery UI Draggable 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -10497,7 +19725,7 @@ var safeBlur = $.ui.safeBlur = function( element ) {
 
 
 $.widget( "ui.draggable", $.ui.mouse, {
-	version: "1.12.1",
+	version: "1.12.0",
 	widgetEventPrefix: "drag",
 	options: {
 		addClasses: true,
@@ -10563,6 +19791,8 @@ $.widget( "ui.draggable", $.ui.mouse, {
 	_mouseCapture: function( event ) {
 		var o = this.options;
 
+		this._blurActiveElement( event );
+
 		// Among others, prevent a drag on a resizable-handle
 		if ( this.helper || o.disabled ||
 				$( event.target ).closest( ".ui-resizable-handle" ).length > 0 ) {
@@ -10574,8 +19804,6 @@ $.widget( "ui.draggable", $.ui.mouse, {
 		if ( !this.handle ) {
 			return false;
 		}
-
-		this._blurActiveElement( event );
 
 		this._blockFrames( o.iframeFix === true ? "iframe" : o.iframeFix );
 
@@ -10607,10 +19835,11 @@ $.widget( "ui.draggable", $.ui.mouse, {
 		var activeElement = $.ui.safeActiveElement( this.document[ 0 ] ),
 			target = $( event.target );
 
-		// Don't blur if the event occurred on an element that is within
-		// the currently focused element
+		// Only blur if the event occurred on an element that is:
+		// 1) within the draggable handle
+		// 2) but not within the currently focused element
 		// See #10527, #12472
-		if ( target.closest( activeElement ).length ) {
+		if ( this._getHandle( event ) && target.closest( activeElement ).length ) {
 			return;
 		}
 
@@ -11709,7 +20938,7 @@ var widgetsDraggable = $.ui.draggable;
 
 
 /*!
- * jQuery UI Resizable 1.12.1
+ * jQuery UI Resizable 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -11729,7 +20958,7 @@ var widgetsDraggable = $.ui.draggable;
 
 
 $.widget( "ui.resizable", $.ui.mouse, {
-	version: "1.12.1",
+	version: "1.12.0",
 	widgetEventPrefix: "resize",
 	options: {
 		alsoResize: false,
@@ -12893,7 +22122,7 @@ var widgetsResizable = $.ui.resizable;
 
 
 /*!
- * jQuery UI Dialog 1.12.1
+ * jQuery UI Dialog 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -12913,7 +22142,7 @@ var widgetsResizable = $.ui.resizable;
 
 
 $.widget( "ui.dialog", {
-	version: "1.12.1",
+	version: "1.12.0",
 	options: {
 		appendTo: "body",
 		autoOpen: true,
@@ -13369,23 +22598,13 @@ $.widget( "ui.dialog", {
 			buttonOptions = {
 				icon: props.icon,
 				iconPosition: props.iconPosition,
-				showLabel: props.showLabel,
-
-				// Deprecated options
-				icons: props.icons,
-				text: props.text
+				showLabel: props.showLabel
 			};
 
 			delete props.click;
 			delete props.icon;
 			delete props.iconPosition;
 			delete props.showLabel;
-
-			// Deprecated options
-			delete props.icons;
-			if ( typeof props.text === "boolean" ) {
-				delete props.text;
-			}
 
 			$( "<button></button>", props )
 				.button( buttonOptions )
@@ -13808,7 +23027,7 @@ var widgetsDialog = $.ui.dialog;
 
 
 /*!
- * jQuery UI Droppable 1.12.1
+ * jQuery UI Droppable 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -13825,7 +23044,7 @@ var widgetsDialog = $.ui.dialog;
 
 
 $.widget( "ui.droppable", {
-	version: "1.12.1",
+	version: "1.12.0",
 	widgetEventPrefix: "drop",
 	options: {
 		accept: "*",
@@ -14289,7 +23508,7 @@ var widgetsDroppable = $.ui.droppable;
 
 
 /*!
- * jQuery UI Progressbar 1.12.1
+ * jQuery UI Progressbar 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -14311,7 +23530,7 @@ var widgetsDroppable = $.ui.droppable;
 
 
 var widgetsProgressbar = $.widget( "ui.progressbar", {
-	version: "1.12.1",
+	version: "1.12.0",
 	options: {
 		classes: {
 			"ui-progressbar": "ui-corner-all",
@@ -14453,7 +23672,7 @@ var widgetsProgressbar = $.widget( "ui.progressbar", {
 
 
 /*!
- * jQuery UI Selectable 1.12.1
+ * jQuery UI Selectable 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -14471,7 +23690,7 @@ var widgetsProgressbar = $.widget( "ui.progressbar", {
 
 
 var widgetsSelectable = $.widget( "ui.selectable", $.ui.mouse, {
-	version: "1.12.1",
+	version: "1.12.0",
 	options: {
 		appendTo: "body",
 		autoRefresh: true,
@@ -14748,7 +23967,7 @@ var widgetsSelectable = $.widget( "ui.selectable", $.ui.mouse, {
 
 
 /*!
- * jQuery UI Selectmenu 1.12.1
+ * jQuery UI Selectmenu 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -14770,7 +23989,7 @@ var widgetsSelectable = $.widget( "ui.selectable", $.ui.mouse, {
 
 
 var widgetsSelectmenu = $.widget( "ui.selectmenu", [ $.ui.formResetMixin, {
-	version: "1.12.1",
+	version: "1.12.0",
 	defaultElement: "<select>",
 	options: {
 		appendTo: null,
@@ -15414,7 +24633,7 @@ var widgetsSelectmenu = $.widget( "ui.selectmenu", [ $.ui.formResetMixin, {
 
 
 /*!
- * jQuery UI Slider 1.12.1
+ * jQuery UI Slider 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -15434,7 +24653,7 @@ var widgetsSelectmenu = $.widget( "ui.selectmenu", [ $.ui.formResetMixin, {
 
 
 var widgetsSlider = $.widget( "ui.slider", $.ui.mouse, {
-	version: "1.12.1",
+	version: "1.12.0",
 	widgetEventPrefix: "slide",
 
 	options: {
@@ -15516,9 +24735,7 @@ var widgetsSlider = $.widget( "ui.slider", $.ui.mouse, {
 		this.handle = this.handles.eq( 0 );
 
 		this.handles.each( function( i ) {
-			$( this )
-				.data( "ui-slider-handle-index", i )
-				.attr( "tabIndex", 0 );
+			$( this ).data( "ui-slider-handle-index", i );
 		} );
 	},
 
@@ -16150,7 +25367,7 @@ var widgetsSlider = $.widget( "ui.slider", $.ui.mouse, {
 
 
 /*!
- * jQuery UI Sortable 1.12.1
+ * jQuery UI Sortable 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -16168,7 +25385,7 @@ var widgetsSlider = $.widget( "ui.slider", $.ui.mouse, {
 
 
 var widgetsSortable = $.widget( "ui.sortable", $.ui.mouse, {
-	version: "1.12.1",
+	version: "1.12.0",
 	widgetEventPrefix: "sort",
 	ready: false,
 	options: {
@@ -16651,7 +25868,7 @@ var widgetsSortable = $.widget( "ui.sortable", $.ui.mouse, {
 
 		if ( this.dragging ) {
 
-			this._mouseUp( new $.Event( "mouseup", { target: null } ) );
+			this._mouseUp( { target: null } );
 
 			if ( this.options.helper === "original" ) {
 				this.currentItem.css( this._storedCSS );
@@ -17686,7 +26903,7 @@ var widgetsSortable = $.widget( "ui.sortable", $.ui.mouse, {
 
 
 /*!
- * jQuery UI Spinner 1.12.1
+ * jQuery UI Spinner 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -17717,7 +26934,7 @@ function spinnerModifer( fn ) {
 }
 
 $.widget( "ui.spinner", {
-	version: "1.12.1",
+	version: "1.12.0",
 	defaultElement: "<input>",
 	widgetEventPrefix: "spin",
 	options: {
@@ -18244,7 +27461,7 @@ var widgetsSpinner = $.ui.spinner;
 
 
 /*!
- * jQuery UI Tabs 1.12.1
+ * jQuery UI Tabs 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -18264,7 +27481,7 @@ var widgetsSpinner = $.ui.spinner;
 
 
 $.widget( "ui.tabs", {
-	version: "1.12.1",
+	version: "1.12.0",
 	delay: 300,
 	options: {
 		active: null,
@@ -19116,10 +28333,7 @@ $.widget( "ui.tabs", {
 	_ajaxSettings: function( anchor, event, eventData ) {
 		var that = this;
 		return {
-
-			// Support: IE <11 only
-			// Strip any hash that exists to prevent errors with the Ajax request
-			url: anchor.attr( "href" ).replace( /#.*$/, "" ),
+			url: anchor.attr( "href" ),
 			beforeSend: function( jqXHR, settings ) {
 				return that._trigger( "beforeLoad", event,
 					$.extend( { jqXHR: jqXHR, ajaxSettings: settings }, eventData ) );
@@ -19150,7 +28364,7 @@ var widgetsTabs = $.ui.tabs;
 
 
 /*!
- * jQuery UI Tooltip 1.12.1
+ * jQuery UI Tooltip 1.12.0
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -19170,7 +28384,7 @@ var widgetsTabs = $.ui.tabs;
 
 
 $.widget( "ui.tooltip", {
-	version: "1.12.1",
+	version: "1.12.0",
 	options: {
 		classes: {
 			"ui-tooltip": "ui-corner-all ui-widget-shadow"
@@ -19655,9 +28869,10 @@ var widgetsTooltip = $.ui.tooltip;
 
 
 }));
-},{}],6:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
+/*eslint-disable no-unused-vars*/
 /*!
- * jQuery JavaScript Library v3.1.1
+ * jQuery JavaScript Library v3.1.0
  * https://jquery.com/
  *
  * Includes Sizzle.js
@@ -19667,7 +28882,7 @@ var widgetsTooltip = $.ui.tooltip;
  * Released under the MIT license
  * https://jquery.org/license
  *
- * Date: 2016-09-22T22:30Z
+ * Date: 2016-07-07T21:44Z
  */
 ( function( global, factory ) {
 
@@ -19740,13 +28955,13 @@ var support = {};
 		doc.head.appendChild( script ).parentNode.removeChild( script );
 	}
 /* global Symbol */
-// Defining this global in .eslintrc.json would create a danger of using the global
+// Defining this global in .eslintrc would create a danger of using the global
 // unguarded in another place, it seems safer to define global only for this module
 
 
 
 var
-	version = "3.1.1",
+	version = "3.1.0",
 
 	// Define a local copy of jQuery
 	jQuery = function( selector, context ) {
@@ -19786,14 +29001,13 @@ jQuery.fn = jQuery.prototype = {
 	// Get the Nth element in the matched element set OR
 	// Get the whole matched element set as a clean array
 	get: function( num ) {
+		return num != null ?
 
-		// Return all the elements in a clean array
-		if ( num == null ) {
-			return slice.call( this );
-		}
+			// Return just the one element from the set
+			( num < 0 ? this[ num + this.length ] : this[ num ] ) :
 
-		// Return just the one element from the set
-		return num < 0 ? this[ num + this.length ] : this[ num ];
+			// Return all the elements in a clean array
+			slice.call( this );
 	},
 
 	// Take an array of elements and push it onto the stack
@@ -20201,14 +29415,14 @@ function isArrayLike( obj ) {
 }
 var Sizzle =
 /*!
- * Sizzle CSS Selector Engine v2.3.3
+ * Sizzle CSS Selector Engine v2.3.0
  * https://sizzlejs.com/
  *
  * Copyright jQuery Foundation and other contributors
  * Released under the MIT license
  * http://jquery.org/license
  *
- * Date: 2016-08-08
+ * Date: 2016-01-04
  */
 (function( window ) {
 
@@ -20354,7 +29568,7 @@ var i,
 
 	// CSS string/identifier serialization
 	// https://drafts.csswg.org/cssom/#common-serializing-idioms
-	rcssescape = /([\0-\x1f\x7f]|^-?\d)|^-$|[^\0-\x1f\x7f-\uFFFF\w-]/g,
+	rcssescape = /([\0-\x1f\x7f]|^-?\d)|^-$|[^\x80-\uFFFF\w-]/g,
 	fcssescape = function( ch, asCodePoint ) {
 		if ( asCodePoint ) {
 
@@ -20381,7 +29595,7 @@ var i,
 
 	disabledAncestor = addCombinator(
 		function( elem ) {
-			return elem.disabled === true && ("form" in elem || "label" in elem);
+			return elem.disabled === true;
 		},
 		{ dir: "parentNode", next: "legend" }
 	);
@@ -20667,54 +29881,26 @@ function createButtonPseudo( type ) {
  * @param {Boolean} disabled true for :disabled; false for :enabled
  */
 function createDisabledPseudo( disabled ) {
-
-	// Known :disabled false positives: fieldset[disabled] > legend:nth-of-type(n+2) :can-disable
+	// Known :disabled false positives:
+	// IE: *[disabled]:not(button, input, select, textarea, optgroup, option, menuitem, fieldset)
+	// not IE: fieldset[disabled] > legend:nth-of-type(n+2) :can-disable
 	return function( elem ) {
 
-		// Only certain elements can match :enabled or :disabled
-		// https://html.spec.whatwg.org/multipage/scripting.html#selector-enabled
-		// https://html.spec.whatwg.org/multipage/scripting.html#selector-disabled
-		if ( "form" in elem ) {
+		// Check form elements and option elements for explicit disabling
+		return "label" in elem && elem.disabled === disabled ||
+			"form" in elem && elem.disabled === disabled ||
 
-			// Check for inherited disabledness on relevant non-disabled elements:
-			// * listed form-associated elements in a disabled fieldset
-			//   https://html.spec.whatwg.org/multipage/forms.html#category-listed
-			//   https://html.spec.whatwg.org/multipage/forms.html#concept-fe-disabled
-			// * option elements in a disabled optgroup
-			//   https://html.spec.whatwg.org/multipage/forms.html#concept-option-disabled
-			// All such elements have a "form" property.
-			if ( elem.parentNode && elem.disabled === false ) {
+			// Check non-disabled form elements for fieldset[disabled] ancestors
+			"form" in elem && elem.disabled === false && (
+				// Support: IE6-11+
+				// Ancestry is covered for us
+				elem.isDisabled === disabled ||
 
-				// Option elements defer to a parent optgroup if present
-				if ( "label" in elem ) {
-					if ( "label" in elem.parentNode ) {
-						return elem.parentNode.disabled === disabled;
-					} else {
-						return elem.disabled === disabled;
-					}
-				}
-
-				// Support: IE 6 - 11
-				// Use the isDisabled shortcut property to check for disabled fieldset ancestors
-				return elem.isDisabled === disabled ||
-
-					// Where there is no isDisabled, check manually
-					/* jshint -W018 */
-					elem.isDisabled !== !disabled &&
-						disabledAncestor( elem ) === disabled;
-			}
-
-			return elem.disabled === disabled;
-
-		// Try to winnow out elements that can't be disabled before trusting the disabled property.
-		// Some victims get caught in our net (label, legend, menu, track), but it shouldn't
-		// even exist on them, let alone have a boolean value.
-		} else if ( "label" in elem ) {
-			return elem.disabled === disabled;
-		}
-
-		// Remaining elements are neither :enabled nor :disabled
-		return false;
+				// Otherwise, assume any non-<option> under fieldset[disabled] is disabled
+				/* jshint -W018 */
+				elem.isDisabled !== !disabled &&
+					("label" in elem || !disabledAncestor( elem )) !== disabled
+			);
 	};
 }
 
@@ -20830,21 +30016,25 @@ setDocument = Sizzle.setDocument = function( node ) {
 		return !document.getElementsByName || !document.getElementsByName( expando ).length;
 	});
 
-	// ID filter and find
+	// ID find and filter
 	if ( support.getById ) {
+		Expr.find["ID"] = function( id, context ) {
+			if ( typeof context.getElementById !== "undefined" && documentIsHTML ) {
+				var m = context.getElementById( id );
+				return m ? [ m ] : [];
+			}
+		};
 		Expr.filter["ID"] = function( id ) {
 			var attrId = id.replace( runescape, funescape );
 			return function( elem ) {
 				return elem.getAttribute("id") === attrId;
 			};
 		};
-		Expr.find["ID"] = function( id, context ) {
-			if ( typeof context.getElementById !== "undefined" && documentIsHTML ) {
-				var elem = context.getElementById( id );
-				return elem ? [ elem ] : [];
-			}
-		};
 	} else {
+		// Support: IE6/7
+		// getElementById is not reliable as a find shortcut
+		delete Expr.find["ID"];
+
 		Expr.filter["ID"] =  function( id ) {
 			var attrId = id.replace( runescape, funescape );
 			return function( elem ) {
@@ -20852,36 +30042,6 @@ setDocument = Sizzle.setDocument = function( node ) {
 					elem.getAttributeNode("id");
 				return node && node.value === attrId;
 			};
-		};
-
-		// Support: IE 6 - 7 only
-		// getElementById is not reliable as a find shortcut
-		Expr.find["ID"] = function( id, context ) {
-			if ( typeof context.getElementById !== "undefined" && documentIsHTML ) {
-				var node, i, elems,
-					elem = context.getElementById( id );
-
-				if ( elem ) {
-
-					// Verify the id attribute
-					node = elem.getAttributeNode("id");
-					if ( node && node.value === id ) {
-						return [ elem ];
-					}
-
-					// Fall back on getElementsByName
-					elems = context.getElementsByName( id );
-					i = 0;
-					while ( (elem = elems[i++]) ) {
-						node = elem.getAttributeNode("id");
-						if ( node && node.value === id ) {
-							return [ elem ];
-						}
-					}
-				}
-
-				return [];
-			}
 		};
 	}
 
@@ -21923,7 +31083,6 @@ function addCombinator( matcher, combinator, base ) {
 					return matcher( elem, context, xml );
 				}
 			}
-			return false;
 		} :
 
 		// Check against all ancestor/preceding elements
@@ -21968,7 +31127,6 @@ function addCombinator( matcher, combinator, base ) {
 					}
 				}
 			}
-			return false;
 		};
 }
 
@@ -22331,7 +31489,8 @@ select = Sizzle.select = function( selector, context, results, seed ) {
 		// Reduce context if the leading compound selector is an ID
 		tokens = match[0] = match[0].slice( 0 );
 		if ( tokens.length > 2 && (token = tokens[0]).type === "ID" &&
-				context.nodeType === 9 && documentIsHTML && Expr.relative[ tokens[1].type ] ) {
+				support.getById && context.nodeType === 9 && documentIsHTML &&
+				Expr.relative[ tokens[1].type ] ) {
 
 			context = ( Expr.find["ID"]( token.matches[0].replace(runescape, funescape), context ) || [] )[0];
 			if ( !context ) {
@@ -22513,29 +31672,24 @@ function winnow( elements, qualifier, not ) {
 		return jQuery.grep( elements, function( elem, i ) {
 			return !!qualifier.call( elem, i, elem ) !== not;
 		} );
+
 	}
 
-	// Single element
 	if ( qualifier.nodeType ) {
 		return jQuery.grep( elements, function( elem ) {
 			return ( elem === qualifier ) !== not;
 		} );
+
 	}
 
-	// Arraylike of elements (jQuery, arguments, Array)
-	if ( typeof qualifier !== "string" ) {
-		return jQuery.grep( elements, function( elem ) {
-			return ( indexOf.call( qualifier, elem ) > -1 ) !== not;
-		} );
+	if ( typeof qualifier === "string" ) {
+		if ( risSimple.test( qualifier ) ) {
+			return jQuery.filter( qualifier, elements, not );
+		}
+
+		qualifier = jQuery.filter( qualifier, elements );
 	}
 
-	// Simple selector that can be filtered directly, removing non-Elements
-	if ( risSimple.test( qualifier ) ) {
-		return jQuery.filter( qualifier, elements, not );
-	}
-
-	// Complex selector, compare the two sets, removing non-Elements
-	qualifier = jQuery.filter( qualifier, elements );
 	return jQuery.grep( elements, function( elem ) {
 		return ( indexOf.call( qualifier, elem ) > -1 ) !== not && elem.nodeType === 1;
 	} );
@@ -22548,13 +31702,11 @@ jQuery.filter = function( expr, elems, not ) {
 		expr = ":not(" + expr + ")";
 	}
 
-	if ( elems.length === 1 && elem.nodeType === 1 ) {
-		return jQuery.find.matchesSelector( elem, expr ) ? [ elem ] : [];
-	}
-
-	return jQuery.find.matches( expr, jQuery.grep( elems, function( elem ) {
-		return elem.nodeType === 1;
-	} ) );
+	return elems.length === 1 && elem.nodeType === 1 ?
+		jQuery.find.matchesSelector( elem, expr ) ? [ elem ] : [] :
+		jQuery.find.matches( expr, jQuery.grep( elems, function( elem ) {
+			return elem.nodeType === 1;
+		} ) );
 };
 
 jQuery.fn.extend( {
@@ -22882,14 +32034,14 @@ jQuery.each( {
 		return this.pushStack( matched );
 	};
 } );
-var rnothtmlwhite = ( /[^\x20\t\r\n\f]+/g );
+var rnotwhite = ( /\S+/g );
 
 
 
 // Convert String-formatted options into Object-formatted ones
 function createOptions( options ) {
 	var object = {};
-	jQuery.each( options.match( rnothtmlwhite ) || [], function( _, flag ) {
+	jQuery.each( options.match( rnotwhite ) || [], function( _, flag ) {
 		object[ flag ] = true;
 	} );
 	return object;
@@ -23654,16 +32806,13 @@ var access = function( elems, fn, key, value, chainable, emptyGet, raw ) {
 		}
 	}
 
-	if ( chainable ) {
-		return elems;
-	}
+	return chainable ?
+		elems :
 
-	// Gets
-	if ( bulk ) {
-		return fn.call( elems );
-	}
-
-	return len ? fn( elems[ 0 ], key ) : emptyGet;
+		// Gets
+		bulk ?
+			fn.call( elems ) :
+			len ? fn( elems[ 0 ], key ) : emptyGet;
 };
 var acceptData = function( owner ) {
 
@@ -23800,7 +32949,7 @@ Data.prototype = {
 				// Otherwise, create an array by matching non-whitespace
 				key = key in cache ?
 					[ key ] :
-					( key.match( rnothtmlwhite ) || [] );
+					( key.match( rnotwhite ) || [] );
 			}
 
 			i = key.length;
@@ -23848,31 +32997,6 @@ var dataUser = new Data();
 var rbrace = /^(?:\{[\w\W]*\}|\[[\w\W]*\])$/,
 	rmultiDash = /[A-Z]/g;
 
-function getData( data ) {
-	if ( data === "true" ) {
-		return true;
-	}
-
-	if ( data === "false" ) {
-		return false;
-	}
-
-	if ( data === "null" ) {
-		return null;
-	}
-
-	// Only convert to a number if it doesn't change the string
-	if ( data === +data + "" ) {
-		return +data;
-	}
-
-	if ( rbrace.test( data ) ) {
-		return JSON.parse( data );
-	}
-
-	return data;
-}
-
 function dataAttr( elem, key, data ) {
 	var name;
 
@@ -23884,7 +33008,14 @@ function dataAttr( elem, key, data ) {
 
 		if ( typeof data === "string" ) {
 			try {
-				data = getData( data );
+				data = data === "true" ? true :
+					data === "false" ? false :
+					data === "null" ? null :
+
+					// Only convert to a number if it doesn't change the string
+					+data + "" === data ? +data :
+					rbrace.test( data ) ? JSON.parse( data ) :
+					data;
 			} catch ( e ) {}
 
 			// Make sure we set the data so it isn't changed later
@@ -24261,7 +33392,7 @@ function getDefaultDisplay( elem ) {
 		return display;
 	}
 
-	temp = doc.body.appendChild( doc.createElement( nodeName ) );
+	temp = doc.body.appendChild( doc.createElement( nodeName ) ),
 	display = jQuery.css( temp, "display" );
 
 	temp.parentNode.removeChild( temp );
@@ -24379,23 +33510,15 @@ function getAll( context, tag ) {
 
 	// Support: IE <=9 - 11 only
 	// Use typeof to avoid zero-argument method invocation on host objects (#15151)
-	var ret;
+	var ret = typeof context.getElementsByTagName !== "undefined" ?
+			context.getElementsByTagName( tag || "*" ) :
+			typeof context.querySelectorAll !== "undefined" ?
+				context.querySelectorAll( tag || "*" ) :
+			[];
 
-	if ( typeof context.getElementsByTagName !== "undefined" ) {
-		ret = context.getElementsByTagName( tag || "*" );
-
-	} else if ( typeof context.querySelectorAll !== "undefined" ) {
-		ret = context.querySelectorAll( tag || "*" );
-
-	} else {
-		ret = [];
-	}
-
-	if ( tag === undefined || tag && jQuery.nodeName( context, tag ) ) {
-		return jQuery.merge( [ context ], ret );
-	}
-
-	return ret;
+	return tag === undefined || tag && jQuery.nodeName( context, tag ) ?
+		jQuery.merge( [ context ], ret ) :
+		ret;
 }
 
 
@@ -24669,7 +33792,7 @@ jQuery.event = {
 		}
 
 		// Handle multiple events separated by a space
-		types = ( types || "" ).match( rnothtmlwhite ) || [ "" ];
+		types = ( types || "" ).match( rnotwhite ) || [ "" ];
 		t = types.length;
 		while ( t-- ) {
 			tmp = rtypenamespace.exec( types[ t ] ) || [];
@@ -24751,7 +33874,7 @@ jQuery.event = {
 		}
 
 		// Once for each type.namespace in types; type may be omitted
-		types = ( types || "" ).match( rnothtmlwhite ) || [ "" ];
+		types = ( types || "" ).match( rnotwhite ) || [ "" ];
 		t = types.length;
 		while ( t-- ) {
 			tmp = rtypenamespace.exec( types[ t ] ) || [];
@@ -24877,58 +34000,51 @@ jQuery.event = {
 	},
 
 	handlers: function( event, handlers ) {
-		var i, handleObj, sel, matchedHandlers, matchedSelectors,
+		var i, matches, sel, handleObj,
 			handlerQueue = [],
 			delegateCount = handlers.delegateCount,
 			cur = event.target;
 
+		// Support: IE <=9
 		// Find delegate handlers
-		if ( delegateCount &&
-
-			// Support: IE <=9
-			// Black-hole SVG <use> instance trees (trac-13180)
-			cur.nodeType &&
-
-			// Support: Firefox <=42
-			// Suppress spec-violating clicks indicating a non-primary pointer button (trac-3861)
-			// https://www.w3.org/TR/DOM-Level-3-Events/#event-type-click
-			// Support: IE 11 only
-			// ...but not arrow key "clicks" of radio inputs, which can have `button` -1 (gh-2343)
-			!( event.type === "click" && event.button >= 1 ) ) {
+		// Black-hole SVG <use> instance trees (#13180)
+		//
+		// Support: Firefox <=42
+		// Avoid non-left-click in FF but don't block IE radio events (#3861, gh-2343)
+		if ( delegateCount && cur.nodeType &&
+			( event.type !== "click" || isNaN( event.button ) || event.button < 1 ) ) {
 
 			for ( ; cur !== this; cur = cur.parentNode || this ) {
 
 				// Don't check non-elements (#13208)
 				// Don't process clicks on disabled elements (#6911, #8165, #11382, #11764)
-				if ( cur.nodeType === 1 && !( event.type === "click" && cur.disabled === true ) ) {
-					matchedHandlers = [];
-					matchedSelectors = {};
+				if ( cur.nodeType === 1 && ( cur.disabled !== true || event.type !== "click" ) ) {
+					matches = [];
 					for ( i = 0; i < delegateCount; i++ ) {
 						handleObj = handlers[ i ];
 
 						// Don't conflict with Object.prototype properties (#13203)
 						sel = handleObj.selector + " ";
 
-						if ( matchedSelectors[ sel ] === undefined ) {
-							matchedSelectors[ sel ] = handleObj.needsContext ?
+						if ( matches[ sel ] === undefined ) {
+							matches[ sel ] = handleObj.needsContext ?
 								jQuery( sel, this ).index( cur ) > -1 :
 								jQuery.find( sel, this, null, [ cur ] ).length;
 						}
-						if ( matchedSelectors[ sel ] ) {
-							matchedHandlers.push( handleObj );
+						if ( matches[ sel ] ) {
+							matches.push( handleObj );
 						}
 					}
-					if ( matchedHandlers.length ) {
-						handlerQueue.push( { elem: cur, handlers: matchedHandlers } );
+					if ( matches.length ) {
+						handlerQueue.push( { elem: cur, handlers: matches } );
 					}
 				}
 			}
 		}
 
 		// Add the remaining (directly-bound) handlers
-		cur = this;
 		if ( delegateCount < handlers.length ) {
-			handlerQueue.push( { elem: cur, handlers: handlers.slice( delegateCount ) } );
+			handlerQueue.push( { elem: this, handlers: handlers.slice( delegateCount ) } );
 		}
 
 		return handlerQueue;
@@ -25162,19 +34278,7 @@ jQuery.each( {
 
 		// Add which for click: 1 === left; 2 === middle; 3 === right
 		if ( !event.which && button !== undefined && rmouseEvent.test( event.type ) ) {
-			if ( button & 1 ) {
-				return 1;
-			}
-
-			if ( button & 2 ) {
-				return 3;
-			}
-
-			if ( button & 4 ) {
-				return 2;
-			}
-
-			return 0;
+			return ( button & 1 ? 1 : ( button & 2 ? 3 : ( button & 4 ? 2 : 0 ) ) );
 		}
 
 		return event.which;
@@ -25930,17 +35034,15 @@ function setPositiveNumber( elem, value, subtract ) {
 }
 
 function augmentWidthOrHeight( elem, name, extra, isBorderBox, styles ) {
-	var i,
+	var i = extra === ( isBorderBox ? "border" : "content" ) ?
+
+		// If we already have the right measurement, avoid augmentation
+		4 :
+
+		// Otherwise initialize for horizontal or vertical properties
+		name === "width" ? 1 : 0,
+
 		val = 0;
-
-	// If we already have the right measurement, avoid augmentation
-	if ( extra === ( isBorderBox ? "border" : "content" ) ) {
-		i = 4;
-
-	// Otherwise initialize for horizontal or vertical properties
-	} else {
-		i = name === "width" ? 1 : 0;
-	}
 
 	for ( ; i < 4; i += 2 ) {
 
@@ -26794,7 +35896,7 @@ jQuery.Animation = jQuery.extend( Animation, {
 			callback = props;
 			props = [ "*" ];
 		} else {
-			props = props.match( rnothtmlwhite );
+			props = props.match( rnotwhite );
 		}
 
 		var prop,
@@ -26832,14 +35934,9 @@ jQuery.speed = function( speed, easing, fn ) {
 		opt.duration = 0;
 
 	} else {
-		if ( typeof opt.duration !== "number" ) {
-			if ( opt.duration in jQuery.fx.speeds ) {
-				opt.duration = jQuery.fx.speeds[ opt.duration ];
-
-			} else {
-				opt.duration = jQuery.fx.speeds._default;
-			}
-		}
+		opt.duration = typeof opt.duration === "number" ?
+			opt.duration : opt.duration in jQuery.fx.speeds ?
+				jQuery.fx.speeds[ opt.duration ] : jQuery.fx.speeds._default;
 	}
 
 	// Normalize opt.queue - true/undefined/null -> "fx"
@@ -27189,10 +36286,7 @@ jQuery.extend( {
 	removeAttr: function( elem, value ) {
 		var name,
 			i = 0,
-
-			// Attribute names can contain non-HTML whitespace characters
-			// https://html.spec.whatwg.org/multipage/syntax.html#attributes-2
-			attrNames = value && value.match( rnothtmlwhite );
+			attrNames = value && value.match( rnotwhite );
 
 		if ( attrNames && elem.nodeType === 1 ) {
 			while ( ( name = attrNames[ i++ ] ) ) {
@@ -27299,19 +36393,12 @@ jQuery.extend( {
 				// Use proper attribute retrieval(#12072)
 				var tabindex = jQuery.find.attr( elem, "tabindex" );
 
-				if ( tabindex ) {
-					return parseInt( tabindex, 10 );
-				}
-
-				if (
+				return tabindex ?
+					parseInt( tabindex, 10 ) :
 					rfocusable.test( elem.nodeName ) ||
-					rclickable.test( elem.nodeName ) &&
-					elem.href
-				) {
-					return 0;
-				}
-
-				return -1;
+						rclickable.test( elem.nodeName ) && elem.href ?
+							0 :
+							-1;
 			}
 		}
 	},
@@ -27328,14 +36415,9 @@ jQuery.extend( {
 // on the option
 // The getter ensures a default option is selected
 // when in an optgroup
-// eslint rule "no-unused-expressions" is disabled for this code
-// since it considers such accessions noop
 if ( !support.optSelected ) {
 	jQuery.propHooks.selected = {
 		get: function( elem ) {
-
-			/* eslint no-unused-expressions: "off" */
-
 			var parent = elem.parentNode;
 			if ( parent && parent.parentNode ) {
 				parent.parentNode.selectedIndex;
@@ -27343,9 +36425,6 @@ if ( !support.optSelected ) {
 			return null;
 		},
 		set: function( elem ) {
-
-			/* eslint no-unused-expressions: "off" */
-
 			var parent = elem.parentNode;
 			if ( parent ) {
 				parent.selectedIndex;
@@ -27376,13 +36455,7 @@ jQuery.each( [
 
 
 
-	// Strip and collapse whitespace according to HTML spec
-	// https://html.spec.whatwg.org/multipage/infrastructure.html#strip-and-collapse-whitespace
-	function stripAndCollapse( value ) {
-		var tokens = value.match( rnothtmlwhite ) || [];
-		return tokens.join( " " );
-	}
-
+var rclass = /[\t\r\n\f]/g;
 
 function getClass( elem ) {
 	return elem.getAttribute && elem.getAttribute( "class" ) || "";
@@ -27400,11 +36473,12 @@ jQuery.fn.extend( {
 		}
 
 		if ( typeof value === "string" && value ) {
-			classes = value.match( rnothtmlwhite ) || [];
+			classes = value.match( rnotwhite ) || [];
 
 			while ( ( elem = this[ i++ ] ) ) {
 				curValue = getClass( elem );
-				cur = elem.nodeType === 1 && ( " " + stripAndCollapse( curValue ) + " " );
+				cur = elem.nodeType === 1 &&
+					( " " + curValue + " " ).replace( rclass, " " );
 
 				if ( cur ) {
 					j = 0;
@@ -27415,7 +36489,7 @@ jQuery.fn.extend( {
 					}
 
 					// Only assign if different to avoid unneeded rendering.
-					finalValue = stripAndCollapse( cur );
+					finalValue = jQuery.trim( cur );
 					if ( curValue !== finalValue ) {
 						elem.setAttribute( "class", finalValue );
 					}
@@ -27441,13 +36515,14 @@ jQuery.fn.extend( {
 		}
 
 		if ( typeof value === "string" && value ) {
-			classes = value.match( rnothtmlwhite ) || [];
+			classes = value.match( rnotwhite ) || [];
 
 			while ( ( elem = this[ i++ ] ) ) {
 				curValue = getClass( elem );
 
 				// This expression is here for better compressibility (see addClass)
-				cur = elem.nodeType === 1 && ( " " + stripAndCollapse( curValue ) + " " );
+				cur = elem.nodeType === 1 &&
+					( " " + curValue + " " ).replace( rclass, " " );
 
 				if ( cur ) {
 					j = 0;
@@ -27460,7 +36535,7 @@ jQuery.fn.extend( {
 					}
 
 					// Only assign if different to avoid unneeded rendering.
-					finalValue = stripAndCollapse( cur );
+					finalValue = jQuery.trim( cur );
 					if ( curValue !== finalValue ) {
 						elem.setAttribute( "class", finalValue );
 					}
@@ -27495,7 +36570,7 @@ jQuery.fn.extend( {
 				// Toggle individual class names
 				i = 0;
 				self = jQuery( this );
-				classNames = value.match( rnothtmlwhite ) || [];
+				classNames = value.match( rnotwhite ) || [];
 
 				while ( ( className = classNames[ i++ ] ) ) {
 
@@ -27538,8 +36613,10 @@ jQuery.fn.extend( {
 		className = " " + selector + " ";
 		while ( ( elem = this[ i++ ] ) ) {
 			if ( elem.nodeType === 1 &&
-				( " " + stripAndCollapse( getClass( elem ) ) + " " ).indexOf( className ) > -1 ) {
-					return true;
+				( " " + getClass( elem ) + " " ).replace( rclass, " " )
+					.indexOf( className ) > -1
+			) {
+				return true;
 			}
 		}
 
@@ -27550,7 +36627,8 @@ jQuery.fn.extend( {
 
 
 
-var rreturn = /\r/g;
+var rreturn = /\r/g,
+	rspaces = /[\x20\t\r\n\f]+/g;
 
 jQuery.fn.extend( {
 	val: function( value ) {
@@ -27571,13 +36649,13 @@ jQuery.fn.extend( {
 
 				ret = elem.value;
 
-				// Handle most common string cases
-				if ( typeof ret === "string" ) {
-					return ret.replace( rreturn, "" );
-				}
+				return typeof ret === "string" ?
 
-				// Handle cases where value is null/undef or number
-				return ret == null ? "" : ret;
+					// Handle most common string cases
+					ret.replace( rreturn, "" ) :
+
+					// Handle cases where value is null/undef or number
+					ret == null ? "" : ret;
 			}
 
 			return;
@@ -27634,24 +36712,20 @@ jQuery.extend( {
 					// option.text throws exceptions (#14686, #14858)
 					// Strip and collapse whitespace
 					// https://html.spec.whatwg.org/#strip-and-collapse-whitespace
-					stripAndCollapse( jQuery.text( elem ) );
+					jQuery.trim( jQuery.text( elem ) ).replace( rspaces, " " );
 			}
 		},
 		select: {
 			get: function( elem ) {
-				var value, option, i,
+				var value, option,
 					options = elem.options,
 					index = elem.selectedIndex,
 					one = elem.type === "select-one",
 					values = one ? null : [],
-					max = one ? index + 1 : options.length;
-
-				if ( index < 0 ) {
-					i = max;
-
-				} else {
-					i = one ? index : 0;
-				}
+					max = one ? index + 1 : options.length,
+					i = index < 0 ?
+						max :
+						one ? index : 0;
 
 				// Loop through all the selected options
 				for ( ; i < max; i++ ) {
@@ -28105,17 +37179,13 @@ jQuery.fn.extend( {
 		.map( function( i, elem ) {
 			var val = jQuery( this ).val();
 
-			if ( val == null ) {
-				return null;
-			}
-
-			if ( jQuery.isArray( val ) ) {
-				return jQuery.map( val, function( val ) {
-					return { name: elem.name, value: val.replace( rCRLF, "\r\n" ) };
-				} );
-			}
-
-			return { name: elem.name, value: val.replace( rCRLF, "\r\n" ) };
+			return val == null ?
+				null :
+				jQuery.isArray( val ) ?
+					jQuery.map( val, function( val ) {
+						return { name: elem.name, value: val.replace( rCRLF, "\r\n" ) };
+					} ) :
+					{ name: elem.name, value: val.replace( rCRLF, "\r\n" ) };
 		} ).get();
 	}
 } );
@@ -28124,7 +37194,7 @@ jQuery.fn.extend( {
 var
 	r20 = /%20/g,
 	rhash = /#.*$/,
-	rantiCache = /([?&])_=[^&]*/,
+	rts = /([?&])_=[^&]*/,
 	rheaders = /^(.*?):[ \t]*([^\r\n]*)$/mg,
 
 	// #7653, #8125, #8152: local protocol detection
@@ -28170,7 +37240,7 @@ function addToPrefiltersOrTransports( structure ) {
 
 		var dataType,
 			i = 0,
-			dataTypes = dataTypeExpression.toLowerCase().match( rnothtmlwhite ) || [];
+			dataTypes = dataTypeExpression.toLowerCase().match( rnotwhite ) || [];
 
 		if ( jQuery.isFunction( func ) ) {
 
@@ -28638,7 +37708,7 @@ jQuery.extend( {
 		s.type = options.method || options.type || s.method || s.type;
 
 		// Extract dataTypes list
-		s.dataTypes = ( s.dataType || "*" ).toLowerCase().match( rnothtmlwhite ) || [ "" ];
+		s.dataTypes = ( s.dataType || "*" ).toLowerCase().match( rnotwhite ) || [ "" ];
 
 		// A cross-domain request is in order when the origin doesn't match the current origin.
 		if ( s.crossDomain == null ) {
@@ -28710,9 +37780,9 @@ jQuery.extend( {
 				delete s.data;
 			}
 
-			// Add or update anti-cache param if needed
+			// Add anti-cache in uncached url if needed
 			if ( s.cache === false ) {
-				cacheURL = cacheURL.replace( rantiCache, "$1" );
+				cacheURL = cacheURL.replace( rts, "" );
 				uncached = ( rquery.test( cacheURL ) ? "&" : "?" ) + "_=" + ( nonce++ ) + uncached;
 			}
 
@@ -29451,7 +38521,7 @@ jQuery.fn.load = function( url, params, callback ) {
 		off = url.indexOf( " " );
 
 	if ( off > -1 ) {
-		selector = stripAndCollapse( url.slice( off ) );
+		selector = jQuery.trim( url.slice( off ) );
 		url = url.slice( 0, off );
 	}
 
@@ -29843,6 +38913,7 @@ if ( typeof define === "function" && define.amd ) {
 
 
 
+
 var
 
 	// Map over jQuery in case of overwrite
@@ -29871,13 +38942,10 @@ if ( !noGlobal ) {
 }
 
 
-
-
-
 return jQuery;
 } );
 
-},{}],7:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 (function() {
     "use strict";
 
@@ -30008,7 +39076,135 @@ return jQuery;
     }
 }());
 
-},{}],8:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
+(function(gctx) {
+/**
+ * 桁数指定の四捨五入。
+ * Math.roundの代わり。
+ * @param n 四捨五入する桁を指定する。0なら結果は整数。10の位を四捨五入するなら2。
+ * 		小数部での四捨五入は負の値を指定する。結果の小数点以下を2桁にしたいなら-2。
+ */
+Number.prototype.round = function(n) {
+	if(n == undefined) { n = 0; }
+	var pow = Math.pow(10, -n);
+	return Math.round(this * pow) / pow;
+}
+Number.prototype.bin = function(columns) {
+	var s = "";
+	var n = this;
+	while(n > 0) {
+		var mod = n % 2;
+		var h = "";
+		if(mod) {
+			h = "1";
+		} else {
+			h = "0";
+		}
+		s = h + s;
+		n = Math.floor(n / 2);
+	}
+	if(columns) {
+		s = (new Array(columns+1).join("0")) + s;
+		s = s.substring(s.length - columns);
+	}
+	return s;
+}
+Number.prototype.hex = function(columns) {
+    var s = this.toString(16);
+    if(s.length > columns) {
+        return s;
+    }
+    return ((new Array(columns)).join("0") + s).slice(-columns);
+};
+
+Number.prototype.HEX = function(columns) {
+    var s = this.toString(16).toUpperCase();
+    if(s.length > columns) {
+        return s;
+    }
+    return ((new Array(columns)).join("0") + s).slice(-columns);
+};
+Number.prototype.BIN = function(columns) {
+    var s = this.toString(2).toUpperCase();
+    if(s.length > columns) {
+        return s;
+    }
+    return ((new Array(columns)).join("0") + s).slice(-columns);
+};
+
+function number_format (number, decimals, dec_point, thousands_sep) {
+	  // http://kevin.vanzonneveld.net
+	  // +   original by: Jonas Raoni Soares Silva (http://www.jsfromhell.com)
+	  // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+	  // +     bugfix by: Michael White (http://getsprink.com)
+	  // +     bugfix by: Benjamin Lupton
+	  // +     bugfix by: Allan Jensen (http://www.winternet.no)
+	  // +    revised by: Jonas Raoni Soares Silva (http://www.jsfromhell.com)
+	  // +     bugfix by: Howard Yeend
+	  // +    revised by: Luke Smith (http://lucassmith.name)
+	  // +     bugfix by: Diogo Resende
+	  // +     bugfix by: Rival
+	  // +      input by: Kheang Hok Chin (http://www.distantia.ca/)
+	  // +   improved by: davook
+	  // +   improved by: Brett Zamir (http://brett-zamir.me)
+	  // +      input by: Jay Klehr
+	  // +   improved by: Brett Zamir (http://brett-zamir.me)
+	  // +      input by: Amir Habibi (http://www.residence-mixte.com/)
+	  // +     bugfix by: Brett Zamir (http://brett-zamir.me)
+	  // +   improved by: Theriault
+	  // +      input by: Amirouche
+	  // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+	  // *     example 1: number_format(1234.56);
+	  // *     returns 1: '1,235'
+	  // *     example 2: number_format(1234.56, 2, ',', ' ');
+	  // *     returns 2: '1 234,56'
+	  // *     example 3: number_format(1234.5678, 2, '.', '');
+	  // *     returns 3: '1234.57'
+	  // *     example 4: number_format(67, 2, ',', '.');
+	  // *     returns 4: '67,00'
+	  // *     example 5: number_format(1000);
+	  // *     returns 5: '1,000'
+	  // *     example 6: number_format(67.311, 2);
+	  // *     returns 6: '67.31'
+	  // *     example 7: number_format(1000.55, 1);
+	  // *     returns 7: '1,000.6'
+	  // *     example 8: number_format(67000, 5, ',', '.');
+	  // *     returns 8: '67.000,00000'
+	  // *     example 9: number_format(0.9, 0);
+	  // *     returns 9: '1'
+	  // *    example 10: number_format('1.20', 2);
+	  // *    returns 10: '1.20'
+	  // *    example 11: number_format('1.20', 4);
+	  // *    returns 11: '1.2000'
+	  // *    example 12: number_format('1.2000', 3);
+	  // *    returns 12: '1.200'
+	  // *    example 13: number_format('1 000,50', 2, '.', ' ');
+	  // *    returns 13: '100 050.00'
+	  // Strip all characters but numerical ones.
+	  number = (number + '').replace(/[^0-9+\-Ee.]/g, '');
+	  var n = !isFinite(+number) ? 0 : +number,
+	    prec = !isFinite(+decimals) ? 0 : Math.abs(decimals),
+	    sep = (typeof thousands_sep === 'undefined') ? ',' : thousands_sep,
+	    dec = (typeof dec_point === 'undefined') ? '.' : dec_point,
+	    s = '',
+	    toFixedFix = function (n, prec) {
+	      var k = Math.pow(10, prec);
+	      return '' + Math.round(n * k) / k;
+	    };
+	  // Fix for IE parseFloat(0.55).toFixed(0) = 0;
+	  s = (prec ? toFixedFix(n, prec) : '' + Math.round(n)).split('.');
+	  if (s[0].length > 3) {
+	    s[0] = s[0].replace(/\B(?=(?:\d{3})+(?!\d))/g, sep);
+	  }
+	  if ((s[1] || '').length < prec) {
+	    s[1] = s[1] || '';
+	    s[1] += new Array(prec - s[1].length + 1).join('0');
+	  }
+	  return s.join(dec);
+	}
+}(this));
+
+},{}],15:[function(require,module,exports){
 (function() {
     var $ = require("jquery");
     var jquery_plugin_class = require("../lib/jquery_plugin_class");
@@ -30332,7 +39528,7 @@ return jQuery;
     };
 }());
 
-},{"../lib/jquery_plugin_class":14,"jquery":6}],9:[function(require,module,exports){
+},{"../lib/jquery_plugin_class":21,"jquery":12}],16:[function(require,module,exports){
 /*
  * jquery.mz700scrn.js - MZ-700 Screen
  *
@@ -31269,7 +40465,7 @@ THE SOFTWARE.
 
 }());
 
-},{"../lib/jquery_plugin_class":14,"jquery":6}],10:[function(require,module,exports){
+},{"../lib/jquery_plugin_class":21,"jquery":12}],17:[function(require,module,exports){
 (function() {
     var $ = require("jquery");
     var jquery_plugin_class = require("../lib/jquery_plugin_class");
@@ -31477,7 +40673,7 @@ THE SOFTWARE.
     };
 }());
 
-},{"../lib/jquery_plugin_class":14,"jquery":6}],11:[function(require,module,exports){
+},{"../lib/jquery_plugin_class":21,"jquery":12}],18:[function(require,module,exports){
 (function() {
     var $ = require("jquery");
     var jquery_plugin_class = require("../lib/jquery_plugin_class");
@@ -31770,7 +40966,7 @@ THE SOFTWARE.
     };
 }());
 
-},{"../lib/jquery_plugin_class":14,"jquery":6}],12:[function(require,module,exports){
+},{"../lib/jquery_plugin_class":21,"jquery":12}],19:[function(require,module,exports){
 (function() {
     var $ = require("jquery");
     var jquery_plugin_class = require("../lib/jquery_plugin_class");
@@ -31843,7 +41039,7 @@ THE SOFTWARE.
     };
 }());
 
-},{"../lib/jquery_plugin_class":14,"jquery":6}],13:[function(require,module,exports){
+},{"../lib/jquery_plugin_class":21,"jquery":12}],20:[function(require,module,exports){
 (function() {
     var $ = require("jquery");
     var jquery_plugin_class = require("../lib/jquery_plugin_class");
@@ -31966,7 +41162,7 @@ THE SOFTWARE.
     };
 }());
 
-},{"../lib/jquery_plugin_class":14,"jquery":6}],14:[function(require,module,exports){
+},{"../lib/jquery_plugin_class":21,"jquery":12}],21:[function(require,module,exports){
 (function() {
     "use strict";
     var jQuery = require("jquery");
@@ -32000,4 +41196,4 @@ THE SOFTWARE.
     }
 }());
 
-},{"jquery":6}]},{},[1]);
+},{"jquery":12}]},{},[1]);

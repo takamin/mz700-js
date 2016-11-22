@@ -1,5 +1,12 @@
 (function() {
     var $ = require("jquery");
+    require("../lib/ex_number.js");
+    require("../Z80/memory.js");
+    require("../Z80/register.js");
+    require("../Z80/assembler.js");
+    require("../Z80/emulator.js");
+    require("../MZ-700/mztape.js");
+    require("../MZ-700/emulator.js");
     var MZ700_Sound = require("../MZ-700/sound.js");
     require("../lib/jquery.ddpanel.js");
     require("../lib/jquery.soundctrl.js");
