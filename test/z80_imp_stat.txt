@@ -224,6 +224,7 @@ CB 13       RL E              OK
 CB 14       RL H              OK
 CB 15       RL L              OK
 CB 16       RL (HL)           OK
+CB 17       RL A              OK
 CB 18       RR B              OK
 CB 19       RR C              OK
 CB 1A       RR D              OK
@@ -231,6 +232,7 @@ CB 1B       RR E              OK
 CB 1C       RR H              OK
 CB 1D       RR L              OK
 CB 1E       RR (HL)           OK
+CB 1F       RR A              OK
 CB 20       SLA B             OK
 CB 21       SLA C             OK
 CB 22       SLA D             OK
@@ -467,36 +469,36 @@ DC          CALL C,nn         OK
 DD 09       ADD IX,BC         OK
 DD 19       ADD IX,DE         OK
 DD 21       LD IX,nn          OK
-DD 23       INC IX            *** NO DISASSEMBLER
+DD 23       INC IX            OK
 DD 29       ADD IX,IX         OK
 DD 2A       LD IX,(nn)        OK
-DD 2B       DEC IX            *** NO DISASSEMBLER
+DD 2B       DEC IX            OK
 DD 34       INC (IX+d)        OK
-DD 35       DEC (IX+d)        *** NO DISASSEMBLER
+DD 35       DEC (IX+d)        OK
 DD 36       LD (IX+d),n       OK
 DD 39       ADD IX,SP         OK
-DD 46       LD B,(IX+d)       *** NO DISASSEMBLER
-DD 4E       LD C,(IX+d)       *** NO DISASSEMBLER
-DD 56       LD D,(IX+d)       *** NO DISASSEMBLER
-DD 5E       LD E,(IX+d)       *** NO DISASSEMBLER
-DD 66       LD H,(IX+d)       *** NO DISASSEMBLER
-DD 6E       LD L,(IX+d)       *** NO DISASSEMBLER
-DD 70       LD (IX+d),B       *** NO DISASSEMBLER
-DD 71       LD (IX+d),C       *** NO DISASSEMBLER
-DD 72       LD (IX+d),D       *** NO DISASSEMBLER
-DD 73       LD (IX+d),E       *** NO DISASSEMBLER
-DD 74       LD (IX+d),H       *** NO DISASSEMBLER
-DD 75       LD (IX+d),L       *** NO DISASSEMBLER
-DD 77       LD (IX+d),A       *** NO DISASSEMBLER
-DD 7E       LD A,(IX+d)       *** NO DISASSEMBLER
-DD 86       ADD A,(IX+d)      *** NO DISASSEMBLER
-DD 8E       ADC A,(IX+d)      *** NO DISASSEMBLER
-DD 96       SUB A,(IX+d)      *** NO DISASSEMBLER
-DD 9E       SBC A,(IX+d)      *** NO DISASSEMBLER
-DD A6       AND (IX+d)        *** NO DISASSEMBLER
-DD AE       XOR (IX+d)        *** NO DISASSEMBLER
-DD B6       OR (IX+d)         *** NO DISASSEMBLER
-DD BE       CP (IX+d)         *** NO DISASSEMBLER
+DD 46       LD B,(IX+d)       OK
+DD 4E       LD C,(IX+d)       OK
+DD 56       LD D,(IX+d)       OK
+DD 5E       LD E,(IX+d)       OK
+DD 66       LD H,(IX+d)       OK
+DD 6E       LD L,(IX+d)       OK
+DD 70       LD (IX+d),B       OK
+DD 71       LD (IX+d),C       OK
+DD 72       LD (IX+d),D       OK
+DD 73       LD (IX+d),E       OK
+DD 74       LD (IX+d),H       OK
+DD 75       LD (IX+d),L       OK
+DD 77       LD (IX+d),A       OK
+DD 7E       LD A,(IX+d)       OK
+DD 86       ADD A,(IX+d)      OK
+DD 8E       ADC A,(IX+d)      OK
+DD 96       SUB A,(IX+d)      OK
+DD 9E       SBC A,(IX+d)      OK
+DD A6       AND (IX+d)        OK
+DD AE       XOR (IX+d)        OK
+DD B6       OR (IX+d)         OK
+DD BE       CP (IX+d)         OK
 DD CB 06    RLC (IX+d)        OK
 DD CB 0E    RRC (IX+d)        OK
 DD CB 16    RL (IX+d)         OK
@@ -504,14 +506,14 @@ DD CB 1E    RR (IX+d)         OK
 DD CB 26    SLA (IX+d)        OK
 DD CB 2E    SRA (IX+d)        OK
 DD CB 3E    SRL (IX+d)        OK
-DD CB 46    BIT 0,(IX+d)      *** NO DISASSEMBLER
-DD CB 4E    BIT 1,(IX+d)      *** NO DISASSEMBLER
-DD CB 56    BIT 2,(IX+d)      *** NO DISASSEMBLER
-DD CB 5E    BIT 3,(IX+d)      *** NO DISASSEMBLER
-DD CB 66    BIT 4,(IX+d)      *** NO DISASSEMBLER
-DD CB 6E    BIT 5,(IX+d)      *** NO DISASSEMBLER
-DD CB 76    BIT 6,(IX+d)      *** NO DISASSEMBLER
-DD CB 7E    BIT 7,(IX+d)      *** NO DISASSEMBLER
+DD CB 46    BIT 0,(IX+d)      OK
+DD CB 4E    BIT 1,(IX+d)      OK
+DD CB 56    BIT 2,(IX+d)      OK
+DD CB 5E    BIT 3,(IX+d)      OK
+DD CB 66    BIT 4,(IX+d)      OK
+DD CB 6E    BIT 5,(IX+d)      OK
+DD CB 76    BIT 6,(IX+d)      OK
+DD CB 7E    BIT 7,(IX+d)      OK
 DD CB 86    RES 0,(IX+d)      OK
 DD CB 8E    RES 1,(IX+d)      OK
 DD CB 96    RES 2,(IX+d)      OK
@@ -520,14 +522,14 @@ DD CB A6    RES 4,(IX+d)      OK
 DD CB AE    RES 5,(IX+d)      OK
 DD CB B6    RES 6,(IX+d)      OK
 DD CB BE    RES 7,(IX+d)      OK
-DD CB C6    SET 0,(IX+d)      *** NO DISASSEMBLER
-DD CB CE    SET 1,(IX+d)      *** NO DISASSEMBLER
-DD CB D6    SET 2,(IX+d)      *** NO DISASSEMBLER
-DD CB DE    SET 3,(IX+d)      *** NO DISASSEMBLER
-DD CB E6    SET 4,(IX+d)      *** NO DISASSEMBLER
-DD CB EE    SET 5,(IX+d)      *** NO DISASSEMBLER
-DD CB F6    SET 6,(IX+d)      *** NO DISASSEMBLER
-DD CB FE    SET 7,(IX+d)      *** NO DISASSEMBLER
+DD CB C6    SET 0,(IX+d)      OK
+DD CB CE    SET 1,(IX+d)      OK
+DD CB D6    SET 2,(IX+d)      OK
+DD CB DE    SET 3,(IX+d)      OK
+DD CB E6    SET 4,(IX+d)      OK
+DD CB EE    SET 5,(IX+d)      OK
+DD CB F6    SET 6,(IX+d)      OK
+DD CB FE    SET 7,(IX+d)      OK
 DD E1       POP IX            OK
 DD E3       EX (SP),IX        OK
 DD E5       PUSH IX           OK
@@ -577,25 +579,17 @@ ED 5F       LD A,R            OK
 ED 60       IN H,(C)          OK
 ED 61       OUT (C),H         OK
 ED 62       SBC HL,HL         OK
-ED 63       LD (nn),HL        *** CODES UNMATCH MATCH: LD (3412H),HL
-    * ORG: ED 63 12
-    * ASM: 22 12 34
+ED 63       LD (nn),HL        *** 
 ED 67       RRD               OK
 ED 68       IN L,(C)          OK
 ED 69       OUT (C),L         OK
 ED 6A       ADC HL,HL         OK
-ED 6B       LD HL,(nn)        *** CODES UNMATCH MATCH: LD HL,(3412H)
-    * ORG: ED 6B 12
-    * ASM: 2A 12 34
+ED 6B       LD HL,(nn)        *** 
 ED 6F       RLD               OK
-ED 70       IN A,(C)          *** CODES UNMATCH MATCH: IN A,(C)
-    * ORG: ED 70
-    * ASM: ED 78
-ED 71       OUT (C),A         *** CODES UNMATCH MATCH: OUT (C),A
-    * ORG: ED 71
-    * ASM: ED 79
 ED 72       SBC HL,SP         OK
 ED 73       LD (nn),SP        OK
+ED 78       IN A,(C)          OK
+ED 79       OUT (C),A         OK
 ED 7A       ADC HL,SP         OK
 ED 7B       LD SP,(nn)        OK
 ED A0       LDI               OK
@@ -632,36 +626,36 @@ FC          CALL M,nn         OK
 FD 09       ADD IY,BC         OK
 FD 19       ADD IY,DE         OK
 FD 21       LD IY,nn          OK
-FD 23       INC IY            *** NO DISASSEMBLER
+FD 23       INC IY            OK
 FD 29       ADD IY,IY         OK
 FD 2A       LD IY,(nn)        OK
-FD 2B       DEC IY            *** NO DISASSEMBLER
+FD 2B       DEC IY            OK
 FD 34       INC (IY+d)        OK
-FD 35       DEC (IY+d)        *** NO DISASSEMBLER
+FD 35       DEC (IY+d)        OK
 FD 36       LD (IY+d),n       OK
 FD 39       ADD IY,SP         OK
-FD 46       LD B,(IY+d)       *** NO DISASSEMBLER
-FD 4E       LD C,(IY+d)       *** NO DISASSEMBLER
-FD 56       LD D,(IY+d)       *** NO DISASSEMBLER
-FD 5E       LD E,(IY+d)       *** NO DISASSEMBLER
-FD 66       LD H,(IY+d)       *** NO DISASSEMBLER
-FD 6E       LD L,(IY+d)       *** NO DISASSEMBLER
-FD 70       LD (IY+d),B       *** NO DISASSEMBLER
-FD 71       LD (IY+d),C       *** NO DISASSEMBLER
-FD 72       LD (IY+d),D       *** NO DISASSEMBLER
-FD 73       LD (IY+d),E       *** NO DISASSEMBLER
-FD 74       LD (IY+d),H       *** NO DISASSEMBLER
-FD 75       LD (IY+d),L       *** NO DISASSEMBLER
-FD 77       LD (IY+d),A       *** NO DISASSEMBLER
-FD 7E       LD A,(IY+d)       *** NO DISASSEMBLER
-FD 86       ADD A,(IY+d)      *** NO DISASSEMBLER
-FD 8E       ADC A,(IY+d)      *** NO DISASSEMBLER
-FD 96       SUB A,(IY+d)      *** NO DISASSEMBLER
-FD 9E       SBC A,(IY+d)      *** NO DISASSEMBLER
-FD A6       AND (IY+d)        *** NO DISASSEMBLER
-FD AE       XOR (IY+d)        *** NO DISASSEMBLER
-FD B6       OR (IY+d)         *** NO DISASSEMBLER
-FD BE       CP (IY+d)         *** NO DISASSEMBLER
+FD 46       LD B,(IY+d)       OK
+FD 4E       LD C,(IY+d)       OK
+FD 56       LD D,(IY+d)       OK
+FD 5E       LD E,(IY+d)       OK
+FD 66       LD H,(IY+d)       OK
+FD 6E       LD L,(IY+d)       OK
+FD 70       LD (IY+d),B       OK
+FD 71       LD (IY+d),C       OK
+FD 72       LD (IY+d),D       OK
+FD 73       LD (IY+d),E       OK
+FD 74       LD (IY+d),H       OK
+FD 75       LD (IY+d),L       OK
+FD 77       LD (IY+d),A       OK
+FD 7E       LD A,(IY+d)       OK
+FD 86       ADD A,(IY+d)      OK
+FD 8E       ADC A,(IY+d)      OK
+FD 96       SUB A,(IY+d)      OK
+FD 9E       SBC A,(IY+d)      OK
+FD A6       AND (IY+d)        OK
+FD AE       XOR (IY+d)        OK
+FD B6       OR (IY+d)         OK
+FD BE       CP (IY+d)         OK
 FD CB 06    RLC (IY+d)        OK
 FD CB 0E    RRC (IY+d)        OK
 FD CB 16    RL (IY+d)         OK
@@ -669,14 +663,14 @@ FD CB 1E    RR (IY+d)         OK
 FD CB 26    SLA (IY+d)        OK
 FD CB 2E    SRA (IY+d)        OK
 FD CB 3E    SRL (IY+d)        OK
-FD CB 46    BIT 0,(IY+d)      *** NO DISASSEMBLER
-FD CB 4E    BIT 1,(IY+d)      *** NO DISASSEMBLER
-FD CB 56    BIT 2,(IY+d)      *** NO DISASSEMBLER
-FD CB 5E    BIT 3,(IY+d)      *** NO DISASSEMBLER
-FD CB 66    BIT 4,(IY+d)      *** NO DISASSEMBLER
-FD CB 6E    BIT 5,(IY+d)      *** NO DISASSEMBLER
-FD CB 76    BIT 6,(IY+d)      *** NO DISASSEMBLER
-FD CB 7E    BIT 7,(IY+d)      *** NO DISASSEMBLER
+FD CB 46    BIT 0,(IY+d)      OK
+FD CB 4E    BIT 1,(IY+d)      OK
+FD CB 56    BIT 2,(IY+d)      OK
+FD CB 5E    BIT 3,(IY+d)      OK
+FD CB 66    BIT 4,(IY+d)      OK
+FD CB 6E    BIT 5,(IY+d)      OK
+FD CB 76    BIT 6,(IY+d)      OK
+FD CB 7E    BIT 7,(IY+d)      OK
 FD CB 86    RES 0,(IY+d)      OK
 FD CB 8E    RES 1,(IY+d)      OK
 FD CB 96    RES 2,(IY+d)      OK
@@ -685,14 +679,14 @@ FD CB A6    RES 4,(IY+d)      OK
 FD CB AE    RES 5,(IY+d)      OK
 FD CB B6    RES 6,(IY+d)      OK
 FD CB BE    RES 7,(IY+d)      OK
-FD CB C6    SET 0,(IY+d)      *** NO DISASSEMBLER
-FD CB CE    SET 1,(IY+d)      *** NO DISASSEMBLER
-FD CB D6    SET 2,(IY+d)      *** NO DISASSEMBLER
-FD CB DE    SET 3,(IY+d)      *** NO DISASSEMBLER
-FD CB E6    SET 4,(IY+d)      *** NO DISASSEMBLER
-FD CB EE    SET 5,(IY+d)      *** NO DISASSEMBLER
-FD CB F6    SET 6,(IY+d)      *** NO DISASSEMBLER
-FD CB FE    SET 7,(IY+d)      *** NO DISASSEMBLER
+FD CB C6    SET 0,(IY+d)      OK
+FD CB CE    SET 1,(IY+d)      OK
+FD CB D6    SET 2,(IY+d)      OK
+FD CB DE    SET 3,(IY+d)      OK
+FD CB E6    SET 4,(IY+d)      OK
+FD CB EE    SET 5,(IY+d)      OK
+FD CB F6    SET 6,(IY+d)      OK
+FD CB FE    SET 7,(IY+d)      OK
 FD E1       POP IY            OK
 FD E3       EX (SP),IY        OK
 FD E5       PUSH IY           OK
@@ -701,10 +695,10 @@ FD F9       LD SP,IY          OK
 FE          CP n              OK
 FF          RST 38H           OK
 ----
-Total check count: 694
+Total check count: 696
 Not emulated: 0
 Disassembler:
-  Not implemented: 82
+  Not implemented: 0
   Unsupported    : 0
   Fail           : 0
-  Not correct    : 4
+  Not correct    : 0
