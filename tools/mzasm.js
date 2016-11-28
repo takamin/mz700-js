@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-getopt = require('node-getopt').create([
+var getopt = require('node-getopt').create([
         ['m',   'map=ARG',  'map file to resolve addresses'],
         ['z',   'output-MZT-header', 'output MZT header'],
         ['a',   'loading-address=ARG', 'set loading address'],
@@ -13,6 +13,11 @@ if(getopt.options.version) {
     console.log("Z80 assembler v0.0");
     return;
 }
+var args = require("hash-arg").get(["input_filename"], getopt.argv);
+if(getopt.argv.length < 1) {
+    console.error('error: no input file');
+    return -1;
+}
 require("../lib/ex_number.js");
 require("../Z80/emulator.js");
 require("../Z80/register.js");
@@ -21,11 +26,7 @@ require('../Z80/memory.js');
 require('../MZ-700/emulator.js');
 require('../MZ-700/mztape.js');
 var fs = require('fs');
-if(getopt.argv.length < 1) {
-    console.error('error: no input file');
-    return -1;
-}
-var input_filename = getopt.argv[0];
+var input_filename = args.input_filename;
 var output_filename = null;
 if('output-file' in getopt.options) {
     output_filename = getopt.options['output-file'];
