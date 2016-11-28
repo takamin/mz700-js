@@ -286,21 +286,12 @@ MZ700.prototype.mmioIsMappedToWrite = function(address) {
 };
 
 MZ700.prototype.writeAsmCode = function(assembled) {
-    var asm_list = assembled.list;
-    var entry_point = -1;
-    for(var i = 0; i < asm_list.length; i++) {
-        var bytes = asm_list[i].bytecode;
-        if(bytes != null && bytes.length > 0) {
-            var address = asm_list[i].address;
-            for(var j = 0; j < bytes.length; j++) {
-                if(entry_point < 0) {
-                    entry_point = address + j;
-                }
-                this.memory.poke(address + j, bytes[j]);
-            }
-        }
+    for(var i = 0; i < assembled.buffer.length; i++) {
+        this.memory.poke(
+                assembled.min_addr + i,
+                assembled.buffer[i]);
     }
-    return entry_point;
+    return assembled.min_addr;
 };
 
 MZ700.prototype.exec = function(execCount) {
@@ -2309,76 +2300,136 @@ Z80_assemble = function(asm_source) {
     if(asm_source == undefined) {
         return;
     }
-    var source_lines = asm_source.split(/\r{0,1}\n/);
+
+    //
+    // Assemble
+    //
     this.list = [];
     this.label2value = {};
     this.address = 0;
+
+    var source_lines = asm_source.split(/\r{0,1}\n/);
     for(var i = 0; i < source_lines.length; i++) {
-        var label = null;
-        var mnemonic = null;
-        var operand = [];
-        var comment = null;
-        var bytecode = [];
-        var tokens = this.tokenize(source_lines[i]);
-        var found_label = -1;
-        var found_comment = -1;
-        for(var j = 0; j < tokens.length; j++) {
-            switch(tokens[j]) {
-                case ':':
-                    if(found_label < 0 && found_comment < 0) {
-                        found_label = j;
-                    }
-                    break;
-                case ';':
-                    if(found_comment < 0) {
-                        found_comment = j;
-                    }
-                    break;
-            }
-        }
-        if(found_label >= 0) {
-            label = tokens.slice(0, found_label).join('');
-            tokens.splice(0, found_label + 1);
-            found_comment -= (found_label + 1);
-        }
-        if(found_comment >= 0) {
-            comment = tokens.slice(found_comment).join('');
-            tokens.splice(found_comment);
-        }
-        if(tokens.length > 0) {
-            mnemonic = tokens[0];
-            operand = tokens.slice(1).join('');
-        }
-        if(tokens.length > 0) {
-            try {
-                bytecode = this.assembleMnemonic(tokens, label);
-            } catch(e) {
-                comment += "*** ASSEMBLE ERROR - " + e;
-            }
-        }
-        var assembled_code = {
-            address: this.address,
-            bytecode: bytecode,
-            label: label,
-            mnemonic: mnemonic,
-            operand: operand,
-            comment:comment
-        };
+        var assembled_code = new Z80LineAssembler(
+                source_lines[i],
+                this.address,
+                this.label2value);
+        this.address = assembled_code.getNextAddress();
         this.list.push(assembled_code);
-        if(assembled_code.bytecode != null) {
-            this.address += assembled_code.bytecode.length;
+    }
+
+    //
+    // Resolve address symbols
+    //
+    for(var i = 0; i < this.list.length; i++) {
+        this.list[i].resolveAddress(this.label2value);
+    }
+
+    //
+    // Create machine code array
+    //
+
+    // address min-max
+    var min_addr = null;
+    var max_addr = null;
+    this.list.forEach(function(line) {
+        if("address" in line && "bytecode" in line && line.bytecode.length > 0) {
+            if(min_addr == null || line.address < min_addr) {
+                min_addr = line.address;
+            }
+            if(max_addr == null || line.address + line.bytecode.length - 1 > max_addr) {
+                max_addr = line.address + line.bytecode.length - 1;
+            }
+        }
+    });
+    this.min_addr = min_addr;
+    this.buffer = new Array(max_addr - min_addr + 1);
+    this.list.forEach(function(line) {
+        if("address" in line && "bytecode" in line && line.bytecode.length > 0) {
+            Array.prototype.splice.apply(this.buffer,
+                [line.address - min_addr, line.bytecode.length].concat(line.bytecode));
+        }
+    }, this);
+};
+
+Z80_assemble.prototype.parseAddress = function(addrToken) {
+    var bytes = Z80LineAssembler.parseNumLiteralPair(addrToken);
+    if(bytes == null) {
+        return null;
+    }
+    var H = bytes[1]; if(typeof(H) == 'function') { H = H(this.label2value); }
+    var L = bytes[0]; if(typeof(L) == 'function') { L = L(this.label2value); }
+    var addr = Z80.pair(H,L);
+    return addr;
+};
+
+Z80LineAssembler = function(source, address, dictionary) {
+    this.address = address;
+    this.bytecode = [];
+    this.label = null;
+    this.mnemonic = null;
+    this.operand = [];
+    this.comment = null;
+
+    var tokens = Z80LineAssembler.tokenize(source);
+
+    var found_label = -1;
+    var found_comment = -1;
+    for(var j = 0; j < tokens.length; j++) {
+        switch(tokens[j]) {
+            case ':':
+                if(found_label < 0 && found_comment < 0) {
+                    found_label = j;
+                }
+                break;
+            case ';':
+                if(found_comment < 0) {
+                    found_comment = j;
+                }
+                break;
         }
     }
-    for(var i = 0; i < this.list.length; i++) {
-        for(var j = 0; j < this.list[i].bytecode.length; j++) {
-            if(typeof(this.list[i].bytecode[j]) == 'function') {
-                this.list[i].bytecode[j] = this.list[i].bytecode[j]();
-            }
+    if(found_label >= 0) {
+        this.label = tokens.slice(0, found_label).join('');
+        tokens.splice(0, found_label + 1);
+        found_comment -= (found_label + 1);
+    }
+    if(found_comment >= 0) {
+        this.comment = tokens.slice(found_comment).join('');
+        tokens.splice(found_comment);
+    }
+    if(tokens.length > 0) {
+        this.mnemonic = tokens[0];
+        this.operand = tokens.slice(1).join('');
+    }
+    if(tokens.length > 0) {
+        try {
+            this.bytecode = this.assembleMnemonic(tokens, this.label, dictionary);
+        } catch(e) {
+            this.comment += "*** ASSEMBLE ERROR - " + e;
         }
     }
 };
 
-Z80_assemble.prototype.tokenize = function(line) {
+Z80LineAssembler.prototype.getNextAddress = function()
+{
+    var address = this.address;
+    if(this.bytecode != null) {
+        address += this.bytecode.length;
+    }
+    return address;
+};
+
+Z80LineAssembler.prototype.resolveAddress = function(dictionary)
+{
+    for(var j = 0; j < this.bytecode.length; j++) {
+        if(typeof(this.bytecode[j]) == 'function') {
+            this.bytecode[j] = this.bytecode[j](dictionary);
+        }
+    }
+};
+
+Z80LineAssembler.tokenize = function(line) {
     var LEX_IDLE=0;
     var LEX_WHITESPACE=1;
     var LEX_NUMBER=2;
@@ -2488,35 +2539,37 @@ Z80_assemble.prototype.tokenize = function(line) {
     return toks;
 };
 
-Z80_assemble.prototype.assembleMnemonic = function(toks, label) {
+Z80LineAssembler.prototype.assembleMnemonic = function(toks, label, dictionary) {
+    //
+    // Pseudo Instruction
+    //
     if(match_token(toks,['ORG', null])) {
-        this.address = this._parseNumLiteral(toks[1]);
+        this.address = Z80LineAssembler._parseNumLiteral(toks[1]);
         return [];
     }
     if(match_token(toks,['ENT'])) {
-        this.label2value[label] = this.address;
+        dictionary[label] = this.address;
         return [];
     }
     if(match_token(toks,['EQU', null])) {
         if(label == null || label == "") {
             throw "empty label for EQU";
         }
-        this.label2value[label] = this._parseNumLiteral(toks[1]);
+        dictionary[label] = Z80LineAssembler._parseNumLiteral(toks[1]);
         return [];
     }
     if(match_token(toks,['DEFB', null])) {
-        return [this.parseNumLiteral(toks[1])];
+        return [Z80LineAssembler.parseNumLiteral(toks[1])];
     }
     if(match_token(toks,['DEFW', null])) {
-        return this.parseNumLiteralPair(toks[1]);
+        return Z80LineAssembler.parseNumLiteralPair(toks[1]);
     }
     if(match_token(toks,['DEFS', null])) {
-        var n = this._parseNumLiteral(toks[1]);
+        var n = Z80LineAssembler._parseNumLiteral(toks[1]);
         if(n < 0) {
             throw "negative DEFS number " + tok[1];
         }
-        this.address += n;
-        return [];
+        return (function(a,i,n,v) { for(; i < n; i++) { a.push(v);}; return a;}([],0,n,v));
     }
 	//=================================================================================
 	//
@@ -2534,7 +2587,7 @@ Z80_assemble.prototype.assembleMnemonic = function(toks, label) {
     }
     if(match_token(toks,['LD', /^[BCDEHLA]$/, ',', null])) {
         var r = get8bitRegId(toks[1]);
-        var n = this.parseNumLiteral(toks[3]);
+        var n = Z80LineAssembler.parseNumLiteral(toks[3]);
         return [0006 | (r << 3), n];
     }
     if(match_token(toks,['LD', /^[BCDEHLA]$/, ',', '(','HL',')'])) {
@@ -2546,7 +2599,7 @@ Z80_assemble.prototype.assembleMnemonic = function(toks, label) {
         return [0160 | r];
     }
     if(match_token(toks,['LD', '(','HL',')', ',', null])) {
-        var n = this.parseNumLiteral(toks[5]);
+        var n = Z80LineAssembler.parseNumLiteral(toks[5]);
         return [0066, n];
     }
     if(match_token(toks,['LD', 'A', ',', '(', /^(BC|DE)$/, ')'])) {
@@ -2554,7 +2607,7 @@ Z80_assemble.prototype.assembleMnemonic = function(toks, label) {
         return [0012 | (dd << 4)];
     }
     if(match_token(toks,['LD', 'A', ',', '(', null, ')'])) {
-        var n = this.parseNumLiteralPair(toks[4]);
+        var n = Z80LineAssembler.parseNumLiteralPair(toks[4]);
         return [0072, n[0], n[1]];
     }
     if(match_token(toks,['LD', '(', /^(BC|DE)$/, ')', ',', 'A'])) {
@@ -2562,7 +2615,7 @@ Z80_assemble.prototype.assembleMnemonic = function(toks, label) {
         return [0002 | (dd << 4)];
     }
     if(match_token(toks,['LD', '(', null, ')', ',', 'A'])) {
-        var n = this.parseNumLiteralPair(toks[2]);
+        var n = Z80LineAssembler.parseNumLiteralPair(toks[2]);
         return [0062, n[0], n[1]];
     }
 	//=================================================================================
@@ -2575,39 +2628,39 @@ Z80_assemble.prototype.assembleMnemonic = function(toks, label) {
     if(match_token(toks,['LD', 'SP', ',', 'IY'])) { return [0xfd, 0xF9]; }
     if(match_token(toks,['LD', /^(BC|DE|HL|SP)$/, ',', null])) {
         var dd = get16bitRegId_dd(toks[1]);
-        var n = this.parseNumLiteralPair(toks[3]);
+        var n = Z80LineAssembler.parseNumLiteralPair(toks[3]);
         return [0001 | (dd << 4), n[0], n[1]];
     }
     if(match_token(toks,['LD', 'HL', ',', '(', null, ')'])) {
-        var n = this.parseNumLiteralPair(toks[4]);
+        var n = Z80LineAssembler.parseNumLiteralPair(toks[4]);
         return [0052, n[0], n[1]];
     }
     if(match_token(toks,['LD', 'BC', ',', '(', null, ')'])) {
-        var n = this.parseNumLiteralPair(toks[4]);
+        var n = Z80LineAssembler.parseNumLiteralPair(toks[4]);
         return [0355, 0113, n[0], n[1]];
     }
     if(match_token(toks,['LD', 'DE', ',', '(', null, ')'])) {
-        var n = this.parseNumLiteralPair(toks[4]);
+        var n = Z80LineAssembler.parseNumLiteralPair(toks[4]);
         return [0355, 0133, n[0], n[1]];
     }
     if(match_token(toks,['LD', 'SP', ',', '(', null, ')'])) {
-        var n = this.parseNumLiteralPair(toks[4]);
+        var n = Z80LineAssembler.parseNumLiteralPair(toks[4]);
         return [0355, 0173, n[0], n[1]];
     }
     if(match_token(toks,['LD', '(', null, ')', ',', 'HL'])) {
-        var n = this.parseNumLiteralPair(toks[2]);
+        var n = Z80LineAssembler.parseNumLiteralPair(toks[2]);
         return [0042, n[0], n[1]];
     }
     if(match_token(toks,['LD', '(', null, ')', ',', 'BC'])) {
-        var n = this.parseNumLiteralPair(toks[2]);
+        var n = Z80LineAssembler.parseNumLiteralPair(toks[2]);
         return [0355, 0103, n[0], n[1]];
     }
     if(match_token(toks,['LD', '(', null, ')', ',', 'DE'])) {
-        var n = this.parseNumLiteralPair(toks[2]);
+        var n = Z80LineAssembler.parseNumLiteralPair(toks[2]);
         return [0355, 0123, n[0], n[1]];
     }
     if(match_token(toks,['LD', '(', null, ')', ',', 'SP'])) {
-        var n = this.parseNumLiteralPair(toks[2]);
+        var n = Z80LineAssembler.parseNumLiteralPair(toks[2]);
         return [0355, 0163, n[0], n[1]];
     }
     if(match_token(toks,['PUSH', /^(BC|DE|HL|AF)$/])) {
@@ -2755,7 +2808,7 @@ Z80_assemble.prototype.assembleMnemonic = function(toks, label) {
             case 'IX': prefix = 0335; break;
             case 'IY': prefix = 0375; break;
         }
-        var d = this.parseNumLiteral(toks[index_d]);
+        var d = Z80LineAssembler.parseNumLiteral(toks[index_d]);
         switch(toks[0]) {
             case 'RLC': return [prefix, 0313, d, 0006];
             case 'RL':  return [prefix, 0313, d, 0026];
@@ -2798,7 +2851,7 @@ Z80_assemble.prototype.assembleMnemonic = function(toks, label) {
             case 'IX': prefix = 0335; break;
             case 'IY': prefix = 0375; break;
         }
-        var d = this.parseNumLiteral(toks[index_d]);
+        var d = Z80LineAssembler.parseNumLiteral(toks[index_d]);
         switch(toks[0]) {
             case 'BIT': return [prefix, 0313, d, 0106 | (toks[1] << 3)];
             case 'SET': return [prefix, 0313, d, 0306 | (toks[1] << 3)];
@@ -2812,11 +2865,11 @@ Z80_assemble.prototype.assembleMnemonic = function(toks, label) {
     //=================================================================================
 
     if(match_token(toks,['JP', null]))  {
-        var nn = this.parseNumLiteralPair(toks[1]);
+        var nn = Z80LineAssembler.parseNumLiteralPair(toks[1]);
         return [0303, nn[0], nn[1]];
     }
     if(match_token(toks,['JP', /^(NZ|Z|NC|C|PO|PE|P|M)$/, ',',  null]))  {
-        var nn = this.parseNumLiteralPair(toks[3]);
+        var nn = Z80LineAssembler.parseNumLiteralPair(toks[3]);
         switch(toks[1]) {
             case 'NZ':  return [0302, nn[0], nn[1]];
             case 'Z':   return [0312, nn[0], nn[1]];
@@ -2830,11 +2883,11 @@ Z80_assemble.prototype.assembleMnemonic = function(toks, label) {
         return [];
     }
     if(match_token(toks,['JR', null]))  {
-        var e = this.parseRelAddr(toks[1], this.address + 2);
+        var e = Z80LineAssembler.parseRelAddr(toks[1], this.address + 2);
         return [0030, e];
     }
     if(match_token(toks,['JR', /^(NZ|Z|NC|C)$/, ',',  null]))  {
-        var e = this.parseRelAddr(toks[3], this.address + 2);
+        var e = Z80LineAssembler.parseRelAddr(toks[3], this.address + 2);
         switch(toks[1]) {
             case 'NZ':  return [0040, e];
             case 'Z':   return [0050, e];
@@ -2852,7 +2905,7 @@ Z80_assemble.prototype.assembleMnemonic = function(toks, label) {
         return [];
     }
     if(match_token(toks,['DJNZ', null]))  {
-        var e = this.parseRelAddr(toks[1], this.address + 2);
+        var e = Z80LineAssembler.parseRelAddr(toks[1], this.address + 2);
         return [0020, e];
     }
 
@@ -2861,11 +2914,11 @@ Z80_assemble.prototype.assembleMnemonic = function(toks, label) {
     //=================================================================================
 
     if(match_token(toks,['CALL', null]))  {
-        var nn = this.parseNumLiteralPair(toks[1]);
+        var nn = Z80LineAssembler.parseNumLiteralPair(toks[1]);
         return [0315, nn[0], nn[1]];
     }
     if(match_token(toks,['CALL', /^(NZ|Z|NC|C|PO|PE|P|M)$/, ',',  null]))  {
-        var nn = this.parseNumLiteralPair(toks[3]);
+        var nn = Z80LineAssembler.parseNumLiteralPair(toks[3]);
         switch(toks[1]) {
             case 'NZ':  return [0304, nn[0], nn[1]];
             case 'Z':   return [0314, nn[0], nn[1]];
@@ -2916,7 +2969,7 @@ Z80_assemble.prototype.assembleMnemonic = function(toks, label) {
         return [0355, 0100 | (r << 3)];
     }
     if(match_token(toks,['IN', 'A', ',', '(', null, ')']))  {
-        var n = this.parseNumLiteral(toks[4]);
+        var n = Z80LineAssembler.parseNumLiteral(toks[4]);
         return [0333, n];
     }
     if(match_token(toks,['OUT', '(','C',')', ',', /^[BCDEHLA]$/]))  {
@@ -2924,7 +2977,7 @@ Z80_assemble.prototype.assembleMnemonic = function(toks, label) {
         return [0355, 0101 | (r << 3)];
     }
     if(match_token(toks,['OUT', '(', null, ')', ',', 'A']))  {
-        var n = this.parseNumLiteral(toks[2]);
+        var n = Z80LineAssembler.parseNumLiteral(toks[2]);
         return [0323, n];
     }
     if(match_token(toks,['INI']))   { return [0355, 0242]; }
@@ -2945,7 +2998,7 @@ Z80_assemble.prototype.assembleMnemonic = function(toks, label) {
     || match_token(toks,['LD', /^[BCDEHLA]$/, ',', '(', /^(IX|IY)$/, null, ')'])) {
         var index_d = ((toks[5] == '+') ? 6 : 5);
         var r = get8bitRegId(toks[1]);
-        var d = this.parseNumLiteral(toks[index_d]);
+        var d = Z80LineAssembler.parseNumLiteral(toks[index_d]);
         var subope = getSubopeIXIY(toks[4]);
         return [subope, 0106 | (r << 3), d];
     }
@@ -2953,7 +3006,7 @@ Z80_assemble.prototype.assembleMnemonic = function(toks, label) {
     || match_token(toks,['LD', '(', /^(IX|IY)$/, /^\+.*$/, ')', ',', /^[BCDEHLA]$/])) {
         var index_d = ((toks[3] == '+') ? 4 : 3);
         var index_r = ((toks[3] == '+') ? 7 : 6);
-        var d = this.parseNumLiteral(toks[index_d]);
+        var d = Z80LineAssembler.parseNumLiteral(toks[index_d]);
         var r = get8bitRegId(toks[index_r]);
         var subope = getSubopeIXIY(toks[2]);
         return [subope, 0160 | r, d];
@@ -2962,18 +3015,18 @@ Z80_assemble.prototype.assembleMnemonic = function(toks, label) {
     || match_token(toks,['LD', '(', /^(IX|IY)$/, /^\+.*$/, ')', ',', null])) {
         var index_d = ((toks[3] == '+') ? 4 : 3);
         var index_n = ((toks[3] == '+') ? 7 : 6);
-        var d = this.parseNumLiteral(toks[index_d]);
-        var n = this.parseNumLiteral(toks[index_n]);
+        var d = Z80LineAssembler.parseNumLiteral(toks[index_d]);
+        var n = Z80LineAssembler.parseNumLiteral(toks[index_n]);
         var subope = getSubopeIXIY(toks[2]);
         return [subope, 0x36, d, n];
     }
     if(match_token(toks,['LD', /^(IX|IY)$/, ',', null])) {
-        var nn = this.parseNumLiteralPair(toks[3]);
+        var nn = Z80LineAssembler.parseNumLiteralPair(toks[3]);
         var subope = getSubopeIXIY(toks[1]);
         return [subope, 0x21, nn[0], nn[1]];
     }
     if(match_token(toks,['LD', /^(IX|IY)$/, ',', '(', null, ')'])) {
-        var nn = this.parseNumLiteralPair(toks[4]);
+        var nn = Z80LineAssembler.parseNumLiteralPair(toks[4]);
         var subope = getSubopeIXIY(toks[1]);
         return [subope, 0x2A, nn[0], nn[1]];
     }
@@ -3000,7 +3053,7 @@ Z80_assemble.prototype.assembleMnemonic = function(toks, label) {
     }
     if(match_token(toks,[/^(ADD|ADC|SUB|SBC)$/, 'A', ',', null])) {
         var subseq = getArithmeticSubOpecode(toks[0]);
-        var n = this.parseNumLiteral(toks[3]);
+        var n = Z80LineAssembler.parseNumLiteral(toks[3]);
         return [0306 | (subseq << 3), n];
     }
     if(match_token(toks,[/^(ADD|ADC|SUB|SBC)$/, 'A', ',', '(', 'HL', ')'])) {
@@ -3011,7 +3064,7 @@ Z80_assemble.prototype.assembleMnemonic = function(toks, label) {
     || match_token(toks,[/^(ADD|ADC|SUB|SBC)$/, 'A', ',', '(', /^(IX|IY)$/, /^\+.*/,  ')'])) {
         var index_d = ((toks[5] == '+') ? 6 : 5);
         var subseq = getArithmeticSubOpecode(toks[0]);
-        var d = this.parseNumLiteral(toks[index_d]);
+        var d = Z80LineAssembler.parseNumLiteral(toks[index_d]);
         var subope = getSubopeIXIY(toks[4]);
         return [subope, 0206 | (subseq << 3), d];
     }
@@ -3022,7 +3075,7 @@ Z80_assemble.prototype.assembleMnemonic = function(toks, label) {
     }
     if(match_token(toks,[/^(AND|OR|XOR|CP)$/, null])) {
         var subseq = getArithmeticSubOpecode(toks[0]);
-        var n = this.parseNumLiteral(toks[1]);
+        var n = Z80LineAssembler.parseNumLiteral(toks[1]);
         return [0306 | (subseq << 3), n];
     }
     if(match_token(toks,[/^(AND|OR|XOR|CP)$/, '(', 'HL', ')'])) {
@@ -3033,7 +3086,7 @@ Z80_assemble.prototype.assembleMnemonic = function(toks, label) {
     || match_token(toks,[/^(AND|OR|XOR|CP)$/, '(', /^(IX|IY)$/, /^\+.*$/,  ')'])) {
         var index_d = ((toks[3] == '+') ? 4 : 3);
         var subseq = getArithmeticSubOpecode(toks[0]);
-        var d = this.parseNumLiteral(toks[index_d]);
+        var d = Z80LineAssembler.parseNumLiteral(toks[index_d]);
         var subope = getSubopeIXIY(toks[2]);
         return [subope, 0206 | (subseq << 3), d];
     }
@@ -3054,7 +3107,7 @@ Z80_assemble.prototype.assembleMnemonic = function(toks, label) {
     || match_token(toks,[/^(INC|DEC)$/, '(', /^(IX|IY)$/, /^\+.*$/,  ')'])) {
         var subope = getSubopeIXIY(toks[2]);
         var index_d = ((toks[3] == '+') ? 4 : 3);
-        var d = this.parseNumLiteral(toks[index_d]);
+        var d = Z80LineAssembler.parseNumLiteral(toks[index_d]);
         switch(toks[0]) {
             case 'INC': return [subope, 0064, d]; break;
             case 'DEC': return [subope, 0065, d]; break;
@@ -3063,6 +3116,7 @@ Z80_assemble.prototype.assembleMnemonic = function(toks, label) {
     console.warn("**** ERROR: CANNOT ASSEMBLE:" + toks.join(" / "));
     return [];
 };
+
 function getSubopeIXIY(tok) {
     var subope = 0;
     switch(tok) {
@@ -3071,6 +3125,7 @@ function getSubopeIXIY(tok) {
     }
     return subope;
 };
+
 function getArithmeticSubOpecode(opecode) {
     var subseq = 0;
     switch(opecode) {
@@ -3085,6 +3140,7 @@ function getArithmeticSubOpecode(opecode) {
     }
     return subseq;
 };
+
 function get16bitRegId_dd(name) {
     var r = null;
     switch(name) {
@@ -3096,6 +3152,7 @@ function get16bitRegId_dd(name) {
     }
     return r;
 };
+
 function get16bitRegId_qq(name) {
     var r = null;
     switch(name) {
@@ -3107,6 +3164,7 @@ function get16bitRegId_qq(name) {
     }
     return r;
 };
+
 function get8bitRegId(name) {
     var r = null;
     switch(name) {
@@ -3121,6 +3179,7 @@ function get8bitRegId(name) {
     }
     return r;
 };
+
 function match_token(toks, pattern) {
     if(toks.length != pattern.length) {
         return false;
@@ -3142,20 +3201,22 @@ function match_token(toks, pattern) {
     }
     return true;
 };
-Z80_assemble.prototype.parseNumLiteral = function(tok) {
-    var n = this._parseNumLiteral(tok);
+
+Z80LineAssembler.parseNumLiteral = function(tok) {
+    var n = Z80LineAssembler._parseNumLiteral(tok);
     if(typeof(n) == 'number') {
         if(n < -128 || 256 <= n) {
             throw 'operand ' + tok + ' out of range';
         }
         return n & 0xff;
     }
-    return (function(THIS, token) { return function() {
-        return THIS.dereferLowByte(token);
-    }; })(this, tok);
+    return function(dictionary) {
+        return Z80LineAssembler.dereferLowByte(tok, dictionary);
+    };
 };
-Z80_assemble.prototype.parseNumLiteralPair = function(tok) {
-    var n = this._parseNumLiteral(tok);
+
+Z80LineAssembler.parseNumLiteralPair = function(tok) {
+    var n = Z80LineAssembler._parseNumLiteral(tok);
     if(typeof(n) == 'number') {
         if(n < -32768 || 65535 < n) {
             throw 'operand ' + tok + ' out of range';
@@ -3163,16 +3224,13 @@ Z80_assemble.prototype.parseNumLiteralPair = function(tok) {
         return [n & 0xff, (n >> 8) & 0xff];
     }
     return [
-        (function(THIS, token) { return function(){
-            return THIS.dereferLowByte(token);
-        };})(this, tok),
-        (function(THIS, token) { return function(){
-            return THIS.dereferHighByte(token);
-        };})(this, tok),
+        function(dictionary){ return Z80LineAssembler.dereferLowByte(tok, dictionary); },
+        function(dictionary){ return Z80LineAssembler.dereferHighByte(tok, dictionary); }
     ];
 };
-Z80_assemble.prototype.parseRelAddr = function(tok, fromAddr) {
-    var n = this._parseNumLiteral(tok);
+
+Z80LineAssembler.parseRelAddr = function(tok, fromAddr) {
+    var n = Z80LineAssembler._parseNumLiteral(tok);
     if(typeof(n) == 'number') {
         var c0 = tok.charAt(0);
         if(c0 != '+' && c0 != '-') {
@@ -3184,23 +3242,27 @@ Z80_assemble.prototype.parseRelAddr = function(tok, fromAddr) {
         }
         return n & 0xff;
     }
-    return (function(THIS, token, fromAddr) { return function() {
-        return (THIS.derefer(token) - fromAddr) & 0xff;
-    }; })(this, tok, fromAddr);
+    return function(dictionary) {
+        return (Z80LineAssembler.derefer(tok, dictionary) - fromAddr) & 0xff;
+    };
 };
-Z80_assemble.prototype.dereferLowByte = function(label) {
-    return this.derefer(label) & 0xff;
+
+Z80LineAssembler.dereferLowByte = function(label, dictionary) {
+    return Z80LineAssembler.derefer(label, dictionary) & 0xff;
 };
-Z80_assemble.prototype.dereferHighByte = function(label) {
-    return (this.derefer(label) >> 8) & 0xff;
+
+Z80LineAssembler.dereferHighByte = function(label, dictionary) {
+    return (Z80LineAssembler.derefer(label, dictionary) >> 8) & 0xff;
 };
-Z80_assemble.prototype.derefer = function(label) {
-    if(label in this.label2value) {
-        return this.label2value[label];
+
+Z80LineAssembler.derefer = function(label, dictionary) {
+    if(label in dictionary) {
+        return dictionary[label];
     }
     return 0;
 };
-Z80_assemble.prototype._parseNumLiteral = function(tok) {
+
+Z80LineAssembler._parseNumLiteral = function(tok) {
     if(/^[\+\-]?[0-9]+$/.test(tok) || /^[\+\-]?[0-9A-F]+H$/i.test(tok)) {
         var n = 0;
         var s = (/^\-/.test(tok) ? -1:1);
@@ -3218,16 +3280,7 @@ Z80_assemble.prototype._parseNumLiteral = function(tok) {
     }
     return tok;
 };
-Z80_assemble.prototype.parseAddress = function(addrToken) {
-    var bytes = this.parseNumLiteralPair(addrToken);
-    if(bytes == null) {
-        return null;
-    }
-    var H = bytes[1]; if(typeof(H) == 'function') { H = H(); }
-    var L = bytes[0]; if(typeof(L) == 'function') { L = L(); }
-    var addr = Z80.pair(H,L);
-    return addr;
-};
+
 
 },{}],8:[function(require,module,exports){
 Z80 = function(opt) {
@@ -10183,7 +10236,7 @@ var DAATable = [
 
 
 },{}],11:[function(require,module,exports){
-/*! jQuery UI - v1.12.0 - 2016-07-08
+/*! jQuery UI - v1.12.1 - 2016-09-14
 * http://jqueryui.com
 * Includes: widget.js, position.js, data.js, disable-selection.js, effect.js, effects/effect-blind.js, effects/effect-bounce.js, effects/effect-clip.js, effects/effect-drop.js, effects/effect-explode.js, effects/effect-fade.js, effects/effect-fold.js, effects/effect-highlight.js, effects/effect-puff.js, effects/effect-pulsate.js, effects/effect-scale.js, effects/effect-shake.js, effects/effect-size.js, effects/effect-slide.js, effects/effect-transfer.js, focusable.js, form-reset-mixin.js, jquery-1-7.js, keycode.js, labels.js, scroll-parent.js, tabbable.js, unique-id.js, widgets/accordion.js, widgets/autocomplete.js, widgets/button.js, widgets/checkboxradio.js, widgets/controlgroup.js, widgets/datepicker.js, widgets/dialog.js, widgets/draggable.js, widgets/droppable.js, widgets/menu.js, widgets/mouse.js, widgets/progressbar.js, widgets/resizable.js, widgets/selectable.js, widgets/selectmenu.js, widgets/slider.js, widgets/sortable.js, widgets/spinner.js, widgets/tabs.js, widgets/tooltip.js
 * Copyright jQuery Foundation and other contributors; Licensed MIT */
@@ -10202,11 +10255,11 @@ var DAATable = [
 
 $.ui = $.ui || {};
 
-var version = $.ui.version = "1.12.0";
+var version = $.ui.version = "1.12.1";
 
 
 /*!
- * jQuery UI Widget 1.12.0
+ * jQuery UI Widget 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -10412,35 +10465,42 @@ $.widget.bridge = function( name, object ) {
 		var returnValue = this;
 
 		if ( isMethodCall ) {
-			this.each( function() {
-				var methodValue;
-				var instance = $.data( this, fullName );
 
-				if ( options === "instance" ) {
-					returnValue = instance;
-					return false;
-				}
+			// If this is an empty collection, we need to have the instance method
+			// return undefined instead of the jQuery instance
+			if ( !this.length && options === "instance" ) {
+				returnValue = undefined;
+			} else {
+				this.each( function() {
+					var methodValue;
+					var instance = $.data( this, fullName );
 
-				if ( !instance ) {
-					return $.error( "cannot call methods on " + name +
-						" prior to initialization; " +
-						"attempted to call method '" + options + "'" );
-				}
+					if ( options === "instance" ) {
+						returnValue = instance;
+						return false;
+					}
 
-				if ( !$.isFunction( instance[ options ] ) || options.charAt( 0 ) === "_" ) {
-					return $.error( "no such method '" + options + "' for " + name +
-						" widget instance" );
-				}
+					if ( !instance ) {
+						return $.error( "cannot call methods on " + name +
+							" prior to initialization; " +
+							"attempted to call method '" + options + "'" );
+					}
 
-				methodValue = instance[ options ].apply( instance, args );
+					if ( !$.isFunction( instance[ options ] ) || options.charAt( 0 ) === "_" ) {
+						return $.error( "no such method '" + options + "' for " + name +
+							" widget instance" );
+					}
 
-				if ( methodValue !== instance && methodValue !== undefined ) {
-					returnValue = methodValue && methodValue.jquery ?
-						returnValue.pushStack( methodValue.get() ) :
-						methodValue;
-					return false;
-				}
-			} );
+					methodValue = instance[ options ].apply( instance, args );
+
+					if ( methodValue !== instance && methodValue !== undefined ) {
+						returnValue = methodValue && methodValue.jquery ?
+							returnValue.pushStack( methodValue.get() ) :
+							methodValue;
+						return false;
+					}
+				} );
+			}
 		} else {
 
 			// Allow multiple hashes to be passed on init
@@ -10704,6 +10764,10 @@ $.Widget.prototype = {
 			}
 		}
 
+		this._on( options.element, {
+			"remove": "_untrackClassesElement"
+		} );
+
 		if ( options.keys ) {
 			processClassString( options.keys.match( /\S+/g ) || [], true );
 		}
@@ -10712,6 +10776,15 @@ $.Widget.prototype = {
 		}
 
 		return full.join( " " );
+	},
+
+	_untrackClassesElement: function( event ) {
+		var that = this;
+		$.each( that.classesElementLookup, function( key, value ) {
+			if ( $.inArray( event.target, value ) !== -1 ) {
+				that.classesElementLookup[ key ] = $( value.not( event.target ).get() );
+			}
+		} );
 	},
 
 	_removeClass: function( element, keys, extra ) {
@@ -10909,7 +10982,7 @@ var widget = $.widget;
 
 
 /*!
- * jQuery UI Position 1.12.0
+ * jQuery UI Position 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -10927,36 +11000,15 @@ var widget = $.widget;
 
 
 ( function() {
-var cachedScrollbarWidth, supportsOffsetFractions,
+var cachedScrollbarWidth,
 	max = Math.max,
 	abs = Math.abs,
-	round = Math.round,
 	rhorizontal = /left|center|right/,
 	rvertical = /top|center|bottom/,
 	roffset = /[\+\-]\d+(\.[\d]+)?%?/,
 	rposition = /^\w+/,
 	rpercent = /%$/,
 	_position = $.fn.position;
-
-// Support: IE <=9 only
-supportsOffsetFractions = function() {
-	var element = $( "<div>" )
-			.css( "position", "absolute" )
-			.appendTo( "body" )
-			.offset( {
-				top: 1.5,
-				left: 1.5
-			} ),
-		support = element.offset().top === 1.5;
-
-	element.remove();
-
-	supportsOffsetFractions = function() {
-		return support;
-	};
-
-	return support;
-};
 
 function getOffsets( offsets, width, height ) {
 	return [
@@ -11165,12 +11217,6 @@ $.fn.position = function( options ) {
 
 		position.left += myOffset[ 0 ];
 		position.top += myOffset[ 1 ];
-
-		// If the browser doesn't support fractions, then round for consistent results
-		if ( !supportsOffsetFractions() ) {
-			position.left = round( position.left );
-			position.top = round( position.top );
-		}
 
 		collisionPosition = {
 			marginLeft: marginLeft,
@@ -11424,7 +11470,7 @@ var position = $.ui.position;
 
 
 /*!
- * jQuery UI :data 1.12.0
+ * jQuery UI :data 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -11453,7 +11499,7 @@ var data = $.extend( $.expr[ ":" ], {
 } );
 
 /*!
- * jQuery UI Disable Selection 1.12.0
+ * jQuery UI Disable Selection 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -11489,7 +11535,7 @@ var disableSelection = $.fn.extend( {
 
 
 /*!
- * jQuery UI Effects 1.12.0
+ * jQuery UI Effects 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -12548,7 +12594,7 @@ if ( $.uiBackCompat !== false ) {
 }
 
 $.extend( $.effects, {
-	version: "1.12.0",
+	version: "1.12.1",
 
 	define: function( name, mode, effect ) {
 		if ( !effect ) {
@@ -13114,7 +13160,7 @@ var effect = $.effects;
 
 
 /*!
- * jQuery UI Effects Blind 1.12.0
+ * jQuery UI Effects Blind 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -13170,7 +13216,7 @@ var effectsEffectBlind = $.effects.define( "blind", "hide", function( options, d
 
 
 /*!
- * jQuery UI Effects Bounce 1.12.0
+ * jQuery UI Effects Bounce 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -13266,7 +13312,7 @@ var effectsEffectBounce = $.effects.define( "bounce", function( options, done ) 
 
 
 /*!
- * jQuery UI Effects Clip 1.12.0
+ * jQuery UI Effects Clip 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -13317,7 +13363,7 @@ var effectsEffectClip = $.effects.define( "clip", "hide", function( options, don
 
 
 /*!
- * jQuery UI Effects Drop 1.12.0
+ * jQuery UI Effects Drop 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -13372,7 +13418,7 @@ var effectsEffectDrop = $.effects.define( "drop", "hide", function( options, don
 
 
 /*!
- * jQuery UI Effects Explode 1.12.0
+ * jQuery UI Effects Explode 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -13469,7 +13515,7 @@ var effectsEffectExplode = $.effects.define( "explode", "hide", function( option
 
 
 /*!
- * jQuery UI Effects Fade 1.12.0
+ * jQuery UI Effects Fade 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -13502,7 +13548,7 @@ var effectsEffectFade = $.effects.define( "fade", "toggle", function( options, d
 
 
 /*!
- * jQuery UI Effects Fold 1.12.0
+ * jQuery UI Effects Fold 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -13577,7 +13623,7 @@ var effectsEffectFold = $.effects.define( "fold", "hide", function( options, don
 
 
 /*!
- * jQuery UI Effects Highlight 1.12.0
+ * jQuery UI Effects Highlight 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -13620,7 +13666,7 @@ var effectsEffectHighlight = $.effects.define( "highlight", "show", function( op
 
 
 /*!
- * jQuery UI Effects Size 1.12.0
+ * jQuery UI Effects Size 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -13797,7 +13843,7 @@ var effectsEffectSize = $.effects.define( "size", function( options, done ) {
 
 
 /*!
- * jQuery UI Effects Scale 1.12.0
+ * jQuery UI Effects Scale 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -13838,7 +13884,7 @@ var effectsEffectScale = $.effects.define( "scale", function( options, done ) {
 
 
 /*!
- * jQuery UI Effects Puff 1.12.0
+ * jQuery UI Effects Puff 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -13865,7 +13911,7 @@ var effectsEffectPuff = $.effects.define( "puff", "hide", function( options, don
 
 
 /*!
- * jQuery UI Effects Pulsate 1.12.0
+ * jQuery UI Effects Pulsate 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -13915,7 +13961,7 @@ var effectsEffectPulsate = $.effects.define( "pulsate", "show", function( option
 
 
 /*!
- * jQuery UI Effects Shake 1.12.0
+ * jQuery UI Effects Shake 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -13975,7 +14021,7 @@ var effectsEffectShake = $.effects.define( "shake", function( options, done ) {
 
 
 /*!
- * jQuery UI Effects Slide 1.12.0
+ * jQuery UI Effects Slide 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -14037,7 +14083,7 @@ var effectsEffectSlide = $.effects.define( "slide", "show", function( options, d
 
 
 /*!
- * jQuery UI Effects Transfer 1.12.0
+ * jQuery UI Effects Transfer 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -14063,7 +14109,7 @@ var effectsEffectTransfer = effect;
 
 
 /*!
- * jQuery UI Focusable 1.12.0
+ * jQuery UI Focusable 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -14147,7 +14193,7 @@ var form = $.fn.form = function() {
 
 
 /*!
- * jQuery UI Form Reset Mixin 1.12.0
+ * jQuery UI Form Reset Mixin 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -14210,7 +14256,7 @@ var formResetMixin = $.ui.formResetMixin = {
 
 
 /*!
- * jQuery UI Support for jQuery core 1.7.x 1.12.0
+ * jQuery UI Support for jQuery core 1.7.x 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -14289,7 +14335,7 @@ if ( $.fn.jquery.substring( 0, 3 ) === "1.7" ) {
 
 ;
 /*!
- * jQuery UI Keycode 1.12.0
+ * jQuery UI Keycode 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -14335,7 +14381,7 @@ var escapeSelector = $.ui.escapeSelector = ( function() {
 
 
 /*!
- * jQuery UI Labels 1.12.0
+ * jQuery UI Labels 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -14387,7 +14433,7 @@ var labels = $.fn.labels = function() {
 
 
 /*!
- * jQuery UI Scroll Parent 1.12.0
+ * jQuery UI Scroll Parent 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -14422,7 +14468,7 @@ var scrollParent = $.fn.scrollParent = function( includeHidden ) {
 
 
 /*!
- * jQuery UI Tabbable 1.12.0
+ * jQuery UI Tabbable 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -14447,7 +14493,7 @@ var tabbable = $.extend( $.expr[ ":" ], {
 
 
 /*!
- * jQuery UI Unique ID 1.12.0
+ * jQuery UI Unique ID 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -14486,7 +14532,7 @@ var uniqueId = $.fn.extend( {
 
 
 /*!
- * jQuery UI Accordion 1.12.0
+ * jQuery UI Accordion 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -14508,7 +14554,7 @@ var uniqueId = $.fn.extend( {
 
 
 var widgetsAccordion = $.widget( "ui.accordion", {
-	version: "1.12.0",
+	version: "1.12.1",
 	options: {
 		active: 0,
 		animate: {},
@@ -15113,7 +15159,7 @@ var safeActiveElement = $.ui.safeActiveElement = function( document ) {
 
 
 /*!
- * jQuery UI Menu 1.12.0
+ * jQuery UI Menu 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -15133,7 +15179,7 @@ var safeActiveElement = $.ui.safeActiveElement = function( document ) {
 
 
 var widgetsMenu = $.widget( "ui.menu", {
-	version: "1.12.0",
+	version: "1.12.1",
 	defaultElement: "<ul>",
 	delay: 300,
 	options: {
@@ -15332,8 +15378,11 @@ var widgetsMenu = $.widget( "ui.menu", {
 		default:
 			preventDefault = false;
 			prev = this.previousFilter || "";
-			character = String.fromCharCode( event.keyCode );
 			skip = false;
+
+			// Support number pad values
+			character = event.keyCode >= 96 && event.keyCode <= 105 ?
+				( event.keyCode - 96 ).toString() : String.fromCharCode( event.keyCode );
 
 			clearTimeout( this.filterTimer );
 
@@ -15765,7 +15814,7 @@ var widgetsMenu = $.widget( "ui.menu", {
 
 
 /*!
- * jQuery UI Autocomplete 1.12.0
+ * jQuery UI Autocomplete 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -15785,7 +15834,7 @@ var widgetsMenu = $.widget( "ui.menu", {
 
 
 $.widget( "ui.autocomplete", {
-	version: "1.12.0",
+	version: "1.12.1",
 	defaultElement: "<input>",
 	options: {
 		appendTo: null,
@@ -16429,7 +16478,7 @@ var widgetsAutocomplete = $.ui.autocomplete;
 
 
 /*!
- * jQuery UI Controlgroup 1.12.0
+ * jQuery UI Controlgroup 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -16450,7 +16499,7 @@ var widgetsAutocomplete = $.ui.autocomplete;
 var controlgroupCornerRegex = /ui-corner-([a-z]){2,6}/g;
 
 var widgetsControlgroup = $.widget( "ui.controlgroup", {
-	version: "1.12.0",
+	version: "1.12.1",
 	defaultElement: "<div>",
 	options: {
 		direction: "horizontal",
@@ -16526,6 +16575,8 @@ var widgetsControlgroup = $.widget( "ui.controlgroup", {
 			// first / last elements until all enhancments are done.
 			if ( that[ "_" + widget + "Options" ] ) {
 				options = that[ "_" + widget + "Options" ]( "middle" );
+			} else {
+				options = { classes: {} };
 			}
 
 			// Find instances of this widget inside controlgroup and init them
@@ -16649,7 +16700,7 @@ var widgetsControlgroup = $.widget( "ui.controlgroup", {
 		var result = {};
 		$.each( classes, function( key ) {
 			var current = instance.options.classes[ key ] || "";
-			current = current.replace( controlgroupCornerRegex, "" ).trim();
+			current = $.trim( current.replace( controlgroupCornerRegex, "" ) );
 			result[ key ] = ( current + " " + classes[ key ] ).replace( /\s+/g, " " );
 		} );
 		return result;
@@ -16712,7 +16763,7 @@ var widgetsControlgroup = $.widget( "ui.controlgroup", {
 } );
 
 /*!
- * jQuery UI Checkboxradio 1.12.0
+ * jQuery UI Checkboxradio 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -16733,7 +16784,7 @@ var widgetsControlgroup = $.widget( "ui.controlgroup", {
 
 
 $.widget( "ui.checkboxradio", [ $.ui.formResetMixin, {
-	version: "1.12.0",
+	version: "1.12.1",
 	options: {
 		disabled: null,
 		label: null,
@@ -16766,7 +16817,7 @@ $.widget( "ui.checkboxradio", [ $.ui.formResetMixin, {
 
 		// We need to get the label text but this may also need to make sure it does not contain the
 		// input itself.
-		this.label.contents().not( this.element ).each( function() {
+		this.label.contents().not( this.element[ 0 ] ).each( function() {
 
 			// The label contents could be text, html, or a mix. We concat each element to get a
 			// string representation of the label, without the input as part of it.
@@ -16949,7 +17000,15 @@ $.widget( "ui.checkboxradio", [ $.ui.formResetMixin, {
 	_updateLabel: function() {
 
 		// Remove the contents of the label ( minus the icon, icon space, and input )
-		this.label.contents().not( this.element.add( this.icon ).add( this.iconSpace ) ).remove();
+		var contents = this.label.contents().not( this.element[ 0 ] );
+		if ( this.icon ) {
+			contents = contents.not( this.icon[ 0 ] );
+		}
+		if ( this.iconSpace ) {
+			contents = contents.not( this.iconSpace[ 0 ] );
+		}
+		contents.remove();
+
 		this.label.append( this.options.label );
 	},
 
@@ -16974,7 +17033,7 @@ var widgetsCheckboxradio = $.ui.checkboxradio;
 
 
 /*!
- * jQuery UI Button 1.12.0
+ * jQuery UI Button 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -16994,7 +17053,7 @@ var widgetsCheckboxradio = $.ui.checkboxradio;
 
 
 $.widget( "ui.button", {
-	version: "1.12.0",
+	version: "1.12.1",
 	defaultElement: "<button>",
 	options: {
 		classes: {
@@ -17342,7 +17401,7 @@ var widgetsButton = $.ui.button;
 // jscs:disable maximumLineLength
 /* jscs:disable requireCamelCaseOrUpperCaseIdentifiers */
 /*!
- * jQuery UI Datepicker 1.12.0
+ * jQuery UI Datepicker 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -17361,7 +17420,7 @@ var widgetsButton = $.ui.button;
 
 
 
-$.extend( $.ui, { datepicker: { version: "1.12.0" } } );
+$.extend( $.ui, { datepicker: { version: "1.12.1" } } );
 
 var datepicker_instActive;
 
@@ -19440,7 +19499,7 @@ $.fn.datepicker = function( options ) {
 $.datepicker = new Datepicker(); // singleton instance
 $.datepicker.initialized = false;
 $.datepicker.uuid = new Date().getTime();
-$.datepicker.version = "1.12.0";
+$.datepicker.version = "1.12.1";
 
 var widgetsDatepicker = $.datepicker;
 
@@ -19451,7 +19510,7 @@ var widgetsDatepicker = $.datepicker;
 var ie = $.ui.ie = !!/msie [\w.]+/.exec( navigator.userAgent.toLowerCase() );
 
 /*!
- * jQuery UI Mouse 1.12.0
+ * jQuery UI Mouse 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -19472,7 +19531,7 @@ $( document ).on( "mouseup", function() {
 } );
 
 var widgetsMouse = $.widget( "ui.mouse", {
-	version: "1.12.0",
+	version: "1.12.1",
 	options: {
 		cancel: "input, textarea, button, select, option",
 		distance: 1,
@@ -19707,7 +19766,7 @@ var safeBlur = $.ui.safeBlur = function( element ) {
 
 
 /*!
- * jQuery UI Draggable 1.12.0
+ * jQuery UI Draggable 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -19725,7 +19784,7 @@ var safeBlur = $.ui.safeBlur = function( element ) {
 
 
 $.widget( "ui.draggable", $.ui.mouse, {
-	version: "1.12.0",
+	version: "1.12.1",
 	widgetEventPrefix: "drag",
 	options: {
 		addClasses: true,
@@ -19791,8 +19850,6 @@ $.widget( "ui.draggable", $.ui.mouse, {
 	_mouseCapture: function( event ) {
 		var o = this.options;
 
-		this._blurActiveElement( event );
-
 		// Among others, prevent a drag on a resizable-handle
 		if ( this.helper || o.disabled ||
 				$( event.target ).closest( ".ui-resizable-handle" ).length > 0 ) {
@@ -19804,6 +19861,8 @@ $.widget( "ui.draggable", $.ui.mouse, {
 		if ( !this.handle ) {
 			return false;
 		}
+
+		this._blurActiveElement( event );
 
 		this._blockFrames( o.iframeFix === true ? "iframe" : o.iframeFix );
 
@@ -19835,11 +19894,10 @@ $.widget( "ui.draggable", $.ui.mouse, {
 		var activeElement = $.ui.safeActiveElement( this.document[ 0 ] ),
 			target = $( event.target );
 
-		// Only blur if the event occurred on an element that is:
-		// 1) within the draggable handle
-		// 2) but not within the currently focused element
+		// Don't blur if the event occurred on an element that is within
+		// the currently focused element
 		// See #10527, #12472
-		if ( this._getHandle( event ) && target.closest( activeElement ).length ) {
+		if ( target.closest( activeElement ).length ) {
 			return;
 		}
 
@@ -20938,7 +20996,7 @@ var widgetsDraggable = $.ui.draggable;
 
 
 /*!
- * jQuery UI Resizable 1.12.0
+ * jQuery UI Resizable 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -20958,7 +21016,7 @@ var widgetsDraggable = $.ui.draggable;
 
 
 $.widget( "ui.resizable", $.ui.mouse, {
-	version: "1.12.0",
+	version: "1.12.1",
 	widgetEventPrefix: "resize",
 	options: {
 		alsoResize: false,
@@ -22122,7 +22180,7 @@ var widgetsResizable = $.ui.resizable;
 
 
 /*!
- * jQuery UI Dialog 1.12.0
+ * jQuery UI Dialog 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -22142,7 +22200,7 @@ var widgetsResizable = $.ui.resizable;
 
 
 $.widget( "ui.dialog", {
-	version: "1.12.0",
+	version: "1.12.1",
 	options: {
 		appendTo: "body",
 		autoOpen: true,
@@ -22598,13 +22656,23 @@ $.widget( "ui.dialog", {
 			buttonOptions = {
 				icon: props.icon,
 				iconPosition: props.iconPosition,
-				showLabel: props.showLabel
+				showLabel: props.showLabel,
+
+				// Deprecated options
+				icons: props.icons,
+				text: props.text
 			};
 
 			delete props.click;
 			delete props.icon;
 			delete props.iconPosition;
 			delete props.showLabel;
+
+			// Deprecated options
+			delete props.icons;
+			if ( typeof props.text === "boolean" ) {
+				delete props.text;
+			}
 
 			$( "<button></button>", props )
 				.button( buttonOptions )
@@ -23027,7 +23095,7 @@ var widgetsDialog = $.ui.dialog;
 
 
 /*!
- * jQuery UI Droppable 1.12.0
+ * jQuery UI Droppable 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -23044,7 +23112,7 @@ var widgetsDialog = $.ui.dialog;
 
 
 $.widget( "ui.droppable", {
-	version: "1.12.0",
+	version: "1.12.1",
 	widgetEventPrefix: "drop",
 	options: {
 		accept: "*",
@@ -23508,7 +23576,7 @@ var widgetsDroppable = $.ui.droppable;
 
 
 /*!
- * jQuery UI Progressbar 1.12.0
+ * jQuery UI Progressbar 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -23530,7 +23598,7 @@ var widgetsDroppable = $.ui.droppable;
 
 
 var widgetsProgressbar = $.widget( "ui.progressbar", {
-	version: "1.12.0",
+	version: "1.12.1",
 	options: {
 		classes: {
 			"ui-progressbar": "ui-corner-all",
@@ -23672,7 +23740,7 @@ var widgetsProgressbar = $.widget( "ui.progressbar", {
 
 
 /*!
- * jQuery UI Selectable 1.12.0
+ * jQuery UI Selectable 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -23690,7 +23758,7 @@ var widgetsProgressbar = $.widget( "ui.progressbar", {
 
 
 var widgetsSelectable = $.widget( "ui.selectable", $.ui.mouse, {
-	version: "1.12.0",
+	version: "1.12.1",
 	options: {
 		appendTo: "body",
 		autoRefresh: true,
@@ -23967,7 +24035,7 @@ var widgetsSelectable = $.widget( "ui.selectable", $.ui.mouse, {
 
 
 /*!
- * jQuery UI Selectmenu 1.12.0
+ * jQuery UI Selectmenu 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -23989,7 +24057,7 @@ var widgetsSelectable = $.widget( "ui.selectable", $.ui.mouse, {
 
 
 var widgetsSelectmenu = $.widget( "ui.selectmenu", [ $.ui.formResetMixin, {
-	version: "1.12.0",
+	version: "1.12.1",
 	defaultElement: "<select>",
 	options: {
 		appendTo: null,
@@ -24633,7 +24701,7 @@ var widgetsSelectmenu = $.widget( "ui.selectmenu", [ $.ui.formResetMixin, {
 
 
 /*!
- * jQuery UI Slider 1.12.0
+ * jQuery UI Slider 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -24653,7 +24721,7 @@ var widgetsSelectmenu = $.widget( "ui.selectmenu", [ $.ui.formResetMixin, {
 
 
 var widgetsSlider = $.widget( "ui.slider", $.ui.mouse, {
-	version: "1.12.0",
+	version: "1.12.1",
 	widgetEventPrefix: "slide",
 
 	options: {
@@ -24735,7 +24803,9 @@ var widgetsSlider = $.widget( "ui.slider", $.ui.mouse, {
 		this.handle = this.handles.eq( 0 );
 
 		this.handles.each( function( i ) {
-			$( this ).data( "ui-slider-handle-index", i );
+			$( this )
+				.data( "ui-slider-handle-index", i )
+				.attr( "tabIndex", 0 );
 		} );
 	},
 
@@ -25367,7 +25437,7 @@ var widgetsSlider = $.widget( "ui.slider", $.ui.mouse, {
 
 
 /*!
- * jQuery UI Sortable 1.12.0
+ * jQuery UI Sortable 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -25385,7 +25455,7 @@ var widgetsSlider = $.widget( "ui.slider", $.ui.mouse, {
 
 
 var widgetsSortable = $.widget( "ui.sortable", $.ui.mouse, {
-	version: "1.12.0",
+	version: "1.12.1",
 	widgetEventPrefix: "sort",
 	ready: false,
 	options: {
@@ -25868,7 +25938,7 @@ var widgetsSortable = $.widget( "ui.sortable", $.ui.mouse, {
 
 		if ( this.dragging ) {
 
-			this._mouseUp( { target: null } );
+			this._mouseUp( new $.Event( "mouseup", { target: null } ) );
 
 			if ( this.options.helper === "original" ) {
 				this.currentItem.css( this._storedCSS );
@@ -26903,7 +26973,7 @@ var widgetsSortable = $.widget( "ui.sortable", $.ui.mouse, {
 
 
 /*!
- * jQuery UI Spinner 1.12.0
+ * jQuery UI Spinner 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -26934,7 +27004,7 @@ function spinnerModifer( fn ) {
 }
 
 $.widget( "ui.spinner", {
-	version: "1.12.0",
+	version: "1.12.1",
 	defaultElement: "<input>",
 	widgetEventPrefix: "spin",
 	options: {
@@ -27461,7 +27531,7 @@ var widgetsSpinner = $.ui.spinner;
 
 
 /*!
- * jQuery UI Tabs 1.12.0
+ * jQuery UI Tabs 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -27481,7 +27551,7 @@ var widgetsSpinner = $.ui.spinner;
 
 
 $.widget( "ui.tabs", {
-	version: "1.12.0",
+	version: "1.12.1",
 	delay: 300,
 	options: {
 		active: null,
@@ -28333,7 +28403,10 @@ $.widget( "ui.tabs", {
 	_ajaxSettings: function( anchor, event, eventData ) {
 		var that = this;
 		return {
-			url: anchor.attr( "href" ),
+
+			// Support: IE <11 only
+			// Strip any hash that exists to prevent errors with the Ajax request
+			url: anchor.attr( "href" ).replace( /#.*$/, "" ),
 			beforeSend: function( jqXHR, settings ) {
 				return that._trigger( "beforeLoad", event,
 					$.extend( { jqXHR: jqXHR, ajaxSettings: settings }, eventData ) );
@@ -28364,7 +28437,7 @@ var widgetsTabs = $.ui.tabs;
 
 
 /*!
- * jQuery UI Tooltip 1.12.0
+ * jQuery UI Tooltip 1.12.1
  * http://jqueryui.com
  *
  * Copyright jQuery Foundation and other contributors
@@ -28384,7 +28457,7 @@ var widgetsTabs = $.ui.tabs;
 
 
 $.widget( "ui.tooltip", {
-	version: "1.12.0",
+	version: "1.12.1",
 	options: {
 		classes: {
 			"ui-tooltip": "ui-corner-all ui-widget-shadow"
@@ -28870,9 +28943,8 @@ var widgetsTooltip = $.ui.tooltip;
 
 }));
 },{}],12:[function(require,module,exports){
-/*eslint-disable no-unused-vars*/
 /*!
- * jQuery JavaScript Library v3.1.0
+ * jQuery JavaScript Library v3.1.1
  * https://jquery.com/
  *
  * Includes Sizzle.js
@@ -28882,7 +28954,7 @@ var widgetsTooltip = $.ui.tooltip;
  * Released under the MIT license
  * https://jquery.org/license
  *
- * Date: 2016-07-07T21:44Z
+ * Date: 2016-09-22T22:30Z
  */
 ( function( global, factory ) {
 
@@ -28955,13 +29027,13 @@ var support = {};
 		doc.head.appendChild( script ).parentNode.removeChild( script );
 	}
 /* global Symbol */
-// Defining this global in .eslintrc would create a danger of using the global
+// Defining this global in .eslintrc.json would create a danger of using the global
 // unguarded in another place, it seems safer to define global only for this module
 
 
 
 var
-	version = "3.1.0",
+	version = "3.1.1",
 
 	// Define a local copy of jQuery
 	jQuery = function( selector, context ) {
@@ -29001,13 +29073,14 @@ jQuery.fn = jQuery.prototype = {
 	// Get the Nth element in the matched element set OR
 	// Get the whole matched element set as a clean array
 	get: function( num ) {
-		return num != null ?
 
-			// Return just the one element from the set
-			( num < 0 ? this[ num + this.length ] : this[ num ] ) :
+		// Return all the elements in a clean array
+		if ( num == null ) {
+			return slice.call( this );
+		}
 
-			// Return all the elements in a clean array
-			slice.call( this );
+		// Return just the one element from the set
+		return num < 0 ? this[ num + this.length ] : this[ num ];
 	},
 
 	// Take an array of elements and push it onto the stack
@@ -29415,14 +29488,14 @@ function isArrayLike( obj ) {
 }
 var Sizzle =
 /*!
- * Sizzle CSS Selector Engine v2.3.0
+ * Sizzle CSS Selector Engine v2.3.3
  * https://sizzlejs.com/
  *
  * Copyright jQuery Foundation and other contributors
  * Released under the MIT license
  * http://jquery.org/license
  *
- * Date: 2016-01-04
+ * Date: 2016-08-08
  */
 (function( window ) {
 
@@ -29568,7 +29641,7 @@ var i,
 
 	// CSS string/identifier serialization
 	// https://drafts.csswg.org/cssom/#common-serializing-idioms
-	rcssescape = /([\0-\x1f\x7f]|^-?\d)|^-$|[^\x80-\uFFFF\w-]/g,
+	rcssescape = /([\0-\x1f\x7f]|^-?\d)|^-$|[^\0-\x1f\x7f-\uFFFF\w-]/g,
 	fcssescape = function( ch, asCodePoint ) {
 		if ( asCodePoint ) {
 
@@ -29595,7 +29668,7 @@ var i,
 
 	disabledAncestor = addCombinator(
 		function( elem ) {
-			return elem.disabled === true;
+			return elem.disabled === true && ("form" in elem || "label" in elem);
 		},
 		{ dir: "parentNode", next: "legend" }
 	);
@@ -29881,26 +29954,54 @@ function createButtonPseudo( type ) {
  * @param {Boolean} disabled true for :disabled; false for :enabled
  */
 function createDisabledPseudo( disabled ) {
-	// Known :disabled false positives:
-	// IE: *[disabled]:not(button, input, select, textarea, optgroup, option, menuitem, fieldset)
-	// not IE: fieldset[disabled] > legend:nth-of-type(n+2) :can-disable
+
+	// Known :disabled false positives: fieldset[disabled] > legend:nth-of-type(n+2) :can-disable
 	return function( elem ) {
 
-		// Check form elements and option elements for explicit disabling
-		return "label" in elem && elem.disabled === disabled ||
-			"form" in elem && elem.disabled === disabled ||
+		// Only certain elements can match :enabled or :disabled
+		// https://html.spec.whatwg.org/multipage/scripting.html#selector-enabled
+		// https://html.spec.whatwg.org/multipage/scripting.html#selector-disabled
+		if ( "form" in elem ) {
 
-			// Check non-disabled form elements for fieldset[disabled] ancestors
-			"form" in elem && elem.disabled === false && (
-				// Support: IE6-11+
-				// Ancestry is covered for us
-				elem.isDisabled === disabled ||
+			// Check for inherited disabledness on relevant non-disabled elements:
+			// * listed form-associated elements in a disabled fieldset
+			//   https://html.spec.whatwg.org/multipage/forms.html#category-listed
+			//   https://html.spec.whatwg.org/multipage/forms.html#concept-fe-disabled
+			// * option elements in a disabled optgroup
+			//   https://html.spec.whatwg.org/multipage/forms.html#concept-option-disabled
+			// All such elements have a "form" property.
+			if ( elem.parentNode && elem.disabled === false ) {
 
-				// Otherwise, assume any non-<option> under fieldset[disabled] is disabled
-				/* jshint -W018 */
-				elem.isDisabled !== !disabled &&
-					("label" in elem || !disabledAncestor( elem )) !== disabled
-			);
+				// Option elements defer to a parent optgroup if present
+				if ( "label" in elem ) {
+					if ( "label" in elem.parentNode ) {
+						return elem.parentNode.disabled === disabled;
+					} else {
+						return elem.disabled === disabled;
+					}
+				}
+
+				// Support: IE 6 - 11
+				// Use the isDisabled shortcut property to check for disabled fieldset ancestors
+				return elem.isDisabled === disabled ||
+
+					// Where there is no isDisabled, check manually
+					/* jshint -W018 */
+					elem.isDisabled !== !disabled &&
+						disabledAncestor( elem ) === disabled;
+			}
+
+			return elem.disabled === disabled;
+
+		// Try to winnow out elements that can't be disabled before trusting the disabled property.
+		// Some victims get caught in our net (label, legend, menu, track), but it shouldn't
+		// even exist on them, let alone have a boolean value.
+		} else if ( "label" in elem ) {
+			return elem.disabled === disabled;
+		}
+
+		// Remaining elements are neither :enabled nor :disabled
+		return false;
 	};
 }
 
@@ -30016,25 +30117,21 @@ setDocument = Sizzle.setDocument = function( node ) {
 		return !document.getElementsByName || !document.getElementsByName( expando ).length;
 	});
 
-	// ID find and filter
+	// ID filter and find
 	if ( support.getById ) {
-		Expr.find["ID"] = function( id, context ) {
-			if ( typeof context.getElementById !== "undefined" && documentIsHTML ) {
-				var m = context.getElementById( id );
-				return m ? [ m ] : [];
-			}
-		};
 		Expr.filter["ID"] = function( id ) {
 			var attrId = id.replace( runescape, funescape );
 			return function( elem ) {
 				return elem.getAttribute("id") === attrId;
 			};
 		};
+		Expr.find["ID"] = function( id, context ) {
+			if ( typeof context.getElementById !== "undefined" && documentIsHTML ) {
+				var elem = context.getElementById( id );
+				return elem ? [ elem ] : [];
+			}
+		};
 	} else {
-		// Support: IE6/7
-		// getElementById is not reliable as a find shortcut
-		delete Expr.find["ID"];
-
 		Expr.filter["ID"] =  function( id ) {
 			var attrId = id.replace( runescape, funescape );
 			return function( elem ) {
@@ -30042,6 +30139,36 @@ setDocument = Sizzle.setDocument = function( node ) {
 					elem.getAttributeNode("id");
 				return node && node.value === attrId;
 			};
+		};
+
+		// Support: IE 6 - 7 only
+		// getElementById is not reliable as a find shortcut
+		Expr.find["ID"] = function( id, context ) {
+			if ( typeof context.getElementById !== "undefined" && documentIsHTML ) {
+				var node, i, elems,
+					elem = context.getElementById( id );
+
+				if ( elem ) {
+
+					// Verify the id attribute
+					node = elem.getAttributeNode("id");
+					if ( node && node.value === id ) {
+						return [ elem ];
+					}
+
+					// Fall back on getElementsByName
+					elems = context.getElementsByName( id );
+					i = 0;
+					while ( (elem = elems[i++]) ) {
+						node = elem.getAttributeNode("id");
+						if ( node && node.value === id ) {
+							return [ elem ];
+						}
+					}
+				}
+
+				return [];
+			}
 		};
 	}
 
@@ -31083,6 +31210,7 @@ function addCombinator( matcher, combinator, base ) {
 					return matcher( elem, context, xml );
 				}
 			}
+			return false;
 		} :
 
 		// Check against all ancestor/preceding elements
@@ -31127,6 +31255,7 @@ function addCombinator( matcher, combinator, base ) {
 					}
 				}
 			}
+			return false;
 		};
 }
 
@@ -31489,8 +31618,7 @@ select = Sizzle.select = function( selector, context, results, seed ) {
 		// Reduce context if the leading compound selector is an ID
 		tokens = match[0] = match[0].slice( 0 );
 		if ( tokens.length > 2 && (token = tokens[0]).type === "ID" &&
-				support.getById && context.nodeType === 9 && documentIsHTML &&
-				Expr.relative[ tokens[1].type ] ) {
+				context.nodeType === 9 && documentIsHTML && Expr.relative[ tokens[1].type ] ) {
 
 			context = ( Expr.find["ID"]( token.matches[0].replace(runescape, funescape), context ) || [] )[0];
 			if ( !context ) {
@@ -31672,24 +31800,29 @@ function winnow( elements, qualifier, not ) {
 		return jQuery.grep( elements, function( elem, i ) {
 			return !!qualifier.call( elem, i, elem ) !== not;
 		} );
-
 	}
 
+	// Single element
 	if ( qualifier.nodeType ) {
 		return jQuery.grep( elements, function( elem ) {
 			return ( elem === qualifier ) !== not;
 		} );
-
 	}
 
-	if ( typeof qualifier === "string" ) {
-		if ( risSimple.test( qualifier ) ) {
-			return jQuery.filter( qualifier, elements, not );
-		}
-
-		qualifier = jQuery.filter( qualifier, elements );
+	// Arraylike of elements (jQuery, arguments, Array)
+	if ( typeof qualifier !== "string" ) {
+		return jQuery.grep( elements, function( elem ) {
+			return ( indexOf.call( qualifier, elem ) > -1 ) !== not;
+		} );
 	}
 
+	// Simple selector that can be filtered directly, removing non-Elements
+	if ( risSimple.test( qualifier ) ) {
+		return jQuery.filter( qualifier, elements, not );
+	}
+
+	// Complex selector, compare the two sets, removing non-Elements
+	qualifier = jQuery.filter( qualifier, elements );
 	return jQuery.grep( elements, function( elem ) {
 		return ( indexOf.call( qualifier, elem ) > -1 ) !== not && elem.nodeType === 1;
 	} );
@@ -31702,11 +31835,13 @@ jQuery.filter = function( expr, elems, not ) {
 		expr = ":not(" + expr + ")";
 	}
 
-	return elems.length === 1 && elem.nodeType === 1 ?
-		jQuery.find.matchesSelector( elem, expr ) ? [ elem ] : [] :
-		jQuery.find.matches( expr, jQuery.grep( elems, function( elem ) {
-			return elem.nodeType === 1;
-		} ) );
+	if ( elems.length === 1 && elem.nodeType === 1 ) {
+		return jQuery.find.matchesSelector( elem, expr ) ? [ elem ] : [];
+	}
+
+	return jQuery.find.matches( expr, jQuery.grep( elems, function( elem ) {
+		return elem.nodeType === 1;
+	} ) );
 };
 
 jQuery.fn.extend( {
@@ -32034,14 +32169,14 @@ jQuery.each( {
 		return this.pushStack( matched );
 	};
 } );
-var rnotwhite = ( /\S+/g );
+var rnothtmlwhite = ( /[^\x20\t\r\n\f]+/g );
 
 
 
 // Convert String-formatted options into Object-formatted ones
 function createOptions( options ) {
 	var object = {};
-	jQuery.each( options.match( rnotwhite ) || [], function( _, flag ) {
+	jQuery.each( options.match( rnothtmlwhite ) || [], function( _, flag ) {
 		object[ flag ] = true;
 	} );
 	return object;
@@ -32806,13 +32941,16 @@ var access = function( elems, fn, key, value, chainable, emptyGet, raw ) {
 		}
 	}
 
-	return chainable ?
-		elems :
+	if ( chainable ) {
+		return elems;
+	}
 
-		// Gets
-		bulk ?
-			fn.call( elems ) :
-			len ? fn( elems[ 0 ], key ) : emptyGet;
+	// Gets
+	if ( bulk ) {
+		return fn.call( elems );
+	}
+
+	return len ? fn( elems[ 0 ], key ) : emptyGet;
 };
 var acceptData = function( owner ) {
 
@@ -32949,7 +33087,7 @@ Data.prototype = {
 				// Otherwise, create an array by matching non-whitespace
 				key = key in cache ?
 					[ key ] :
-					( key.match( rnotwhite ) || [] );
+					( key.match( rnothtmlwhite ) || [] );
 			}
 
 			i = key.length;
@@ -32997,6 +33135,31 @@ var dataUser = new Data();
 var rbrace = /^(?:\{[\w\W]*\}|\[[\w\W]*\])$/,
 	rmultiDash = /[A-Z]/g;
 
+function getData( data ) {
+	if ( data === "true" ) {
+		return true;
+	}
+
+	if ( data === "false" ) {
+		return false;
+	}
+
+	if ( data === "null" ) {
+		return null;
+	}
+
+	// Only convert to a number if it doesn't change the string
+	if ( data === +data + "" ) {
+		return +data;
+	}
+
+	if ( rbrace.test( data ) ) {
+		return JSON.parse( data );
+	}
+
+	return data;
+}
+
 function dataAttr( elem, key, data ) {
 	var name;
 
@@ -33008,14 +33171,7 @@ function dataAttr( elem, key, data ) {
 
 		if ( typeof data === "string" ) {
 			try {
-				data = data === "true" ? true :
-					data === "false" ? false :
-					data === "null" ? null :
-
-					// Only convert to a number if it doesn't change the string
-					+data + "" === data ? +data :
-					rbrace.test( data ) ? JSON.parse( data ) :
-					data;
+				data = getData( data );
 			} catch ( e ) {}
 
 			// Make sure we set the data so it isn't changed later
@@ -33392,7 +33548,7 @@ function getDefaultDisplay( elem ) {
 		return display;
 	}
 
-	temp = doc.body.appendChild( doc.createElement( nodeName ) ),
+	temp = doc.body.appendChild( doc.createElement( nodeName ) );
 	display = jQuery.css( temp, "display" );
 
 	temp.parentNode.removeChild( temp );
@@ -33510,15 +33666,23 @@ function getAll( context, tag ) {
 
 	// Support: IE <=9 - 11 only
 	// Use typeof to avoid zero-argument method invocation on host objects (#15151)
-	var ret = typeof context.getElementsByTagName !== "undefined" ?
-			context.getElementsByTagName( tag || "*" ) :
-			typeof context.querySelectorAll !== "undefined" ?
-				context.querySelectorAll( tag || "*" ) :
-			[];
+	var ret;
 
-	return tag === undefined || tag && jQuery.nodeName( context, tag ) ?
-		jQuery.merge( [ context ], ret ) :
-		ret;
+	if ( typeof context.getElementsByTagName !== "undefined" ) {
+		ret = context.getElementsByTagName( tag || "*" );
+
+	} else if ( typeof context.querySelectorAll !== "undefined" ) {
+		ret = context.querySelectorAll( tag || "*" );
+
+	} else {
+		ret = [];
+	}
+
+	if ( tag === undefined || tag && jQuery.nodeName( context, tag ) ) {
+		return jQuery.merge( [ context ], ret );
+	}
+
+	return ret;
 }
 
 
@@ -33792,7 +33956,7 @@ jQuery.event = {
 		}
 
 		// Handle multiple events separated by a space
-		types = ( types || "" ).match( rnotwhite ) || [ "" ];
+		types = ( types || "" ).match( rnothtmlwhite ) || [ "" ];
 		t = types.length;
 		while ( t-- ) {
 			tmp = rtypenamespace.exec( types[ t ] ) || [];
@@ -33874,7 +34038,7 @@ jQuery.event = {
 		}
 
 		// Once for each type.namespace in types; type may be omitted
-		types = ( types || "" ).match( rnotwhite ) || [ "" ];
+		types = ( types || "" ).match( rnothtmlwhite ) || [ "" ];
 		t = types.length;
 		while ( t-- ) {
 			tmp = rtypenamespace.exec( types[ t ] ) || [];
@@ -34000,51 +34164,58 @@ jQuery.event = {
 	},
 
 	handlers: function( event, handlers ) {
-		var i, matches, sel, handleObj,
+		var i, handleObj, sel, matchedHandlers, matchedSelectors,
 			handlerQueue = [],
 			delegateCount = handlers.delegateCount,
 			cur = event.target;
 
-		// Support: IE <=9
 		// Find delegate handlers
-		// Black-hole SVG <use> instance trees (#13180)
-		//
-		// Support: Firefox <=42
-		// Avoid non-left-click in FF but don't block IE radio events (#3861, gh-2343)
-		if ( delegateCount && cur.nodeType &&
-			( event.type !== "click" || isNaN( event.button ) || event.button < 1 ) ) {
+		if ( delegateCount &&
+
+			// Support: IE <=9
+			// Black-hole SVG <use> instance trees (trac-13180)
+			cur.nodeType &&
+
+			// Support: Firefox <=42
+			// Suppress spec-violating clicks indicating a non-primary pointer button (trac-3861)
+			// https://www.w3.org/TR/DOM-Level-3-Events/#event-type-click
+			// Support: IE 11 only
+			// ...but not arrow key "clicks" of radio inputs, which can have `button` -1 (gh-2343)
+			!( event.type === "click" && event.button >= 1 ) ) {
 
 			for ( ; cur !== this; cur = cur.parentNode || this ) {
 
 				// Don't check non-elements (#13208)
 				// Don't process clicks on disabled elements (#6911, #8165, #11382, #11764)
-				if ( cur.nodeType === 1 && ( cur.disabled !== true || event.type !== "click" ) ) {
-					matches = [];
+				if ( cur.nodeType === 1 && !( event.type === "click" && cur.disabled === true ) ) {
+					matchedHandlers = [];
+					matchedSelectors = {};
 					for ( i = 0; i < delegateCount; i++ ) {
 						handleObj = handlers[ i ];
 
 						// Don't conflict with Object.prototype properties (#13203)
 						sel = handleObj.selector + " ";
 
-						if ( matches[ sel ] === undefined ) {
-							matches[ sel ] = handleObj.needsContext ?
+						if ( matchedSelectors[ sel ] === undefined ) {
+							matchedSelectors[ sel ] = handleObj.needsContext ?
 								jQuery( sel, this ).index( cur ) > -1 :
 								jQuery.find( sel, this, null, [ cur ] ).length;
 						}
-						if ( matches[ sel ] ) {
-							matches.push( handleObj );
+						if ( matchedSelectors[ sel ] ) {
+							matchedHandlers.push( handleObj );
 						}
 					}
-					if ( matches.length ) {
-						handlerQueue.push( { elem: cur, handlers: matches } );
+					if ( matchedHandlers.length ) {
+						handlerQueue.push( { elem: cur, handlers: matchedHandlers } );
 					}
 				}
 			}
 		}
 
 		// Add the remaining (directly-bound) handlers
+		cur = this;
 		if ( delegateCount < handlers.length ) {
-			handlerQueue.push( { elem: this, handlers: handlers.slice( delegateCount ) } );
+			handlerQueue.push( { elem: cur, handlers: handlers.slice( delegateCount ) } );
 		}
 
 		return handlerQueue;
@@ -34278,7 +34449,19 @@ jQuery.each( {
 
 		// Add which for click: 1 === left; 2 === middle; 3 === right
 		if ( !event.which && button !== undefined && rmouseEvent.test( event.type ) ) {
-			return ( button & 1 ? 1 : ( button & 2 ? 3 : ( button & 4 ? 2 : 0 ) ) );
+			if ( button & 1 ) {
+				return 1;
+			}
+
+			if ( button & 2 ) {
+				return 3;
+			}
+
+			if ( button & 4 ) {
+				return 2;
+			}
+
+			return 0;
 		}
 
 		return event.which;
@@ -35034,15 +35217,17 @@ function setPositiveNumber( elem, value, subtract ) {
 }
 
 function augmentWidthOrHeight( elem, name, extra, isBorderBox, styles ) {
-	var i = extra === ( isBorderBox ? "border" : "content" ) ?
-
-		// If we already have the right measurement, avoid augmentation
-		4 :
-
-		// Otherwise initialize for horizontal or vertical properties
-		name === "width" ? 1 : 0,
-
+	var i,
 		val = 0;
+
+	// If we already have the right measurement, avoid augmentation
+	if ( extra === ( isBorderBox ? "border" : "content" ) ) {
+		i = 4;
+
+	// Otherwise initialize for horizontal or vertical properties
+	} else {
+		i = name === "width" ? 1 : 0;
+	}
 
 	for ( ; i < 4; i += 2 ) {
 
@@ -35896,7 +36081,7 @@ jQuery.Animation = jQuery.extend( Animation, {
 			callback = props;
 			props = [ "*" ];
 		} else {
-			props = props.match( rnotwhite );
+			props = props.match( rnothtmlwhite );
 		}
 
 		var prop,
@@ -35934,9 +36119,14 @@ jQuery.speed = function( speed, easing, fn ) {
 		opt.duration = 0;
 
 	} else {
-		opt.duration = typeof opt.duration === "number" ?
-			opt.duration : opt.duration in jQuery.fx.speeds ?
-				jQuery.fx.speeds[ opt.duration ] : jQuery.fx.speeds._default;
+		if ( typeof opt.duration !== "number" ) {
+			if ( opt.duration in jQuery.fx.speeds ) {
+				opt.duration = jQuery.fx.speeds[ opt.duration ];
+
+			} else {
+				opt.duration = jQuery.fx.speeds._default;
+			}
+		}
 	}
 
 	// Normalize opt.queue - true/undefined/null -> "fx"
@@ -36286,7 +36476,10 @@ jQuery.extend( {
 	removeAttr: function( elem, value ) {
 		var name,
 			i = 0,
-			attrNames = value && value.match( rnotwhite );
+
+			// Attribute names can contain non-HTML whitespace characters
+			// https://html.spec.whatwg.org/multipage/syntax.html#attributes-2
+			attrNames = value && value.match( rnothtmlwhite );
 
 		if ( attrNames && elem.nodeType === 1 ) {
 			while ( ( name = attrNames[ i++ ] ) ) {
@@ -36393,12 +36586,19 @@ jQuery.extend( {
 				// Use proper attribute retrieval(#12072)
 				var tabindex = jQuery.find.attr( elem, "tabindex" );
 
-				return tabindex ?
-					parseInt( tabindex, 10 ) :
+				if ( tabindex ) {
+					return parseInt( tabindex, 10 );
+				}
+
+				if (
 					rfocusable.test( elem.nodeName ) ||
-						rclickable.test( elem.nodeName ) && elem.href ?
-							0 :
-							-1;
+					rclickable.test( elem.nodeName ) &&
+					elem.href
+				) {
+					return 0;
+				}
+
+				return -1;
 			}
 		}
 	},
@@ -36415,9 +36615,14 @@ jQuery.extend( {
 // on the option
 // The getter ensures a default option is selected
 // when in an optgroup
+// eslint rule "no-unused-expressions" is disabled for this code
+// since it considers such accessions noop
 if ( !support.optSelected ) {
 	jQuery.propHooks.selected = {
 		get: function( elem ) {
+
+			/* eslint no-unused-expressions: "off" */
+
 			var parent = elem.parentNode;
 			if ( parent && parent.parentNode ) {
 				parent.parentNode.selectedIndex;
@@ -36425,6 +36630,9 @@ if ( !support.optSelected ) {
 			return null;
 		},
 		set: function( elem ) {
+
+			/* eslint no-unused-expressions: "off" */
+
 			var parent = elem.parentNode;
 			if ( parent ) {
 				parent.selectedIndex;
@@ -36455,7 +36663,13 @@ jQuery.each( [
 
 
 
-var rclass = /[\t\r\n\f]/g;
+	// Strip and collapse whitespace according to HTML spec
+	// https://html.spec.whatwg.org/multipage/infrastructure.html#strip-and-collapse-whitespace
+	function stripAndCollapse( value ) {
+		var tokens = value.match( rnothtmlwhite ) || [];
+		return tokens.join( " " );
+	}
+
 
 function getClass( elem ) {
 	return elem.getAttribute && elem.getAttribute( "class" ) || "";
@@ -36473,12 +36687,11 @@ jQuery.fn.extend( {
 		}
 
 		if ( typeof value === "string" && value ) {
-			classes = value.match( rnotwhite ) || [];
+			classes = value.match( rnothtmlwhite ) || [];
 
 			while ( ( elem = this[ i++ ] ) ) {
 				curValue = getClass( elem );
-				cur = elem.nodeType === 1 &&
-					( " " + curValue + " " ).replace( rclass, " " );
+				cur = elem.nodeType === 1 && ( " " + stripAndCollapse( curValue ) + " " );
 
 				if ( cur ) {
 					j = 0;
@@ -36489,7 +36702,7 @@ jQuery.fn.extend( {
 					}
 
 					// Only assign if different to avoid unneeded rendering.
-					finalValue = jQuery.trim( cur );
+					finalValue = stripAndCollapse( cur );
 					if ( curValue !== finalValue ) {
 						elem.setAttribute( "class", finalValue );
 					}
@@ -36515,14 +36728,13 @@ jQuery.fn.extend( {
 		}
 
 		if ( typeof value === "string" && value ) {
-			classes = value.match( rnotwhite ) || [];
+			classes = value.match( rnothtmlwhite ) || [];
 
 			while ( ( elem = this[ i++ ] ) ) {
 				curValue = getClass( elem );
 
 				// This expression is here for better compressibility (see addClass)
-				cur = elem.nodeType === 1 &&
-					( " " + curValue + " " ).replace( rclass, " " );
+				cur = elem.nodeType === 1 && ( " " + stripAndCollapse( curValue ) + " " );
 
 				if ( cur ) {
 					j = 0;
@@ -36535,7 +36747,7 @@ jQuery.fn.extend( {
 					}
 
 					// Only assign if different to avoid unneeded rendering.
-					finalValue = jQuery.trim( cur );
+					finalValue = stripAndCollapse( cur );
 					if ( curValue !== finalValue ) {
 						elem.setAttribute( "class", finalValue );
 					}
@@ -36570,7 +36782,7 @@ jQuery.fn.extend( {
 				// Toggle individual class names
 				i = 0;
 				self = jQuery( this );
-				classNames = value.match( rnotwhite ) || [];
+				classNames = value.match( rnothtmlwhite ) || [];
 
 				while ( ( className = classNames[ i++ ] ) ) {
 
@@ -36613,10 +36825,8 @@ jQuery.fn.extend( {
 		className = " " + selector + " ";
 		while ( ( elem = this[ i++ ] ) ) {
 			if ( elem.nodeType === 1 &&
-				( " " + getClass( elem ) + " " ).replace( rclass, " " )
-					.indexOf( className ) > -1
-			) {
-				return true;
+				( " " + stripAndCollapse( getClass( elem ) ) + " " ).indexOf( className ) > -1 ) {
+					return true;
 			}
 		}
 
@@ -36627,8 +36837,7 @@ jQuery.fn.extend( {
 
 
 
-var rreturn = /\r/g,
-	rspaces = /[\x20\t\r\n\f]+/g;
+var rreturn = /\r/g;
 
 jQuery.fn.extend( {
 	val: function( value ) {
@@ -36649,13 +36858,13 @@ jQuery.fn.extend( {
 
 				ret = elem.value;
 
-				return typeof ret === "string" ?
+				// Handle most common string cases
+				if ( typeof ret === "string" ) {
+					return ret.replace( rreturn, "" );
+				}
 
-					// Handle most common string cases
-					ret.replace( rreturn, "" ) :
-
-					// Handle cases where value is null/undef or number
-					ret == null ? "" : ret;
+				// Handle cases where value is null/undef or number
+				return ret == null ? "" : ret;
 			}
 
 			return;
@@ -36712,20 +36921,24 @@ jQuery.extend( {
 					// option.text throws exceptions (#14686, #14858)
 					// Strip and collapse whitespace
 					// https://html.spec.whatwg.org/#strip-and-collapse-whitespace
-					jQuery.trim( jQuery.text( elem ) ).replace( rspaces, " " );
+					stripAndCollapse( jQuery.text( elem ) );
 			}
 		},
 		select: {
 			get: function( elem ) {
-				var value, option,
+				var value, option, i,
 					options = elem.options,
 					index = elem.selectedIndex,
 					one = elem.type === "select-one",
 					values = one ? null : [],
-					max = one ? index + 1 : options.length,
-					i = index < 0 ?
-						max :
-						one ? index : 0;
+					max = one ? index + 1 : options.length;
+
+				if ( index < 0 ) {
+					i = max;
+
+				} else {
+					i = one ? index : 0;
+				}
 
 				// Loop through all the selected options
 				for ( ; i < max; i++ ) {
@@ -37179,13 +37392,17 @@ jQuery.fn.extend( {
 		.map( function( i, elem ) {
 			var val = jQuery( this ).val();
 
-			return val == null ?
-				null :
-				jQuery.isArray( val ) ?
-					jQuery.map( val, function( val ) {
-						return { name: elem.name, value: val.replace( rCRLF, "\r\n" ) };
-					} ) :
-					{ name: elem.name, value: val.replace( rCRLF, "\r\n" ) };
+			if ( val == null ) {
+				return null;
+			}
+
+			if ( jQuery.isArray( val ) ) {
+				return jQuery.map( val, function( val ) {
+					return { name: elem.name, value: val.replace( rCRLF, "\r\n" ) };
+				} );
+			}
+
+			return { name: elem.name, value: val.replace( rCRLF, "\r\n" ) };
 		} ).get();
 	}
 } );
@@ -37194,7 +37411,7 @@ jQuery.fn.extend( {
 var
 	r20 = /%20/g,
 	rhash = /#.*$/,
-	rts = /([?&])_=[^&]*/,
+	rantiCache = /([?&])_=[^&]*/,
 	rheaders = /^(.*?):[ \t]*([^\r\n]*)$/mg,
 
 	// #7653, #8125, #8152: local protocol detection
@@ -37240,7 +37457,7 @@ function addToPrefiltersOrTransports( structure ) {
 
 		var dataType,
 			i = 0,
-			dataTypes = dataTypeExpression.toLowerCase().match( rnotwhite ) || [];
+			dataTypes = dataTypeExpression.toLowerCase().match( rnothtmlwhite ) || [];
 
 		if ( jQuery.isFunction( func ) ) {
 
@@ -37708,7 +37925,7 @@ jQuery.extend( {
 		s.type = options.method || options.type || s.method || s.type;
 
 		// Extract dataTypes list
-		s.dataTypes = ( s.dataType || "*" ).toLowerCase().match( rnotwhite ) || [ "" ];
+		s.dataTypes = ( s.dataType || "*" ).toLowerCase().match( rnothtmlwhite ) || [ "" ];
 
 		// A cross-domain request is in order when the origin doesn't match the current origin.
 		if ( s.crossDomain == null ) {
@@ -37780,9 +37997,9 @@ jQuery.extend( {
 				delete s.data;
 			}
 
-			// Add anti-cache in uncached url if needed
+			// Add or update anti-cache param if needed
 			if ( s.cache === false ) {
-				cacheURL = cacheURL.replace( rts, "" );
+				cacheURL = cacheURL.replace( rantiCache, "$1" );
 				uncached = ( rquery.test( cacheURL ) ? "&" : "?" ) + "_=" + ( nonce++ ) + uncached;
 			}
 
@@ -38521,7 +38738,7 @@ jQuery.fn.load = function( url, params, callback ) {
 		off = url.indexOf( " " );
 
 	if ( off > -1 ) {
-		selector = jQuery.trim( url.slice( off ) );
+		selector = stripAndCollapse( url.slice( off ) );
 		url = url.slice( 0, off );
 	}
 
@@ -38913,7 +39130,6 @@ if ( typeof define === "function" && define.amd ) {
 
 
 
-
 var
 
 	// Map over jQuery in case of overwrite
@@ -38940,6 +39156,9 @@ jQuery.noConflict = function( deep ) {
 if ( !noGlobal ) {
 	window.jQuery = window.$ = jQuery;
 }
+
+
+
 
 
 return jQuery;

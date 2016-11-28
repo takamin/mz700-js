@@ -264,21 +264,12 @@ MZ700.prototype.mmioIsMappedToWrite = function(address) {
 };
 
 MZ700.prototype.writeAsmCode = function(assembled) {
-    var asm_list = assembled.list;
-    var entry_point = -1;
-    for(var i = 0; i < asm_list.length; i++) {
-        var bytes = asm_list[i].bytecode;
-        if(bytes != null && bytes.length > 0) {
-            var address = asm_list[i].address;
-            for(var j = 0; j < bytes.length; j++) {
-                if(entry_point < 0) {
-                    entry_point = address + j;
-                }
-                this.memory.poke(address + j, bytes[j]);
-            }
-        }
+    for(var i = 0; i < assembled.buffer.length; i++) {
+        this.memory.poke(
+                assembled.min_addr + i,
+                assembled.buffer[i]);
     }
-    return entry_point;
+    return assembled.min_addr;
 };
 
 MZ700.prototype.exec = function(execCount) {
