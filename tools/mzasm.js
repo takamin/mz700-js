@@ -8,7 +8,7 @@ require('../MZ-700/emulator.js');
 require('../MZ-700/mztape.js');
 var fs = require('fs');
 var getopt = require('node-getopt').create([
-        ['m',   'map=ARG',  'map file to resolve addresses'],
+        ['m',   'map=ARG',  'output map file name'],
         ['z',   'output-MZT-header', 'output MZT header'],
         ['a',   'loading-address=ARG', 'set loading address'],
         ['e',   'execution-address=ARG', 'set execution address'],
@@ -46,6 +46,20 @@ if('output-file' in getopt.options) {
         filename += ext;
     }
     output_filename = filename;
+}
+
+var fnMap = null;
+if('map' in getopt.options) {
+    fnMap = getopt.options['map'];
+} else {
+    var filename = input_filename;
+    filename = filename.replace(/^.*[\\\/]/, "");
+    if(/\.[^\.]*$/i.test(filename)) {
+        filename = filename.replace(/\.[^\.]*$/i, '.map');
+    } else {
+        filename += ext;
+    }
+    fnMap = filename;
 }
 
 //
@@ -95,6 +109,12 @@ fs.readFile(input_filename, 'utf-8', function(err, data) {
     //
     var mzt_header_buf = new Array();
     if(mzt_header != null) {
+        if(mzt_header.addr_load == 0) {
+            mzt_header.setAddrLoad(asm.min_addr);
+        }
+        if(mzt_header.addr_exec == 0) {
+            mzt_header.setAddrExec(asm.min_addr);
+        }
         mzt_header.setFilesize(asm.buffer.length);
         mzt_header_buf = mzt_header.buffer;
     }
@@ -105,4 +125,17 @@ fs.readFile(input_filename, 'utf-8', function(err, data) {
     fs.writeFileSync(
         output_filename,
         new Buffer(mzt_header_buf.concat(asm.buffer)));
+
+    //
+    // Output address map
+    //
+    var mapEntries = Object.keys(asm.label2value).map(function(label) {
+        return { "label": label, "address": asm.label2value[label] };
+    }).sort(function(a,b){ return a.address - b.address; });
+    if(mapEntries.length > 0) {
+        var mapInfo = mapEntries.map(function(item) {
+            return [item.label, ":\t", item.address.HEX(4), "H"].join('');
+        }).join("\n");
+        fs.writeFileSync(fnMap, mapInfo);
+    }
 });
