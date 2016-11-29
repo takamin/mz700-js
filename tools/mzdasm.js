@@ -30,43 +30,38 @@ fs.readFile(input_filename, function(err, data) {
     if(err) {
         throw err;
     }
-    var outbuf = "";
+    var outbuf = [];
     var buf = new Buffer(data);
     var dasmlist = [];
     if(input_mzt) {
         var mzts = MZ700.parseMZT(buf); 
         for(var i = 0; i < mzts.length; i++) {
             var mzt = mzts[i];
-            outbuf += ";======================================================\n"
-            outbuf += "; attribute :   " + mzt.header.attr.HEX(2) + "H\n";
-            outbuf += "; filename  :   '" + mzt.header.filename + "'\n";
-            outbuf += "; filesize  :   " + mzt.header.file_size + " bytes\n";
-            outbuf += "; load addr :   " + mzt.header.addr_load.HEX(4) + "H\n";
-            outbuf += "; start addr:   " + mzt.header.addr_exec.HEX(4) + "H\n";
-            outbuf += ";======================================================\n"
-            var lines = Z80.dasm(
-                mzt.body.buffer, 0, mzt.header.file_size, mzt.header.addr_load);
-            for(var j = 0; j < lines.length; j++) {
-                dasmlist.push(lines[j]);
-            }
+            outbuf.push(mzt.header.getHeadline());
+            dasmlist = Z80.dasm(
+                mzt.body.buffer, 0,
+                mzt.header.file_size,
+                mzt.header.addr_load);
         }
     } else {
-        outbuf += ";======================================================\n"
-        outbuf += "; filename  :   '" + input_filename + "'\n";
-        outbuf += "; filesize  :   " + buf.length + " bytes\n";
-        outbuf += "; load addr :   0000h\n";
-        outbuf += "; start addr:   0000h\n";
-        outbuf += ";======================================================\n";
+        outbuf.push(
+            ";======================================================",
+            "; filename  :   '" + input_filename + "'",
+            "; filesize  :   " + buf.length + " bytes",
+            ";======================================================"
+            );
         dasmlist = Z80.dasm(buf);
     }
-    Z80.processAddressReference(dasmlist);
     var dasmlines = Z80.dasmlines(dasmlist);
     for(var i = 0; i < dasmlines.length; i++) {
-        outbuf += dasmlines[i] + "\n";
+        outbuf.push(dasmlines[i]);
     }
+    var dasm_text = outbuf.join("\n") + "\n";
     if('output-file' in getopt.options) {
-        fs.writeFileSync(getopt.options['output-file'], outbuf);
+        fs.writeFileSync(
+                getopt.options['output-file'],
+                dasm_text);
     } else {
-        console.info(outbuf);
+        console.info(dasm_text);
     }
 });

@@ -772,22 +772,12 @@ MZ700.prototype.disassemble = function(mztape_array) {
     var outbuf = "";
     var dasmlist = [];
     mztape_array.forEach(function(mzt) {
-        outbuf += ";======================================================\n"
-        outbuf += "; attribute :   " + mzt.header.attr.HEX(2) + "H\n";
-        outbuf += "; filename  :   '" + mzt.header.filename + "'\n";
-        outbuf += "; filesize  :   " + mzt.header.file_size + " bytes\n";
-        outbuf += "; load addr :   " + mzt.header.addr_load.HEX(4) + "H\n";
-        outbuf += "; start addr:   " + mzt.header.addr_exec.HEX(4) + "H\n";
-        outbuf += ";======================================================\n"
-        var lines = Z80.dasm(
+        outbuf += mzt.header.getHeadline() + "\n";
+        dasmlist = Z80.dasm(
             mzt.body.buffer, 0,
             mzt.header.file_size,
             mzt.header.addr_load);
-        lines.forEach(function(line) {
-            dasmlist.push(line);
-        });
     });
-    Z80.processAddressReference(dasmlist);
     var dasmlines = Z80.dasmlines(dasmlist);
     outbuf += dasmlines.join("\n") + "\n";
     return {"outbuf": outbuf, "dasmlines": dasmlines};
@@ -1783,6 +1773,18 @@ MZ_TapeHeader.prototype.setAddrExec = function(addr) {
     this.addr_exec = addr;
     this.buffer[0x16] = ((addr >> 0) & 0xff);
     this.buffer[0x17] = ((addr >> 8) & 0xff);
+};
+
+MZ_TapeHeader.prototype.getHeadline = function() {
+    return [
+        ";======================================================",
+        "; attribute :   " + this.attr.HEX(2) + "H",
+        "; filename  :   '" + this.filename + "'",
+        "; filesize  :   " + this.file_size + " bytes",
+        "; load addr :   " + this.addr_load.HEX(4) + "H",
+        "; start addr:   " + this.addr_exec.HEX(4) + "H",
+        ";======================================================"
+        ].join("\n");
 };
 
 
@@ -3436,7 +3438,7 @@ Z80.dasm = function (buf, offset, size, addr) {
         dasmlist.push( dis );
         cpu.reg.PC += dis.code.length;
     }
-    return dasmlist;
+    return Z80.processAddressReference(dasmlist);
 }
 Z80.prototype.disassemble = function(addr, last_addr) {
     var disasm = null;

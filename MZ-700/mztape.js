@@ -70,6 +70,18 @@ MZ_TapeHeader.prototype.setAddrExec = function(addr) {
     this.buffer[0x17] = ((addr >> 8) & 0xff);
 };
 
+MZ_TapeHeader.prototype.getHeadline = function() {
+    return [
+        ";======================================================",
+        "; attribute :   " + this.attr.HEX(2) + "H",
+        "; filename  :   '" + this.filename + "'",
+        "; filesize  :   " + this.file_size + " bytes",
+        "; load addr :   " + this.addr_load.HEX(4) + "H",
+        "; start addr:   " + this.addr_exec.HEX(4) + "H",
+        ";======================================================"
+        ].join("\n");
+};
+
 
 MZ_Tape = function(tapeData) {
     this._index = 0;
