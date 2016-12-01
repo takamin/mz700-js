@@ -750,7 +750,7 @@ MZ700.prototype.disassemble = function(mztape_array) {
     var outbuf = "";
     var dasmlist = [];
     mztape_array.forEach(function(mzt) {
-        outbuf += mzt.header.getHeadline() + "\n";
+        outbuf += MZ_TapeHeader.prototype.getHeadline.apply(mzt.header) + "\n";
         dasmlist = Z80.dasm(
             mzt.body.buffer, 0,
             mzt.header.file_size,

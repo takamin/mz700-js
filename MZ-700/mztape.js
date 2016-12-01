@@ -2,7 +2,17 @@ MZ_TapeHeader = function(buf, offset) {
     var arrayToString = function(arr, start, end) {
         var s = "";
         for(var i = start; i < end; i++) {
-            s += String.fromCharCode(arr[i]);
+
+            // End by CR
+            if(arr[i] == 0x0d) {
+                break;
+            }
+
+            // Add char except null.
+            if(arr[i] != 0) {
+                s += String.fromCharCode(arr[i]);
+            }
+
         }
         return s;
     };
@@ -21,7 +31,6 @@ MZ_TapeHeader = function(buf, offset) {
     //      18h-7Fh patch and zero pad
     this.attr = readArrayUInt8(buf, offset + 0);
     var filename = arrayToString(buf, offset + 0x01, offset + 0x12);
-    filename = filename.replace(/[^a-zA-Z0-9_!\"#\$%&'\(\)-=^~<>,\.]+$/, '');
     this.filename = filename;
     this.file_size = readArrayUInt16LE(buf, offset + 0x12);
     this.addr_load = readArrayUInt16LE(buf, offset + 0x14);
@@ -43,11 +52,25 @@ MZ_TapeHeader.createNew = function() {
 };
 
 MZ_TapeHeader.prototype.setFilename = function(filename) {
-    while(filename.length < 11) {
-        filename += ' ';
+
+    // Limit 16 char length
+    if(filename.length > 0x10) {
+        filename = filename.substr(0, 0x10);
     }
+
+    // Save to the field
     this.filename = filename;
-    for(var i = 0; i < 11; i++) {
+
+    // Clear buffer by null
+    for(var i = 0; i <= 0x10; i++) {
+        this.buffer[0x01 + i] = 0;
+    }
+
+    // Add CR as end mark
+    filename += "\r";
+
+    // Copy its character codes to the buffer with CR
+    for(var i = 0; i < filename.length; i++) {
         this.buffer[0x01 + i] = (filename.charCodeAt(i) & 0xff);
     }
 };
