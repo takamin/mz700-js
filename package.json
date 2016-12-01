@@ -1,8 +1,8 @@
 {
   "name": "mz700-js",
-  "version": "0.1.10",
+  "version": "0.1.11",
   "description": "Full JavaScript MZ-700 Emulator",
-  "private": true,
+  "private": false,
   "scripts": {
     "start": "node ./bin/www",
     "postinstall": "node ./scripts/postinstall.js"
