@@ -1,5 +1,14 @@
-getopt = require('node-getopt').create([
-        ['m',   'map=ARG',  'map file to resolve addresses'],
+#!/usr/bin/env node
+require("../lib/ex_number.js");
+require("../Z80/emulator.js");
+require("../Z80/register.js");
+require("../Z80/assembler.js");
+require('../Z80/memory.js');
+require('../MZ-700/emulator.js');
+require('../MZ-700/mztape.js');
+var fs = require('fs');
+var getopt = require('node-getopt').create([
+        ['m',   'map=ARG',  'output map file name'],
         ['z',   'output-MZT-header', 'output MZT header'],
         ['a',   'loading-address=ARG', 'set loading address'],
         ['e',   'execution-address=ARG', 'set execution address'],
@@ -12,19 +21,12 @@ if(getopt.options.version) {
     console.log("Z80 assembler v0.0");
     return;
 }
-var fs = require('fs');
-eval(fs.readFileSync('../lib/ex_number.js')+'');
-eval(fs.readFileSync('../Z80/emulator.js')+'');
-eval(fs.readFileSync('../Z80/register.js')+'');
-eval(fs.readFileSync('../Z80/assembler.js')+'');
-eval(fs.readFileSync('../Z80/memory.js')+'');
-eval(fs.readFileSync('../MZ-700/emulator.js')+'');
-eval(fs.readFileSync('../MZ-700/mztape.js')+'');
+var args = require("hash-arg").get(["input_filename"], getopt.argv);
 if(getopt.argv.length < 1) {
     console.error('error: no input file');
     return -1;
 }
-var input_filename = getopt.argv[0];
+var input_filename = args.input_filename;
 var output_filename = null;
 if('output-file' in getopt.options) {
     output_filename = getopt.options['output-file'];
@@ -46,13 +48,37 @@ if('output-file' in getopt.options) {
     output_filename = filename;
 }
 
-var mzt_name = "";
-var mzt_filesize = -1;
+var fnMap = null;
+if('map' in getopt.options) {
+    fnMap = getopt.options['map'];
+} else {
+    var filename = input_filename;
+    filename = filename.replace(/^.*[\\\/]/, "");
+    if(/\.[^\.]*$/i.test(filename)) {
+        filename = filename.replace(/\.[^\.]*$/i, '.map');
+    } else {
+        filename += ext;
+    }
+    fnMap = filename;
+}
+
+//
+// MZT-Header
+//
 var mzt_header = null;
 if('reuse-mzt-header' in getopt.options) {
+
+    //
+    // Load MZT-Header from other MZT-File.
+    //
     var mzt_filebuf = fs.readFileSync(getopt.options['reuse-mzt-header']);
     mzt_header = new MZ_TapeHeader(mzt_filebuf, 0);
+
 } else if('output-MZT-header' in getopt.options) {
+
+    //
+    // Create MZT-Header from the informations specified in command line options 
+    //
     var load_addr = 0;
     var exec_addr = 0;
     if('loading-address' in getopt.options) {
@@ -67,46 +93,49 @@ if('reuse-mzt-header' in getopt.options) {
     mzt_header.setAddrLoad(load_addr);
     mzt_header.setAddrExec(exec_addr);
 }
+
 fs.readFile(input_filename, 'utf-8', function(err, data) {
     if(err) {
         throw err;
     }
 
+    //
+    // Assemble
+    //
     var asm = new Z80_assemble(data);
-    var min_addr = null;
-    var max_addr = null;
-    asm.list.forEach(function(line) {
-        if("address" in line && "bytecode" in line && line.bytecode.length > 0) {
-            if(min_addr == null || line.address < min_addr) {
-                min_addr = line.address;
-            }
-            if(max_addr == null || line.address + line.bytecode.length - 1 > max_addr) {
-                max_addr = line.address + line.bytecode.length - 1;
-            }
-        }
-    });
-    var code_len = max_addr - min_addr + 1;
+
+    //
+    // Set binary size to MZT Header
+    //
     var mzt_header_buf = new Array();
     if(mzt_header != null) {
-        mzt_header.setFilesize(code_len);
+        if(mzt_header.addr_load == 0) {
+            mzt_header.setAddrLoad(asm.min_addr);
+        }
+        if(mzt_header.addr_exec == 0) {
+            mzt_header.setAddrExec(asm.min_addr);
+        }
+        mzt_header.setFilesize(asm.buffer.length);
         mzt_header_buf = mzt_header.buffer;
     }
-    var outbuf = new Array(mzt_header_buf.length + code_len);
-    for(var i = 0; i < outbuf.length; i++) {
-        if(i < mzt_header_buf.length) {
-            outbuf[i] = mzt_header_buf[i];
-        } else {
-            outbuf[i] = 0;
-        }
+
+    //
+    // Write out
+    //
+    fs.writeFileSync(
+        output_filename,
+        new Buffer(mzt_header_buf.concat(asm.buffer)));
+
+    //
+    // Output address map
+    //
+    var mapEntries = Object.keys(asm.label2value).map(function(label) {
+        return { "label": label, "address": asm.label2value[label] };
+    }).sort(function(a,b){ return a.address - b.address; });
+    if(mapEntries.length > 0) {
+        var mapInfo = mapEntries.map(function(item) {
+            return [item.label, ":\t", item.address.HEX(4), "H"].join('');
+        }).join("\n");
+        fs.writeFileSync(fnMap, mapInfo);
     }
-    asm.list.forEach(function(line) {
-        if("address" in line && "bytecode" in line && line.bytecode.length > 0) {
-            for(var i = 0; i < line.bytecode.length; i++) {
-                if(mzt_header_buf.length + line.address - min_addr + i < outbuf.length) {
-                    outbuf[mzt_header_buf.length + line.address - min_addr + i] = line.bytecode[i];
-                }
-            }
-        }
-    });
-    fs.writeFileSync(output_filename, new Buffer(outbuf));
 });

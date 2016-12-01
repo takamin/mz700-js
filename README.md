@@ -83,18 +83,18 @@ ROADMAP
     Type `*S1200,1260,1200,PCG-CURSOR-MZ[CR]` and click `RECPLAY` button, and
     you can download a MZT file named `PCG-CURSOR-MZ.MZT`.
     * __v0.1.10__ - cycles and disassembling-features are added completely.
-* v0.2.0 - A flexisible screen layout with multi columns that contains multi rows.
-Both of the column and row are movable, resizable, addable and removable. The pane
-can contain one screen object like a screen, a keyboard, a register indicator or a
-memory dump.
-* v0.3.0 - Simulate key alignment of MZ-700's keyboard for the screeen keyboard.
-And the keys will be interactively shown, when the shift or the control keys were
-pushed.
-* v0.4.0 - Visualize the memory banks to show which is selected.
-* v0.5.0 - The running speed can be changed.
-* v0.6.0 - Disassemble when stopped at a break point or after step execution.
-* v0.7.0 - Create a list of addresses like a distination of jumping instruction.
-* v1.0.0 - The emulation of a CMT reading and writing work.
+    * __v0.1.11__ - The assembling and disassembling commands named
+    `mzasm` and `mzdas` is available.
+
+WANT TO DO
+----------
+
+* Visualize the memory banks to show which is selected.
+* Change the running speed.
+* Disassemble around the break point or the program counter.
+* With disassembling, create a list of addresses that are distinations of jumping instruction.
+* Emulate protter printer of MZ-731.
+* Emulate MZ-1500. PSG and PCG.
 
 LICENCE
 -------

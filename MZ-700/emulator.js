@@ -1,5 +1,4 @@
-try {
-function MZ700(opt) {
+MZ700 = function(opt) {
     "use strict";
     var THIS = this;
 
@@ -242,40 +241,37 @@ function MZ700(opt) {
             THIS.showStatus();
         }
     });
-}
+};
+
 MZ700.prototype.mmioMapToRead = function(address) {
     address.forEach(function(a) {
         this.mmioMap[a - 0xE000].r = true;
     }, this);
 };
+
 MZ700.prototype.mmioMapToWrite = function(address) {
     address.forEach(function(a) {
         this.mmioMap[a - 0xE000].w = true;
     }, this);
 };
+
 MZ700.prototype.mmioIsMappedToRead = function(address) {
     return this.mmioMap[address - 0xE000].r;
 };
+
 MZ700.prototype.mmioIsMappedToWrite = function(address) {
     return this.mmioMap[address - 0xE000].w;
 };
+
 MZ700.prototype.writeAsmCode = function(assembled) {
-    var asm_list = assembled.list;
-    var entry_point = -1;
-    for(var i = 0; i < asm_list.length; i++) {
-        var bytes = asm_list[i].bytecode;
-        if(bytes != null && bytes.length > 0) {
-            var address = asm_list[i].address;
-            for(var j = 0; j < bytes.length; j++) {
-                if(entry_point < 0) {
-                    entry_point = address + j;
-                }
-                this.memory.poke(address + j, bytes[j]);
-            }
-        }
+    for(var i = 0; i < assembled.buffer.length; i++) {
+        this.memory.poke(
+                assembled.min_addr + i,
+                assembled.buffer[i]);
     }
-    return entry_point;
+    return assembled.min_addr;
 };
+
 MZ700.prototype.exec = function(execCount) {
     execCount = execCount || 1;
     try {
@@ -287,7 +283,8 @@ MZ700.prototype.exec = function(execCount) {
         return -1;
     }
     return 0;
-}
+};
+
 MZ700.prototype.clock = function() {
     // HBLNK - 15.7 kHz clock
     if(this.hblank.count()) {
@@ -314,6 +311,7 @@ MZ700.prototype.clock = function() {
     this.ic556.count();
 
 };
+
 MZ700.prototype.setCassetteTape = function(tape_data) {
     this.tape_data = tape_data;
     if(tape_data.length <= 128) {
@@ -327,6 +325,7 @@ MZ700.prototype.setCassetteTape = function(tape_data) {
     }
     return this.mzt_array;
 };
+
 MZ700.prototype.loadCassetteTape = function() {
     for(var i = 0; i < this.mzt_array.length; i++) {
         var mzt = this.mzt_array[i];
@@ -334,7 +333,8 @@ MZ700.prototype.loadCassetteTape = function() {
             this.memory.poke(mzt.header.addr_load + j, mzt.body.buffer[j]);
         }
     }
-}
+};
+
 MZ700.prototype.reset = function() {
     this.memory.enableBlock1();
     this.memory.enableBlock1();
@@ -342,42 +342,55 @@ MZ700.prototype.reset = function() {
     this.memory.changeBlock1_VRAM();
     return this.z80.reset();
 };
+
 MZ700.prototype.getRegister = function() {
     return this.z80.reg;
 };
+
 MZ700.prototype.getRegisterB = function() {
     return this.z80.regB;
 };
+
 MZ700.prototype.setPC = function(addr) {
     this.z80.reg.PC = addr;
 };
+
 MZ700.prototype.getIFF1 = function() {
     return this.z80.IFF1;
 };
+
 MZ700.prototype.getIFF2 = function() {
     return this.z80.IFF2;
 };
+
 MZ700.prototype.getIM = function() {
     return this.z80.IM;
 };
+
 MZ700.prototype.getHALT = function() {
     return this.z80.HALT;
 };
+
 MZ700.prototype.readMemory = function(addr) {
     return this.memory.peek(addr);
 };
+
 MZ700.prototype.setKeyState = function(strobe, bit, state) {
     this.keymatrix.setKeyMatrixState(strobe, bit, state);
 };
+
 MZ700.prototype.clearBreakPoints = function(callback) {
     this.z80.clearBreakPoints();
 };
+
 MZ700.prototype.getBreakPoints = function(callback) {
     return this.z80.getBreakPoints();
 };
+
 MZ700.prototype.removeBreak = function(addr, size) {
     this.z80.removeBreak(addr, size);
 };
+
 MZ700.prototype.addBreak = function(addr, size) {
     this.z80.setBreak(addr, size);
 };
@@ -408,12 +421,13 @@ MZ700.parseMZT = function(buf) {
 //
 // MZ-700 Key Matrix
 //
-function mz700keymatrix() {
+mz700keymatrix = function() {
     this.keymap = new Array(10);
     for(var i = 0; i < this.keymap.length; i++) {
         this.keymap[i] = 0xff;
     }
-}
+};
+
 mz700keymatrix.prototype.getKeyData = function(strobe) {
     var keydata = 0xff;
     strobe &= 0x0f;
@@ -422,6 +436,7 @@ mz700keymatrix.prototype.getKeyData = function(strobe) {
     }
     return keydata;
 };
+
 mz700keymatrix.prototype.setKeyMatrixState = function(strobe, bit, state) {
     if(state) {
         // clear bit
@@ -435,10 +450,11 @@ mz700keymatrix.prototype.setKeyMatrixState = function(strobe, bit, state) {
 //
 // FlipFlopCounter
 //
-function FlipFlopCounter(freq) {
+FlipFlopCounter = function(freq) {
     this.initialize();
     this.setFrequency(freq);
-}
+};
+
 FlipFlopCounter.SPEED_FACTOR = 1.5;
 FlipFlopCounter.CPU_CLOCK = 4.0 * 1000 * 1000;
 FlipFlopCounter.MNEMONIC_AVE_CYCLE = 6;
@@ -446,15 +462,18 @@ FlipFlopCounter.prototype.initialize = function() {
     this._out = false;
     this._counter = 0;
 };
+
 FlipFlopCounter.prototype.setFrequency = function(freq) {
     this._counter_max =
         FlipFlopCounter.CPU_CLOCK /
         FlipFlopCounter.MNEMONIC_AVE_CYCLE /
         freq;
-}
+};
+
 FlipFlopCounter.prototype.readOutput = function() {
     return this._out;
 };
+
 FlipFlopCounter.prototype.count = function() {
     this._counter += FlipFlopCounter.SPEED_FACTOR;
     if(this._counter >= this._counter_max / 2) {
@@ -464,21 +483,25 @@ FlipFlopCounter.prototype.count = function() {
     }
     return false;
 };
+
 //
 // IC BJ 556
 //
-function IC556(freq) {
+IC556 = function(freq) {
     this._reset = false;
     this.initialize();
     this.setFrequency(freq);
 };
+
 IC556.prototype = new FlipFlopCounter();
+
 IC556.prototype.count = function() {
     if(this._reset) {
         return FlipFlopCounter.prototype.count.call(this);
     }
     return false;
 };
+
 IC556.prototype.loadReset = function(value) {
     if(!value) {
         if(this._reset) {
@@ -495,13 +518,15 @@ IC556.prototype.loadReset = function(value) {
 //
 // Intel 8253 Programmable Interval Timer
 //
-function Intel8253() {
+Intel8253 = function() {
     this.counter = [ new Intel8253Counter(), new Intel8253Counter(), new Intel8253Counter() ];
-}
+};
+
 Intel8253.prototype.setCtrlWord = function(ctrlword) {
     var index = (ctrlword & 0xc0) >> 6;
     this.counter[index].setCtrlWord(ctrlword & 0x3f);
 };
+
 //
 //   8253 MODE CTRL WORD
 //
@@ -534,7 +559,7 @@ Intel8253.prototype.setCtrlWord = function(ctrlword) {
 //       BCD:    0: Binary counter
 //               1: BCD counter
 //
-function Intel8253Counter() {
+Intel8253Counter = function() {
     this.RL = 0;
     this.MODE = 0;
     this.BCD = 0;
@@ -544,7 +569,8 @@ function Intel8253Counter() {
     this._read = true;
     this.out = false;
     this.gate = false;
-}
+};
+
 Intel8253Counter.prototype.setCtrlWord = function(ctrlword) {
     this.RL = (ctrlword & 0x30) >> 4;
     this.MODE = (ctrlword & 0x0e) >> 1;
@@ -556,6 +582,7 @@ Intel8253Counter.prototype.setCtrlWord = function(ctrlword) {
     this.out = false;
     this.gate = false;
 };
+
 Intel8253Counter.prototype.load = function(value) {
     this.counter = 0;
     var set_comp = false;
@@ -609,6 +636,7 @@ Intel8253Counter.prototype.load = function(value) {
     }
     return set_comp;
 };
+
 Intel8253Counter.prototype.read = function() {
     switch(this.RL) {
         case 0:
@@ -630,9 +658,11 @@ Intel8253Counter.prototype.read = function() {
             break;
     }
 };
+
 Intel8253Counter.prototype.setGate = function(gate) {
     this.gate = gate;
 };
+
 Intel8253Counter.prototype.count = function(count) {
     switch(this.MODE) {
         case 0:
@@ -686,12 +716,14 @@ MZ700.prototype.start = function() {
         app.run();
     };}(this)), this.RUNNING_INTERVAL);
 };
+
 MZ700.prototype.stop = function() {
     if(this.tid != null) {
         clearInterval(this.tid);
         this.tid = null;
     }
 };
+
 MZ700.prototype.run = function() {
     try {
         for(var i = 0; i < this.NUM_OF_EXEC_OPCODE; i++) {
@@ -710,6 +742,7 @@ MZ700.prototype.run = function() {
 MZ700.prototype.assemble = function(text_asm) {
     return new Z80_assemble(text_asm);
 };
+
 //
 // Disassemble
 //
@@ -717,22 +750,12 @@ MZ700.prototype.disassemble = function(mztape_array) {
     var outbuf = "";
     var dasmlist = [];
     mztape_array.forEach(function(mzt) {
-        outbuf += ";======================================================\n"
-        outbuf += "; attribute :   " + mzt.header.attr.HEX(2) + "H\n";
-        outbuf += "; filename  :   '" + mzt.header.filename + "'\n";
-        outbuf += "; filesize  :   " + mzt.header.file_size + " bytes\n";
-        outbuf += "; load addr :   " + mzt.header.addr_load.HEX(4) + "H\n";
-        outbuf += "; start addr:   " + mzt.header.addr_exec.HEX(4) + "H\n";
-        outbuf += ";======================================================\n"
-        var lines = Z80.dasm(
+        outbuf += MZ_TapeHeader.prototype.getHeadline.apply(mzt.header) + "\n";
+        dasmlist = Z80.dasm(
             mzt.body.buffer, 0,
             mzt.header.file_size,
             mzt.header.addr_load);
-        lines.forEach(function(line) {
-            dasmlist.push(line);
-        });
     });
-    Z80.processAddressReference(dasmlist);
     var dasmlines = Z80.dasmlines(dasmlist);
     outbuf += dasmlines.join("\n") + "\n";
     return {"outbuf": outbuf, "dasmlines": dasmlines};
@@ -748,6 +771,7 @@ MZ700.prototype.dataRecorder_setCmt = function(bytes) {
     this.dataRecorder.setCmt(cmt);
     return cmt;
 };
+
 MZ700.prototype.dataRecorder_ejectCmt = function() {
     if(this.dataRecorder.isCmtSet()) {
         this.dataRecorder.stop();
@@ -758,9 +782,11 @@ MZ700.prototype.dataRecorder_ejectCmt = function() {
     }
     return [];
 };
+
 MZ700.prototype.dataRecorder_pushPlay = function() {
     this.dataRecorder.play();
 };
+
 MZ700.prototype.dataRecorder_pushRec = function() {
     if(this.dataRecorder.isCmtSet()) {
         this.dataRecorder.ejectCmt();
@@ -768,18 +794,19 @@ MZ700.prototype.dataRecorder_pushRec = function() {
     this.dataRecorder.setCmt([]);
     this.dataRecorder.rec();
 };
+
 MZ700.prototype.dataRecorder_pushStop = function() {
     this.dataRecorder.stop();
 };
+
 MZ700.prototype.dataRecorder_motorOn = function(state) {
     this.dataRecorder.m_on(state);
 };
+
 MZ700.prototype.dataRecorder_readBit = function() {
     return this.dataRecorder.rdata(this.z80.tick);
 };
+
 MZ700.prototype.dataRecorder_writeBit = function(state) {
     this.dataRecorder.wdata(state, this.z80.tick);
 };
-} catch (ex) {
-    console.error(ex);
-}

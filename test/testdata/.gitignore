@@ -5,6 +5,8 @@
 *.asm
 *.bin
 *.asm
+*._asm_
+*.map
 *.as2
 *.hex
 ASM/REFUGEE.asm

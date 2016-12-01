@@ -122,6 +122,33 @@ var check_asm_dasm = function (codes) {
                             }).join(' '),
                             asm];
         } else if(!match) {
+            //
+            // SPECIAL CHECK FOR DUPLICATED INSTRUCTION
+            //
+            // 1. LD (nn),HL : [ 22 nL nH ] / [ ED 63 nL nH ]
+            // 2. LD HL,(nn) : [ 2A nL nH ] / [ ED 6B nL nH ]
+            //
+            if(codes_src.length >= 4) {
+                if(codes_src[0] == 0xED && codes_src[1] == 0x63) {
+                    if(codes_result.length == 3
+                            && codes_result[0] == 0x22
+                            && codes_result[1] == codes_src[2]
+                            && codes_result[2] == codes_src[3])
+                    {
+                        return [];
+                    }
+                }
+                if(codes_src[0] == 0xED && codes_src[1] == 0x6B) {
+                    if(codes_result.length == 3
+                            && codes_result[0] == 0x2A
+                            && codes_result[1] == codes_src[2]
+                            && codes_result[2] == codes_src[3])
+                    {
+                        return [];
+                    }
+                }
+            }
+
             ++asmDasmNotMatch;
             errorMessages = [
                 "CODES UNMATCH MATCH: " + asm,

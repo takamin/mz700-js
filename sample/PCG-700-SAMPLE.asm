@@ -1,36 +1,3 @@
-<!DOCTYPE html>
-<html>
-    <head>
-        <meta http-equiv="content-language" content="ja" />
-        <meta http-equiv="X-UA-Compatible" content="chrome=1">
-        <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no"/>
-        <title>Full JavaScript MZ-700</title>
-        <link rel="stylesheet" type="text/css" href="https://code.jquery.com/ui/1.12.0-rc.2/themes/smoothness/jquery-ui.css"/>
-        <link rel="stylesheet" type="text/css" href="../lib/jquery.ddpanel.css"/>
-        <link rel="stylesheet" type="text/css" href="../lib/jquery.soundctrl.css"/>
-        <link rel="stylesheet" type="text/css" href="../lib/jquery.Z80-reg.css"/>
-        <link rel="stylesheet" type="text/css" href="../lib/jquery.MZ-700-kb.css"/>
-        <link rel="stylesheet" type="text/css" href="index.css"/>
-    </head>
-    <body>
-        <h1><span class="MZ-700-text" charSize="24" padding="1">&ufo; Full JavaScript MZ-700 &UFO;</span></h1>
-        <div class="MZ-700">
-            <div class="resizer MZ-700-body">
-                <div class="ctrl-panel"></div>
-                <div class="data-recorder"></div>
-                <div class="screen cmt-slot key-switcher"></div>
-            </div>
-            <div class="operation-panels">
-            <div class="keyboard"></div>
-            <div class="register-monitor"></div>
-            <div class="memory"></div>
-            <div class="source-list"></div>
-            <div class="imm-exec"></div>
-            </div>
-        </div>
-        <script type="text/javascript" src="../lib/transworker/transworker.js"></script>
-        <script type="text/javascript" src="bundle-client.js"></script>
-        <textarea class="default source" style="display:none;">
         ORG     1200H
         ;===========================================
         ;
@@ -152,6 +119,3 @@ WRPAT:  ENT
         POP     BC
         POP     AF
         RET
-        </textarea>
-    </body>
-</html>

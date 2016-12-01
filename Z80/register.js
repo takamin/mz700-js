@@ -1,5 +1,5 @@
 // Z80_Register class for Z80
-function Z80_Register() {
+Z80_Register = function() {
 	// 8bit register / 16 bit register pair
 	this.B = 0;
 	this.C = 0;
@@ -18,7 +18,7 @@ function Z80_Register() {
 	
 	this.R = 0;	//リフレッシュレジスタ
 	this.I = 0;	//割り込みベクタ
-}
+};
 (function() {
 
 /* FLAG MASK BIT CONSTANT */

@@ -151,7 +151,7 @@ Z80.dasm = function (buf, offset, size, addr) {
         dasmlist.push( dis );
         cpu.reg.PC += dis.code.length;
     }
-    return dasmlist;
+    return Z80.processAddressReference(dasmlist);
 }
 Z80.prototype.disassemble = function(addr, last_addr) {
     var disasm = null;
