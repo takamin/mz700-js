@@ -6,6 +6,7 @@ require('../Z80/assembler.js');
 require('../Z80/memory.js');
 require('../MZ-700/emulator.js');
 require('../MZ-700/mztape.js');
+var fnut = require("../lib/fnuts.js");
 var fs = require('fs');
 var getopt = require('node-getopt').create([
         ['m',   'map=ARG',  'map file to resolve addresses'],
@@ -25,7 +26,10 @@ if(getopt.argv.length < 1) {
 }
 
 var input_filename = args.input_filename;
-var input_mzt = getopt.options['input-mzt'] || /\.mzt$/i.test(input_filename);
+var input_mzt = getopt.options['input-mzt'] ||
+    fnut.extensionOf(input_filename).toLowerCase() == ".mzt";
+var output_filename = getopt.options['output-file'] ||
+    fnut.exchangeExtension(input_filename, ".asm");
 fs.readFile(input_filename, function(err, data) {
     if(err) {
         throw err;
@@ -56,12 +60,5 @@ fs.readFile(input_filename, function(err, data) {
     for(var i = 0; i < dasmlines.length; i++) {
         outbuf.push(dasmlines[i]);
     }
-    var dasm_text = outbuf.join("\n") + "\n";
-    if('output-file' in getopt.options) {
-        fs.writeFileSync(
-                getopt.options['output-file'],
-                dasm_text);
-    } else {
-        console.info(dasm_text);
-    }
+    fs.writeFileSync(output_filename, outbuf.join("\n") + "\n");
 });

@@ -6,6 +6,7 @@ require("../Z80/assembler.js");
 require('../Z80/memory.js');
 require('../MZ-700/emulator.js');
 require('../MZ-700/mztape.js');
+var fnut = require('../lib/fnuts.js');
 var fs = require('fs');
 var getopt = require('node-getopt').create([
         ['m',   'map=ARG',  'output map file name'],
@@ -31,8 +32,7 @@ var output_filename = null;
 if('output-file' in getopt.options) {
     output_filename = getopt.options['output-file'];
 } else {
-    var filename = input_filename;
-    filename = filename.replace(/^.*[\\\/]/, "");
+    var ext = null;
     if('reuse-mzt-header' in getopt.options
     || 'output-MZT-header' in getopt.options)
     {
@@ -40,26 +40,17 @@ if('output-file' in getopt.options) {
     } else {
         ext = ".bin";
     }
-    if(/\.asm$/i.test(filename)) {
-        filename = filename.replace(/\.asm$/i, ext);
-    } else {
-        filename += ext;
-    }
-    output_filename = filename;
+    output_filename = fnut.exchangeExtension(
+            input_filename, ext);
 }
 
+// Determine filename of address map
 var fnMap = null;
 if('map' in getopt.options) {
     fnMap = getopt.options['map'];
 } else {
-    var filename = input_filename;
-    filename = filename.replace(/^.*[\\\/]/, "");
-    if(/\.[^\.]*$/i.test(filename)) {
-        filename = filename.replace(/\.[^\.]*$/i, '.map');
-    } else {
-        filename += ext;
-    }
-    fnMap = filename;
+    fnMap = fnut.exchangeExtension(
+            input_filename, ".map");
 }
 
 //
