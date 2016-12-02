@@ -82,9 +82,10 @@ ROADMAP
     * v0.1.9 - 'S' command is available on monitor.
     Type `*S1200,1260,1200,PCG-CURSOR-MZ[CR]` and click `RECPLAY` button, and
     you can download a MZT file named `PCG-CURSOR-MZ.MZT`.
-    * __v0.1.10__ - cycles and disassembling-features are added completely.
-    * __v0.1.11__ - The assembling and disassembling commands named
+    * v0.1.10 - cycles and disassembling-features are added completely.
+    * v0.1.11 - The assembling and disassembling commands named
     `mzasm` and `mzdas` is available.
+    * __v0.1.12__ - Update grunt' bundles.
 
 WANT TO DO
 ----------
@@ -93,7 +94,7 @@ WANT TO DO
 * Change the running speed.
 * Disassemble around the break point or the program counter.
 * With disassembling, create a list of addresses that are distinations of jumping instruction.
-* Emulate protter printer of MZ-731.
+* Emulate plotter printer of MZ-731.
 * Emulate MZ-1500. PSG and PCG.
 
 LICENCE
