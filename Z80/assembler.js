@@ -282,6 +282,24 @@ Z80LineAssembler.prototype.assembleMnemonic = function(toks, label, dictionary) 
     if(match_token(toks,['LD', 'A', ',', 'R'])) { return [0355, 0137]; }
     if(match_token(toks,['LD', 'I', ',', 'A'])) { return [0355, 0107]; }
     if(match_token(toks,['LD', 'R', ',', 'A'])) { return [0355, 0117]; }
+	//=================================================================================
+    // Undefined instruction
+	//=================================================================================
+    if(match_token(toks,['LD', 'B', ',', 'IXH'])) {
+        return [0xdd, 0x44];
+    }
+    if(match_token(toks,['LD', 'C', ',', 'IXL'])) {
+        return [0xdd, 0x4d];
+    }
+    if(match_token(toks,['LD', 'A', ',', 'IXL'])) {
+        return [0xdd, 0x7d];
+    }
+    if(match_token(toks,['ADD', 'A', ',', 'IXH'])) {
+        return [0xdd, 0x84];
+    }
+    if(match_token(toks,['ADD', 'A', ',', 'IXL'])) {
+        return [0xdd, 0x85];
+    }
     if(match_token(toks,['LD', /^[BCDEHLA]$/, ',', /^[BCDEHLA]$/])) {
         var dst_r = get8bitRegId(toks[1]);
         var src_r = get8bitRegId(toks[3]);
@@ -372,6 +390,24 @@ Z80LineAssembler.prototype.assembleMnemonic = function(toks, label, dictionary) 
     if(match_token(toks,['POP', /^(BC|DE|HL|AF)$/])) {
         var qq = get16bitRegId_qq(toks[1]);
         return [0301 | (qq << 4)];
+    }
+	//=================================================================================
+    // Undefined instruction
+	//=================================================================================
+    if(match_token(toks,['LD', 'IXH', ',', 'B'])) {
+        return [0xdd, 0x60];
+    }
+    if(match_token(toks,['LD', 'IXL', ',', 'C'])) {
+        return [0xdd, 0x69];
+    }
+    if(match_token(toks,['LD', 'IXH', ',', 'A'])) {
+        return [0xdd, 0x67];
+    }
+    if(match_token(toks,['LD', 'IXL', ',', 'A'])) {
+        return [0xdd, 0x6f];
+    }
+    if(match_token(toks,['CP', 'IXL'])) {
+        return [0xdd, 0xbd];
     }
 	//=================================================================================
     //

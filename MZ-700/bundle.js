@@ -2676,6 +2676,15 @@ Z80LineAssembler.prototype.assembleMnemonic = function(toks, label, dictionary) 
         return [0301 | (qq << 4)];
     }
 	//=================================================================================
+    // Undefined instruction
+	//=================================================================================
+    if(match_token(toks,['LD', 'A', ',', 'IXL'])) {
+        return [0xdd | 0x6f];
+    }
+    if(match_token(toks,['LD', 'IXL', ',', 'A'])) {
+        return [0xdd | 0x85];
+    }
+	//=================================================================================
     //
     // エクスチェンジグループ、ブロック転送および、サーチグループ
     //
@@ -8520,6 +8529,35 @@ Z80.prototype.createOpecodeTable = function() {
             mnemonic:['JP','(IY)'] };
         }
     };
+
+    //
+    // Z80 Undefined Instruction
+    //
+    opeIX[/* DD 6F = 01-101-111 = */ 0157] = {
+        mnemonic:"LD IXL,A",
+        proc: function() {
+            THIS.reg.IX = (0xff00 & (THIS.reg.A << 8)) | (THIS.reg.IX & 0xff);
+        },
+        disasm: function(mem, addr) {
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1) ],
+                mnemonic: [ "LD", "IXL", "A" ]
+            }
+        }
+    };
+    opeIX[/* DD 85 = 10-000-101 = */ 0205] = {
+        mnemonic:"LD A,IXL",
+        proc: function() {
+            THIS.reg.A = (THIS.reg.IX & 0xff);
+        },
+        disasm: function(mem, addr) {
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1) ],
+                mnemonic: [ "LD", "A", "IXL" ]
+            }
+        }
+    };
+
     this.opecodeTable[0020] = {
         mnemonic:"DJNZ",
         "cycle": 13,
