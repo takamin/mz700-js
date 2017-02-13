@@ -12,6 +12,7 @@ var getopt = require('node-getopt').create([
         ['m',   'map=ARG',  'map file to resolve addresses'],
         ['t',   'input-mzt', 'input file is mz-tape file'],
         ['o',   'output-file=ARG',  'filename to output'],
+        ['l',   'load-to=ARG',  'address to load'],
         ['h',   'help',     'display this help'],
         ['v',   'version',  'show version']
         ]).bindHelp().parseSystem();
@@ -30,6 +31,15 @@ var input_mzt = getopt.options['input-mzt'] ||
     fnut.extensionOf(input_filename).toLowerCase() == ".mzt";
 var output_filename = getopt.options['output-file'] ||
     fnut.exchangeExtension(input_filename, ".asm");
+var addr_load = (function(addr_tok) {
+    if(addr_tok) {
+        var a = Z80LineAssembler.parseNumLiteralPair(addr_tok);
+        if(typeof(a[0]) === 'number') {
+            return Z80.pair(a[1], a[0]);
+        }
+    }
+    return 0;
+}(getopt.options['load-to']));
 fs.readFile(input_filename, function(err, data) {
     if(err) {
         throw err;
@@ -51,10 +61,12 @@ fs.readFile(input_filename, function(err, data) {
         outbuf.push(
             ";======================================================",
             "; filename  :   '" + input_filename + "'",
-            "; filesize  :   " + buf.length + " bytes",
+            "; loadaddr  :   " + addr_load.HEX(4) + "H",
+            "; filesize  :   " + buf.length + " bytes / " +
+                                 buf.length.HEX(4) + "H bytes",
             ";======================================================"
             );
-        dasmlist = Z80.dasm(buf);
+        dasmlist = Z80.dasm(buf, 0, buf.length, addr_load);
     }
     var dasmlines = Z80.dasmlines(dasmlist);
     for(var i = 0; i < dasmlines.length; i++) {
