@@ -37,13 +37,15 @@ MZ700 = function(opt) {
 
     opt = opt || {};
     this.opt = {
-        "onVramUpdate": function(){},
-        "onMmioRead": function(){},
-        "onMmioWrite": function(){},
-        "startSound": function(){},
+        "onVramUpdate": function(index, dispcode, attr){},
+        "onMmioRead": function(address, value){},
+        "onMmioWrite": function(address, value){},
+        "onPortRead": function(port, value){},
+        "onPortWrite": function(port, value){},
+        "startSound": function(freq){},
         "stopSound": function(){},
-        "onStartDataRecorder": function(){},
-        "onStopDataRecorder": function(){}
+        "onStartDataRecorder": function(state){},
+        "onStopDataRecorder": function(state){}
     };
     Object.keys(this.opt).forEach(function (key) {
         if(key in opt) {
@@ -227,19 +229,22 @@ MZ700 = function(opt) {
 
     this.z80 = new Z80({
         memory: THIS.memory,
+        onReadIoPort: function(port, value) {
+            THIS.opt.onPortRead(port, value);
+        },
         onWriteIoPort: function(port, value) {
             switch(port) {
                 case 0xe0: this.memory.changeBlock0_DRAM(); break;
                 case 0xe1: this.memory.changeBlock1_DRAM(); break;
                 case 0xe2: this.memory.changeBlock0_MONITOR(); break;
                 case 0xe3: this.memory.changeBlock1_VRAM(); break;
-                case 0xe4: this.memory.changeBlock0_MONITOR(); 
-                           this.memory.changeBlock1_VRAM(); 
+                case 0xe4: this.memory.changeBlock0_MONITOR();
+                           this.memory.changeBlock1_VRAM();
                            break;
                 case 0xe5: this.memory.disableBlock1(); break;
                 case 0xe6: this.memory.enableBlock1(); break;
             }
-            THIS.showStatus();
+            THIS.opt.onPortWrite(port, value);
         }
     });
 };
@@ -1118,6 +1123,8 @@ MZ700.prototype.dataRecorder_writeBit = function(state) {
                     'onMmioWrite': function(param) {
                         this.MMIO.write(param.address, param.value);
                     },
+                    'onPortRead': function(param) { },
+                    'onPortWrite': function(param) { },
                     'startSound': function(freq) { sound.startSound(freq); },
                     'stopSound': function() { sound.stopSound(); },
                     "onStartDataRecorder": function(){
@@ -2584,6 +2591,24 @@ Z80LineAssembler.prototype.assembleMnemonic = function(toks, label, dictionary) 
     if(match_token(toks,['LD', 'A', ',', 'R'])) { return [0355, 0137]; }
     if(match_token(toks,['LD', 'I', ',', 'A'])) { return [0355, 0107]; }
     if(match_token(toks,['LD', 'R', ',', 'A'])) { return [0355, 0117]; }
+	//=================================================================================
+    // Undefined instruction
+	//=================================================================================
+    if(match_token(toks,['LD', 'B', ',', 'IXH'])) {
+        return [0xdd, 0x44];
+    }
+    if(match_token(toks,['LD', 'C', ',', 'IXL'])) {
+        return [0xdd, 0x4d];
+    }
+    if(match_token(toks,['LD', 'A', ',', 'IXL'])) {
+        return [0xdd, 0x7d];
+    }
+    if(match_token(toks,['ADD', 'A', ',', 'IXH'])) {
+        return [0xdd, 0x84];
+    }
+    if(match_token(toks,['ADD', 'A', ',', 'IXL'])) {
+        return [0xdd, 0x85];
+    }
     if(match_token(toks,['LD', /^[BCDEHLA]$/, ',', /^[BCDEHLA]$/])) {
         var dst_r = get8bitRegId(toks[1]);
         var src_r = get8bitRegId(toks[3]);
@@ -2678,11 +2703,20 @@ Z80LineAssembler.prototype.assembleMnemonic = function(toks, label, dictionary) 
 	//=================================================================================
     // Undefined instruction
 	//=================================================================================
-    if(match_token(toks,['LD', 'A', ',', 'IXL'])) {
-        return [0xdd | 0x6f];
+    if(match_token(toks,['LD', 'IXH', ',', 'B'])) {
+        return [0xdd, 0x60];
+    }
+    if(match_token(toks,['LD', 'IXL', ',', 'C'])) {
+        return [0xdd, 0x69];
+    }
+    if(match_token(toks,['LD', 'IXH', ',', 'A'])) {
+        return [0xdd, 0x67];
     }
     if(match_token(toks,['LD', 'IXL', ',', 'A'])) {
-        return [0xdd | 0x85];
+        return [0xdd, 0x6f];
+    }
+    if(match_token(toks,['CP', 'IXL'])) {
+        return [0xdd, 0xbd];
     }
 	//=================================================================================
     //
@@ -8533,10 +8567,70 @@ Z80.prototype.createOpecodeTable = function() {
     //
     // Z80 Undefined Instruction
     //
+    opeIX[/* DD 44 = 01-000-100 = */ 0104] = {
+        mnemonic:"LD B,IXH",
+        proc: function() {
+            THIS.reg.B = ((THIS.reg.IX >> 8) & 0xff);
+        },
+        disasm: function(mem, addr) {
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1) ],
+                mnemonic: [ "LD", "B", "IXH" ]
+            }
+        }
+    };
+    opeIX[/* DD 4D = 01-001-101 = */ 0115] = {
+        mnemonic:"LD C,IXL",
+        proc: function() {
+            THIS.reg.C = (THIS.reg.IX & 0xff);
+        },
+        disasm: function(mem, addr) {
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1) ],
+                mnemonic: [ "LD", "C", "IXL" ]
+            }
+        }
+    };
+    opeIX[/* DD 60 = 01-100-000 = */ 0140] = {
+        mnemonic:"LD IXH,B",
+        proc: function() {
+            THIS.reg.IX = (0xff00 & (THIS.reg.B << 8)) | (THIS.reg.IX & 0xff);
+        },
+        disasm: function(mem, addr) {
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1) ],
+                mnemonic: [ "LD", "IXH", "B" ]
+            }
+        }
+    };
+    opeIX[/* DD 67 = 01-100-111 = */ 0147] = {
+        mnemonic:"LD IXH,A",
+        proc: function() {
+            THIS.reg.IX = (0xff00 & (THIS.reg.A << 8)) | (THIS.reg.IX & 0xff);
+        },
+        disasm: function(mem, addr) {
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1) ],
+                mnemonic: [ "LD", "IXH", "A" ]
+            }
+        }
+    };
+    opeIX[/* DD 69 = 01-101-001 = */ 0151] = {
+        mnemonic:"LD IXL,C",
+        proc: function() {
+            THIS.reg.IX = (0xff00 & THIS.reg.IX ) | (THIS.reg.C & 0xff);
+        },
+        disasm: function(mem, addr) {
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1) ],
+                mnemonic: [ "LD", "IXL", "C" ]
+            }
+        }
+    };
     opeIX[/* DD 6F = 01-101-111 = */ 0157] = {
         mnemonic:"LD IXL,A",
         proc: function() {
-            THIS.reg.IX = (0xff00 & (THIS.reg.A << 8)) | (THIS.reg.IX & 0xff);
+            THIS.reg.IX = (0xff00 & THIS.reg.IX ) | (THIS.reg.A & 0xff);
         },
         disasm: function(mem, addr) {
             return {
@@ -8545,7 +8639,7 @@ Z80.prototype.createOpecodeTable = function() {
             }
         }
     };
-    opeIX[/* DD 85 = 10-000-101 = */ 0205] = {
+    opeIX[/* DD 7D = 01-111-101 = */ 0175] = {
         mnemonic:"LD A,IXL",
         proc: function() {
             THIS.reg.A = (THIS.reg.IX & 0xff);
@@ -8554,6 +8648,42 @@ Z80.prototype.createOpecodeTable = function() {
             return {
                 code: [ mem.peek(addr), mem.peek(addr+1) ],
                 mnemonic: [ "LD", "A", "IXL" ]
+            }
+        }
+    };
+    opeIX[/* DD 84 = 10-000-100 = */ 0204] = {
+        mnemonic:"ADD A,IXH",
+        proc: function() {
+            THIS.reg.addAcc((THIS.reg.IX >> 8)& 0xff);
+        },
+        disasm: function(mem, addr) {
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1) ],
+                mnemonic: [ "ADD", "A", "IXH" ]
+            }
+        }
+    };
+    opeIX[/* DD 85 = 10-000-101 = */ 0205] = {
+        mnemonic:"ADD A,IXL",
+        proc: function() {
+            THIS.reg.addAcc(THIS.reg.IX & 0xff);
+        },
+        disasm: function(mem, addr) {
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1) ],
+                mnemonic: [ "ADD", "A", "IXL" ]
+            }
+        }
+    };
+    opeIX[/* DD BD = 10-111-101 = */ 0275] = {
+        mnemonic:"CP IXL",
+        proc: function() {
+            THIS.reg.compareAcc(THIS.reg.IX & 0xff);
+        },
+        disasm: function(mem, addr) {
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1) ],
+                mnemonic: [ "CP", "IXL" ]
             }
         }
     };

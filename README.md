@@ -85,7 +85,13 @@ ROADMAP
     * v0.1.10 - cycles and disassembling-features are added completely.
     * v0.1.11 - The assembling and disassembling commands named
     `mzasm` and `mzdas` is available.
-    * __v0.1.12__ - Update grunt' bundles.
+    * v0.1.12 - Update grunt' bundles.
+    * __v0.1.13__ -  
+    (1) Some undefined instructions of Z80 (not all, only what the 'XEVIOUS for 700'
+    might be using) are available to execute, assemble and dis-assemble.  
+    (2) The bug that the emulator stops after each 'OUT' instruction executed was fixed.  
+    (3) The binary named `bin2mzt` is added. This will insert the MZ-Tape-Header to the raw wbinary file.  
+    (4) For disassembler `mzdas`, the option to offset the address is available.
 
 WANT TO DO
 ----------
