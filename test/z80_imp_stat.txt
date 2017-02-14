@@ -477,12 +477,18 @@ DD 34       INC (IX+d)        OK
 DD 35       DEC (IX+d)        OK
 DD 36       LD (IX+d),n       OK
 DD 39       ADD IX,SP         OK
+DD 44       LD B,IXH          OK
 DD 46       LD B,(IX+d)       OK
+DD 4D       LD C,IXL          OK
 DD 4E       LD C,(IX+d)       OK
 DD 56       LD D,(IX+d)       OK
 DD 5E       LD E,(IX+d)       OK
+DD 60       LD IXH,B          OK
 DD 66       LD H,(IX+d)       OK
+DD 67       LD IXH,A          OK
+DD 69       LD IXL,C          OK
 DD 6E       LD L,(IX+d)       OK
+DD 6F       LD IXL,A          OK
 DD 70       LD (IX+d),B       OK
 DD 71       LD (IX+d),C       OK
 DD 72       LD (IX+d),D       OK
@@ -490,7 +496,10 @@ DD 73       LD (IX+d),E       OK
 DD 74       LD (IX+d),H       OK
 DD 75       LD (IX+d),L       OK
 DD 77       LD (IX+d),A       OK
+DD 7D       LD A,IXL          OK
 DD 7E       LD A,(IX+d)       OK
+DD 84       ADD A,IXH         OK
+DD 85       ADD A,IXL         OK
 DD 86       ADD A,(IX+d)      OK
 DD 8E       ADC A,(IX+d)      OK
 DD 96       SUB A,(IX+d)      OK
@@ -498,6 +507,7 @@ DD 9E       SBC A,(IX+d)      OK
 DD A6       AND (IX+d)        OK
 DD AE       XOR (IX+d)        OK
 DD B6       OR (IX+d)         OK
+DD BD       CP IXL            OK
 DD BE       CP (IX+d)         OK
 DD CB 06    RLC (IX+d)        OK
 DD CB 0E    RRC (IX+d)        OK
@@ -695,7 +705,7 @@ FD F9       LD SP,IY          OK
 FE          CP n              OK
 FF          RST 38H           OK
 ----
-Total check count: 696
+Total check count: 706
 Not emulated: 0
 Disassembler:
   Not implemented: 0

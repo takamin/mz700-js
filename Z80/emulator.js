@@ -5231,6 +5231,131 @@ Z80.prototype.createOpecodeTable = function() {
             mnemonic:['JP','(IY)'] };
         }
     };
+
+    //
+    // Z80 Undefined Instruction
+    //
+    opeIX[/* DD 44 = 01-000-100 = */ 0104] = {
+        mnemonic:"LD B,IXH",
+        proc: function() {
+            THIS.reg.B = ((THIS.reg.IX >> 8) & 0xff);
+        },
+        disasm: function(mem, addr) {
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1) ],
+                mnemonic: [ "LD", "B", "IXH" ]
+            }
+        }
+    };
+    opeIX[/* DD 4D = 01-001-101 = */ 0115] = {
+        mnemonic:"LD C,IXL",
+        proc: function() {
+            THIS.reg.C = (THIS.reg.IX & 0xff);
+        },
+        disasm: function(mem, addr) {
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1) ],
+                mnemonic: [ "LD", "C", "IXL" ]
+            }
+        }
+    };
+    opeIX[/* DD 60 = 01-100-000 = */ 0140] = {
+        mnemonic:"LD IXH,B",
+        proc: function() {
+            THIS.reg.IX = (0xff00 & (THIS.reg.B << 8)) | (THIS.reg.IX & 0xff);
+        },
+        disasm: function(mem, addr) {
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1) ],
+                mnemonic: [ "LD", "IXH", "B" ]
+            }
+        }
+    };
+    opeIX[/* DD 67 = 01-100-111 = */ 0147] = {
+        mnemonic:"LD IXH,A",
+        proc: function() {
+            THIS.reg.IX = (0xff00 & (THIS.reg.A << 8)) | (THIS.reg.IX & 0xff);
+        },
+        disasm: function(mem, addr) {
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1) ],
+                mnemonic: [ "LD", "IXH", "A" ]
+            }
+        }
+    };
+    opeIX[/* DD 69 = 01-101-001 = */ 0151] = {
+        mnemonic:"LD IXL,C",
+        proc: function() {
+            THIS.reg.IX = (0xff00 & THIS.reg.IX ) | (THIS.reg.C & 0xff);
+        },
+        disasm: function(mem, addr) {
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1) ],
+                mnemonic: [ "LD", "IXL", "C" ]
+            }
+        }
+    };
+    opeIX[/* DD 6F = 01-101-111 = */ 0157] = {
+        mnemonic:"LD IXL,A",
+        proc: function() {
+            THIS.reg.IX = (0xff00 & THIS.reg.IX ) | (THIS.reg.A & 0xff);
+        },
+        disasm: function(mem, addr) {
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1) ],
+                mnemonic: [ "LD", "IXL", "A" ]
+            }
+        }
+    };
+    opeIX[/* DD 7D = 01-111-101 = */ 0175] = {
+        mnemonic:"LD A,IXL",
+        proc: function() {
+            THIS.reg.A = (THIS.reg.IX & 0xff);
+        },
+        disasm: function(mem, addr) {
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1) ],
+                mnemonic: [ "LD", "A", "IXL" ]
+            }
+        }
+    };
+    opeIX[/* DD 84 = 10-000-100 = */ 0204] = {
+        mnemonic:"ADD A,IXH",
+        proc: function() {
+            THIS.reg.addAcc((THIS.reg.IX >> 8)& 0xff);
+        },
+        disasm: function(mem, addr) {
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1) ],
+                mnemonic: [ "ADD", "A", "IXH" ]
+            }
+        }
+    };
+    opeIX[/* DD 85 = 10-000-101 = */ 0205] = {
+        mnemonic:"ADD A,IXL",
+        proc: function() {
+            THIS.reg.addAcc(THIS.reg.IX & 0xff);
+        },
+        disasm: function(mem, addr) {
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1) ],
+                mnemonic: [ "ADD", "A", "IXL" ]
+            }
+        }
+    };
+    opeIX[/* DD BD = 10-111-101 = */ 0275] = {
+        mnemonic:"CP IXL",
+        proc: function() {
+            THIS.reg.compareAcc(THIS.reg.IX & 0xff);
+        },
+        disasm: function(mem, addr) {
+            return {
+                code: [ mem.peek(addr), mem.peek(addr+1) ],
+                mnemonic: [ "CP", "IXL" ]
+            }
+        }
+    };
+
     this.opecodeTable[0020] = {
         mnemonic:"DJNZ",
         "cycle": 13,

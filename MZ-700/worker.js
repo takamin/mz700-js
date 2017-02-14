@@ -62,6 +62,18 @@ if("importScripts" in this) {
                         { address: address, value: value }
                 );
             },
+            onPortRead: function(port, value) {
+                transworker.postNotify(
+                        'onPortRead',
+                        { port: port, value: value }
+                );
+            },
+            onPortWrite: function(port, value) {
+                transworker.postNotify(
+                        'onPortWrite',
+                        { port: port, value: value }
+                );
+            },
             startSound: function(freq) {
                 transworker.postNotify('startSound',[ freq ]);
             },

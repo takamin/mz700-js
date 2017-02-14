@@ -1,6 +1,6 @@
 {
   "name": "mz700-js",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "description": "Full JavaScript MZ-700 Emulator",
   "private": false,
   "scripts": {
@@ -10,7 +10,8 @@
   "bin": {
     "mz700-js": "./bin/www",
     "mzasm": "./tools/mzasm.js",
-    "mzdas": "./tools/mzdasm.js"
+    "mzdas": "./tools/mzdasm.js",
+    "bin2mzt": "./tools/bin2mzt.js"
   },
   "browser": {
     "jquery": "./bower_components/jquery/dist/jquery.js",
