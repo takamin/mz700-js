@@ -303,6 +303,8 @@
                     'onMmioWrite': function(param) {
                         this.MMIO.write(param.address, param.value);
                     },
+                    'onPortRead': function(param) { },
+                    'onPortWrite': function(param) { },
                     'startSound': function(freq) { sound.startSound(freq); },
                     'stopSound': function() { sound.stopSound(); },
                     "onStartDataRecorder": function(){

@@ -36,13 +36,15 @@ MZ700 = function(opt) {
 
     opt = opt || {};
     this.opt = {
-        "onVramUpdate": function(){},
-        "onMmioRead": function(){},
-        "onMmioWrite": function(){},
-        "startSound": function(){},
+        "onVramUpdate": function(index, dispcode, attr){},
+        "onMmioRead": function(address, value){},
+        "onMmioWrite": function(address, value){},
+        "onPortRead": function(port, value){},
+        "onPortWrite": function(port, value){},
+        "startSound": function(freq){},
         "stopSound": function(){},
-        "onStartDataRecorder": function(){},
-        "onStopDataRecorder": function(){}
+        "onStartDataRecorder": function(state){},
+        "onStopDataRecorder": function(state){}
     };
     Object.keys(this.opt).forEach(function (key) {
         if(key in opt) {
@@ -226,19 +228,22 @@ MZ700 = function(opt) {
 
     this.z80 = new Z80({
         memory: THIS.memory,
+        onReadIoPort: function(port, value) {
+            THIS.opt.onPortRead(port, value);
+        },
         onWriteIoPort: function(port, value) {
             switch(port) {
                 case 0xe0: this.memory.changeBlock0_DRAM(); break;
                 case 0xe1: this.memory.changeBlock1_DRAM(); break;
                 case 0xe2: this.memory.changeBlock0_MONITOR(); break;
                 case 0xe3: this.memory.changeBlock1_VRAM(); break;
-                case 0xe4: this.memory.changeBlock0_MONITOR(); 
-                           this.memory.changeBlock1_VRAM(); 
+                case 0xe4: this.memory.changeBlock0_MONITOR();
+                           this.memory.changeBlock1_VRAM();
                            break;
                 case 0xe5: this.memory.disableBlock1(); break;
                 case 0xe6: this.memory.enableBlock1(); break;
             }
-            THIS.showStatus();
+            THIS.opt.onPortWrite(port, value);
         }
     });
 };
