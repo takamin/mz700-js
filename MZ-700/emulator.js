@@ -345,6 +345,12 @@ MZ700.prototype.reset = function() {
     this.memory.enableBlock1();
     this.memory.changeBlock0_MONITOR();
     this.memory.changeBlock1_VRAM();
+
+    // Clear VRAM
+    for(var i = 0; i < 40 * 25; i++) {
+        this.memory.poke(0xd000 + i, 0x00);
+        this.memory.poke(0xd800 + i, 0x71);
+    }
     return this.z80.reset();
 };
 
