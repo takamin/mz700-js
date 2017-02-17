@@ -91,13 +91,7 @@
                 }.bind(this));
             this.btnStop = $("<button/>").attr("type", "button")
                 .html("Stop").click(function() {
-                    this.mz700comworker.stop(function() {
-                        this.isRunning = false;
-                        this.setCurrentExecLine();
-                        this.showStatus();
-                        this.updateUI();
-                        this.scrollToShowPC();
-                    }.bind(this));
+                    this.stop();
                 }.bind(this));
             this.btnStep = $("<button/>").attr("type", "button")
                 .html("Step").click(function() {
@@ -574,9 +568,15 @@
     MZ700Js.prototype.reset = function(callback) {
         this.clearCurrentExecLine();
         this.mz700comworker.stop(function() {
+            this.isRunning = false;
+            this.setCurrentExecLine();
+            this.showStatus();
+            this.updateUI();
             this.mz700comworker.reset(function() {
                 this.txtAsmSrc.val($($("textarea.default.source").get(0)).val());
                 this.assemble(function() {
+                    this.scrollToShowPC();
+                    this.setCurrentExecLine();
                     this.showStatus();
                     this.updateUI();
                     if(callback) {
