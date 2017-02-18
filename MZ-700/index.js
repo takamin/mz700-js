@@ -95,13 +95,7 @@
                 }.bind(this));
             this.btnStep = $("<button/>").attr("type", "button")
                 .html("Step").click(function() {
-                    this.clearCurrentExecLine();
-                    this.mz700comworker.exec(1, function(result){
-                        this.setCurrentExecLine();
-                        this.showStatus();
-                        this.updateUI();
-                        this.scrollToShowPC();
-                    }.bind(this));
+                    this.stepIn();
                 }.bind(this));
 
             // Monoral buzzer sound
@@ -253,7 +247,23 @@
                         updateKeyStates(e, false);
                         return false;
                     }
-                };
+                    else {
+                        switch(e.keyCode) {
+                        case 119://F8 - RUN
+                            this.start();
+                            break;
+                        case 120://F9 - STOP
+                            this.stop();
+                            break;
+                        case 121://F10 - STEP OVER
+                            this.stepOver();
+                            break;
+                        case 122://F11 - STEP IN
+                            this.stepIn();
+                            break;
+                        }
+                    }
+                }.bind(this);
 
                 MZ700Js.prototype.acceptKey = function(state) {
                     keyAcceptanceState = state;
@@ -603,6 +613,18 @@
             this.showStatus();
             this.updateUI();
         }.bind(this));
+    };
+    MZ700Js.prototype.stepIn = function() {
+        this.clearCurrentExecLine();
+        this.mz700comworker.exec(1, function(result){
+            this.setCurrentExecLine();
+            this.showStatus();
+            this.updateUI();
+            this.scrollToShowPC();
+        }.bind(this));
+    };
+    MZ700Js.prototype.stepOver = function() {
+        this.stepIn();
     };
     MZ700Js.prototype.updateUI = function() {
         this.btnReset.prop('disabled', '');
