@@ -93,6 +93,13 @@ ROADMAP
     (3) The binary named `bin2mzt` is added. This will insert the MZ-Tape-Header to the raw wbinary file.
     (4) For disassembler `mzdas`, the option to offset the address is available.
     * __v0.1.14__ - (1) Fix installing problem. (2) On reset, the screen will be cleared.
+    * __v0.1.15__ - (1) On reset, CPU will run automatically.
+    (2) On the Chrome, the emulation speed can be controlled with three sliders.
+    But this feature might not work on the other browser.
+    (3) Run, Stop and Step can be controlled from keys.
+        * [Ctrl]+[F8]: run/continue
+        * [Ctrl]+[F9]: stop/break
+        * [Ctrl]+[F11]: step
 
 WANT TO DO
 ----------
