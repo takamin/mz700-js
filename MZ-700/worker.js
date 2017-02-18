@@ -23,12 +23,10 @@ if("importScripts" in this) {
         //
         // Override to notify a message to mainthread
         //
+        var original_run = MZ700.prototype.run;
         MZ700.prototype.run = function() {
             try {
-                for(var i = 0; i < this.NUM_OF_EXEC_OPCODE; i++) {
-                    this.z80.exec();
-                    this.clock();
-                }
+                original_run.call(this);
             } catch(ex) {
                 console.log("MZ700.run exception:", ex);
                 this.stop();

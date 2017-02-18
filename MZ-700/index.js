@@ -591,9 +591,11 @@
     MZ700Js.NUM_OF_EXEC_OPCODE = 20000;
     MZ700Js.prototype.start = function() {
         this.clearCurrentExecLine();
-        this.mz700comworker.start(function() {
-            this.isRunning = true;
-            this.updateUI();
+        this.mz700comworker.start(function(success) {
+            if(success) {
+                this.isRunning = true;
+                this.updateUI();
+            }
         }.bind(this));
     };
     MZ700Js.prototype.stop = function() {

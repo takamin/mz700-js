@@ -720,12 +720,19 @@ Intel8253Counter.prototype.count = function(count) {
 // For TransWorker
 //
 MZ700.prototype.start = function() {
+    if("tid" in this && this.tid != null) {
+        console.warn(
+                "[emulator] MZ700.start(): already started, caller is ",
+                MZ700.prototype.start.caller);
+        return false;
+    }
     this.tid = null;
     this.NUM_OF_EXEC_OPCODE = 1000;
     this.RUNNING_INTERVAL = 7;
     this.tid = setInterval((function(app) { return function() {
         app.run();
     };}(this)), this.RUNNING_INTERVAL);
+    return true;
 };
 
 MZ700.prototype.stop = function() {
@@ -736,14 +743,9 @@ MZ700.prototype.stop = function() {
 };
 
 MZ700.prototype.run = function() {
-    try {
-        for(var i = 0; i < this.NUM_OF_EXEC_OPCODE; i++) {
-            this.z80.exec();
-            this.clock();
-        }
-    } catch(ex) {
-        console.log("MZ700.run exception:", ex);
-        this.stop();
+    for(var i = 0; i < this.NUM_OF_EXEC_OPCODE; i++) {
+        this.z80.exec();
+        this.clock();
     }
 };
 
