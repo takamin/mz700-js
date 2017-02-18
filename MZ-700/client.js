@@ -4,9 +4,7 @@ window.jQuery = require("jquery");
     var MZ700Js = require("./index.js");
     $(function() {
         var mz700js = MZ700Js.create({"urlPrefix" : "../" });
-        mz700js.reset(function() {
-            mz700js.start();
-        });
+        mz700js.reset();
         $(".resizer").resizable({ aspectRatio: true }).css("width", "685px");
         $(".operation-panels").draggable().css("width", "680px");
         $(".operation-panels").css("position", "absolute");

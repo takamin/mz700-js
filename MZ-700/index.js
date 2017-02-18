@@ -582,6 +582,7 @@
                     if(callback) {
                         callback();
                     }
+                    this.start();
                 }.bind(this));
             }.bind(this));
         }.bind(this));
