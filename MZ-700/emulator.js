@@ -198,8 +198,6 @@ MZ700 = function(opt) {
                                 THIS.dataRecorder_motorOn(bit);
                                 break;
                         }
-                    } else {
-                        console.log("$E003 8255 MODE SET 0x" + value.HEX(2));
                     }
                     break;
                 case 0xE004:
