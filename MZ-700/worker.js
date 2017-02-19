@@ -34,6 +34,14 @@ if("importScripts" in this) {
             }
         };
         var mz700 = new MZ700({
+            onExecutionParameterUpdate: function(param) {
+                try {
+                    transworker.postNotify(
+                            "onExecutionParameterUpdate", param);
+                } catch(ex) {
+                    console.error(ex);
+                }
+            },
             onVramUpdate: function(index, dispcode, attr) {
                 screenUpdateData[index] = {
                     dispcode: dispcode, attr: attr

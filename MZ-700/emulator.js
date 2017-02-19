@@ -36,6 +36,7 @@ MZ700 = function(opt) {
 
     opt = opt || {};
     this.opt = {
+        "onExecutionParameterUpdate": function(param) {},
         "onVramUpdate": function(index, dispcode, attr){},
         "onMmioRead": function(address, value){},
         "onMmioWrite": function(address, value){},
@@ -51,6 +52,10 @@ MZ700 = function(opt) {
             this.opt[key] = opt[key];
         }
     }, this);
+
+    this.tid = null;
+    this.executionParameter = new ExecutionParameter(1, 1000, 7);
+    //this.setExecutionParameter(this.executionParameter);
 
     this.mmioMap = [];
     for(var address = 0xE000; address < 0xE800; address++) {
@@ -724,24 +729,26 @@ MZ700.prototype.start = function() {
                 MZ700.prototype.start.caller);
         return false;
     }
-    this.tid = null;
-    this.NUM_OF_EXEC_OPCODE = 1000;
-    this.RUNNING_INTERVAL = 7;
-    this.tid = setInterval((function(app) { return function() {
-        app.run();
-    };}(this)), this.RUNNING_INTERVAL);
+    this.tid = [];
+    for(var i = 0; i < this.executionParameter.numOfTimer; i++) {
+        this.tid[i] = setInterval(function() {
+            this.run();
+        }.bind(this), this.executionParameter.timerInterval);
+    }
     return true;
 };
 
 MZ700.prototype.stop = function() {
     if(this.tid != null) {
-        clearInterval(this.tid);
+        this.tid.forEach(function(id) {
+            clearInterval(id);
+        }, this);
         this.tid = null;
     }
 };
 
 MZ700.prototype.run = function() {
-    for(var i = 0; i < this.NUM_OF_EXEC_OPCODE; i++) {
+    for(var i = 0; i < this.executionParameter.numOfExecInst; i++) {
         this.z80.exec();
         this.clock();
     }
@@ -820,4 +827,48 @@ MZ700.prototype.dataRecorder_readBit = function() {
 
 MZ700.prototype.dataRecorder_writeBit = function(state) {
     this.dataRecorder.wdata(state, this.z80.tick);
+};
+
+// VALUE            SLOW ... FAST
+// ---------------- -------------
+// numOfTimer:         1 ... 1000
+// numOfExecInst:   1000 ...    1
+// timerInterval:      7 ...    1
+// ---------------- -------------
+MZ700.prototype.getExecutionParameter = function() {
+    return this.executionParameter;
+};
+
+MZ700.prototype.setExecutionParameter = function(param) {
+    var running = (this.tid != null);
+    if(running) {
+        this.stop();
+    }
+    this.executionParameter.set(param);
+    this.opt.onExecutionParameterUpdate(param);
+    if(running) {
+        this.start();
+    }
+};
+
+//
+// Class ExecutionParameter
+//
+ExecutionParameter = function(numOfTimer, numOfExecInst, timerInterval) {
+    this.numOfTimer = numOfTimer;
+    this.numOfExecInst = numOfExecInst;
+    this.timerInterval = timerInterval;
+};
+
+ExecutionParameter.prototype.get = function() {
+    return {
+        numOfTimer: this.numOfTimer,
+        numOfExecInst: this.numOfExecInst,
+        timerInterval: this.timerInterval
+    };
+};
+ExecutionParameter.prototype.set = function(param) {
+    this.numOfTimer = param.numOfTimer;
+    this.numOfExecInst = param.numOfExecInst;
+    this.timerInterval = param.timerInterval;
 };
