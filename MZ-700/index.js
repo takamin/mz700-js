@@ -102,7 +102,6 @@
             //
             // Sliders for ExecutionParameter
             //
-            this.executionParameter = new ExecutionParameter(1, 1000, 7);
             this.sliderExecParamNumOfTimer = $("<input/>")
                 .attr("type", "range").attr("min", 1).attr("max", 250)
                 .val(1).bind("change", function() {
@@ -534,6 +533,11 @@
                 .append($("<br/>"))
                 .DropDownPanel("create", { "caption" : "Execute Z80 Instruction" });
         }
+
+        this.executionParameter = new ExecutionParameter(1, 1000, 7);
+        this.mz700comworker.getExecutionParameter(function(param) {
+            this.onExecutionParameterUpdate.set(param);
+        });
     };
     MZ700Js.prototype.mmioMapPeripheral = function(peripheral, mapToRead, mapToWrite) {
         this.MMIO.entry(peripheral, mapToRead, mapToWrite);
