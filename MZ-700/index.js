@@ -95,14 +95,32 @@
                 }.bind(this));
             this.btnStep = $("<button/>").attr("type", "button")
                 .html("Step").click(function() {
-                    this.clearCurrentExecLine();
-                    this.mz700comworker.exec(1, function(result){
-                        this.setCurrentExecLine();
-                        this.showStatus();
-                        this.updateUI();
-                        this.scrollToShowPC();
-                    }.bind(this));
+                    this.stepIn();
                 }.bind(this));
+
+            //
+            // Sliders for ExecutionParameter
+            //
+            this.executionParameter = new ExecutionParameter(1, 1000, 7);
+            this.sliderExecParamNumOfTimer = $("<input/>")
+                .attr("type", "range").attr("min", 1).attr("max", 250)
+                .val(1).bind("change", function() {
+                    this.executionParameter.numOfTimer = this.sliderExecParamNumOfTimer.val();
+                    this.updateExecutionParameter();
+                }.bind(this));
+            this.sliderExecParamNumOfExecInst = $("<input/>")
+                .attr("type", "range").attr("min", 1).attr("max", 1000)
+                .val(1000).bind("change", function() {
+                    this.executionParameter.numOfExecInst = this.sliderExecParamNumOfExecInst.val();
+                    this.updateExecutionParameter();
+                }.bind(this));
+            this.sliderExecParamTimerInterval = $("<input/>")
+                .attr("type", "range").attr("min", 1).attr("max", 1000)
+                .val(7).bind("change", function() {
+                    this.executionParameter.timerInterval = this.sliderExecParamTimerInterval.val();
+                    this.updateExecutionParameter();
+                }.bind(this));
+
 
             // Monoral buzzer sound
             var sound = new MZ700_Sound();
@@ -127,7 +145,19 @@
                 .append(this.btnReset)
                 .append(this.btnStart)
                 .append(this.btnStop)
-                .append(this.btnStep);
+                .append(this.btnStep)
+                .append($("<br/>"))
+                .append($("<span/>").html("Exec.Timer:"))
+                .append($("<span/>").attr("id", "exec-param1"))
+                .append(this.sliderExecParamNumOfTimer)
+                .append($("<span/>").html(", "))
+                .append($("<span/>").html("Instruction:"))
+                .append($("<span/>").attr("id", "exec-param2"))
+                .append(this.sliderExecParamNumOfExecInst)
+                .append($("<span/>").html(", "))
+                .append($("<span/>").html("Interval:"))
+                .append($("<span/>").attr("id", "exec-param3"))
+                .append(this.sliderExecParamTimerInterval);
 
             //
             // Data Recorder Control
@@ -253,7 +283,23 @@
                         updateKeyStates(e, false);
                         return false;
                     }
-                };
+                    else {
+                        switch(e.keyCode) {
+                        case 119://F8 - RUN
+                            this.start();
+                            break;
+                        case 120://F9 - STOP
+                            this.stop();
+                            break;
+                        case 121://F10 - STEP OVER
+                            this.stepOver();
+                            break;
+                        case 122://F11 - STEP IN
+                            this.stepIn();
+                            break;
+                        }
+                    }
+                }.bind(this);
 
                 MZ700Js.prototype.acceptKey = function(state) {
                     keyAcceptanceState = state;
@@ -285,6 +331,9 @@
             this.MMIO = require("../MZ-700/mmio").create();
             this.mz700comworker = TransWorker.create(
                 this.opt.urlPrefix + "MZ-700/worker.js", MZ700, this, {
+                    'onExecutionParameterUpdate': function(param) {
+                        this.onExecutionParameterUpdate(param);
+                    },
                     'running': function() { this.showStatus(); },
                     'started': function() { },
                     'break': function() { this.stop(); },
@@ -331,6 +380,7 @@
                     }.bind(this)
                 }
             );
+
             this.PCG700 = require("../lib/PCG-700").create();
             this.PCG700.setScreen(mz700scrn);
             this.PCG700.writeMMIO(0xE010, 0x00);
@@ -582,6 +632,7 @@
                     if(callback) {
                         callback();
                     }
+                    this.start();
                 }.bind(this));
             }.bind(this));
         }.bind(this));
@@ -590,9 +641,11 @@
     MZ700Js.NUM_OF_EXEC_OPCODE = 20000;
     MZ700Js.prototype.start = function() {
         this.clearCurrentExecLine();
-        this.mz700comworker.start(function() {
-            this.isRunning = true;
-            this.updateUI();
+        this.mz700comworker.start(function(success) {
+            if(success) {
+                this.isRunning = true;
+                this.updateUI();
+            }
         }.bind(this));
     };
     MZ700Js.prototype.stop = function() {
@@ -604,6 +657,35 @@
             this.updateUI();
         }.bind(this));
     };
+    MZ700Js.prototype.stepIn = function() {
+        this.clearCurrentExecLine();
+        this.mz700comworker.exec(1, function(result){
+            this.setCurrentExecLine();
+            this.showStatus();
+            this.updateUI();
+            this.scrollToShowPC();
+        }.bind(this));
+    };
+    MZ700Js.prototype.stepOver = function() {
+        this.stepIn();
+    };
+
+    MZ700Js.prototype.updateExecutionParameter = function() {
+        console.log("MZ700Js.updateExecutionParameter", JSON.stringify(this.executionParameter.get()));
+        this.mz700comworker.setExecutionParameter(this.executionParameter.get(), function(){});
+    };
+    MZ700Js.prototype.onExecutionParameterUpdate = function(param) {
+        console.log("MZ700Js.onExecutionParameterUpdate", JSON.stringify(param));
+        this.executionParameter.set(param);
+        this.sliderExecParamNumOfTimer.val(param.numOfTimer);
+        $("#exec-param1").html(param.numOfTimer);
+        this.sliderExecParamNumOfExecInst.val(param.numOfExecInst);
+        $("#exec-param2").html(param.numOfExecInst);
+        this.sliderExecParamTimerInterval.val(param.timerInterval);
+        $("#exec-param3").html(param.timerInterval);
+    };
+
+
     MZ700Js.prototype.updateUI = function() {
         this.btnReset.prop('disabled', '');
         if(!this.isRunning) {
