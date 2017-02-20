@@ -62,7 +62,7 @@ Available Browsers
 * Microsoft Internet explorer 11 (but no sound and slow)
 * Microsoft Edge (but slow)
 
-ROADMAP
+CHANGES
 -------
 
 * v0.1.0 - The key-in events are accepted by window object.
@@ -85,14 +85,14 @@ ROADMAP
     * v0.1.10 - cycles and disassembling-features are added completely.
     * v0.1.11 - The assembling and disassembling commands named
     `mzasm` and `mzdas` is available.
-    * v0.1.12 - Update grunt' bundles.
-    * __v0.1.13__ -
+    * v0.1.12 - Update grunt's bundles.
+    * v0.1.13 -
     (1) Some undefined instructions of Z80 (not all, only what the 'XEVIOUS for 700'
     might be using) are available to execute, assemble and dis-assemble.
     (2) The bug that the emulator stops after each 'OUT' instruction executed was fixed.
-    (3) The binary named `bin2mzt` is added. This will insert the MZ-Tape-Header to the raw wbinary file.
+    (3) The binary named `bin2mzt` is added. This will insert the MZ-Tape-Header to the raw binary file.
     (4) For disassembler `mzdas`, the option to offset the address is available.
-    * __v0.1.14__ - (1) Fix installing problem. (2) On reset, the screen will be cleared.
+    * v0.1.14 - (1) Fix installing problem. (2) On reset, the screen will be cleared.
     * __v0.1.15__ - (1) On reset, CPU will run automatically.
     (2) On the Chrome, the emulation speed can be controlled with three sliders.
     But this feature might not work on the other browser.
@@ -105,7 +105,7 @@ WANT TO DO
 ----------
 
 * Visualize the memory banks to show which is selected.
-* Change the running speed.
+* <s>Change the running speed.</s> - __Done__
 * Disassemble around the break point or the program counter.
 * With disassembling, create a list of addresses that are distinations of jumping instruction.
 * Emulate plotter printer of MZ-731.
