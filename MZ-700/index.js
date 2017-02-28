@@ -334,11 +334,8 @@
                     'onExecutionParameterUpdate': function(param) {
                         this.onExecutionParameterUpdate(param);
                     },
-                    'running': function() { this.showStatus(); },
-                    'started': function() { },
-                    'break': function() { this.stop(); },
-
-                    'updateScreen': (mz700scrn == null) ? function() {} :
+                    'onBreak': function() { this.stop(); },
+                    'onUpdateScreen': (mz700scrn == null) ? function() {} :
                         function(updateData) { mz700scrn.write(updateData); },
                     'onMmioRead': function(param) {
                         this.MMIO.read(param.address, param.value);
