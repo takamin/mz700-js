@@ -1,5 +1,15 @@
 MZ700 = function(opt) {
     "use strict";
+
+    require("../lib/context.js");
+    require("../lib/ex_number.js");
+    require("../Z80/memory.js");
+    require("../Z80/register.js");
+    require("../Z80/assembler.js");
+    require("../Z80/emulator.js");
+    var MZ700_Memory = getModule("MZ700_Memory") || require("./memory.js");
+    require("./monitor-rom.js");
+    require("./mztape.js");
     var THIS = this;
 
     //Implements transworker interface
