@@ -2,6 +2,19 @@ MZ700 = function(opt) {
     "use strict";
     var THIS = this;
 
+    //Implements transworker interface
+    this._transworker = null;
+    this.setTransworker = function(transworker) {
+        this._transworker = transworker;
+    };
+
+    // Screen update buffer
+    this._screenUpdateData = {};
+
+    // Timer id to send screen buffer
+    this._vramTxTid = null;
+
+
     //MZ700 Key Matrix
     this.keymatrix = new mz700keymatrix();
 
@@ -34,19 +47,72 @@ MZ700 = function(opt) {
         }
     }.bind(this));
 
-    opt = opt || {};
+    //
+    // Default option settings to notify from WebWorker
+    // to UI thread by transworker
+    //
     this.opt = {
-        "onExecutionParameterUpdate": function(param) {},
-        "onVramUpdate": function(index, dispcode, attr){},
-        "onMmioRead": function(address, value){},
-        "onMmioWrite": function(address, value){},
-        "onPortRead": function(port, value){},
-        "onPortWrite": function(port, value){},
-        "startSound": function(freq){},
-        "stopSound": function(){},
-        "onStartDataRecorder": function(state){},
-        "onStopDataRecorder": function(state){}
+        onExecutionParameterUpdate: function(param) {
+            try {
+                THIS._transworker.postNotify(
+                    "onExecutionParameterUpdate", param);
+            } catch(ex) {
+                console.error(ex);
+            }
+        },
+        onBreak: function() {
+            THIS._transworker.postNotify("onBreak");
+        },
+        onUpdateScreen: function(screenUpdateData) {
+            THIS._transworker.postNotify(
+                "onUpdateScreen", THIS._screenUpdateData);
+        },
+        onVramUpdate: function(index, dispcode, attr){
+            THIS._screenUpdateData[index] = {
+                dispcode: dispcode, attr: attr
+            };
+            if(THIS._vramTxTid == null) {
+                THIS._vramTxTid = setTimeout(function() {
+                    THIS.opt.onUpdateScreen(THIS._screenUpdateData);
+                    THIS._screenUpdateData = {};
+                    THIS._vramTxTid = null;
+                }, 100);
+            }
+        },
+        onMmioRead: function(address, value){
+            THIS._transworker.postNotify(
+                    "onMmioRead", { address: address, value: value });
+        },
+        onMmioWrite: function(address, value){
+            THIS._transworker.postNotify(
+                    "onMmioWrite", { address: address, value: value });
+        },
+        onPortRead: function(port, value){
+            THIS._transworker.postNotify(
+                    "onPortRead", { port: port, value: value });
+        },
+        onPortWrite: function(port, value){
+            THIS._transworker.postNotify(
+                    "onPortWrite", { port: port, value: value });
+        },
+        startSound: function(freq){
+            THIS._transworker.postNotify("startSound",[ freq ]);
+        },
+        stopSound: function(){
+            THIS._transworker.postNotify("stopSound");
+        },
+        onStartDataRecorder: function(state){
+            THIS._transworker.postNotify("onStartDataRecorder");
+        },
+        onStopDataRecorder: function(state){
+            THIS._transworker.postNotify("onStopDataRecorder");
+        }
     };
+
+    //
+    // Override option to receive notifications with callbacks.
+    //
+    opt = opt || {};
     Object.keys(this.opt).forEach(function (key) {
         if(key in opt) {
             this.opt[key] = opt[key];
@@ -55,7 +121,6 @@ MZ700 = function(opt) {
 
     this.tid = null;
     this.executionParameter = new ExecutionParameter(1, 1000, 7);
-    //this.setExecutionParameter(this.executionParameter);
 
     this.mmioMap = [];
     for(var address = 0xE000; address < 0xE800; address++) {
@@ -63,12 +128,12 @@ MZ700 = function(opt) {
     }
 
     this.memory = new MZ700_Memory({
-        onVramUpdate: opt.onVramUpdate,
+        onVramUpdate: THIS.opt.onVramUpdate,
         onMappedIoRead: function(address, value) {
 
             //MMIO: Input from memory mapped peripherals
             if(THIS.mmioIsMappedToRead(address)) {
-                opt.onMmioRead(address, value);
+                THIS.opt.onMmioRead(address, value);
             }
 
             switch(address) {
@@ -146,7 +211,7 @@ MZ700 = function(opt) {
 
             //MMIO: Output to memory mapped peripherals
             if(THIS.mmioIsMappedToWrite(address)) {
-                opt.onMmioWrite(address, value);
+                THIS.opt.onMmioWrite(address, value);
             }
 
             switch(address) {
@@ -748,9 +813,15 @@ MZ700.prototype.stop = function() {
 };
 
 MZ700.prototype.run = function() {
-    for(var i = 0; i < this.executionParameter.numOfExecInst; i++) {
-        this.z80.exec();
-        this.clock();
+    try {
+        for(var i = 0; i < this.executionParameter.numOfExecInst; i++) {
+            this.z80.exec();
+            this.clock();
+        }
+    } catch(ex) {
+        console.log("MZ700.run exception:", ex);
+        this.stop();
+        this.opt.onBreak();
     }
 };
 
