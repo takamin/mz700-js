@@ -1,3 +1,5 @@
+var MZ700_MonitorRom = getModule("MZ700_MonitorRom") || require("./monitor-rom.js");
+
 function MZ700_Memory(opt) {
     this.create(opt);
 }

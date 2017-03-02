@@ -4,16 +4,17 @@
 //
 if("importScripts" in this) {
     importScripts(
+            '../lib/context.js',
             '../lib/transworker/transworker.js',
             '../lib/ex_number.js',
             '../Z80/memory.js',
             '../Z80/register.js',
             '../Z80/assembler.js',
             '../Z80/emulator.js',
-            'emulator.js',
-            'memory.js',
             'monitor-rom.js',
-            'mztape.js');
+            'memory.js',
+            'mztape.js',
+            'emulator.js');
 
     (function() {
         var transworker = new TransWorker();

@@ -1,5 +1,6 @@
 (function() {
     var $ = require("jquery");
+    require("../lib/context.js");
     require("../lib/ex_number.js");
     require("../Z80/memory.js");
     require("../Z80/register.js");
