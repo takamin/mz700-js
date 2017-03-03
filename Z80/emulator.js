@@ -71,6 +71,9 @@ Z80.prototype.exec = function() {
 
 Z80.prototype.clearBreakPoints = function() {
     this.bpmap = new Array(0x10000);
+    for(var i = 0; i < 0x10000; i++) {
+        this.bpmap[i] = null;
+    }
 };
 Z80.prototype.getBreakPoints = function() {
     return this.bpmap;
