@@ -9,6 +9,7 @@
     require("../MZ-700/mztape.js");
     require("../MZ-700/emulator.js");
     var MZ700_Sound = require("../MZ-700/sound.js");
+    var MMIO = require("../MZ-700/mmio");
     require("../lib/jquery.ddpanel.js");
     require("../lib/jquery.soundctrl.js");
     require("../lib/jquery.Z80-mem.js");
@@ -328,7 +329,7 @@
             // Create MZ-700 Worker
             //
 
-            this.MMIO = require("../MZ-700/mmio").create();
+            this.MMIO = MMIO.create();
             this.mz700comworker = TransWorker.create(
                 this.opt.urlPrefix + "MZ-700/worker.js", MZ700, this, {
                     'onExecutionParameterUpdate': function(param) {

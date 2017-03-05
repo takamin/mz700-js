@@ -145,3 +145,4 @@ MZ700_Memory.prototype.enableBlock1 = function() {
         this._disabledBlock1 = false;
     }
 }
+module.exports = MZ700_Memory;
