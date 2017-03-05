@@ -537,7 +537,7 @@
 
         this.executionParameter = new ExecutionParameter(1, 1000, 7);
         this.mz700comworker.getExecutionParameter(function(param) {
-            this.onExecutionParameterUpdate.set(param);
+            this.executionParameter.set(param);
         });
     };
     MZ700Js.prototype.mmioMapPeripheral = function(peripheral, mapToRead, mapToWrite) {

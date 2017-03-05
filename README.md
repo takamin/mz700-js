@@ -62,6 +62,47 @@ Available Browsers
 * Microsoft Internet explorer 11 (but no sound and slow)
 * Microsoft Edge (but slow)
 
+`mz700-cli` - RUN THE CLI EMULATOR with Node.js
+===============================================
+
+COMMAND LINE
+------------
+
+```
+> mz700-cli [-c <mzt-filename>] [<mzt-filename>]
+```
+
+OPTIONS
+-------
+
+* c - Set a MZT file to the data recorder as CMT.
+
+PARAMETERS
+----------
+
+* `<mzt-filename>` - A MZT-filename to be loaded to the memory immedietely.
+
+COMMANDS
+--------
+
+* `run` - Run MZ-700 emulation.
+* `stop` - Stop emulation.
+* `step [num-of-instruction]` - Execute N instructions and stop.
+* `vram` - Print VRAM to console.
+* `reg` - Print register.
+* `key <input-strings>` - Convert the string to MZ-700's Key-Matrix, Then push those stroke.
+* `jp <addr>' - Set the PC of Z80 CPU.
+* `mem set <addr> <data>, ...` - Write data to the memory
+* `mem dump <addr>` - Print the contents of the memory.
+* `cmt set <mzt-filename>` - Set CMT to the data recorder.
+* `cmt eject` - Eject CMT.
+* `cmt play` - Push the PLAY button of the data recorder.
+* `cmt rec` - Push the REC button of the data recorder.
+* `cmt stop` - Push the STOP button of the data recorder.
+* `bp set <addr>` - Set break points at the adress.
+* `bp rm <addr>` - Remove the break points set at the adress.
+* `bp clear` - Clear all break points.
+
 CHANGES
 -------
 
@@ -93,13 +134,14 @@ CHANGES
     (3) The binary named `bin2mzt` is added. This will insert the MZ-Tape-Header to the raw binary file.
     (4) For disassembler `mzdas`, the option to offset the address is available.
     * v0.1.14 - (1) Fix installing problem. (2) On reset, the screen will be cleared.
-    * __v0.1.15__ - (1) On reset, CPU will run automatically.
+    * v0.1.15 - (1) On reset, CPU will run automatically.
     (2) On the Chrome, the emulation speed can be controlled with three sliders.
     But this feature might not work on the other browser.
     (3) Run, Stop and Step can be controlled from keys.
         * [Ctrl]+[F8]: run/continue
         * [Ctrl]+[F9]: stop/break
         * [Ctrl]+[F11]: step
+    * __v0.1.16__ - Add CLI emulator and debugger `mz700-cli`.
 
 WANT TO DO
 ----------
