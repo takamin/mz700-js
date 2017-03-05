@@ -1,5 +1,6 @@
 (function() {
     var $ = require("jquery");
+    require("../lib/context.js");
     require("../lib/ex_number.js");
     require("../Z80/memory.js");
     require("../Z80/register.js");
@@ -8,6 +9,7 @@
     require("../MZ-700/mztape.js");
     require("../MZ-700/emulator.js");
     var MZ700_Sound = require("../MZ-700/sound.js");
+    var MMIO = require("../MZ-700/mmio");
     require("../lib/jquery.ddpanel.js");
     require("../lib/jquery.soundctrl.js");
     require("../lib/jquery.Z80-mem.js");
@@ -101,7 +103,6 @@
             //
             // Sliders for ExecutionParameter
             //
-            this.executionParameter = new ExecutionParameter(1, 1000, 7);
             this.sliderExecParamNumOfTimer = $("<input/>")
                 .attr("type", "range").attr("min", 1).attr("max", 250)
                 .val(1).bind("change", function() {
@@ -328,17 +329,14 @@
             // Create MZ-700 Worker
             //
 
-            this.MMIO = require("../MZ-700/mmio").create();
+            this.MMIO = MMIO.create();
             this.mz700comworker = TransWorker.create(
                 this.opt.urlPrefix + "MZ-700/worker.js", MZ700, this, {
                     'onExecutionParameterUpdate': function(param) {
                         this.onExecutionParameterUpdate(param);
                     },
-                    'running': function() { this.showStatus(); },
-                    'started': function() { },
-                    'break': function() { this.stop(); },
-
-                    'updateScreen': (mz700scrn == null) ? function() {} :
+                    'onBreak': function() { this.stop(); },
+                    'onUpdateScreen': (mz700scrn == null) ? function() {} :
                         function(updateData) { mz700scrn.write(updateData); },
                     'onMmioRead': function(param) {
                         this.MMIO.read(param.address, param.value);
@@ -536,6 +534,11 @@
                 .append($("<br/>"))
                 .DropDownPanel("create", { "caption" : "Execute Z80 Instruction" });
         }
+
+        this.executionParameter = new ExecutionParameter(1, 1000, 7);
+        this.mz700comworker.getExecutionParameter(function(param) {
+            this.executionParameter.set(param);
+        });
     };
     MZ700Js.prototype.mmioMapPeripheral = function(peripheral, mapToRead, mapToWrite) {
         this.MMIO.entry(peripheral, mapToRead, mapToWrite);

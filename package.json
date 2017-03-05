@@ -1,6 +1,6 @@
 {
   "name": "mz700-js",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "description": "Full JavaScript MZ-700 Emulator",
   "private": false,
   "scripts": {
@@ -9,6 +9,7 @@
   },
   "bin": {
     "mz700-js": "./bin/www",
+    "mz700-cli": "./tools/mz700-cli.js",
     "mzasm": "./tools/mzasm.js",
     "mzdas": "./tools/mzdasm.js",
     "bin2mzt": "./tools/bin2mzt.js"
@@ -18,6 +19,7 @@
     "jquery-ui": "./bower_components/jquery-ui/jquery-ui.js"
   },
   "dependencies": {
+    "ansi-escape-sequences": "^3.0.0",
     "body-parser": "~1.15.2",
     "bower": "^1.7.9",
     "browserify": "^14.1.0",
@@ -29,6 +31,7 @@
     "grunt-browserify": "^5.0.0",
     "hash-arg": "0.1.0",
     "jade": "~1.11.0",
+    "linebyline": "^1.3.0",
     "list-it": "^0.3.3",
     "morgan": "~1.7.0",
     "node-getopt": "^0.2.3",

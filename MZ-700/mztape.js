@@ -171,7 +171,7 @@ MZ_Tape.prototype.readSignal = function() {
     return null;
 };
 
-MZ_Tape.prototype.writeSignal = function() {
+MZ_Tape.prototype.writeSignal = function(signal) {
     this._tapeData.push(signal);
 };
 
@@ -364,10 +364,10 @@ MZ_Tape.toBytes = function(bits) {
 
     var extra = [];
     var extraByte;
-    while((extraByte = reader.readByte()) != null) {
+    while(extraByte = reader.readByte()) {
         console.warn(
                 "MZ_Tape.toBytes rest bytes["
-                + bytes.length + "] =",
+                + extraByte.length + "] =",
                 extraByte.HEX(2));
         extra.push(extraByte);
     }

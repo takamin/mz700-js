@@ -127,3 +127,8 @@ MemoryBank.prototype.peekByte = function(address) {
 MemoryBank.prototype.pokeByte = function(address, value) {
     (this.mem[(address - this.startAddr) & 0xffff]).poke(address, value & 0xff);
 };
+module.exports = {
+    IMem: IMem,
+    MemoryBlock: MemoryBlock,
+    MemoryBank: MemoryBank
+};

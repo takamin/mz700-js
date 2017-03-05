@@ -10,7 +10,6 @@
             this.mmio.push({ "r":[],"w":[] });
         }
     };
-    window.MMIO = MMIO;
 
     // Map a peripheral to adresses
     MMIO.prototype.entry = function (peripheral, inputs, outputs)
