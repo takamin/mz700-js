@@ -26,7 +26,8 @@
     require("../lib/cli-command-step.js").installTo(commands);
     require("../lib/cli-command-jump.js").installTo(commands);
     require("../lib/cli-command-breakpoint.js").installTo(commands);
-    require("../lib/cli-command-sendkey.js").installTo(commands);
+    var cliCommandSendKey = require("../lib/cli-command-sendkey.js");
+    cliCommandSendKey.installTo(commands);
     var cliCommandVram = require("../lib/cli-command-vram.js");
     cliCommandVram.installTo(commands);
     require("../lib/cli-command-mem.js").installTo(commands);
@@ -77,6 +78,7 @@
 
     mz700.setExecutionParameter(
             (new ExecutionParameter(200,10,1)).get());
+    cliCommandSendKey.setMakeReleaseDurations(200,50);
 
     var memsetMZ = function(addr, buf, size) {
         for(var i = 0; i < size; i++) {
