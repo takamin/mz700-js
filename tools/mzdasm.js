@@ -13,6 +13,7 @@ var getopt = require('node-getopt').create([
         ['t',   'input-mzt', 'input file is mz-tape file'],
         ['o',   'output-file=ARG',  'filename to output'],
         ['l',   'load-to=ARG',  'address to load'],
+        ['c',   'to-console',  'print result to console'],
         ['h',   'help',     'display this help'],
         ['v',   'version',  'show version']
         ]).bindHelp().parseSystem();
@@ -72,5 +73,12 @@ fs.readFile(input_filename, function(err, data) {
     for(var i = 0; i < dasmlines.length; i++) {
         outbuf.push(dasmlines[i]);
     }
-    fs.writeFileSync(output_filename, outbuf.join("\n") + "\n");
+    if(getopt.options['to-console']) {
+        console.log(
+                outbuf.join("\n") + "\n");
+    } else {
+        fs.writeFileSync(
+                output_filename,
+                outbuf.join("\n") + "\n");
+    }
 });
