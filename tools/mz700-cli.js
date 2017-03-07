@@ -40,6 +40,8 @@
         cliCommandCmt
     ]);
 
+    commands.install(require("../lib/cli-command-conf.js"));
+
     var mz700 = new MZ700({
         "onExecutionParameterUpdate" : function() { },
         "onVramUpdate": function(index, dispcode, attr){
