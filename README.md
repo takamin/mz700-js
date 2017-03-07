@@ -62,46 +62,56 @@ Available Browsers
 * Microsoft Internet explorer 11 (but no sound and slow)
 * Microsoft Edge (but slow)
 
-`mz700-cli` - RUN THE CLI EMULATOR with Node.js
-===============================================
 
-COMMAND LINE
-------------
+
+
+`mz700-cli` - RUN THE CLI EMULATOR with Node.js
+-----------------------------------------------
+
+### COMMAND LINE
 
 ```
 > mz700-cli [-c <mzt-filename>] [<mzt-filename>]
 ```
 
-OPTIONS
--------
+### OPTIONS
 
 * c - Set a MZT file to the data recorder as CMT.
 
-PARAMETERS
-----------
+### PARAMETERS
 
 * `<mzt-filename>` - A MZT-filename to be loaded to the memory immedietely.
 
-COMMANDS
---------
+### COMMANDS
 
-* `run` - Run MZ-700 emulation.
-* `stop` - Stop emulation.
-* `step [num-of-instruction]` - Execute N instructions and stop.
-* `vram` - Print VRAM to console.
-* `reg` - Print register.
-* `key <input-strings>` - Convert the string to MZ-700's Key-Matrix, Then push those stroke.
-* `jp <addr>' - Set the PC of Z80 CPU.
-* `mem set <addr> <data>, ...` - Write data to the memory
-* `mem dump <addr>` - Print the contents of the memory.
-* `cmt set <mzt-filename>` - Set CMT to the data recorder.
-* `cmt eject` - Eject CMT.
-* `cmt play` - Push the PLAY button of the data recorder.
-* `cmt rec` - Push the REC button of the data recorder.
-* `cmt stop` - Push the STOP button of the data recorder.
-* `bp set <addr>` - Set break points at the adress.
-* `bp rm <addr>` - Remove the break points set at the adress.
-* `bp clear` - Clear all break points.
+* __`exit`__ - Exit from the emulator.
+* __`run`__ - Run MZ-700 emulation.
+* __`stop`__ - Stop emulation.
+* __`step`__ _`[<num>]`_ - Execute N instructions and stop. num default is 1.
+* __`vram`__ - Print VRAM to console.
+* __`reg`__ - Print register.
+* __`key`__ _`<input-strings>`_ - Convert the string to MZ-700's Key-Matrix, Then push those stroke.
+* __`jp`__ _`<addr>`_ - Set the PC of Z80 CPU.
+* __`mem set`__ _`<addr> <data> [ <data> ...]`_ - Write data to the memory
+* __`mem dump`__ _`<addr>`_ - Print the contents of the memory.
+* __`cmt set`__ _`<mzt-filename>`_ - Set CMT to the data recorder.
+* __`cmt eject`__ - Eject CMT.
+* __`cmt play`__ - Push the PLAY button of the data recorder.
+* __`cmt rec`__ - Push the REC button of the data recorder.
+* __`cmt stop`__ - Push the STOP button of the data recorder.
+* __`bp set`__ _`<addr>`_ - Set break points at the address.
+* __`bp rm`__ _`<addr>`_ - Remove the break points set at the address.
+* __`bp clear`__ - Clear all break points.
+* __`conf key duration make <num>`__ - Set key making duration by millisec.
+* __`conf key duration release <num>`__ - Set key releasing duration by millisec.
+* __`conf key duration make`__ - Print key making duration.
+* __`conf key duration release`__ - Print key releasing duration.
+
+#### Parameters for the commands
+
+* _`<num>`_ : Number.
+* _`<addr>`_, _`<data>`_ : Specify the address like `0123h` as hexadecimal or `1024` as decimal
+* _`<input-string>`_ : String structured by the keys of the MZ-700 Key-Matrix.
 
 CHANGES
 -------
@@ -141,7 +151,8 @@ CHANGES
         * [Ctrl]+[F8]: run/continue
         * [Ctrl]+[F9]: stop/break
         * [Ctrl]+[F11]: step
-    * __v0.1.16__ - Add CLI emulator and debugger `mz700-cli`.
+    * v0.1.16 - Add CLI emulator and debugger `mz700-cli`.
+    * __v0.1.17__ - Changed initial keystroke durations of CLI emulator and allow those values to be changed by added `conf` command .
 
 WANT TO DO
 ----------
