@@ -102,6 +102,10 @@ Available Browsers
 * __`bp set`__ _`<addr>`_ - Set break points at the address.
 * __`bp rm`__ _`<addr>`_ - Remove the break points set at the address.
 * __`bp clear`__ - Clear all break points.
+* __`conf key duration make <num>`__ - Set key making duration by millisec.
+* __`conf key duration release <num>`__ - Set key releasing duration by millisec.
+* __`conf key duration make`__ - Print key making duration.
+* __`conf key duration release`__ - Print key releasing duration.
 
 #### Parameters for the commands
 
@@ -147,7 +151,8 @@ CHANGES
         * [Ctrl]+[F8]: run/continue
         * [Ctrl]+[F9]: stop/break
         * [Ctrl]+[F11]: step
-    * __v0.1.16__ - Add CLI emulator and debugger `mz700-cli`.
+    * v0.1.16 - Add CLI emulator and debugger `mz700-cli`.
+    * __v0.1.17__ - Changed initial keystroke durations of CLI emulator and allow those values to be changed by added `conf` command .
 
 WANT TO DO
 ----------
