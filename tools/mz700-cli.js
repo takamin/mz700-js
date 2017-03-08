@@ -1,12 +1,27 @@
 #!/usr/bin/env node
 (function() {
     "use strict";
+
     var getopt = require('node-getopt').create([
             ['c',   'set-cmt=ARG',  'set cassete magnetic tape'],
             ['h',   'help',     'display this help'],
             ['v',   'version',  'show version']
             ]).bindHelp().parseSystem();
     var argv = require("hash-arg").get(["input_filename"], getopt.argv);
+
+    var getPackageJson = require("../lib/get-package-json");
+    var npmInfo = getPackageJson(__dirname + "/..");
+    if(getopt.options.version) {
+        console.log("");
+        console.log("mz700-cli v" + npmInfo.version);
+        console.log("===================");
+        console.log("");
+        console.log("* LICENSE:    " + npmInfo.license);
+        console.log("* REPOSITORY: " + npmInfo.repository.url);
+        console.log("* BUGS TO:    " + npmInfo.bugs.url);
+        return;
+    }
+    console.log("mz700-cli v" + npmInfo.version);
 
     var readline = require("linebyline")(process.stdin);
     var fnut = require("../lib/fnuts.js");
