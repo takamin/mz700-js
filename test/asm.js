@@ -1,12 +1,8 @@
 var UnitTest = require("./UnitTest");
-var fs = require('fs');
-eval(fs.readFileSync('../lib/ex_number.js')+'');
-eval(fs.readFileSync('../Z80/emulator.js')+'');
-eval(fs.readFileSync('../Z80/register.js')+'');
-eval(fs.readFileSync('../Z80/assembler.js')+'');
-eval(fs.readFileSync('../Z80/memory.js')+'');
-eval(fs.readFileSync('../MZ-700/emulator.js')+'');
-eval(fs.readFileSync('../MZ-700/mztape.js')+'');
+require("../lib/context.js");
+require('../lib/ex_number.js');
+var Z80 = require('../Z80/emulator.js');
+var Z80_assemble = require('../Z80/assembler');
 var line_asm_test_pattern = [
     { code:[0x00], mnemonic:"NOP" },
     { code:[0x01, 0x34, 0x12], mnemonic:"LD BC,1234H" },

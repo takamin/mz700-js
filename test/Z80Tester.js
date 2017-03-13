@@ -1,9 +1,7 @@
-var fs = require('fs');
-eval(fs.readFileSync('../lib/ex_number.js')+'');
-eval(fs.readFileSync('../Z80/emulator.js')+'');
-eval(fs.readFileSync('../Z80/memory.js')+'');
-eval(fs.readFileSync('../Z80/register.js')+'');
-eval(fs.readFileSync('../Z80/assembler.js')+'');
+require('../lib/ex_number.js');
+require('../Z80/emulator.js');
+require('../Z80/register.js');
+var Z80_assemble = require('../Z80/assembler');
 function Z80Tester() {  }
 Z80Tester.prototype.runMnemonics = function(Z80, mnemonics) {
     var stadr = null;
@@ -37,3 +35,4 @@ Z80Tester.prototype.runMnemonics = function(Z80, mnemonics) {
         console.error("*** could not assemble code:" + mnemonics.join('/'));
     }
 };
+module.exports = Z80Tester;

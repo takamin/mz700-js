@@ -1,3 +1,4 @@
+require("../lib/context.js");
 var UnitTest = require("./UnitTest");
 UnitTest.test(require('./reg'));
 UnitTest.test(require('./asm'));

@@ -10,13 +10,10 @@
 
     var readline = require("linebyline")(process.stdin);
     var fnut = require("../lib/fnuts.js");
+    require("../lib/context.js");
     require("../lib/ex_number.js");
-    require("../Z80/memory.js");
-    require("../Z80/register.js");
-    require("../Z80/assembler.js");
-    require("../Z80/emulator.js");
-    require("../MZ-700/mztape.js");
-    require("../MZ-700/emulator.js");
+    var TBooster = require('../lib/t-booster');
+    var MZ700 = require("../MZ-700/emulator.js");
     var mztReadFile = require("../lib/mzt-read-file");
 
     var CliCommand = require("../lib/cli-command.js");
@@ -44,6 +41,7 @@
 
     var mz700 = new MZ700({
         "onExecutionParameterUpdate" : function() { },
+        "onBreak" : function() { },
         "onVramUpdate": function(index, dispcode, attr){
             cliCommandVram.setAt(index, dispcode, attr);
         },
@@ -76,7 +74,7 @@
     });
 
     mz700.setExecutionParameter(
-            (new ExecutionParameter(200,10,1)).get());
+            (new TBooster.Param(200,10,1)).get());
     cliCommandSendKey.setMakeReleaseDurations(200,50);
 
     var memsetMZ = function(addr, buf, size) {

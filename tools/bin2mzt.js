@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 require("../lib/ex_number.js");
-require('../MZ-700/mztape.js');
+var MZ_TapeHeader = require('../MZ-700/mz-tape-header.js');
 var fnut = require('../lib/fnuts.js');
 var fs = require('fs');
 var getopt = require('node-getopt').create([
