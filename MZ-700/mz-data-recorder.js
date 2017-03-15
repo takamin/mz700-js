@@ -4,13 +4,19 @@ var MZ_DataRecorder = function(motorCallback) {
     this._rec = false;
     this._motor = false;
     this._wdata = null;
+    this._twdata = null;
     this._rbit = null;
-    this._twdata = 0;
-    this._trdata = 0;
+    this._trdata = null;
     this._cmt = null;
     this._pos = 0;
     this._motorCallback = motorCallback;
+    this._readTopBlank = 0;
 };
+
+MZ_DataRecorder.RDATA_TOP_BLANK_LEN = 1;
+MZ_DataRecorder.RDATA_CYCLE_HI_LONG = 1500;
+MZ_DataRecorder.RDATA_CYCLE_HI_SHORT = 700;
+MZ_DataRecorder.RDATA_CYCLE_LO = 700;
 
 MZ_DataRecorder.prototype.isCmtSet = function() {
     return (this._cmt != null);
@@ -23,6 +29,10 @@ MZ_DataRecorder.prototype.setCmt = function(cmt) {
     }
     this._cmt = cmt;
     this._pos = 0;
+    this._twdata = null;
+    this._rbit = null;
+    this._trdata = null;
+    this._readTopBlank = 0;
 };
 
 MZ_DataRecorder.prototype.play = function() {
@@ -60,6 +70,10 @@ MZ_DataRecorder.prototype.ejectCmt = function() {
     var cmt = this._cmt;
     this._cmt = null;
     this._pos = 0;
+    this._twdata = null;
+    this._rbit = null;
+    this._trdata = null;
+    this._readTopBlank = 0;
     return cmt;
 };
 
@@ -88,6 +102,9 @@ MZ_DataRecorder.prototype.wdata = function(wdata, tick) {
             if(wdata) {
                 this._twdata = tick;
             } else {
+                if(this._twdata == null) {
+                    this._twdata = tick;
+                }
                 var bit = (tick - this._twdata > 1400);
                 if(this._pos < this._cmt.length) {
                     this._cmt[this._pos] = bit;
@@ -104,31 +121,53 @@ MZ_DataRecorder.prototype.wdata = function(wdata, tick) {
 MZ_DataRecorder.prototype.rdata = function(tick) {
     if(this.motor()) {
         if(this._pos < this._cmt.length) {
-            if(this._rbit == null) {
-                var bit = 0;
-                if(this._pos < this._cmt.length) {
-                    bit = this._cmt[this._pos];
-                    this._pos++;
+
+            // Simulate blank reagion at the top of CMT
+            if(this._pos == 0) {
+                if(this._readTopBlank <
+                        MZ_DataRecorder.RDATA_TOP_BLANK_LEN)
+                {
+                    ++this._readTopBlank;
+                    return false;
                 }
-                this._rbit = bit;
             }
-            var rdata = this._rbit;
-            if(this._trdata == null) {
+
+            // Stop motor at the end of tape
+            if(this._pos >= this._cmt.length) {
+                console.log("MZ_DataRecorder stopped at the end of CMT.");
+                this.stop();
+                return false;
+            }
+
+            // Retrieve next bit
+            if(this._rbit == null) {
+                this._rbit = this._cmt[this._pos];
+                this._pos++;
                 this._trdata = tick;
             }
+            // reading bit 0
+            //
+            //     _|~~~~~~~|_______
+            //     
+            //     H: 700 cycle
+            //     L: 700 cycle
+            //
+            // reading bit 1:
+            //
+            //     _|~~~~~~~~~~~~~~~|_______
+            //     
+            //     H: 1500 cycle
+            //     L: 700  cycle
+            //
+            var ticks_high = (this._rbit ?
+                    MZ_DataRecorder.RDATA_CYCLE_HI_LONG :
+                    MZ_DataRecorder.RDATA_CYCLE_HI_SHORT);
             var ticks = tick - this._trdata;
-            if(this._rbit) {
-                if(ticks > 1500) {
-                    this._rbit = null;
-                    this._trdata = null;
-                }
-            } else {
-                if(ticks > 700) {
-                    this._rbit = null;
-                    this._trdata = null;
-                }
+            if(ticks >= ticks_high + MZ_DataRecorder.RDATA_CYCLE_LO) {
+                this._rbit = null;
             }
-            return rdata;
+            var signal = (ticks < ticks_high);
+            return signal;
         }
     }
     return null;
