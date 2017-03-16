@@ -1,11 +1,10 @@
 #!/usr/bin/env node
+require("../lib/context.js");
 require('../lib/ex_number.js');
-require('../Z80/emulator.js');
-require('../Z80/register.js');
-require('../Z80/assembler.js');
-require('../Z80/memory.js');
-require('../MZ-700/emulator.js');
-require('../MZ-700/mztape.js');
+var Z80 = require("../Z80/emulator.js");
+var Z80BinUtil = require("../Z80/bin-util.js");
+var Z80LineAssembler = require('../Z80/z80-line-assembler');
+var MZ700 = require('../MZ-700/emulator.js');
 var fnut = require("../lib/fnuts.js");
 var fs = require('fs');
 var getopt = require('node-getopt').create([
@@ -17,10 +16,14 @@ var getopt = require('node-getopt').create([
         ['h',   'help',     'display this help'],
         ['v',   'version',  'show version']
         ]).bindHelp().parseSystem();
+
+var getPackageJson = require("../lib/get-package-json");
+var npmInfo = getPackageJson(__dirname + "/..");
 if(getopt.options.version) {
-    console.log("Z80 disassembler v0.1");
+    console.log("Z80 disassembler for MZ-700 v" + npmInfo.version);
     return;
 }
+
 var args = require("hash-arg").get(["input_filename"], getopt.argv);
 if(getopt.argv.length < 1) {
     console.error('error: no input file');
@@ -36,7 +39,7 @@ var addr_load = (function(addr_tok) {
     if(addr_tok) {
         var a = Z80LineAssembler.parseNumLiteralPair(addr_tok);
         if(typeof(a[0]) === 'number') {
-            return Z80.pair(a[1], a[0]);
+            return Z80BinUtil.pair(a[1], a[0]);
         }
     }
     return 0;

@@ -1,5 +1,6 @@
-var fs = require('fs');
-eval(fs.readFileSync('Z80Tester.js')+'');
+require("../lib/context.js");
+var Z80Tester = require('./Z80Tester.js');
+var Z80 = require('../Z80/emulator.js');
 
 var tester = new Z80Tester();
 var cpu = new Z80();

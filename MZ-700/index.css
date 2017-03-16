@@ -138,3 +138,14 @@
 .imm-exec input.mnemonic {
     width:200px;
 }
+
+
+#mzt_info {
+    color:white;
+    background-color:blue;
+    font-weight:bold;
+    font-size:12pt;
+    text-align:center;
+    padding:10px 0;
+    margin:10px 0 0 2px;
+}

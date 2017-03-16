@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 (function() {
     "use strict";
+
     var getopt = require('node-getopt').create([
             ['c',   'set-cmt=ARG',  'set cassete magnetic tape'],
             ['h',   'help',     'display this help'],
@@ -8,15 +9,26 @@
             ]).bindHelp().parseSystem();
     var argv = require("hash-arg").get(["input_filename"], getopt.argv);
 
+    var getPackageJson = require("../lib/get-package-json");
+    var npmInfo = getPackageJson(__dirname + "/..");
+    if(getopt.options.version) {
+        console.log("");
+        console.log("mz700-cli v" + npmInfo.version);
+        console.log("===================");
+        console.log("");
+        console.log("* LICENSE:    " + npmInfo.license);
+        console.log("* REPOSITORY: " + npmInfo.repository.url);
+        console.log("* BUGS TO:    " + npmInfo.bugs.url);
+        return;
+    }
+    console.log("mz700-cli v" + npmInfo.version);
+
     var readline = require("linebyline")(process.stdin);
     var fnut = require("../lib/fnuts.js");
+    require("../lib/context.js");
     require("../lib/ex_number.js");
-    require("../Z80/memory.js");
-    require("../Z80/register.js");
-    require("../Z80/assembler.js");
-    require("../Z80/emulator.js");
-    require("../MZ-700/mztape.js");
-    require("../MZ-700/emulator.js");
+    var TBooster = require('../lib/t-booster');
+    var MZ700 = require("../MZ-700/emulator.js");
     var mztReadFile = require("../lib/mzt-read-file");
 
     var CliCommand = require("../lib/cli-command.js");
@@ -44,6 +56,7 @@
 
     var mz700 = new MZ700({
         "onExecutionParameterUpdate" : function() { },
+        "onBreak" : function() { },
         "onVramUpdate": function(index, dispcode, attr){
             cliCommandVram.setAt(index, dispcode, attr);
         },
@@ -76,7 +89,7 @@
     });
 
     mz700.setExecutionParameter(
-            (new ExecutionParameter(200,10,1)).get());
+            (new TBooster.Param(200,10,1)).get());
     cliCommandSendKey.setMakeReleaseDurations(200,50);
 
     var memsetMZ = function(addr, buf, size) {

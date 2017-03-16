@@ -1,11 +1,8 @@
 #!/usr/bin/env node
+require("../lib/context.js");
 require("../lib/ex_number.js");
-require("../Z80/emulator.js");
-require("../Z80/register.js");
-require("../Z80/assembler.js");
-require('../Z80/memory.js');
-require('../MZ-700/emulator.js');
-require('../MZ-700/mztape.js');
+var Z80_assemble = require('../Z80/assembler');
+var MZ_TapeHeader = require('../MZ-700/mz-tape-header');
 var fnut = require('../lib/fnuts.js');
 var fs = require('fs');
 var getopt = require('node-getopt').create([
@@ -18,10 +15,14 @@ var getopt = require('node-getopt').create([
         ['h',   'help',     'display this help'],
         ['v',   'version',  'show version']
         ]).bindHelp().parseSystem();
+
+var getPackageJson = require("../lib/get-package-json");
+var npmInfo = getPackageJson(__dirname + "/..");
 if(getopt.options.version) {
-    console.log("Z80 assembler v0.0");
+    console.log("Z80 assembler for MZ-700 v" + npmInfo.version);
     return;
 }
+
 var args = require("hash-arg").get(["input_filename"], getopt.argv);
 if(getopt.argv.length < 1) {
     console.error('error: no input file');

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 require("../lib/ex_number.js");
-require('../MZ-700/mztape.js');
+var MZ_TapeHeader = require('../MZ-700/mz-tape-header.js');
 var fnut = require('../lib/fnuts.js');
 var fs = require('fs');
 var getopt = require('node-getopt').create([
@@ -10,10 +10,14 @@ var getopt = require('node-getopt').create([
         ['h',   'help',     'display this help'],
         ['v',   'version',  'show version']
         ]).bindHelp().parseSystem();
+
+var getPackageJson = require("../lib/get-package-json");
+var npmInfo = getPackageJson(__dirname + "/..");
 if(getopt.options.version) {
-    console.log("bin2mzt v0.0");
+    console.log("bin2mzt v" + npmInfo.version);
     return;
 }
+
 var args = require("hash-arg").get(["input_filename"], getopt.argv);
 if(getopt.argv.length < 1) {
     console.error('error: no input file');

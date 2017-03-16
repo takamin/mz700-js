@@ -1,6 +1,7 @@
+require("../lib/context");
 var UnitTest = require("./UnitTest");
-var fs = require('fs');
-eval(fs.readFileSync('Z80Tester.js')+'');
+var Z80Tester = require('./Z80Tester.js');
+var Z80 = require('../Z80/emulator.js');
 var cpu = new Z80();
 
 var tester = new Z80Tester();
@@ -8,8 +9,7 @@ function report(cpu, name, result) {
     if(result === true) {
         UnitTest.report(name, true);
     } else {
-        UnitTest.report(name, false, "");
-        cpu.reg.debugDump();
+        UnitTest.report(name, false);
     }
 }
 var test_set = [

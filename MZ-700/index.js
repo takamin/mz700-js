@@ -2,12 +2,10 @@
     var $ = require("jquery");
     require("../lib/context.js");
     require("../lib/ex_number.js");
-    require("../Z80/memory.js");
-    require("../Z80/register.js");
-    require("../Z80/assembler.js");
-    require("../Z80/emulator.js");
-    require("../MZ-700/mztape.js");
-    require("../MZ-700/emulator.js");
+    var TBooster = require('../lib/t-booster');
+    var Z80_assemble = require("../Z80/assembler.js");
+    var MZ_TapeHeader = require('../MZ-700/mz-tape-header');
+    var MZ700 = require("../MZ-700/emulator.js");
     var MZ700_Sound = require("../MZ-700/sound.js");
     var MMIO = require("../MZ-700/mmio");
     require("../lib/jquery.ddpanel.js");
@@ -101,24 +99,24 @@
                 }.bind(this));
 
             //
-            // Sliders for ExecutionParameter
+            // Sliders for execParam
             //
             this.sliderExecParamNumOfTimer = $("<input/>")
                 .attr("type", "range").attr("min", 1).attr("max", 250)
                 .val(1).bind("change", function() {
-                    this.executionParameter.numOfTimer = this.sliderExecParamNumOfTimer.val();
+                    this.execParam.numOfTimer = this.sliderExecParamNumOfTimer.val();
                     this.updateExecutionParameter();
                 }.bind(this));
             this.sliderExecParamNumOfExecInst = $("<input/>")
                 .attr("type", "range").attr("min", 1).attr("max", 1000)
                 .val(1000).bind("change", function() {
-                    this.executionParameter.numOfExecInst = this.sliderExecParamNumOfExecInst.val();
+                    this.execParam.numOfExecInst = this.sliderExecParamNumOfExecInst.val();
                     this.updateExecutionParameter();
                 }.bind(this));
             this.sliderExecParamTimerInterval = $("<input/>")
                 .attr("type", "range").attr("min", 1).attr("max", 1000)
                 .val(7).bind("change", function() {
-                    this.executionParameter.timerInterval = this.sliderExecParamTimerInterval.val();
+                    this.execParam.timerInterval = this.sliderExecParamTimerInterval.val();
                     this.updateExecutionParameter();
                 }.bind(this));
 
@@ -188,6 +186,7 @@
                         function(bytes) {
                             console.log("EJECT callback");
                             if(bytes == null || bytes.length < 128) {
+                                console.log("CMT has too short length data");
                                 return;
                             }
                             var header = new MZ_TapeHeader(bytes, 0);
@@ -206,20 +205,41 @@
                                     );
                         }.bind(this));
                 }.bind(this));
-            this.btnCmtSet = $("<button/>").attr("type", "button")
-                .html("SET").click(function() {
-                    this.mz700comworker.dataRecorder_setCmt([],
-                        function(bytes) {
-                            console.log("SET callback");
-                        });
-                }.bind(this));
+            this.btnCmtSet = $("#mzt_info").html(
+                    "DROP MZT INTO HERE TO LOAD BY MONITOR COMMAND");
+            if (window.File && window.FileReader && window.FileList && window.Blob) {
+                var dropZone = this.btnCmtSet.get(0);
+                dropZone.addEventListener('dragover', function(evt) {
+                    evt.stopPropagation();
+                    evt.preventDefault();
+                    evt.dataTransfer.dropEffect = 'copy'; // Explicitly show this is a copy.
+                }, false);
+                dropZone.addEventListener('drop', function(evt) {
+                    evt.stopPropagation();
+                    evt.preventDefault();
+                    var files = evt.dataTransfer.files; // FileList object.
+                    if(files.length > 0) {
+                        var f = files[0];
+                        var reader = new FileReader();
+                        reader.onload = function(e) {
+                            var tape_data = new Uint8Array(reader.result);
+                            this.mz700comworker.setCassetteTape(tape_data, function(mztape_array) {
+                                if(mztape_array != null) {
+                                    $("#mzt_info").html(
+                                            "MZT: '" + mztape_array[0].header.filename + "' (TO LOAD, USE L COMMAND)");
+                                }
+                            }.bind(this));
+                        }.bind(this);
+                        reader.readAsArrayBuffer(f);
+                    }
+                }.bind(this), false);
+            }
             this.cmtMessageArea = $("<span/>").addClass("cmt-message");
             dataRecorder
                 .append(this.btnCmtRec)
-                //.append(this.btnCmtPlay)
-                //.append(this.btnCmtStop)
+                .append(this.btnCmtPlay)
+                .append(this.btnCmtStop)
                 .append(this.btnCmtEject)
-                //.append(this.btnCmtSet)
                 .append(this.cmtMessageArea);
 
             //
@@ -351,30 +371,12 @@
                     "onStartDataRecorder": function(){
                         this.btnCmtRec.prop("disabled", true);
                         this.btnCmtEject.prop("disabled", true);
+                        this.btnCmtStop.prop("disabled", false);
                     }.bind(this),
                     "onStopDataRecorder": function(){
                         this.btnCmtRec.prop("disabled", false);
                         this.btnCmtEject.prop("disabled", false);
-                        this.mz700comworker.dataRecorder_ejectCmt(
-                            function(bytes) {
-                                console.log("EJECT callback");
-                                if(bytes == null || bytes.length < 128) {
-                                    return;
-                                }
-                                var header = new MZ_TapeHeader(bytes, 0);
-                                var byteArr = new Uint8Array(bytes);
-                                var blob = new Blob([byteArr], {'type': "application/octet-stream"});
-                                this.cmtMessageArea.empty().append(
-                                        $("<a/>")
-                                            .attr("download", header.filename + ".MZT")
-                                            .attr("type", "application/octet-stream")
-                                            .attr("href", URL.createObjectURL(blob))
-                                            .html("<u>↓</u> " + header.filename + ":" +
-                                                header.addr_load.HEX(4) + "-" +
-                                                (header.addr_load + header.file_size - 1).HEX(4) + "-" +
-                                                header.addr_exec.HEX(4))
-                                        );
-                            }.bind(this));
+                        this.btnCmtStop.prop("disabled", true);
                     }.bind(this)
                 }
             );
@@ -535,9 +537,9 @@
                 .DropDownPanel("create", { "caption" : "Execute Z80 Instruction" });
         }
 
-        this.executionParameter = new ExecutionParameter(1, 1000, 7);
+        this.execParam = new TBooster.Param(1, 1000, 7);
         this.mz700comworker.getExecutionParameter(function(param) {
-            this.executionParameter.set(param);
+            this.execParam.set(param);
         });
     };
     MZ700Js.prototype.mmioMapPeripheral = function(peripheral, mapToRead, mapToWrite) {
@@ -674,12 +676,12 @@
     };
 
     MZ700Js.prototype.updateExecutionParameter = function() {
-        console.log("MZ700Js.updateExecutionParameter", JSON.stringify(this.executionParameter.get()));
-        this.mz700comworker.setExecutionParameter(this.executionParameter.get(), function(){});
+        console.log("MZ700Js.updateExecutionParameter", JSON.stringify(this.execParam.get()));
+        this.mz700comworker.setExecutionParameter(this.execParam.get(), function(){});
     };
     MZ700Js.prototype.onExecutionParameterUpdate = function(param) {
         console.log("MZ700Js.onExecutionParameterUpdate", JSON.stringify(param));
-        this.executionParameter.set(param);
+        this.execParam.set(param);
         this.sliderExecParamNumOfTimer.val(param.numOfTimer);
         $("#exec-param1").html(param.numOfTimer);
         this.sliderExecParamNumOfExecInst.val(param.numOfExecInst);
