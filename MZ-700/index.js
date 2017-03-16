@@ -2,12 +2,10 @@
     var $ = require("jquery");
     require("../lib/context.js");
     require("../lib/ex_number.js");
-    require("../Z80/memory.js");
-    require("../Z80/register.js");
-    require("../Z80/assembler.js");
-    require("../Z80/emulator.js");
-    require("../MZ-700/mztape.js");
-    require("../MZ-700/emulator.js");
+    var TBooster = require('../lib/t-booster');
+    var Z80_assemble = require("../Z80/assembler.js");
+    var MZ_TapeHeader = require('../MZ-700/mz-tape-header');
+    var MZ700 = require("../MZ-700/emulator.js");
     var MZ700_Sound = require("../MZ-700/sound.js");
     var MMIO = require("../MZ-700/mmio");
     require("../lib/jquery.ddpanel.js");
@@ -101,24 +99,24 @@
                 }.bind(this));
 
             //
-            // Sliders for ExecutionParameter
+            // Sliders for execParam
             //
             this.sliderExecParamNumOfTimer = $("<input/>")
                 .attr("type", "range").attr("min", 1).attr("max", 250)
                 .val(1).bind("change", function() {
-                    this.executionParameter.numOfTimer = this.sliderExecParamNumOfTimer.val();
+                    this.execParam.numOfTimer = this.sliderExecParamNumOfTimer.val();
                     this.updateExecutionParameter();
                 }.bind(this));
             this.sliderExecParamNumOfExecInst = $("<input/>")
                 .attr("type", "range").attr("min", 1).attr("max", 1000)
                 .val(1000).bind("change", function() {
-                    this.executionParameter.numOfExecInst = this.sliderExecParamNumOfExecInst.val();
+                    this.execParam.numOfExecInst = this.sliderExecParamNumOfExecInst.val();
                     this.updateExecutionParameter();
                 }.bind(this));
             this.sliderExecParamTimerInterval = $("<input/>")
                 .attr("type", "range").attr("min", 1).attr("max", 1000)
                 .val(7).bind("change", function() {
-                    this.executionParameter.timerInterval = this.sliderExecParamTimerInterval.val();
+                    this.execParam.timerInterval = this.sliderExecParamTimerInterval.val();
                     this.updateExecutionParameter();
                 }.bind(this));
 
@@ -535,9 +533,9 @@
                 .DropDownPanel("create", { "caption" : "Execute Z80 Instruction" });
         }
 
-        this.executionParameter = new ExecutionParameter(1, 1000, 7);
+        this.execParam = new TBooster.Param(1, 1000, 7);
         this.mz700comworker.getExecutionParameter(function(param) {
-            this.executionParameter.set(param);
+            this.execParam.set(param);
         });
     };
     MZ700Js.prototype.mmioMapPeripheral = function(peripheral, mapToRead, mapToWrite) {
@@ -674,12 +672,12 @@
     };
 
     MZ700Js.prototype.updateExecutionParameter = function() {
-        console.log("MZ700Js.updateExecutionParameter", JSON.stringify(this.executionParameter.get()));
-        this.mz700comworker.setExecutionParameter(this.executionParameter.get(), function(){});
+        console.log("MZ700Js.updateExecutionParameter", JSON.stringify(this.execParam.get()));
+        this.mz700comworker.setExecutionParameter(this.execParam.get(), function(){});
     };
     MZ700Js.prototype.onExecutionParameterUpdate = function(param) {
         console.log("MZ700Js.onExecutionParameterUpdate", JSON.stringify(param));
-        this.executionParameter.set(param);
+        this.execParam.set(param);
         this.sliderExecParamNumOfTimer.val(param.numOfTimer);
         $("#exec-param1").html(param.numOfTimer);
         this.sliderExecParamNumOfExecInst.val(param.numOfExecInst);

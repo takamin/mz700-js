@@ -1,9 +1,6 @@
 var UnitTest = require("./UnitTest");
-var fs = require('fs');
-eval(fs.readFileSync('../lib/ex_number.js')+'');
-eval(fs.readFileSync('../Z80/emulator.js')+'');
-eval(fs.readFileSync('../Z80/memory.js')+'');
-eval(fs.readFileSync('../Z80/register.js')+'');
+require('../lib/ex_number.js');
+var Z80_Register = require('../Z80/register.js');
 var tests = [
     function () {
         var reg = new Z80_Register();
