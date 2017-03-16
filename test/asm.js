@@ -1,6 +1,6 @@
-var UnitTest = require("./UnitTest");
 require("../lib/context.js");
 require('../lib/ex_number.js');
+var UnitTest = require("./UnitTest");
 var Z80 = require('../Z80/emulator.js');
 var Z80_assemble = require('../Z80/assembler');
 var line_asm_test_pattern = [

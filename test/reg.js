@@ -1,5 +1,6 @@
-var UnitTest = require("./UnitTest");
+require("../lib/context.js");
 require('../lib/ex_number.js');
+var UnitTest = require("./UnitTest");
 var Z80_Register = require('../Z80/register.js');
 var tests = [
     function () {
