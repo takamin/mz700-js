@@ -1,3 +1,4 @@
+require("../lib/context.js");
 var UnitTest = require("./UnitTest");
 var Z80Tester = require('./Z80Tester.js');
 var Z80 = require('../Z80/emulator.js');

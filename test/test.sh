@@ -7,9 +7,6 @@ if [ $? -ne 0 ]; then
     cat z80_imp_stat.txt
 fi
 
-#test jsZ80
-node test.js
-
 #NEWMON7
 node ../tools/mzdasm -c testdata/NEWMON7.ROM | grep '^\s*[^;]' > testdata/NEWMON7._asm_
 node ../tools/mzasm testdata/NEWMON7._asm_ -o testdata/NEWMON7.BIN
