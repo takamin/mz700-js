@@ -597,7 +597,18 @@ MZ700.prototype.dataRecorder_ejectCmt = function() {
         var cmt = this.dataRecorder.ejectCmt();
         if(cmt != null) {
             var data = MZ_Tape.toBytes(cmt);
+            if(data == null) {
+                console.log("MZ700.dataRecorder_ejectCmt returns null.");
+            } else {
+                console.log("MZ700.dataRecorder_ejectCmt returns " +
+                    data.length + " bytes data");
+            }
             return data;
+        }
+        else {
+            console.log(
+                    "MZ700.dataRecorder_ejectCmt returns " +
+                    "0 bytes data, because NO CMT was set");
         }
     }
     return [];
