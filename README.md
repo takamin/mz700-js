@@ -116,6 +116,14 @@ Available Browsers
 CHANGES
 -------
 
+* __v0.2.0__
+    1. The CMT-loading process is available on both web and cli emulators,
+    but it seems not perfect.
+    2. The CLI-tools print actual module version with `-v` option.
+    3. `npm test` is available.
+    To run the test, `npm mocha` and `bash` required.
+    On Windows, Please use MSYS or Git bash of GitHub for Windows.
+    4. The dependency `--saved` modules in `package.json` are upgraded.
 * v0.1.0 - The key-in events are accepted by window object.
     * v0.1.1 - It can run on the Microsoft Edge.
     * v0.1.4 - Edit this README
@@ -152,7 +160,7 @@ CHANGES
         * [Ctrl]+[F9]: stop/break
         * [Ctrl]+[F11]: step
     * v0.1.16 - Add CLI emulator and debugger `mz700-cli`.
-    * __v0.1.17__ - Changed initial keystroke durations of CLI emulator and allow those values to be changed by added `conf` command .
+    * v0.1.17 - Changed initial keystroke durations of CLI emulator and allow those values to be changed by added `conf` command .
 
 WANT TO DO
 ----------
