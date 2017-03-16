@@ -15,10 +15,14 @@ var getopt = require('node-getopt').create([
         ['h',   'help',     'display this help'],
         ['v',   'version',  'show version']
         ]).bindHelp().parseSystem();
+
+var getPackageJson = require("../lib/get-package-json");
+var npmInfo = getPackageJson(__dirname + "/..");
 if(getopt.options.version) {
-    console.log("Z80 assembler v0.0");
+    console.log("Z80 assembler for MZ-700 v" + npmInfo.version);
     return;
 }
+
 var args = require("hash-arg").get(["input_filename"], getopt.argv);
 if(getopt.argv.length < 1) {
     console.error('error: no input file');
