@@ -7,7 +7,6 @@ var MZ_Tape = function(tapeData) {
 MZ_Tape.prototype.isThereSignal = function(signal, n) {
     for(var i = 0; i < n; i++) {
         if(this._tapeData[this._index + i] != signal) {
-            console.warn("MZ_Tape.isThereSignal signal", signal, "x", i, "but not", n);
             return false;
         }
     }
@@ -18,19 +17,15 @@ MZ_Tape.prototype.isThereSignal = function(signal, n) {
 MZ_Tape.prototype.recognizeStartingMark = function() {
     // START MARK
     if(!this.isThereSignal(false, 11000)) {
-        console.error("NO STARTING MARK: Short x 11000.");
         return false;
     }
     if(!this.isThereSignal(true, 40)) {
-        console.error("NO STARTING MARK: Long x 40.");
         return false;
     }
     if(!this.isThereSignal(false, 40)) {
-        console.error("NO STARTING MARK: Short x 40.");
         return false;
     }
     if(!this.isThereSignal(true, 1)) {
-        console.error("NO STARTING MARK: Long x 1.");
         return false;
     }
     return true;
@@ -39,19 +34,15 @@ MZ_Tape.prototype.recognizeStartingMark = function() {
 MZ_Tape.prototype.recognizeStarting2Mark = function() {
     // START MARK
     if(!this.isThereSignal(false, 2750)) {
-        console.error("NO STARTING MARK: Short x 2750.");
         return false;
     }
     if(!this.isThereSignal(true, 20)) {
-        console.error("NO STARTING MARK: Long x 20.");
         return false;
     }
     if(!this.isThereSignal(false, 20)) {
-        console.error("NO STARTING MARK: Short x 20.");
         return false;
     }
     if(!this.isThereSignal(true, 1)) {
-        console.error("NO STARTING MARK: Long x 1.");
         return false;
     }
     return true;
@@ -71,7 +62,7 @@ MZ_Tape.prototype.writeSignal = function(signal) {
 MZ_Tape.prototype.writeByte = function(data) {
     this.writeSignal(true);
     for(var j = 0; j < 8; j++) {
-        if((data & (0x01 << j)) != 0) {
+        if((data & (0x01 << (7 - j))) != 0) {
             this.writeSignal(true);
         } else {
             this.writeSignal(false);
@@ -84,8 +75,8 @@ MZ_Tape.prototype.writeBlock = function(data) {
         this.writeByte(d);
     }, this);
     var cs = this.countOnBit(data);
-    this.writeByte((cs >> 0) & 0xff);
     this.writeByte((cs >> 8) & 0xff);
+    this.writeByte((cs >> 0) & 0xff);
     this.writeSignal(true);
 };
 
@@ -107,7 +98,7 @@ MZ_Tape.prototype.readByte = function() {
             return null; // End Of Stream
         }
         if(!startBit) {
-            console.log("NO START BIT");
+            throw "NO START BIT";
         }
     } while(!startBit);
 
@@ -152,59 +143,50 @@ MZ_Tape.prototype.countOnBit = function(blockBytes) {
 };
 
 MZ_Tape.prototype.readBlock = function(n) {
-    
+
     // Read block bytes
     var blockBytes = this.readBytes(n);
 
     // read 2 bytes of checksum
     var checkBytes = this.readBytes(2);
     if(checkBytes.length != 2) {
-        console.error("NO BLOCK CHECKSUM");
-        return null;
+        throw "NO BLOCK CHECKSUM";
     }
     var checksum = (checkBytes[0] * 256) + checkBytes[1];
-    console.log("CHECKSUM:", checksum.HEX(4) + "H");
 
     // Read block end signal(long)
     if(!this.isThereSignal(true,1)) {
-        console.error("NO BLOCK END BIT");
-        return null;
+        throw "NO BLOCK END BIT";
     }
 
     var onBitCount = this.countOnBit(blockBytes);
-    console.log("BIT COUNT", onBitCount.HEX(4) + "H");
     if(onBitCount != checksum) {
-        console.error("CHECKSUM ERROR");
-        return null;
+        throw "CHECKSUM ERROR";
     }
     return blockBytes;
 };
 
 MZ_Tape.prototype.readDuplexBlocks = function(n) {
-    console.log("BLOCK[1]");
     var bytes = this.readBlock(n);
     if(bytes == null) {
-        console.error("FAIL TO READ BLOCK[1]");
-        return null;
+        throw "FAIL TO READ BLOCK[1]";
     }
 
     // Block delimitor
     if(!this.isThereSignal(false, 256)) {
-        console.error("NO DELIMITOR: Short x 256.");
-        return null;
+        throw "NO DELIMITOR: Short x 256.";
     }
 
-    console.log("BLOCK[2]");
     var bytes2 = this.readBlock(n);
     if(bytes2 == null) {
-        console.error("FAIL TO READ BLOCK[2]");
+        throw "FAIL TO READ BLOCK[2]";
         return null;
-    }
-
-    //Check each bytes
-    for(var i = 0; i < bytes.length; i++) {
-        if(bytes[i] != bytes2[i]) {
-            return null;
+    } else {
+        //Check each bytes
+        for(var i = 0; i < bytes.length; i++) {
+            if(bytes[i] != bytes2[i]) {
+                throw "FAIL TO VERIFY BLOCK 1 and 2";
+            }
         }
     }
     return bytes;
@@ -214,14 +196,13 @@ MZ_Tape.prototype.readHeader = function() {
 
     // Header starting block
     if(!this.recognizeStartingMark()) {
-        console.error("NO STARTING MARK recognized");
-        return null;
+        throw "NO STARTING MARK recognized";
     }
 
     // MZT header
     var mztBytes = this.readDuplexBlocks(128);
     if(mztBytes == null) {
-        console.error("CANNOT READ MZT HEADER");
+        throw "CANNOT READ MZT HEADER";
     }
 
     return new MZ_TapeHeader(mztBytes, 0);
@@ -230,78 +211,91 @@ MZ_Tape.prototype.readHeader = function() {
 MZ_Tape.prototype.readDataBlock = function(n) {
     // Data starting mark
     if(!this.recognizeStarting2Mark()) {
-        console.error("NO STARTING MARK 2 recognized");
-        return null;
+        throw "NO STARTING MARK 2 recognized";
     }
     // Read duplexed data bytes
     return this.readDuplexBlocks(n);
 };
 
 MZ_Tape.toBytes = function(bits) {
-    var reader = new MZ_Tape(bits);
+    try {
+        var reader = new MZ_Tape(bits);
 
-    var header = reader.readHeader();
-    if(header == null) {
-        console.error("FAIL TO READ HEADER");
+        var header = reader.readHeader();
+        if(header == null) {
+            throw "FAIL TO READ HEADER";
+        }
+        var body = reader.readDataBlock(header.file_size);
+        if(body == null) {
+            throw "FAIL TO READ DATA";
+        }
+
+        var extra = [];
+        var extraByte;
+        while(extraByte = reader.readByte()) {
+            console.warn(
+                    "MZ_Tape.toBytes rest bytes["
+                    + extraByte.length + "] =",
+                    extraByte.HEX(2));
+            extra.push(extraByte);
+        }
+
+        //MZT + body
+        return header.buffer.concat(body);
+    } catch(err) {
+        console.log("MZ_Tape.toBytes:Error " + error);
     }
-    console.log("MZT HEADER:");
-    console.log("  FILENAME:", header.filename);
-    console.log("  FILESIZE:", header.file_size.HEX(4)+"H");
-    console.log("  ADDRLOAD:", header.addr_load.HEX(4)+"H");
-    console.log("  ADDREXEC:", header.addr_exec.HEX(4)+"H");
-
-    var body = reader.readDataBlock(header.file_size);
-    if(body == null) {
-        console.error("FAIL TO READ DATA");
-    }
-
-    var extra = [];
-    var extraByte;
-    while(extraByte = reader.readByte()) {
-        console.warn(
-                "MZ_Tape.toBytes rest bytes["
-                + extraByte.length + "] =",
-                extraByte.HEX(2));
-        extra.push(extraByte);
-    }
-
-    //MZT + body
-    return header.buffer.concat(body);
+    return [];
 };
 
 MZ_Tape.fromBytes = function(bytes) {
+    if(bytes.length < 128) {
+        throw "FAIL TO WRITE HEADER";
+    }
+    var header = new MZ_TapeHeader(bytes.slice(0,128), 0);
     var writer = new MZ_Tape([]);
-
-    // Header mark
-    for(var i = 0; i < 11000; i++) {
-        writer.writeSignal(false);
-    }
-    for(var i = 0; i < 40; i++) {
-        writer.writeSignal(true);
-    }
-    for(var i = 0; i < 40; i++) {
-        writer.writeSignal(false);
-    }
-    writer.writeSignal(true);
-
-    // Header
-    writer.writeDuplexBlock(bytes.slice(0,128));
-
-    // Body mark
-    for(var i = 0; i < 2750; i++) {
-        writer.writeSignal(false);
-    }
-    for(var i = 0; i < 20; i++) {
-        writer.writeSignal(true);
-    }
-    for(var i = 0; i < 20; i++) {
-        writer.writeSignal(false);
-    }
-    writer.writeSignal(true);
-
-    // Body
-    writer.writeDuplexBlock(bytes.slice(128));
-
+    writer.writeHeader(header.buffer);
+    writer.writeDataBlock(bytes.slice(128));
     return writer._tapeData;
 };
+
+MZ_Tape.prototype.outputStartingMark = function() {
+    // START MARK
+    for(var i = 0; i < 11000; i++) {
+        this.writeSignal(false);
+    }
+    for(var i = 0; i < 40; i++) {
+        this.writeSignal(true);
+    }
+    for(var i = 0; i < 40; i++) {
+        this.writeSignal(false);
+    }
+    this.writeSignal(true);
+};
+
+MZ_Tape.prototype.writeHeader = function(buffer) {
+    this.outputStartingMark();
+    this.writeDuplexBlock(buffer);
+};
+
+MZ_Tape.prototype.writeStarting2Mark = function() {
+    // Body mark
+    for(var i = 0; i < 2750; i++) {
+        this.writeSignal(false);
+    }
+    for(var i = 0; i < 20; i++) {
+        this.writeSignal(true);
+    }
+    for(var i = 0; i < 20; i++) {
+        this.writeSignal(false);
+    }
+    this.writeSignal(true);
+
+};
+MZ_Tape.prototype.writeDataBlock = function(buffer) {
+    // Data starting mark
+    this.writeStarting2Mark();
+    this.writeDuplexBlock(buffer);
+};
+
 module.exports = MZ_Tape;

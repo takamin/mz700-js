@@ -399,16 +399,20 @@ MZ700.prototype.clock = function() {
 };
 
 MZ700.prototype.setCassetteTape = function(tape_data) {
-    this.tape_data = tape_data;
-    if(tape_data.length <= 128) {
-        console.error("error buf.length <= 128");
-        return null;
+    if(tape_data.length > 0) {
+        this.tape_data = tape_data;// TODO: This line might be removed
+        if(tape_data.length <= 128) {
+            this.dataRecorder_setCmt([]);
+            console.error("error buf.length <= 128");
+            return null;
+        }
+        this.mzt_array = MZ700.parseMZT(tape_data);
+        if(this.mzt_array == null || this.mzt_array.length < 1) {
+            console.error("setCassetteTape fail to parse");
+            return null;
+        }
     }
-    this.mzt_array = MZ700.parseMZT(tape_data);
-    if(this.mzt_array == null || this.mzt_array.length < 1) {
-        console.error("setCassetteTape fail to parse");
-        return null;
-    }
+    this.dataRecorder_setCmt(tape_data);
     return this.mzt_array;
 };
 
@@ -579,7 +583,7 @@ MZ700.prototype.disassemble = function(mztape_array) {
 
 MZ700.prototype.dataRecorder_setCmt = function(bytes) {
     var cmt = null;
-    if(bytes == null || bytes.length == 0) {
+    if(bytes.length == 0) {
         cmt = [];
     } else {
         cmt = MZ_Tape.fromBytes(bytes);
@@ -590,10 +594,10 @@ MZ700.prototype.dataRecorder_setCmt = function(bytes) {
 
 MZ700.prototype.dataRecorder_ejectCmt = function() {
     if(this.dataRecorder.isCmtSet()) {
-        this.dataRecorder.stop();
         var cmt = this.dataRecorder.ejectCmt();
-        if(cmt != null && cmt.length >= 128) {
-            return MZ_Tape.toBytes(cmt);
+        if(cmt != null) {
+            var data = MZ_Tape.toBytes(cmt);
+            return data;
         }
     }
     return [];
