@@ -116,14 +116,13 @@ Available Browsers
 CHANGES
 -------
 
-* __v0.2.0__
-    1. The CMT-loading process is available on both web and cli emulators,
-    but it seems not perfect.
-    2. The CLI-tools print actual module version with `-v` option.
-    3. `npm test` is available.
-    To run the test, `npm mocha` and `bash` required.
-    On Windows, Please use MSYS or Git bash of GitHub for Windows.
-    4. The dependency `--saved` modules in `package.json` are upgraded.
+* v0.2.0 (1) The CMT-loading process is available on both web and cli emulators,
+but it seems not perfect. (2) The CLI-tools print actual module version with `-v` option.
+(3) `npm test` is available.  To run the test, `npm mocha` and `bash` required. On Windows,
+Please use MSYS or Git bash of GitHub for Windows. (4) The dependency `--saved` modules in
+`package.json` are upgraded.
+    * __v0.2.1__ - Fix some bugs on CLI. MZT-loading process and the 'push down' character
+    (down arrow and under line) to normal one.
 * v0.1.0 - The key-in events are accepted by window object.
     * v0.1.1 - It can run on the Microsoft Edge.
     * v0.1.4 - Edit this README
