@@ -46,7 +46,6 @@ Z80.prototype.reset = function() {
 };
 Z80.prototype.interrupt = function() {
     if(this.IFF1) {
-        //this.IFF1 = 0;
         this.pushPair(this.reg.PC);
         this.reg.PC = 0x0038;
     }
@@ -3267,7 +3266,6 @@ Z80.prototype.createOpecodeTable = function() {
                 THIS.IFF1 = this.IFF2 = 1;
                 THIS.reg.R = (THIS.reg.R + 1) & 255;
                 THIS.exec();
-                THIS.interrupt();
             } else {
                 THIS.IFF2 = 1;
             }

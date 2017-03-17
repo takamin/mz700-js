@@ -1,15 +1,15 @@
 require("../lib/ex_number.js");
-var MZ_TapeHeader = getModule("MZ_TapeHeader") || require('./mz-tape-header');
-var MZ_Tape = getModule("MZ_Tape") || require('./mz-tape');
-var MZ_DataRecorder = getModule("MZ_DataRecorder") || require('./mz-data-recorder');
-var TBooster = getModule("TBooster") || require('../lib/t-booster');
-var Intel8253 = getModule("Intel8253") || require('../lib/intel-8253');
-var FlipFlopCounter = getModule("FlipFlopCounter") || require('../lib/flip-flop-counter');
-var IC556 = getModule("IC556") || require('../lib/ic556');
-var MZ700KeyMatrix = getModule("MZ700KeyMatrix") || require('./mz700-key-matrix');
-var MZ700_Memory = getModule("MZ700_Memory") || require("./memory.js");
-var Z80 = getModule("Z80") || require('../Z80/emulator');
-var Z80_assemble = getModule("Z80_assemble") || require("../Z80/assembler.js");
+var MZ_TapeHeader   = getModule("MZ_TapeHeader")    || require('./mz-tape-header');
+var MZ_Tape         = getModule("MZ_Tape")          || require('./mz-tape');
+var MZ_DataRecorder = getModule("MZ_DataRecorder")  || require('./mz-data-recorder');
+var TBooster        = getModule("TBooster")         || require('../lib/t-booster');
+var Intel8253       = getModule("Intel8253")        || require('../lib/intel-8253');
+var FlipFlopCounter = getModule("FlipFlopCounter")  || require('../lib/flip-flop-counter');
+var IC556           = getModule("IC556")            || require('../lib/ic556');
+var MZ700KeyMatrix  = getModule("MZ700KeyMatrix")   || require('./mz700-key-matrix');
+var MZ700_Memory    = getModule("MZ700_Memory")     || require("./memory.js");
+var Z80             = getModule("Z80")              || require('../Z80/emulator');
+var Z80_assemble    = getModule("Z80_assemble")     || require("../Z80/assembler.js");
 var MZ700 = function(opt) {
     "use strict";
 
@@ -31,14 +31,44 @@ var MZ700 = function(opt) {
     //MZ700 Key Matrix
     this.keymatrix = new MZ700KeyMatrix();
 
+    // Create 8253
+    this.intel8253 = new Intel8253();
+    this.intel8253.counter[1].counter = 15700;
+    this.intel8253.counter[1].value = 15700;
+    this.intel8253.counter[1].addEventListener("timeup", function() {
+        this.intel8253.counter[2].count(1);
+    }.bind(this));
+    this.intel8253.counter[2].counter = 43200;
+    this.intel8253.counter[2].value = 43200;
+    this.intel8253.counter[2].addEventListener("timeup", function() {
+        console.log("i8253#2 timeup");
+        if(this.INTMSK) {
+            console.log("RAISE INTERRUPT");
+            this.z80.interrupt();
+        } else {
+            console.log("INTRRUPT MASKED");
+        }
+    }.bind(this));
+
     //HBLNK F/F in 15.7 kHz
     this.hblank = new FlipFlopCounter(15700);
+    this.hblank.addEventListener("change", function() {
+        this.intel8253.counter[1].count(1 * 4);
+    }.bind(this));
 
     //VBLNK F/F in 50 Hz
     this.vblank = new FlipFlopCounter(50);
+    this.VBLK = false;
+    this.vblank.addEventListener("change", function() {
+        this.VBLK = !this.VBLK;
+    }.bind(this));
 
     // create IC 556 to create HBLNK(cursor blink) by 3 Hz?
     this.ic556 = new IC556(3);
+    this.ic556_OUT = false;
+    this.ic556.addEventListener("change", function() {
+        this.ic556_OUT = !this.ic556_OUT;
+    }.bind(this));
 
     this.INTMSK = false;
 
@@ -181,7 +211,7 @@ var MZ700 = function(opt) {
                     }
 
                     // PC6 - 556_OUT : A signal to blink cursor on the screen
-                    if(THIS.ic556.readOutput()) {
+                    if(THIS.ic556_OUT) {
                         value = value | 0x40;
                     } else {
                         value = value & 0xbf;
@@ -189,7 +219,7 @@ var MZ700 = function(opt) {
 
                     // PC7 - VBLK : A virtical blanking signal
                     // set V-BLANK bit
-                    if(THIS.vblank.readOutput()) {
+                    if(THIS.VBLK) {
                         value = value | 0x80;
                     } else {
                         value = value & 0x7f;
@@ -304,9 +334,6 @@ var MZ700 = function(opt) {
         }
     });
 
-    // create 8253
-    this.intel8253 = new Intel8253();
-
     this.z80 = new Z80({
         memory: THIS.memory,
         onReadIoPort: function(port, value) {
@@ -372,23 +399,9 @@ MZ700.prototype.exec = function(execCount) {
 };
 
 MZ700.prototype.clock = function() {
+
     // HBLNK - 15.7 kHz clock
-    if(this.hblank.count()) {
-        // Load 15.7kHz clock to 8253 #1
-        if(this.hblank.readOutput()) {
-            var ctr1_out0 = this.intel8253.counter[1].out;
-            this.intel8253.counter[1].count(1 * 4);
-            var ctr1_out1 = this.intel8253.counter[1].out;
-            if(!ctr1_out0 && ctr1_out1) {
-                var ctr2_out0 = this.intel8253.counter[2].out;
-                this.intel8253.counter[2].count(1);
-                var ctr2_out1 = this.intel8253.counter[2].out;
-                if(this.INTMSK && !ctr2_out0 && ctr2_out1) {
-                    this.z80.interrupt();
-                }
-            }
-        }
-    }
+    this.hblank.count();
 
     // VBLNK - 50 Hz
     this.vblank.count();
