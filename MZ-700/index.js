@@ -2,6 +2,7 @@
     var $ = require("jquery");
     require("../lib/context.js");
     require("../lib/ex_number.js");
+    var TransWorker = require('transworker');
     var TBooster = require('../lib/t-booster');
     var Z80_assemble = require("../Z80/assembler.js");
     var MZ_TapeHeader = require('../MZ-700/mz-tape-header');

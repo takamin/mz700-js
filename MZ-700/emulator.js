@@ -15,12 +15,6 @@ var MZ700 = function(opt) {
 
     var THIS = this;
 
-    //Implements transworker interface
-    this._transworker = null;
-    this.setTransworker = function(transworker) {
-        this._transworker = transworker;
-    };
-
     // Screen update buffer
     this._screenUpdateData = {};
 
