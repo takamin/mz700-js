@@ -3,7 +3,7 @@
     require("../lib/context.js");
     require("../lib/ex_number.js");
     var TransWorker = require('transworker');
-    var TBooster = require('../lib/t-booster');
+    var FTParam = require('../lib/ft-param');
     var Z80_assemble = require("../Z80/assembler.js");
     var MZ_TapeHeader = require('../MZ-700/mz-tape-header');
     var MZ700 = require("../MZ-700/emulator.js");
@@ -538,7 +538,7 @@
                 .DropDownPanel("create", { "caption" : "Execute Z80 Instruction" });
         }
 
-        this.execParam = new TBooster.Param(1, 1000, 7);
+        this.execParam = new FTParam(1, 1000, 7);
         this.mz700comworker.getExecutionParameter(function(param) {
             this.execParam.set(param);
         });

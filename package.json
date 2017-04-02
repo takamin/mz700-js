@@ -27,6 +27,7 @@
     "cookie-parser": "~1.4.3",
     "debug": "~2.6.3",
     "express": "~4.15.2",
+    "fractional-timer": "^1.0.1",
     "grunt": "^1.0.1",
     "grunt-browserify": "^5.0.0",
     "hash-arg": "0.3.0",
