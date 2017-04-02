@@ -1,6 +1,6 @@
 {
   "name": "mz700-js",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Full JavaScript MZ-700 Emulator",
   "private": false,
   "scripts": {
@@ -27,6 +27,7 @@
     "cookie-parser": "~1.4.3",
     "debug": "~2.6.3",
     "express": "~4.15.2",
+    "fractional-timer": "^1.0.1",
     "grunt": "^1.0.1",
     "grunt-browserify": "^5.0.0",
     "hash-arg": "0.3.0",
@@ -37,7 +38,7 @@
     "node-getopt": "^0.2.3",
     "opn": "^4.0.2",
     "serve-favicon": "~2.4.1",
-    "transworker": "^1.0.0"
+    "transworker": "^1.0.1"
   },
   "devDependencies": {
     "chai": "^3.5.0"

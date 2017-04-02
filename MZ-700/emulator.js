@@ -1,8 +1,9 @@
 require("../lib/ex_number.js");
+var FractionalTimer = getModule("FractionalTimer")  || require("fractional-timer");
 var MZ_TapeHeader   = getModule("MZ_TapeHeader")    || require('./mz-tape-header');
 var MZ_Tape         = getModule("MZ_Tape")          || require('./mz-tape');
 var MZ_DataRecorder = getModule("MZ_DataRecorder")  || require('./mz-data-recorder');
-var TBooster        = getModule("TBooster")         || require('../lib/t-booster');
+var FTParam         = getModule("FTParam")          || require('../lib/ft-param');
 var Intel8253       = getModule("Intel8253")        || require('../lib/intel-8253');
 var FlipFlopCounter = getModule("FlipFlopCounter")  || require('../lib/flip-flop-counter');
 var IC556           = getModule("IC556")            || require('../lib/ic556');
@@ -157,7 +158,7 @@ var MZ700 = function(opt) {
     }, this);
 
     this.tid = null;
-    this.execParam = new TBooster.Param(1, 1000, 7);
+    this.execParam = new FTParam(1, 1000, 7);
 
     this.mmioMap = [];
     for(var address = 0xE000; address < 0xE800; address++) {
@@ -531,30 +532,25 @@ MZ700.prototype.start = function() {
                 MZ700.prototype.start.caller);
         return false;
     }
-    this.tid = [];
-    for(var i = 0; i < this.execParam.numOfTimer; i++) {
-        this.tid[i] = setInterval(function() {
-            this.run();
-        }.bind(this), this.execParam.timerInterval);
-    }
+    this.tid = FractionalTimer.setInterval(
+            function() { this.run(); }.bind(this),
+            this.execParam.timerInterval,
+            this.execParam.numOfTimer,
+            this.execParam.numOfExecInst);
     return true;
 };
 
 MZ700.prototype.stop = function() {
     if(this.tid != null) {
-        this.tid.forEach(function(id) {
-            clearInterval(id);
-        }, this);
+        FractionalTimer.clearInterval(this.tid);
         this.tid = null;
     }
 };
 
 MZ700.prototype.run = function() {
     try {
-        for(var i = 0; i < this.execParam.numOfExecInst; i++) {
-            this.z80.exec();
-            this.clock();
-        }
+        this.z80.exec();
+        this.clock();
     } catch(ex) {
         console.log("Error:", ex);
         console.log(ex.stack);

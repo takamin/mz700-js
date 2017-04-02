@@ -4,10 +4,11 @@
 //
 if("importScripts" in this) {
     importScripts(
-            '../lib/context.js',
             '../node_modules/transworker/transworker.js',
+            '../node_modules/fractional-timer/fractional-timer.js',
+            '../lib/context.js',
             '../lib/ex_number.js',
-            '../lib/t-booster.js',
+            '../lib/ft-param.js',
             '../lib/flip-flop-counter.js',
             '../lib/ic556.js',
             '../lib/intel-8253.js',
