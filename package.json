@@ -1,6 +1,6 @@
 {
   "name": "mz700-js",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Full JavaScript MZ-700 Emulator",
   "private": false,
   "scripts": {
