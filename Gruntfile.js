@@ -7,9 +7,18 @@ module.exports = function(grunt) {
                     "MZ-700/bundle-client.js": ["MZ-700/client.js"]
                 }
             }
+        },
+        uglify: {
+            my_target: {
+                files: {
+                    "MZ-700/bundle.min.js" : ["MZ-700/bundle.js"],
+                    "MZ-700/bundle-client.min.js" : ["MZ-700/bundle-client.js"]
+                }
+            }
         }
     });
 
     grunt.loadNpmTasks("grunt-browserify");
     grunt.registerTask("default", ["browserify"]);
+    grunt.loadNpmTasks('grunt-contrib-uglify');
 };

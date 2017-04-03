@@ -121,7 +121,8 @@ but it seems not perfect. (2) The CLI-tools print actual module version with `-v
 (3) `npm test` is available.  To run the test, `npm mocha` and `bash` required. On Windows,
 Please use MSYS or Git bash of GitHub for Windows. (4) The dependency `--saved` modules in
 `package.json` are upgraded.
-    * __v0.2.4__ - Remove the script submodule `transworker`. Use fractional-timer for emulation.
+    * __v0.2.5__ - Manages package. npm jade is changed to pug, the scripts are minified by uglify-js, and a favicon.ico is added.
+    * v0.2.4 - Remove the script submodule `transworker`. Use fractional-timer for emulation.
     * v0.2.3 - Publish the script `transworker.js` as a [node module](https://www.npmjs.com/package/transworker).
     * v0.2.2 - Fix the emulation of the Intel 8253 and IC556, and the process for `EI` instruction.
     * v0.2.1 - Fix some bugs on CLI. MZT-loading process and the 'push down' character
