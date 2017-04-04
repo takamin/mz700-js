@@ -352,7 +352,7 @@
 
             this.MMIO = MMIO.create();
             this.mz700comworker = TransWorker.create(
-                this.opt.urlPrefix + "MZ-700/worker.js", MZ700, this, {
+                this.opt.urlPrefix + "MZ-700/bundle-worker.min.js", MZ700, this, {
                     'onExecutionParameterUpdate': function(param) {
                         this.onExecutionParameterUpdate(param);
                     },

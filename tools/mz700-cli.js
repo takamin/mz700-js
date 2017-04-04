@@ -27,7 +27,7 @@
     var fnut = require("../lib/fnuts.js");
     require("../lib/context.js");
     require("../lib/ex_number.js");
-    var TBooster = require('../lib/t-booster');
+    var FTParam = require('../lib/ft-param');
     var MZ700 = require("../MZ-700/emulator.js");
     var mztReadFile = require("../lib/mzt-read-file");
 
@@ -89,7 +89,7 @@
     });
 
     mz700.setExecutionParameter(
-            (new TBooster.Param(200,10,1)).get());
+            (new FTParam(200,10,1)).get());
     cliCommandSendKey.setMakeReleaseDurations(200,50);
 
     var memsetMZ = function(addr, buf, size) {
