@@ -21,6 +21,6 @@ module.exports = function(grunt) {
     });
 
     grunt.loadNpmTasks("grunt-browserify");
-    grunt.registerTask("default", ["browserify"]);
     grunt.loadNpmTasks('grunt-contrib-uglify');
+    grunt.registerTask("default", ["browserify", "uglify"]);
 };
