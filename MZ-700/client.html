@@ -13,21 +13,33 @@
         <link rel="stylesheet" type="text/css" href="index.css"/>
     </head>
     <body>
-        <h1><span class="MZ-700-text" charSize="24" padding="1">&ufo; Full JavaScript MZ-700 &UFO;</span></h1>
-        <div class="MZ-700">
-            <div class="resizer MZ-700-body">
-                <div class="ctrl-panel"></div>
-                <div id="mzt_info"></div>
-                <div class="data-recorder">
-                </div>
-                <div class="screen cmt-slot key-switcher"></div>
+        <div id="liquid-panel-MZ-700" class="dock MZ-700">
+            <div class="dock top" style="height:60px">
+                <h1 style="height:60px; line-height:60px; margin:0; font-size:12pt;">
+                        MZ-700 FULL JAVASCRIPT EMULATOR</h1>
             </div>
-            <div class="operation-panels">
-            <div class="keyboard"></div>
-            <div class="register-monitor"></div>
-            <div class="memory"></div>
-            <div class="source-list"></div>
-            <div class="imm-exec"></div>
+            <div class="dock left" style="width:700px;">
+                <div class="dock MZ-700-body">
+                    <div class="screen cmt-slot key-switcher"></div>
+                </div>
+                <div id="dock-panel-keyboard" class="dock bottom" style="height:250px;">
+                    <div class="keyboard"></div>
+                </div>
+                <div class="dock bottom" style="height:170px;">
+                    <div class="dock top" style="height:80px;">
+                        <div class="ctrl-panel"></div>
+                    </div>
+                    <div class="dock">
+                        <div id="mzt_info"></div>
+                        <div class="data-recorder"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="dock">
+                <div class="imm-exec"></div>
+                <div class="register-monitor open"></div>
+                <div class="memory open"></div>
+                <div class="source-list"></div>
             </div>
         </div>
         <script type="text/javascript" src="bundle-client.min.js"></script>
