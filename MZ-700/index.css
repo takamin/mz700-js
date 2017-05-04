@@ -7,7 +7,7 @@
 .MZ-700 .screen {
     border: solid 1px black;
     background-color: black;
-    padding:4px 2px;
+    padding:0;
 }
 .MZ-700 .screen:hover {
    border-color:red;
