@@ -18,7 +18,9 @@
 
     var MZ700Js = function() {
         this.opt = {
-            "urlPrefix": ""
+            "urlPrefix": "",
+            "onKeyboardPanelOpen": function() {},
+            "onKeyboardPanelClose": function() {}
         };
         this.isRunning = false;
         this.listRows = {};
@@ -260,7 +262,11 @@
                 feedbackToKeyboard = function(matrix, state) {
                     kb.mz700keyboard("setState", matrix.strobe, matrix.bit, state);
                 };
-                kb.DropDownPanel("create", { "caption" : "Keyboard" });
+                kb.DropDownPanel("create", {
+                    "caption": "Keyboard",
+                    "onOpen": this.opt.onKeyboardPanelOpen,
+                    "onClose": this.opt.onKeyboardPanelClose
+                });
             }
 
             //
