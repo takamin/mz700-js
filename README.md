@@ -116,6 +116,7 @@ Available Browsers
 CHANGES
 -------
 
+* v0.3.0 Update web-emulator's screen by the command `mz700-js` or `npm start`
 * v0.2.0 (1) The CMT-loading process is available on both web and cli emulators,
 but it seems not perfect. (2) The CLI-tools print actual module version with `-v` option.
 (3) `npm test` is available.  To run the test, `npm mocha` and `bash` required. On Windows,
