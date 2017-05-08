@@ -1,6 +1,9 @@
+/* global getModule */
 var Z80BinUtil = getModule("Z80BinUtil") || require("./bin-util.js");
 var Z80LineAssembler = getModule("Z80LineAssembler") || require("./z80-line-assembler")
 var Z80_assemble = function(asm_source) {
+    var i;
+
     if(asm_source == undefined) {
         return;
     }
@@ -13,7 +16,7 @@ var Z80_assemble = function(asm_source) {
     this.address = 0;
 
     var source_lines = asm_source.split(/\r{0,1}\n/);
-    for(var i = 0; i < source_lines.length; i++) {
+    for(i = 0; i < source_lines.length; i++) {
         var assembled_code = new Z80LineAssembler(
                 source_lines[i],
                 this.address,
@@ -25,7 +28,7 @@ var Z80_assemble = function(asm_source) {
     //
     // Resolve address symbols
     //
-    for(var i = 0; i < this.list.length; i++) {
+    for(i = 0; i < this.list.length; i++) {
         this.list[i].resolveAddress(this.label2value);
     }
 

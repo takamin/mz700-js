@@ -1,3 +1,4 @@
+/* global getModule */
 (function() {
     var Z80BinUtil = getModule("Z80BinUtil") || require("./bin-util.js");
     var Z80_Register = function() {
@@ -35,7 +36,8 @@
     var PTable = new Array(512);
     var ZSTable = new Array(512);
     var ZSPTable = new Array(512);
-    for (var i = 0; i < 256; ++i) {
+    var i;
+    for (i = 0; i < 256; ++i) {
         var zs = 0;
         if (i == 0) {
             zs |= Z_FLAG;
@@ -58,7 +60,7 @@
         ZSTable[i] = zs;
         ZSPTable[i] = zs | PTable[i];
     }
-    for (var i = 0; i < 256; ++i) {
+    for (i = 0; i < 256; ++i) {
         ZSTable[i + 256] = ZSTable[i] | C_FLAG;
         ZSPTable[i + 256] = ZSPTable[i] | C_FLAG;
         PTable[i + 256] = PTable[i] | C_FLAG;

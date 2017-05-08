@@ -1,3 +1,4 @@
+/* global getModule */
 var IMem = getModule("IMem") || require("./imem");
 
 //

@@ -1,3 +1,4 @@
+/* global getModule */
 var MemoryBlock = getModule("MemoryBlock") || require("../Z80/memory-block.js");
 function MZ700_MonitorRom() {
     this.create();
@@ -10,13 +11,15 @@ MZ700_MonitorRom.prototype.create = function() {
         var address = this.startAddr + i;
         MemoryBlock.prototype.pokeByte.call(this, address, NEWMON7[address]);
     }
-}
-MZ700_MonitorRom.prototype.pokeByte = function(address, value) {
+};
+
+MZ700_MonitorRom.prototype.pokeByte = function(address/*, value*/) {
     MemoryBlock.prototype.pokeByte.call(this, address, NEWMON7[address]);
-}
+};
 
 module.exports = MZ700_MonitorRom;
 
+/* eslint no-unused-vars: "off" */
 var NEWMON7 = [
     0xc3,0x4a,0x00,0xc3,0xe6,0x07,0xc3,0x0e,0x09,0xc3,0x18,0x09,0xc3,0x20,0x09,0xc3,
     0x7f,0x00,0xc3,0x35,0x09,0xc3,0x81,0x09,0xc3,0x99,0x09,0xc3,0xbd,0x08,0xc3,0x32,
