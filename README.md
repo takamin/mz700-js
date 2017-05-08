@@ -116,13 +116,14 @@ Available Browsers
 CHANGES
 -------
 
-* v0.3.0 Update web-emulator's screen by the command `mz700-js` or `npm start`
+* v0.3.0 - Update web-emulator's screen by the command `mz700-js` or `npm start`
+    * __v0.3.1__ - The grunt task `lint` is available. To run the check, type `grunt lint` on console.
 * v0.2.0 (1) The CMT-loading process is available on both web and cli emulators,
 but it seems not perfect. (2) The CLI-tools print actual module version with `-v` option.
 (3) `npm test` is available.  To run the test, `npm mocha` and `bash` required. On Windows,
 Please use MSYS or Git bash of GitHub for Windows. (4) The dependency `--saved` modules in
 `package.json` are upgraded.
-    * __v0.2.6__ - Browserifies and uglifies the worker script, and Changes and fixies the version of npm debug to suppress warning on install the packages.
+    * v0.2.6 - Browserifies and uglifies the worker script, and Changes and fixies the version of npm debug to suppress warning on install the packages.
     * v0.2.5 - Manages package. npm jade is changed to pug, the scripts are minified by uglify-js, and a favicon.ico is added.
     * v0.2.4 - Remove the script submodule `transworker`. Use fractional-timer for emulation.
     * v0.2.3 - Publish the script `transworker.js` as a [node module](https://www.npmjs.com/package/transworker).
