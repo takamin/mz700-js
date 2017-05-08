@@ -5,8 +5,8 @@
   "private": false,
   "scripts": {
     "start": "node ./bin/www",
-    "postinstall": "bower install && grunt",
-    "test": "mocha && cd test && sh ./test.sh && cd .."
+    "test": "grunt lint && mocha && cd test && sh ./test.sh && cd ..",
+    "prepublish": "grunt lint && mocha && cd test && sh ./test.sh && cd .. && bower install && grunt release"
   },
   "bin": {
     "mz700-js": "./bin/www",
@@ -23,16 +23,11 @@
     "ansi-escape-sequences": "^3.0.0",
     "b-box": "^0.1.1",
     "body-parser": "~1.17.1",
-    "bower": "^1.8.0",
-    "browserify": "^14.1.0",
     "cookie-parser": "~1.4.3",
     "debug": "2.6.1",
     "dock-n-liquid": "^0.3.0",
     "express": "~4.15.2",
     "fractional-timer": "^1.0.2",
-    "grunt": "^1.0.1",
-    "grunt-browserify": "^5.0.0",
-    "grunt-contrib-uglify": "^2.2.1",
     "hash-arg": "0.3.0",
     "linebyline": "^1.3.0",
     "list-it": "^0.4.0",
@@ -44,7 +39,13 @@
     "transworker": "^1.0.1"
   },
   "devDependencies": {
+    "bower": "^1.8.0",
+    "browserify": "^14.1.0",
     "chai": "^3.5.0",
+    "grunt": "^1.0.1",
+    "grunt-browserify": "^5.0.0",
+    "grunt-contrib-copy": "^1.0.0",
+    "grunt-contrib-uglify": "^2.2.1",
     "grunt-eslint": "^19.0.0",
     "load-grunt-tasks": "^3.5.2",
     "mocha": "^3.3.0"

@@ -4,18 +4,30 @@ module.exports = function(grunt) {
         browserify: {
             build: {
                 files: {
-                    "MZ-700/bundle.js": ["MZ-700/index.js"],
-                    "MZ-700/bundle-client.js": ["MZ-700/client.js"],
-                    "MZ-700/bundle-worker.js": ["MZ-700/worker.js"]
+                    "./build/bundle-client.js": ["MZ-700/client.js"],
+                    "./build/bundle-worker.js": ["MZ-700/worker.js"]
                 }
             }
         },
         uglify: {
-            my_target: {
+            build: {
                 files: {
-                    "MZ-700/bundle.min.js" : ["MZ-700/bundle.js"],
-                    "MZ-700/bundle-client.min.js" : ["MZ-700/bundle-client.js"],
-                    "MZ-700/bundle-worker.min.js" : ["MZ-700/bundle-worker.js"]
+                    "./build/bundle-client.min.js": ["./build/bundle-client.js"],
+                    "./build/bundle-worker.min.js": ["./build/bundle-worker.js"]
+                }
+            }
+        },
+        copy: {
+            "debug": {
+                files: {
+                    "./MZ-700/bundle-client.js": ["./build/bundle-client.js"],
+                    "./MZ-700/bundle-worker.js": ["./build/bundle-worker.js"]
+                }
+            },
+            "release": {
+                files: {
+                    "./MZ-700/bundle-client.js": ["./build/bundle-client.min.js"],
+                    "./MZ-700/bundle-worker.js": ["./build/bundle-worker.min.js"]
                 }
             }
         },
@@ -78,6 +90,10 @@ module.exports = function(grunt) {
 
     grunt.loadNpmTasks("grunt-browserify");
     grunt.loadNpmTasks('grunt-contrib-uglify');
-    grunt.registerTask("default", ["browserify", "uglify"]);
-    grunt.registerTask('lint', ['eslint']);
+    grunt.loadNpmTasks('grunt-contrib-copy');
+
+    grunt.registerTask('lint',      ['eslint']);
+    grunt.registerTask("debug",     ["browserify", "copy:debug" ]);
+    grunt.registerTask("release",   ["browserify", "uglify", "copy:release"]);
+    grunt.registerTask("default",   ["debug"]);
 };
