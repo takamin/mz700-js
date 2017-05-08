@@ -97,7 +97,7 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-contrib-copy');
 
     grunt.registerTask('lint',      ['eslint']);
-    grunt.registerTask("debug",     ["browserify", "copy:debug" ]);
-    grunt.registerTask("release",   ["browserify", "uglify", "copy:release"]);
+    grunt.registerTask("debug",     ["lint", "browserify", "copy:debug" ]);
+    grunt.registerTask("release",   ["lint", "browserify", "uglify", "copy:release"]);
     grunt.registerTask("default",   ["debug"]);
 };
