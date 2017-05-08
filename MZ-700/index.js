@@ -25,6 +25,9 @@
         };
         this.isRunning = false;
         this.listRows = {};
+        this.mz700scrn = null;
+        this.keyAcceptanceState = true;
+        this.keystates = {};
     };
     MZ700Js.create = function(opt) {
         var obj = new MZ700Js();
@@ -45,13 +48,11 @@
             //
             // MZ-700 Screen
             //
-            var mz700scrn = (function() {
-                var screen = $(".MZ-700 .screen").mz700scrn("create", {});
-                if(screen.length > 0) {
-                    return screen.get(0)["mz700scrn"];
-                }
-                return null;
-            }());
+            this.mz700scrn = null;
+            var screen = $(".MZ-700 .screen").mz700scrn("create", {});
+            if(screen.length > 0) {
+                this.mz700scrn = screen.get(0)["mz700scrn"];
+            }
 
             //
             // Accept MZT file to drop to the MZ-700 screen, if the File API is supported.
@@ -249,109 +250,37 @@
             //
             // Keyboard
             //
-            var getKeyMatrix = function() { return {"strobe":0, "bit": 0};};
-            var feedbackToKeyboard = function() {};
-            var kb = $(".MZ-700 .keyboard").mz700keyboard("create", {
+            this.kb = $(".MZ-700 .keyboard")
+            .mz700keyboard("create", {
                 onStateChange: function(strobe, bit, state) {
                     this.mz700comworker.setKeyState(strobe, bit, state, null);
                 }.bind(this)
+            })
+            .DropDownPanel("create", {
+                "caption": "Keyboard",
+                "onOpen": this.opt.onKeyboardPanelOpen,
+                "onClose": this.opt.onKeyboardPanelClose
             });
-            if(kb.length > 0) {
-                getKeyMatrix = function(code) {
-                    return kb.mz700keyboard("getMatPos", code);
-                };
-                feedbackToKeyboard = function(matrix, state) {
-                    kb.mz700keyboard("setState", matrix.strobe, matrix.bit, state);
-                };
-                kb.DropDownPanel("create", {
-                    "caption": "Keyboard",
-                    "onOpen": this.opt.onKeyboardPanelOpen,
-                    "onClose": this.opt.onKeyboardPanelClose
-                });
-            }
 
             //
             // キー入力
             //
-            {
+            window.onkeydown = MZ700Js.prototype.onkeydown.bind(this);
+            window.onkeyup = MZ700Js.prototype.onkeyup.bind(this);
 
-                //キーボードからの入力処理
+            //画面クリック、キー入力ボタン等で、キー入力を受け付ける。
+            $(".MZ-700 .key-switcher").click(function(event) {
+                this.acceptKey(true);
+                event.stopPropagation();
+            }.bind(this));
 
-                var keyAcceptanceState = true;
-                var keystates = {};
-                var updateKeyAcceptanceState = function() {
-                    if(keyAcceptanceState) {
-                        this.keyEventReceiver.addClass("on");
-                    } else {
-                        this.keyEventReceiver.removeClass("on");
-                    }
-                }.bind(this);
-                var updateKeyStates = function (e, state) {
-                    var code = e.keyCode;
-                    if(!(code in keystates) || keystates[code] != state) {
-                        keystates[code] = state;
-                        var matrix = getKeyMatrix(code);
-                        if(matrix != null) {
-                            feedbackToKeyboard(matrix, state);
-                            this.mz700comworker.setKeyState(matrix.strobe, matrix.bit, state, null);
-                        }
-                    }
-                }.bind(this);
+            //ウィンドウクリックでキー入力解除
+            $(window).click(function() {
+                this.acceptKey(false);
+            }.bind(this));
 
-                //キーダウン
-                window.onkeydown = function(e) {
-                    if(keyAcceptanceState) {
-                        updateKeyStates(e, true);
-                        return false;
-                    }
-                };
-
-                //キーアップ
-                window.onkeyup = function(e) {
-                    if(keyAcceptanceState) {
-                        updateKeyStates(e, false);
-                        return false;
-                    }
-                    else {
-                        switch(e.keyCode) {
-                        case 119://F8 - RUN
-                            this.start();
-                            break;
-                        case 120://F9 - STOP
-                            this.stop();
-                            break;
-                        case 121://F10 - STEP OVER
-                            this.stepOver();
-                            break;
-                        case 122://F11 - STEP IN
-                            this.stepIn();
-                            break;
-                        }
-                    }
-                }.bind(this);
-
-                MZ700Js.prototype.acceptKey = function(state) {
-                    keyAcceptanceState = state;
-                    updateKeyAcceptanceState();
-                };
-
-                //画面クリック、キー入力ボタン等で、キー入力を受け付ける。
-                $(".MZ-700 .key-switcher").click(function(event) {
-                    keyAcceptanceState = true;
-                    updateKeyAcceptanceState();
-                    event.stopPropagation();
-                }.bind(this));
-
-                //ウィンドウクリックでキー入力解除
-                $(window).click(function() {
-                    keyAcceptanceState = false;
-                    updateKeyAcceptanceState();
-                });
-
-                //初期状態でキー入力を受け付ける
-                keyAcceptanceState = true;
-                updateKeyAcceptanceState();
-            }
+            //初期状態でキー入力を受け付ける
+            this.acceptKey(true);
 
             //
             // Create MZ-700 Worker
@@ -364,8 +293,8 @@
                         this.onExecutionParameterUpdate(param);
                     },
                     'onBreak': function() { this.stop(); },
-                    'onUpdateScreen': (mz700scrn == null) ? function() {} :
-                        function(updateData) { mz700scrn.write(updateData); },
+                    'onUpdateScreen': (this.mz700scrn == null) ? function() {} :
+                        function(updateData) { this.mz700scrn.write(updateData); }.bind(this),
                     'onMmioRead': function(param) {
                         this.MMIO.read(param.address, param.value);
                     },
@@ -390,7 +319,7 @@
             );
 
             this.PCG700 = require("../lib/PCG-700").create();
-            this.PCG700.setScreen(mz700scrn);
+            this.PCG700.setScreen(this.mz700scrn);
             this.PCG700.writeMMIO(0xE010, 0x00);
             this.PCG700.writeMMIO(0xE011, 0x00);
             this.PCG700.writeMMIO(0xE012, 0x18);
@@ -892,5 +821,58 @@
             }.bind(this));
         }.bind(this));
     };
+
+    MZ700Js.prototype.acceptKey = function(state) {
+        this.keyAcceptanceState = state;
+        if(this.keyAcceptanceState) {
+            this.keyEventReceiver.addClass("on");
+        } else {
+            this.keyEventReceiver.removeClass("on");
+        }
+    };
+
+    MZ700Js.prototype.onkeydown = function(e) {
+        if(this.keyAcceptanceState) {
+            this.updateKeyStates(e, true);
+            return false;
+        }
+    };
+
+    MZ700Js.prototype.onkeyup = function(e) {
+        if(this.keyAcceptanceState) {
+            this.updateKeyStates(e, false);
+            return false;
+        }
+        else {
+            switch(e.keyCode) {
+            case 119://F8 - RUN
+                this.start();
+                break;
+            case 120://F9 - STOP
+                this.stop();
+                break;
+            case 121://F10 - STEP OVER
+                this.stepOver();
+                break;
+            case 122://F11 - STEP IN
+                this.stepIn();
+                break;
+            }
+        }
+    };
+
+    //キーボードからの入力処理
+    MZ700Js.prototype.updateKeyStates = function (e, state) {
+        var code = e.keyCode;
+        if(!(code in this.keystates) || this.keystates[code] != state) {
+            this.keystates[code] = state;
+            var matrix = this.kb.mz700keyboard("getMatPos", code);
+            if(matrix != null) {
+                this.kb.mz700keyboard("setState", matrix.strobe, matrix.bit, state);
+                this.mz700comworker.setKeyState(matrix.strobe, matrix.bit, state, null);
+            }
+        }
+    };
+
     module.exports = MZ700Js;
 }());
