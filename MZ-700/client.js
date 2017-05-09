@@ -9,7 +9,6 @@ window.jQuery = require("jquery");
     var screen = container.find(".screen");
 
     var resizeScreen = function() {
-        console.log("MZ-700-body resized");
 
         var bboxContainer = new BBox(container.get(0));
         var bboxScreen = new BBox(screen.get(0));

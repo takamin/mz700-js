@@ -4,18 +4,30 @@ module.exports = function(grunt) {
         browserify: {
             build: {
                 files: {
-                    "MZ-700/bundle.js": ["MZ-700/index.js"],
-                    "MZ-700/bundle-client.js": ["MZ-700/client.js"],
-                    "MZ-700/bundle-worker.js": ["MZ-700/worker.js"]
+                    "./build/bundle-client.js": ["MZ-700/client.js"],
+                    "./build/bundle-worker.js": ["MZ-700/worker.js"]
                 }
             }
         },
         uglify: {
-            my_target: {
+            build: {
                 files: {
-                    "MZ-700/bundle.min.js" : ["MZ-700/bundle.js"],
-                    "MZ-700/bundle-client.min.js" : ["MZ-700/bundle-client.js"],
-                    "MZ-700/bundle-worker.min.js" : ["MZ-700/bundle-worker.js"]
+                    "./build/bundle-client.min.js": ["./build/bundle-client.js"],
+                    "./build/bundle-worker.min.js": ["./build/bundle-worker.js"]
+                }
+            }
+        },
+        copy: {
+            "debug": {
+                files: {
+                    "./MZ-700/bundle-client.js": ["./build/bundle-client.js"],
+                    "./MZ-700/bundle-worker.js": ["./build/bundle-worker.js"]
+                }
+            },
+            "release": {
+                files: {
+                    "./MZ-700/bundle-client.js": ["./build/bundle-client.min.js"],
+                    "./MZ-700/bundle-worker.js": ["./build/bundle-worker.min.js"]
                 }
             }
         },
@@ -41,17 +53,17 @@ module.exports = function(grunt) {
                 "./lib/ft-param.js",
                 "./lib/get-package-json.js",
                 "./lib/ic556.js",
-                "lib/intel-8253.js",
-                "lib/jquery.ddpanel.js",
-                "lib/jquery.MZ-700-kb.js",
-                "lib/jquery.MZ-700-vram.js",
-                "lib/jquery.soundctrl.js",
-                "lib/jquery.Z80-mem.js",
-                "lib/jquery.Z80-reg.js",
-                "lib/jquery_plugin_class.js",
-                "lib/mzt-read-file.js",
-                "lib/parse-addr.js",
-                "lib/PCG-700.js",
+                "./lib/intel-8253.js",
+                "./lib/jquery.ddpanel.js",
+                "./lib/jquery.MZ-700-kb.js",
+                "./lib/jquery.MZ-700-vram.js",
+                "./lib/jquery.soundctrl.js",
+                "./lib/jquery.Z80-mem.js",
+                "./lib/jquery.Z80-reg.js",
+                "./lib/jquery_plugin_class.js",
+                "./lib/mzt-read-file.js",
+                "./lib/parse-addr.js",
+                "./lib/PCG-700.js",
                 "./MZ-700/client.js",
                 "./MZ-700/emulator.js",
                 "./MZ-700/index.js",
@@ -78,6 +90,10 @@ module.exports = function(grunt) {
 
     grunt.loadNpmTasks("grunt-browserify");
     grunt.loadNpmTasks('grunt-contrib-uglify');
-    grunt.registerTask("default", ["browserify", "uglify"]);
-    grunt.registerTask('lint', ['eslint']);
+    grunt.loadNpmTasks('grunt-contrib-copy');
+
+    grunt.registerTask('lint',      ['eslint']);
+    grunt.registerTask("debug",     ["browserify", "copy:debug" ]);
+    grunt.registerTask("release",   ["browserify", "uglify", "copy:release"]);
+    grunt.registerTask("default",   ["debug"]);
 };

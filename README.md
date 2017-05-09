@@ -116,8 +116,9 @@ Available Browsers
 CHANGES
 -------
 
+* __v0.4.0__ - Change and update the development environment. And for mz700scrn plugin, some features are added.
 * v0.3.0 - Update web-emulator's screen by the command `mz700-js` or `npm start`
-    * __v0.3.1__ - The grunt task `lint` is available. To run the check, type `grunt lint` on console.
+    * v0.3.1 - The grunt task `lint` is available. To run the check, type `grunt lint` on console.
 * v0.2.0 (1) The CMT-loading process is available on both web and cli emulators,
 but it seems not perfect. (2) The CLI-tools print actual module version with `-v` option.
 (3) `npm test` is available.  To run the test, `npm mocha` and `bash` required. On Windows,
