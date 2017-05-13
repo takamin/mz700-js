@@ -4,6 +4,7 @@ module.exports = function(grunt) {
         browserify: {
             build: {
                 files: {
+                    "./build/bundle-index.js": ["MZ-700/index.js"],
                     "./build/bundle-client.js": ["MZ-700/client.js"],
                     "./build/bundle-worker.js": ["MZ-700/worker.js"]
                 }
@@ -12,6 +13,7 @@ module.exports = function(grunt) {
         uglify: {
             build: {
                 files: {
+                    "./build/bundle-index.min.js": ["./build/bundle-index.js"],
                     "./build/bundle-client.min.js": ["./build/bundle-client.js"],
                     "./build/bundle-worker.min.js": ["./build/bundle-worker.js"]
                 }
@@ -20,12 +22,14 @@ module.exports = function(grunt) {
         copy: {
             "debug": {
                 files: {
+                    "./MZ-700/bundle-index.js": ["./build/bundle-index.js"],
                     "./MZ-700/bundle-client.js": ["./build/bundle-client.js"],
                     "./MZ-700/bundle-worker.js": ["./build/bundle-worker.js"]
                 }
             },
             "release": {
                 files: {
+                    "./MZ-700/bundle-index.js": ["./build/bundle-index.min.js"],
                     "./MZ-700/bundle-client.js": ["./build/bundle-client.min.js"],
                     "./MZ-700/bundle-worker.js": ["./build/bundle-worker.min.js"]
                 }
