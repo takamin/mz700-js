@@ -44,7 +44,10 @@
     "transworker": "^1.0.1"
   },
   "devDependencies": {
-    "chai": "^3.5.0"
+    "chai": "^3.5.0",
+    "grunt-eslint": "^19.0.0",
+    "load-grunt-tasks": "^3.5.2",
+    "mocha": "^3.3.0"
   },
   "repository": {
     "type": "git",
@@ -61,5 +64,18 @@
   "bugs": {
     "url": "https://github.com/takamin/mz700-js/issues"
   },
-  "homepage": "http://bicycle.life.coocan.jp/takamints/index.php/MZ-700"
+  "homepage": "http://bicycle.life.coocan.jp/takamints/index.php/MZ-700",
+  "eslintConfig": {
+    "env": {
+      "browser": true, "node": true,
+      "mocha": true
+    },
+    "globals": {
+    },
+    "rules": {
+        "no-console": "off",
+        "valid-jsdoc": "warn"
+    },
+    "extends": "eslint:recommended"
+  }
 }

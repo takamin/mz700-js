@@ -1,3 +1,4 @@
+/* global getModule */
 var MZ700_MonitorRom = getModule("MZ700_MonitorRom") || require("./monitor-rom.js");
 var MemoryBlock = getModule("MemoryBlock") || require("../Z80/memory-block.js");
 var MemoryBank = getModule("MemoryBank") || require('../Z80/memory-bank.js');
@@ -7,9 +8,10 @@ function MZ700_Memory(opt) {
 }
 MZ700_Memory.prototype = new MemoryBank();
 MZ700_Memory.prototype.create = function(opt) {
-    MemoryBank.prototype.create.call(this, opt);
-    var THIS = this;
 
+    MemoryBank.prototype.create.call(this, opt);
+
+    var i;
     //
     // Create callbacks when the VRAMs are updated
     //
@@ -24,7 +26,7 @@ MZ700_Memory.prototype.create = function(opt) {
         var cache = new Array(0x10000);
         var onUpdateTextVram_ = new Array(0x10000);
         var onUpdateAttrVram_ = new Array(0x10000);
-        for(var i = 0; i < 1000; i++) {
+        for(i = 0; i < 1000; i++) {
             cache[0xD000 + i] = [ i, 0, 0x71 ];
             cache[0xD800 + i] = [ i, 0, 0x71 ];
             onUpdateTextVram_[0xD000 + i] = (function(textAddr, attrAddr) {
@@ -87,7 +89,7 @@ MZ700_Memory.prototype.create = function(opt) {
     this.changeBlock1_VRAM();
 
     // fill attribute VRAM by 71h foreground white and background blue
-    for(var i = 0; i < 0x800; i++) {
+    for(i = 0; i < 0x800; i++) {
         this.memblks.ATTR_VRAM.pokeByte(0xD800 + i, 0x71);
     }
 }

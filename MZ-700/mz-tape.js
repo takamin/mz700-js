@@ -1,3 +1,4 @@
+/* global getModule */
 var MZ_TapeHeader = getModule("MZ_TapeHeader") || require('./mz-tape-header');
 var MZ_Tape = function(tapeData) {
     this._index = 0;
@@ -180,13 +181,12 @@ MZ_Tape.prototype.readDuplexBlocks = function(n) {
     var bytes2 = this.readBlock(n);
     if(bytes2 == null) {
         throw "FAIL TO READ BLOCK[2]";
-        return null;
-    } else {
-        //Check each bytes
-        for(var i = 0; i < bytes.length; i++) {
-            if(bytes[i] != bytes2[i]) {
-                throw "FAIL TO VERIFY BLOCK 1 and 2";
-            }
+    }
+
+    //Check each bytes
+    for(var i = 0; i < bytes.length; i++) {
+        if(bytes[i] != bytes2[i]) {
+            throw "FAIL TO VERIFY BLOCK 1 and 2";
         }
     }
     return bytes;
@@ -231,19 +231,24 @@ MZ_Tape.toBytes = function(bits) {
         }
 
         var extra = [];
+        var nonZeroRead = true;
         var extraByte;
-        while(extraByte = reader.readByte()) {
-            console.warn(
-                    "MZ_Tape.toBytes rest bytes["
-                    + extraByte.length + "] =",
-                    extraByte.HEX(2));
-            extra.push(extraByte);
+        while(nonZeroRead) {
+            extraByte = reader.readByte();
+            nonZeroRead = (extraByte ? true : false);
+            if(nonZeroRead) {
+                console.warn(
+                        "MZ_Tape.toBytes rest bytes["
+                        + extraByte.length + "] =",
+                        extraByte.HEX(2));
+                extra.push(extraByte);
+            }
         }
 
         //MZT + body
         return header.buffer.concat(body);
     } catch(err) {
-        console.log("MZ_Tape.toBytes:Error " + error);
+        console.log("MZ_Tape.toBytes:Error " + err);
     }
     return [];
 };
@@ -260,14 +265,16 @@ MZ_Tape.fromBytes = function(bytes) {
 };
 
 MZ_Tape.prototype.outputStartingMark = function() {
+    var i;
+
     // START MARK
-    for(var i = 0; i < 11000; i++) {
+    for(i = 0; i < 11000; i++) {
         this.writeSignal(false);
     }
-    for(var i = 0; i < 40; i++) {
+    for(i = 0; i < 40; i++) {
         this.writeSignal(true);
     }
-    for(var i = 0; i < 40; i++) {
+    for(i = 0; i < 40; i++) {
         this.writeSignal(false);
     }
     this.writeSignal(true);
@@ -279,14 +286,16 @@ MZ_Tape.prototype.writeHeader = function(buffer) {
 };
 
 MZ_Tape.prototype.writeStarting2Mark = function() {
+    var i;
+
     // Body mark
-    for(var i = 0; i < 2750; i++) {
+    for(i = 0; i < 2750; i++) {
         this.writeSignal(false);
     }
-    for(var i = 0; i < 20; i++) {
+    for(i = 0; i < 20; i++) {
         this.writeSignal(true);
     }
-    for(var i = 0; i < 20; i++) {
+    for(i = 0; i < 20; i++) {
         this.writeSignal(false);
     }
     this.writeSignal(true);

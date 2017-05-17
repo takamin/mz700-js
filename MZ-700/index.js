@@ -1,3 +1,4 @@
+/* global Uint8Array */
 (function() {
     var $ = require("jquery");
     require("../lib/context.js");
@@ -58,20 +59,20 @@
             var cmtSlot = $(".MZ-700 .cmt-slot");
             if(cmtSlot.length > 0) {
                 if (window.File && window.FileReader && window.FileList && window.Blob) {
-                    var dropZone = cmtSlot.get(0);
-                    dropZone.addEventListener('dragover', function(evt) {
+                    var dropZone1 = cmtSlot.get(0);
+                    dropZone1.addEventListener('dragover', function(evt) {
                         evt.stopPropagation();
                         evt.preventDefault();
                         evt.dataTransfer.dropEffect = 'copy'; // Explicitly show this is a copy.
                     }, false);
-                    dropZone.addEventListener('drop', (function(app) { return function(evt) {
+                    dropZone1.addEventListener('drop', (function(app) { return function(evt) {
                         evt.stopPropagation();
                         evt.preventDefault();
                         var files = evt.dataTransfer.files; // FileList object.
                         if(files.length > 0) {
                             var f = files[0];
                             var reader = new FileReader();
-                            reader.onload = function(e) {
+                            reader.onload = function(/*e*/) {
                                 app.setMztData(new Uint8Array(reader.result));
                             };
                             reader.readAsArrayBuffer(f);
@@ -211,20 +212,20 @@
             this.btnCmtSet = $("#mzt_info").html(
                     "DROP MZT INTO HERE TO LOAD BY MONITOR COMMAND");
             if (window.File && window.FileReader && window.FileList && window.Blob) {
-                var dropZone = this.btnCmtSet.get(0);
-                dropZone.addEventListener('dragover', function(evt) {
+                var dropZone2 = this.btnCmtSet.get(0);
+                dropZone2.addEventListener('dragover', function(evt) {
                     evt.stopPropagation();
                     evt.preventDefault();
                     evt.dataTransfer.dropEffect = 'copy'; // Explicitly show this is a copy.
                 }, false);
-                dropZone.addEventListener('drop', function(evt) {
+                dropZone2.addEventListener('drop', function(evt) {
                     evt.stopPropagation();
                     evt.preventDefault();
                     var files = evt.dataTransfer.files; // FileList object.
                     if(files.length > 0) {
                         var f = files[0];
                         var reader = new FileReader();
-                        reader.onload = function(e) {
+                        reader.onload = function(/*e*/) {
                             var tape_data = new Uint8Array(reader.result);
                             this.mz700comworker.setCassetteTape(tape_data, function(mztape_array) {
                                 if(mztape_array != null) {
@@ -371,8 +372,8 @@
                     'onMmioWrite': function(param) {
                         this.MMIO.write(param.address, param.value);
                     },
-                    'onPortRead': function(param) { },
-                    'onPortWrite': function(param) { },
+                    'onPortRead': function(/*param*/) { },
+                    'onPortWrite': function(/*param*/) { },
                     'startSound': function(freq) { sound.startSound(freq); },
                     'stopSound': function() { sound.stopSound(); },
                     "onStartDataRecorder": function(){
@@ -510,10 +511,11 @@
                     var savedPC = reg.PC;
                     this.mz700comworker.writeAsmCode(bin, function(execAddr) {
                         this.mz700comworker.setPC(execAddr, function() {
-                            this.mz700comworker.exec(1, function(result){
+                            this.mz700comworker.exec(1, function(/*result*/){
                                 this.setCurrentExecLine();
                                 this.showStatus();
                                 this.updateUI();
+                                this.mz700comworker.setPC(savedPC, function() {});
                             }.bind(this));
                         }.bind(this));
                     }.bind(this));
@@ -564,12 +566,8 @@
      *
      * This is ASYNC function.
      *
-     *
-     * PARAMETERS
-     * ----------
-     *
-     * 1. name      MZT file's body name on the server
-     *
+     * @param {string} name MZT file's body name on the server
+     * @returns {undefined}
      */
     MZ700Js.prototype.runServerMZT = function (name) {
         this.mz700comworker.stop(function() {
@@ -598,9 +596,8 @@
      * 3. Assemble it back to the memory located by its header area.
      * 4. A program counter will be set to its execution address.
      *
-     * PARAMETERS
-     * ----------
-     *  1. tape_data    MZT tape data as byte array
+     * @param {object} tape_data MZT tape data as byte array
+     * @returns {undefined}
      */
     MZ700Js.prototype.setMztData = function(tape_data) {
         this.mz700comworker.setCassetteTape(tape_data, function(mztape_array) {
@@ -610,7 +607,6 @@
                     $("#mzt_info").html("MZT: '" + mztape_array[0].header.filename + "' Loading......");
                     this.mz700comworker.disassemble(mztape_array, function(result) {
                         var outbuf = result.outbuf;
-                        var dasmlines = result.dasmline;
                         this.txtAsmSrc.val(outbuf);
                         $("#mzt_info").html("MZT: '" + mztape_array[0].header.filename + "' Loaded");
                         this.assemble(function() {
@@ -671,7 +667,7 @@
     };
     MZ700Js.prototype.stepIn = function() {
         this.clearCurrentExecLine();
-        this.mz700comworker.exec(1, function(result){
+        this.mz700comworker.exec(1, function(/*result*/){
             this.setCurrentExecLine();
             this.showStatus();
             this.updateUI();

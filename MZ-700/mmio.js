@@ -43,7 +43,7 @@
         this.mmio[address - 0xE000].r.forEach(function(peripheral) {
             value = peripheral.readMMIO(address, value);
         });
-        return read;
+        return undefined;
     };
 
     // Write MMIO

@@ -1,3 +1,4 @@
+/* global getModule */
 (function() {
     var Z80BinUtil = getModule("Z80BinUtil") || require("./bin-util.js");
 
@@ -8,8 +9,8 @@
 
     IMem.prototype.create = function(opt) {
         opt = opt || {};
-        this.onPeek = opt.onPeek || function(address, value) {};
-        this.onPoke = opt.onPoke || function(address, value) {};
+        this.onPeek = opt.onPeek || function(/*address, value*/) {};
+        this.onPoke = opt.onPoke || function(/*address, value*/) {};
         this.size = opt.size || 0x10000;
         this.startAddr = opt.startAddr || 0;
     };
@@ -19,10 +20,11 @@
     //
     // address: address to write value
     //
-    IMem.prototype.peekByte = function(address, value) {
-        var msg = "Error: peekByte was not overrided and supported in class of this:" + JSON.stringify(this, null, "    ");
-        log.error(msg);
-        throw new ReferenseError(msg);
+    IMem.prototype.peekByte = function(/* address, value */) {
+        var msg = "Error: peekByte was not overrided and supported in class of this:"
+            + JSON.stringify(this, null, "    ");
+        console.error(msg);
+        throw new Error(msg);
     };
 
     //
@@ -31,10 +33,10 @@
     // address: address to write value
     // value: value to write
     //
-    IMem.prototype.pokeByte = function(address, value) {
+    IMem.prototype.pokeByte = function(/* address, value */) {
         var msg = "Error: pokeByte was not overrided and supported in class of this:" + JSON.stringify(this, null, "    ");
-        log.error(msg);
-        throw new ReferenseError(msg);
+        console.error(msg);
+        throw new Error(msg);
     };
 
     IMem.prototype.clear = function() {

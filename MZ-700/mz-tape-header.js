@@ -61,8 +61,10 @@ MZ_TapeHeader.prototype.setFilename = function(filename) {
     // Save to the field
     this.filename = filename;
 
+    var i;
+
     // Clear buffer by null
-    for(var i = 0; i <= 0x10; i++) {
+    for(i = 0; i <= 0x10; i++) {
         this.buffer[0x01 + i] = 0;
     }
 
@@ -70,7 +72,7 @@ MZ_TapeHeader.prototype.setFilename = function(filename) {
     filename += "\r";
 
     // Copy its character codes to the buffer with CR
-    for(var i = 0; i < filename.length; i++) {
+    for(i = 0; i < filename.length; i++) {
         this.buffer[0x01 + i] = (filename.charCodeAt(i) & 0xff);
     }
 };

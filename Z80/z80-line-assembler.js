@@ -1,3 +1,4 @@
+/* eslint no-octal: "off" */
 var Z80LineAssembler = function(source, address, dictionary) {
     this.address = address;
     this.bytecode = [];
@@ -66,7 +67,6 @@ Z80LineAssembler.prototype.resolveAddress = function(dictionary)
 
 Z80LineAssembler.tokenize = function(line) {
     var LEX_IDLE=0;
-    var LEX_WHITESPACE=1;
     var LEX_NUMBER=2;
     var LEX_IDENT=3;
     var LEX_CHAR=4;
@@ -164,8 +164,6 @@ Z80LineAssembler.tokenize = function(line) {
                 break;
             default:
                 throw 'unrecognized status ';
-                break;
-
         } 
     }
     if(tok != '') {
@@ -202,9 +200,13 @@ Z80LineAssembler.prototype.assembleMnemonic = function(toks, label, dictionary) 
     if(match_token(toks,['DEFS', null])) {
         var n = Z80LineAssembler._parseNumLiteral(toks[1]);
         if(n < 0) {
-            throw "negative DEFS number " + tok[1];
+            throw "negative DEFS number " + toks[1];
         }
-        return (function(a,i,n,v) { for(; i < n; i++) { a.push(v);}; return a;}([],0,n,v));
+        var zeros = [];
+        for(var i = 0; i < n; i++) {
+            zeros.push(0);
+        }
+        return zeros;
     }
 	//=================================================================================
 	//
@@ -239,37 +241,53 @@ Z80LineAssembler.prototype.assembleMnemonic = function(toks, label, dictionary) 
         return [0100 | (dst_r << 3) | (src_r) << 0];
     }
     if(match_token(toks,['LD', /^[BCDEHLA]$/, ',', null])) {
-        var r = get8bitRegId(toks[1]);
-        var n = Z80LineAssembler.parseNumLiteral(toks[3]);
-        return [0006 | (r << 3), n];
+        return (function() {
+            var r = get8bitRegId(toks[1]);
+            var n = Z80LineAssembler.parseNumLiteral(toks[3]);
+            return [0006 | (r << 3), n];
+        }());
     }
     if(match_token(toks,['LD', /^[BCDEHLA]$/, ',', '(','HL',')'])) {
-        var r = get8bitRegId(toks[1]);
-        return [0106 | (r << 3)];
+        return (function() {
+            var r = get8bitRegId(toks[1]);
+            return [0106 | (r << 3)];
+        }());
     }
     if(match_token(toks,['LD', '(','HL',')', ',', /^[BCDEHLA]$/])) {
-        var r = get8bitRegId(toks[5]);
-        return [0160 | r];
+        return (function() {
+            var r = get8bitRegId(toks[5]);
+            return [0160 | r];
+        }());
     }
     if(match_token(toks,['LD', '(','HL',')', ',', null])) {
-        var n = Z80LineAssembler.parseNumLiteral(toks[5]);
-        return [0066, n];
+        return (function() {
+            var n = Z80LineAssembler.parseNumLiteral(toks[5]);
+            return [0066, n];
+        }());
     }
     if(match_token(toks,['LD', 'A', ',', '(', /^(BC|DE)$/, ')'])) {
-        var dd = get16bitRegId_dd(toks[4]);
-        return [0012 | (dd << 4)];
+        return (function() {
+            var dd = get16bitRegId_dd(toks[4]);
+            return [0012 | (dd << 4)];
+        }());
     }
     if(match_token(toks,['LD', 'A', ',', '(', null, ')'])) {
-        var n = Z80LineAssembler.parseNumLiteralPair(toks[4]);
-        return [0072, n[0], n[1]];
+        return (function() {
+            var n = Z80LineAssembler.parseNumLiteralPair(toks[4]);
+            return [0072, n[0], n[1]];
+        }());
     }
     if(match_token(toks,['LD', '(', /^(BC|DE)$/, ')', ',', 'A'])) {
-        var dd = get16bitRegId_dd(toks[2]);
-        return [0002 | (dd << 4)];
+        return (function() {
+            var dd = get16bitRegId_dd(toks[2]);
+            return [0002 | (dd << 4)];
+        }());
     }
     if(match_token(toks,['LD', '(', null, ')', ',', 'A'])) {
-        var n = Z80LineAssembler.parseNumLiteralPair(toks[2]);
-        return [0062, n[0], n[1]];
+        return (function() {
+            var n = Z80LineAssembler.parseNumLiteralPair(toks[2]);
+            return [0062, n[0], n[1]];
+        }());
     }
 	//=================================================================================
 	//
@@ -280,49 +298,71 @@ Z80LineAssembler.prototype.assembleMnemonic = function(toks, label, dictionary) 
     if(match_token(toks,['LD', 'SP', ',', 'IX'])) { return [0xDD, 0xF9]; }
     if(match_token(toks,['LD', 'SP', ',', 'IY'])) { return [0xfd, 0xF9]; }
     if(match_token(toks,['LD', /^(BC|DE|HL|SP)$/, ',', null])) {
-        var dd = get16bitRegId_dd(toks[1]);
-        var n = Z80LineAssembler.parseNumLiteralPair(toks[3]);
-        return [0001 | (dd << 4), n[0], n[1]];
+        return (function() {
+            var dd = get16bitRegId_dd(toks[1]);
+            var n = Z80LineAssembler.parseNumLiteralPair(toks[3]);
+            return [0001 | (dd << 4), n[0], n[1]];
+        }());
     }
     if(match_token(toks,['LD', 'HL', ',', '(', null, ')'])) {
-        var n = Z80LineAssembler.parseNumLiteralPair(toks[4]);
-        return [0052, n[0], n[1]];
+        return (function() {
+            var n = Z80LineAssembler.parseNumLiteralPair(toks[4]);
+            return [0052, n[0], n[1]];
+        }());
     }
     if(match_token(toks,['LD', 'BC', ',', '(', null, ')'])) {
-        var n = Z80LineAssembler.parseNumLiteralPair(toks[4]);
-        return [0355, 0113, n[0], n[1]];
+        return (function() {
+            var n = Z80LineAssembler.parseNumLiteralPair(toks[4]);
+            return [0355, 0113, n[0], n[1]];
+        }());
     }
     if(match_token(toks,['LD', 'DE', ',', '(', null, ')'])) {
-        var n = Z80LineAssembler.parseNumLiteralPair(toks[4]);
-        return [0355, 0133, n[0], n[1]];
+        return (function() {
+            var n = Z80LineAssembler.parseNumLiteralPair(toks[4]);
+            return [0355, 0133, n[0], n[1]];
+        }());
     }
     if(match_token(toks,['LD', 'SP', ',', '(', null, ')'])) {
-        var n = Z80LineAssembler.parseNumLiteralPair(toks[4]);
-        return [0355, 0173, n[0], n[1]];
+        return (function() {
+            var n = Z80LineAssembler.parseNumLiteralPair(toks[4]);
+            return [0355, 0173, n[0], n[1]];
+        }());
     }
     if(match_token(toks,['LD', '(', null, ')', ',', 'HL'])) {
-        var n = Z80LineAssembler.parseNumLiteralPair(toks[2]);
-        return [0042, n[0], n[1]];
+        return (function() {
+            var n = Z80LineAssembler.parseNumLiteralPair(toks[2]);
+            return [0042, n[0], n[1]];
+        }());
     }
     if(match_token(toks,['LD', '(', null, ')', ',', 'BC'])) {
-        var n = Z80LineAssembler.parseNumLiteralPair(toks[2]);
-        return [0355, 0103, n[0], n[1]];
+        return (function() {
+            var n = Z80LineAssembler.parseNumLiteralPair(toks[2]);
+            return [0355, 0103, n[0], n[1]];
+        }());
     }
     if(match_token(toks,['LD', '(', null, ')', ',', 'DE'])) {
-        var n = Z80LineAssembler.parseNumLiteralPair(toks[2]);
-        return [0355, 0123, n[0], n[1]];
+        return (function() {
+            var n = Z80LineAssembler.parseNumLiteralPair(toks[2]);
+            return [0355, 0123, n[0], n[1]];
+        }());
     }
     if(match_token(toks,['LD', '(', null, ')', ',', 'SP'])) {
-        var n = Z80LineAssembler.parseNumLiteralPair(toks[2]);
-        return [0355, 0163, n[0], n[1]];
+        return (function() {
+            var n = Z80LineAssembler.parseNumLiteralPair(toks[2]);
+            return [0355, 0163, n[0], n[1]];
+        }());
     }
     if(match_token(toks,['PUSH', /^(BC|DE|HL|AF)$/])) {
-        var qq = get16bitRegId_qq(toks[1]);
-        return [0305 | (qq << 4)];
+        return (function() {
+            var qq = get16bitRegId_qq(toks[1]);
+            return [0305 | (qq << 4)];
+        }());
     }
     if(match_token(toks,['POP', /^(BC|DE|HL|AF)$/])) {
-        var qq = get16bitRegId_qq(toks[1]);
-        return [0301 | (qq << 4)];
+        return (function() {
+            var qq = get16bitRegId_qq(toks[1]);
+            return [0301 | (qq << 4)];
+        }());
     }
 	//=================================================================================
     // Undefined instruction
@@ -399,19 +439,19 @@ Z80LineAssembler.prototype.assembleMnemonic = function(toks, label, dictionary) 
     }
     if(match_token(toks,['ADD', 'IX', ',', /^(BC|DE|IX|SP)$/]))   {
         switch(toks[3]) {
-            case 'BC': return [0335, 0011]; break;
-            case 'DE': return [0335, 0031]; break;
-            case 'IX': return [0335, 0051]; break;
-            case 'SP': return [0335, 0071]; break;
+            case 'BC': return [0335, 0011];
+            case 'DE': return [0335, 0031];
+            case 'IX': return [0335, 0051];
+            case 'SP': return [0335, 0071];
         }
         return [];
     }
     if(match_token(toks,['ADD', 'IY', ',', /^(BC|DE|IY|SP)$/]))   {
         switch(toks[3]) {
-            case 'BC': return [0375, 0011]; break;
-            case 'DE': return [0375, 0031]; break;
-            case 'IY': return [0375, 0051]; break;
-            case 'SP': return [0375, 0071]; break;
+            case 'BC': return [0375, 0011];
+            case 'DE': return [0375, 0031];
+            case 'IY': return [0375, 0051];
+            case 'SP': return [0375, 0071];
         }
         return [];
     }
@@ -426,6 +466,7 @@ Z80LineAssembler.prototype.assembleMnemonic = function(toks, label, dictionary) 
                     case 'IX': return [0335,0043];
                     case 'IY': return [0375,0043];
                 }
+                break;
             case 'DEC':
                 switch(toks[1]) {
                     case 'BC': return [0013];
@@ -435,6 +476,7 @@ Z80LineAssembler.prototype.assembleMnemonic = function(toks, label, dictionary) 
                     case 'IX': return [0335,0053];
                     case 'IY': return [0375,0053];
                 }
+                break;
         }
         return [];
     }
@@ -473,23 +515,25 @@ Z80LineAssembler.prototype.assembleMnemonic = function(toks, label, dictionary) 
     }
     if(match_token(toks,[/^(RLC|RL|RRC|RR|SLA|SRA|SRL)$/,'(',/^(IX|IY)$/,'+',null, ')'])
     || match_token(toks,[/^(RLC|RL|RRC|RR|SLA|SRA|SRL)$/,'(',/^(IX|IY)$/,/^\+.*/, ')']))  {
-        var index_d = ((toks[3] == '+') ? 4 : 3);
-        var prefix = 0;
-        switch(toks[2]) {
-            case 'IX': prefix = 0335; break;
-            case 'IY': prefix = 0375; break;
-        }
-        var d = Z80LineAssembler.parseNumLiteral(toks[index_d]);
-        switch(toks[0]) {
-            case 'RLC': return [prefix, 0313, d, 0006];
-            case 'RL':  return [prefix, 0313, d, 0026];
-            case 'RRC': return [prefix, 0313, d, 0016];
-            case 'RR':  return [prefix, 0313, d, 0036];
-            case 'SLA': return [prefix, 0313, d, 0046];
-            case 'SRA': return [prefix, 0313, d, 0056];
-            case 'SRL': return [prefix, 0313, d, 0076];
-        }
-        return [];
+        return (function() {
+            var index_d = ((toks[3] == '+') ? 4 : 3);
+            var prefix = 0;
+            switch(toks[2]) {
+                case 'IX': prefix = 0335; break;
+                case 'IY': prefix = 0375; break;
+            }
+            var d = Z80LineAssembler.parseNumLiteral(toks[index_d]);
+            switch(toks[0]) {
+                case 'RLC': return [prefix, 0313, d, 0006];
+                case 'RL':  return [prefix, 0313, d, 0026];
+                case 'RRC': return [prefix, 0313, d, 0016];
+                case 'RR':  return [prefix, 0313, d, 0036];
+                case 'SLA': return [prefix, 0313, d, 0046];
+                case 'SRA': return [prefix, 0313, d, 0056];
+                case 'SRL': return [prefix, 0313, d, 0076];
+            }
+            return [];
+        }());
     }
     if(match_token(toks,['RLD']))  { return [0355, 0157]; }
     if(match_token(toks,['RRD']))  { return [0355, 0147]; }
@@ -516,19 +560,21 @@ Z80LineAssembler.prototype.assembleMnemonic = function(toks, label, dictionary) 
     }
     if(match_token(toks,[/^(BIT|SET|RES)$/, /^[0-7]$/, ',', '(',/^(IX|IY)$/,'+',null,')'])
     || match_token(toks,[/^(BIT|SET|RES)$/, /^[0-7]$/, ',', '(',/^(IX|IY)$/,/^\+.*$/,')'])) {
-        var index_d = ((toks[5] == '+') ? 6 : 5);
-        var prefix = 0;
-        switch(toks[4]) {
-            case 'IX': prefix = 0335; break;
-            case 'IY': prefix = 0375; break;
-        }
-        var d = Z80LineAssembler.parseNumLiteral(toks[index_d]);
-        switch(toks[0]) {
-            case 'BIT': return [prefix, 0313, d, 0106 | (toks[1] << 3)];
-            case 'SET': return [prefix, 0313, d, 0306 | (toks[1] << 3)];
-            case 'RES': return [prefix, 0313, d, 0206 | (toks[1] << 3)];
-        }
-        return [];
+        return (function() {
+            var index_d = ((toks[5] == '+') ? 6 : 5);
+            var prefix = 0;
+            switch(toks[4]) {
+                case 'IX': prefix = 0335; break;
+                case 'IY': prefix = 0375; break;
+            }
+            var d = Z80LineAssembler.parseNumLiteral(toks[index_d]);
+            switch(toks[0]) {
+                case 'BIT': return [prefix, 0313, d, 0106 | (toks[1] << 3)];
+                case 'SET': return [prefix, 0313, d, 0306 | (toks[1] << 3)];
+                case 'RES': return [prefix, 0313, d, 0206 | (toks[1] << 3)];
+            }
+            return [];
+        }());
     }
 
     //=================================================================================
@@ -536,36 +582,44 @@ Z80LineAssembler.prototype.assembleMnemonic = function(toks, label, dictionary) 
     //=================================================================================
 
     if(match_token(toks,['JP', null]))  {
-        var nn = Z80LineAssembler.parseNumLiteralPair(toks[1]);
-        return [0303, nn[0], nn[1]];
+        return (function() {
+            var nn = Z80LineAssembler.parseNumLiteralPair(toks[1]);
+            return [0303, nn[0], nn[1]];
+        }());
     }
     if(match_token(toks,['JP', /^(NZ|Z|NC|C|PO|PE|P|M)$/, ',',  null]))  {
-        var nn = Z80LineAssembler.parseNumLiteralPair(toks[3]);
-        switch(toks[1]) {
-            case 'NZ':  return [0302, nn[0], nn[1]];
-            case 'Z':   return [0312, nn[0], nn[1]];
-            case 'NC':  return [0322, nn[0], nn[1]];
-            case 'C':   return [0332, nn[0], nn[1]];
-            case 'PO':  return [0342, nn[0], nn[1]];
-            case 'PE':  return [0352, nn[0], nn[1]];
-            case 'P':   return [0362, nn[0], nn[1]];
-            case 'M':   return [0372, nn[0], nn[1]];
-        }
-        return [];
+        return (function() {
+            var nn = Z80LineAssembler.parseNumLiteralPair(toks[3]);
+            switch(toks[1]) {
+                case 'NZ':  return [0302, nn[0], nn[1]];
+                case 'Z':   return [0312, nn[0], nn[1]];
+                case 'NC':  return [0322, nn[0], nn[1]];
+                case 'C':   return [0332, nn[0], nn[1]];
+                case 'PO':  return [0342, nn[0], nn[1]];
+                case 'PE':  return [0352, nn[0], nn[1]];
+                case 'P':   return [0362, nn[0], nn[1]];
+                case 'M':   return [0372, nn[0], nn[1]];
+            }
+            return [];
+        }());
     }
     if(match_token(toks,['JR', null]))  {
-        var e = Z80LineAssembler.parseRelAddr(toks[1], this.address + 2);
-        return [0030, e];
+        return (function() {
+            var e = Z80LineAssembler.parseRelAddr(toks[1], this.address + 2);
+            return [0030, e];
+        }.bind(this)());
     }
     if(match_token(toks,['JR', /^(NZ|Z|NC|C)$/, ',',  null]))  {
-        var e = Z80LineAssembler.parseRelAddr(toks[3], this.address + 2);
-        switch(toks[1]) {
-            case 'NZ':  return [0040, e];
-            case 'Z':   return [0050, e];
-            case 'NC':  return [0060, e];
-            case 'C':   return [0070, e];
-        }
-        return [];
+        return (function() {
+            var e = Z80LineAssembler.parseRelAddr(toks[3], this.address + 2);
+            switch(toks[1]) {
+                case 'NZ':  return [0040, e];
+                case 'Z':   return [0050, e];
+                case 'NC':  return [0060, e];
+                case 'C':   return [0070, e];
+            }
+            return [];
+        }.bind(this)());
     }
     if(match_token(toks,['JP', '(', /^(HL|IX|IY)$/, ')']))  {
         switch(toks[2]) {
@@ -576,8 +630,10 @@ Z80LineAssembler.prototype.assembleMnemonic = function(toks, label, dictionary) 
         return [];
     }
     if(match_token(toks,['DJNZ', null]))  {
-        var e = Z80LineAssembler.parseRelAddr(toks[1], this.address + 2);
-        return [0020, e];
+        return (function() {
+            var e = Z80LineAssembler.parseRelAddr(toks[1], this.address + 2);
+            return [0020, e];
+        }.bind(this)());
     }
 
     //=================================================================================
@@ -585,22 +641,26 @@ Z80LineAssembler.prototype.assembleMnemonic = function(toks, label, dictionary) 
     //=================================================================================
 
     if(match_token(toks,['CALL', null]))  {
-        var nn = Z80LineAssembler.parseNumLiteralPair(toks[1]);
-        return [0315, nn[0], nn[1]];
+        return (function() {
+            var nn = Z80LineAssembler.parseNumLiteralPair(toks[1]);
+            return [0315, nn[0], nn[1]];
+        }());
     }
     if(match_token(toks,['CALL', /^(NZ|Z|NC|C|PO|PE|P|M)$/, ',',  null]))  {
-        var nn = Z80LineAssembler.parseNumLiteralPair(toks[3]);
-        switch(toks[1]) {
-            case 'NZ':  return [0304, nn[0], nn[1]];
-            case 'Z':   return [0314, nn[0], nn[1]];
-            case 'NC':  return [0324, nn[0], nn[1]];
-            case 'C':   return [0334, nn[0], nn[1]];
-            case 'PO':  return [0344, nn[0], nn[1]];
-            case 'PE':  return [0354, nn[0], nn[1]];
-            case 'P':   return [0364, nn[0], nn[1]];
-            case 'M':   return [0374, nn[0], nn[1]];
-        }
-        return [];
+        return (function() {
+            var nn = Z80LineAssembler.parseNumLiteralPair(toks[3]);
+            switch(toks[1]) {
+                case 'NZ':  return [0304, nn[0], nn[1]];
+                case 'Z':   return [0314, nn[0], nn[1]];
+                case 'NC':  return [0324, nn[0], nn[1]];
+                case 'C':   return [0334, nn[0], nn[1]];
+                case 'PO':  return [0344, nn[0], nn[1]];
+                case 'PE':  return [0354, nn[0], nn[1]];
+                case 'P':   return [0364, nn[0], nn[1]];
+                case 'M':   return [0374, nn[0], nn[1]];
+            }
+            return [];
+        }());
     }
     if(match_token(toks,['RET']))  { return [0311]; }
     if(match_token(toks,['RET', /^(NZ|Z|NC|C|PO|PE|P|M)$/]))  {
@@ -636,20 +696,28 @@ Z80LineAssembler.prototype.assembleMnemonic = function(toks, label, dictionary) 
     // 入力・出力グループ
     //=================================================================================
     if(match_token(toks,['IN', /^[BCDEHLA]$/, ',', '(','C',')']))  {
-        var r = get8bitRegId(toks[1]);
-        return [0355, 0100 | (r << 3)];
+        return (function() {
+            var r = get8bitRegId(toks[1]);
+            return [0355, 0100 | (r << 3)];
+        }());
     }
     if(match_token(toks,['IN', 'A', ',', '(', null, ')']))  {
-        var n = Z80LineAssembler.parseNumLiteral(toks[4]);
-        return [0333, n];
+        return (function() {
+            var n = Z80LineAssembler.parseNumLiteral(toks[4]);
+            return [0333, n];
+        }());
     }
     if(match_token(toks,['OUT', '(','C',')', ',', /^[BCDEHLA]$/]))  {
-        var r = get8bitRegId(toks[5]);
-        return [0355, 0101 | (r << 3)];
+        return (function() {
+            var r = get8bitRegId(toks[5]);
+            return [0355, 0101 | (r << 3)];
+        }());
     }
     if(match_token(toks,['OUT', '(', null, ')', ',', 'A']))  {
-        var n = Z80LineAssembler.parseNumLiteral(toks[2]);
-        return [0323, n];
+        return (function() {
+            var n = Z80LineAssembler.parseNumLiteral(toks[2]);
+            return [0323, n];
+        }());
     }
     if(match_token(toks,['INI']))   { return [0355, 0242]; }
     if(match_token(toks,['INIR']))  { return [0355, 0262]; }
@@ -667,122 +735,158 @@ Z80LineAssembler.prototype.assembleMnemonic = function(toks, label, dictionary) 
 	//=================================================================================
     if(match_token(toks,['LD', /^[BCDEHLA]$/, ',', '(', /^(IX|IY)$/, '+', null, ')'])
     || match_token(toks,['LD', /^[BCDEHLA]$/, ',', '(', /^(IX|IY)$/, null, ')'])) {
-        var index_d = ((toks[5] == '+') ? 6 : 5);
-        var r = get8bitRegId(toks[1]);
-        var d = Z80LineAssembler.parseNumLiteral(toks[index_d]);
-        var subope = getSubopeIXIY(toks[4]);
-        return [subope, 0106 | (r << 3), d];
+        return (function() {
+            var index_d = ((toks[5] == '+') ? 6 : 5);
+            var r = get8bitRegId(toks[1]);
+            var d = Z80LineAssembler.parseNumLiteral(toks[index_d]);
+            var subope = getSubopeIXIY(toks[4]);
+            return [subope, 0106 | (r << 3), d];
+        }());
     }
     if(match_token(toks,['LD', '(', /^(IX|IY)$/, '+', null, ')', ',', /^[BCDEHLA]$/])
     || match_token(toks,['LD', '(', /^(IX|IY)$/, /^\+.*$/, ')', ',', /^[BCDEHLA]$/])) {
-        var index_d = ((toks[3] == '+') ? 4 : 3);
-        var index_r = ((toks[3] == '+') ? 7 : 6);
-        var d = Z80LineAssembler.parseNumLiteral(toks[index_d]);
-        var r = get8bitRegId(toks[index_r]);
-        var subope = getSubopeIXIY(toks[2]);
-        return [subope, 0160 | r, d];
+        return (function() {
+            var index_d = ((toks[3] == '+') ? 4 : 3);
+            var index_r = ((toks[3] == '+') ? 7 : 6);
+            var d = Z80LineAssembler.parseNumLiteral(toks[index_d]);
+            var r = get8bitRegId(toks[index_r]);
+            var subope = getSubopeIXIY(toks[2]);
+            return [subope, 0160 | r, d];
+        }());
     }
     if(match_token(toks,['LD', '(', /^(IX|IY)$/, '+', null, ')', ',', null])
     || match_token(toks,['LD', '(', /^(IX|IY)$/, /^\+.*$/, ')', ',', null])) {
-        var index_d = ((toks[3] == '+') ? 4 : 3);
-        var index_n = ((toks[3] == '+') ? 7 : 6);
-        var d = Z80LineAssembler.parseNumLiteral(toks[index_d]);
-        var n = Z80LineAssembler.parseNumLiteral(toks[index_n]);
-        var subope = getSubopeIXIY(toks[2]);
-        return [subope, 0x36, d, n];
+        return (function() {
+            var index_d = ((toks[3] == '+') ? 4 : 3);
+            var index_n = ((toks[3] == '+') ? 7 : 6);
+            var d = Z80LineAssembler.parseNumLiteral(toks[index_d]);
+            var n = Z80LineAssembler.parseNumLiteral(toks[index_n]);
+            var subope = getSubopeIXIY(toks[2]);
+            return [subope, 0x36, d, n];
+        }());
     }
     if(match_token(toks,['LD', /^(IX|IY)$/, ',', null])) {
-        var nn = Z80LineAssembler.parseNumLiteralPair(toks[3]);
-        var subope = getSubopeIXIY(toks[1]);
-        return [subope, 0x21, nn[0], nn[1]];
+        return (function() {
+            var nn = Z80LineAssembler.parseNumLiteralPair(toks[3]);
+            var subope = getSubopeIXIY(toks[1]);
+            return [subope, 0x21, nn[0], nn[1]];
+        }());
     }
     if(match_token(toks,['LD', /^(IX|IY)$/, ',', '(', null, ')'])) {
-        var nn = Z80LineAssembler.parseNumLiteralPair(toks[4]);
-        var subope = getSubopeIXIY(toks[1]);
-        return [subope, 0x2A, nn[0], nn[1]];
+        return (function() {
+            var nn = Z80LineAssembler.parseNumLiteralPair(toks[4]);
+            var subope = getSubopeIXIY(toks[1]);
+            return [subope, 0x2A, nn[0], nn[1]];
+        }());
     }
     if(match_token(toks,['PUSH', /^(IX|IY)$/])) {
-        var subope = getSubopeIXIY(toks[1]);
-        return [subope, 0xE5];
+        return (function() {
+            var subope = getSubopeIXIY(toks[1]);
+            return [subope, 0xE5];
+        }());
     }
     if(match_token(toks,['POP', /^(IX|IY)$/])) {
-        var subope = getSubopeIXIY(toks[1]);
-        return [subope, 0xE1];
+        return (function() {
+            var subope = getSubopeIXIY(toks[1]);
+            return [subope, 0xE1];
+        }());
     }
     if(match_token(toks,['EX', '(','SP',')', ',', /^(IX|IY)$/])) {
-        var subope = getSubopeIXIY(toks[5]);
-        return [subope, 0xE3];
+        return (function() {
+            var subope = getSubopeIXIY(toks[5]);
+            return [subope, 0xE3];
+        }());
     }
 
     //=================================================================================
     // 8ビット演算
     //=================================================================================
     if(match_token(toks,[/^(ADD|ADC|SUB|SBC)$/, 'A', ',', /^[BCDEHLA]$/])) {
-        var subseq = getArithmeticSubOpecode(toks[0]);
-        var r = get8bitRegId(toks[3]);
-        return [0200 | (subseq << 3) | r];
+        return (function() {
+            var subseq = getArithmeticSubOpecode(toks[0]);
+            var r = get8bitRegId(toks[3]);
+            return [0200 | (subseq << 3) | r];
+        }());
     }
     if(match_token(toks,[/^(ADD|ADC|SUB|SBC)$/, 'A', ',', null])) {
-        var subseq = getArithmeticSubOpecode(toks[0]);
-        var n = Z80LineAssembler.parseNumLiteral(toks[3]);
-        return [0306 | (subseq << 3), n];
+        return (function() {
+            var subseq = getArithmeticSubOpecode(toks[0]);
+            var n = Z80LineAssembler.parseNumLiteral(toks[3]);
+            return [0306 | (subseq << 3), n];
+        }());
     }
     if(match_token(toks,[/^(ADD|ADC|SUB|SBC)$/, 'A', ',', '(', 'HL', ')'])) {
-        var subseq = getArithmeticSubOpecode(toks[0]);
-        return [0206 | (subseq << 3)];
+        return (function() {
+            var subseq = getArithmeticSubOpecode(toks[0]);
+            return [0206 | (subseq << 3)];
+        }());
     }
     if(match_token(toks,[/^(ADD|ADC|SUB|SBC)$/, 'A', ',', '(', /^(IX|IY)$/, '+', null,  ')'])
     || match_token(toks,[/^(ADD|ADC|SUB|SBC)$/, 'A', ',', '(', /^(IX|IY)$/, /^\+.*/,  ')'])) {
-        var index_d = ((toks[5] == '+') ? 6 : 5);
-        var subseq = getArithmeticSubOpecode(toks[0]);
-        var d = Z80LineAssembler.parseNumLiteral(toks[index_d]);
-        var subope = getSubopeIXIY(toks[4]);
-        return [subope, 0206 | (subseq << 3), d];
+        return (function() {
+            var index_d = ((toks[5] == '+') ? 6 : 5);
+            var subseq = getArithmeticSubOpecode(toks[0]);
+            var d = Z80LineAssembler.parseNumLiteral(toks[index_d]);
+            var subope = getSubopeIXIY(toks[4]);
+            return [subope, 0206 | (subseq << 3), d];
+        }());
     }
     if(match_token(toks,[/^(AND|OR|XOR|CP)$/, /^[BCDEHLA]$/])) {
-        var subseq = getArithmeticSubOpecode(toks[0]);
-        var r = get8bitRegId(toks[1]);
-        return [0200 | (subseq << 3) | r];
+        return (function() {
+            var subseq = getArithmeticSubOpecode(toks[0]);
+            var r = get8bitRegId(toks[1]);
+            return [0200 | (subseq << 3) | r];
+        }());
     }
     if(match_token(toks,[/^(AND|OR|XOR|CP)$/, null])) {
-        var subseq = getArithmeticSubOpecode(toks[0]);
-        var n = Z80LineAssembler.parseNumLiteral(toks[1]);
-        return [0306 | (subseq << 3), n];
+        return (function() {
+            var subseq = getArithmeticSubOpecode(toks[0]);
+            var n = Z80LineAssembler.parseNumLiteral(toks[1]);
+            return [0306 | (subseq << 3), n];
+        }());
     }
     if(match_token(toks,[/^(AND|OR|XOR|CP)$/, '(', 'HL', ')'])) {
-        var subseq = getArithmeticSubOpecode(toks[0]);
-        return [0206 | (subseq << 3)];
+        return (function() {
+            var subseq = getArithmeticSubOpecode(toks[0]);
+            return [0206 | (subseq << 3)];
+        }());
     }
     if(match_token(toks,[/^(AND|OR|XOR|CP)$/, '(', /^(IX|IY)$/, '+', null,  ')'])
     || match_token(toks,[/^(AND|OR|XOR|CP)$/, '(', /^(IX|IY)$/, /^\+.*$/,  ')'])) {
-        var index_d = ((toks[3] == '+') ? 4 : 3);
-        var subseq = getArithmeticSubOpecode(toks[0]);
-        var d = Z80LineAssembler.parseNumLiteral(toks[index_d]);
-        var subope = getSubopeIXIY(toks[2]);
-        return [subope, 0206 | (subseq << 3), d];
+        return (function() {
+            var index_d = ((toks[3] == '+') ? 4 : 3);
+            var subseq = getArithmeticSubOpecode(toks[0]);
+            var d = Z80LineAssembler.parseNumLiteral(toks[index_d]);
+            var subope = getSubopeIXIY(toks[2]);
+            return [subope, 0206 | (subseq << 3), d];
+        }());
     }
     if(match_token(toks,[/^(INC|DEC)$/, /^[BCDEHLA]$/])) {
-        var r = get8bitRegId(toks[1]);
-        switch(toks[0]) {
-            case 'INC': return [0004 | (r << 3)]; break;
-            case 'DEC': return [0005 | (r << 3)]; break;
-        }
+        return (function() {
+            var r = get8bitRegId(toks[1]);
+            switch(toks[0]) {
+                case 'INC': return [0004 | (r << 3)];
+                case 'DEC': return [0005 | (r << 3)];
+            }
+        }());
     }
     if(match_token(toks,[/^(INC|DEC)$/, '(', 'HL', ')'])) {
         switch(toks[0]) {
-            case 'INC': return [0064]; break;
-            case 'DEC': return [0065]; break;
+            case 'INC': return [0064];
+            case 'DEC': return [0065];
         }
     }
     if(match_token(toks,[/^(INC|DEC)$/, '(', /^(IX|IY)$/, '+', null,  ')'])
     || match_token(toks,[/^(INC|DEC)$/, '(', /^(IX|IY)$/, /^\+.*$/,  ')'])) {
-        var subope = getSubopeIXIY(toks[2]);
-        var index_d = ((toks[3] == '+') ? 4 : 3);
-        var d = Z80LineAssembler.parseNumLiteral(toks[index_d]);
-        switch(toks[0]) {
-            case 'INC': return [subope, 0064, d]; break;
-            case 'DEC': return [subope, 0065, d]; break;
-        }
+        return (function() {
+            var subope = getSubopeIXIY(toks[2]);
+            var index_d = ((toks[3] == '+') ? 4 : 3);
+            var d = Z80LineAssembler.parseNumLiteral(toks[index_d]);
+            switch(toks[0]) {
+                case 'INC': return [subope, 0064, d];
+                case 'DEC': return [subope, 0065, d];
+            }
+        }());
     }
     console.warn("**** ERROR: CANNOT ASSEMBLE:" + toks.join(" / "));
     return [];
@@ -795,7 +899,7 @@ function getSubopeIXIY(tok) {
         case 'IY': subope = 0375; break;
     }
     return subope;
-};
+}
 
 function getArithmeticSubOpecode(opecode) {
     var subseq = 0;
@@ -810,7 +914,7 @@ function getArithmeticSubOpecode(opecode) {
         case 'CP': subseq = 7; break;
     }
     return subseq;
-};
+}
 
 function get16bitRegId_dd(name) {
     var r = null;
@@ -822,7 +926,7 @@ function get16bitRegId_dd(name) {
         default: break;
     }
     return r;
-};
+}
 
 function get16bitRegId_qq(name) {
     var r = null;
@@ -834,7 +938,7 @@ function get16bitRegId_qq(name) {
         default: break;
     }
     return r;
-};
+}
 
 function get8bitRegId(name) {
     var r = null;
@@ -849,7 +953,7 @@ function get8bitRegId(name) {
         default: break;
     }
     return r;
-};
+}
 
 function match_token(toks, pattern) {
     if(toks.length != pattern.length) {
@@ -871,7 +975,7 @@ function match_token(toks, pattern) {
         }
     }
     return true;
-};
+}
 
 Z80LineAssembler.parseNumLiteral = function(tok) {
     var n = Z80LineAssembler._parseNumLiteral(tok);
@@ -935,16 +1039,17 @@ Z80LineAssembler.derefer = function(label, dictionary) {
 
 Z80LineAssembler._parseNumLiteral = function(tok) {
     if(/^[\+\-]?[0-9]+$/.test(tok) || /^[\+\-]?[0-9A-F]+H$/i.test(tok)) {
+        var matches;
         var n = 0;
         var s = (/^\-/.test(tok) ? -1:1);
         if(/[hH]$/.test(tok)) {
-            var matches = tok.match(/^[\+\-]?([0-9a-fA-F]+)[hH]$/);
+            matches = tok.match(/^[\+\-]?([0-9a-fA-F]+)[hH]$/);
             n = parseInt(matches[1], 16);
         } else if(/^[\+\-]?0/.test(tok)) {
-            var matches = tok.match(/^[\+\-]?([0-7]+)$/);
+            matches = tok.match(/^[\+\-]?([0-7]+)$/);
             n = parseInt(matches[1], 8);
         } else {
-            var matches = tok.match(/^[\+\-]?([0-9]+)$/);
+            matches = tok.match(/^[\+\-]?([0-9]+)$/);
             n = parseInt(matches[1], 10);
         }
         return s * n;

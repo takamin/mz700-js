@@ -2,12 +2,12 @@
     //
     // MZ-700 Key Matrix
     //
-    MZ700KeyMatrix = function() {
+    function MZ700KeyMatrix() {
         this.keymap = new Array(10);
         for(var i = 0; i < this.keymap.length; i++) {
             this.keymap[i] = 0xff;
         }
-    };
+    }
 
     MZ700KeyMatrix.prototype.getKeyData = function(strobe) {
         var keydata = 0xff;

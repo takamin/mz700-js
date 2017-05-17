@@ -1,3 +1,4 @@
+/* global getModule */
 require("../lib/ex_number.js");
 var FractionalTimer = getModule("FractionalTimer")  || require("fractional-timer");
 var MZ_TapeHeader   = getModule("MZ_TapeHeader")    || require('./mz-tape-header');
@@ -101,7 +102,7 @@ var MZ700 = function(opt) {
         onBreak: function() {
             THIS._transworker.postNotify("onBreak");
         },
-        onUpdateScreen: function(screenUpdateData) {
+        onUpdateScreen: function() {
             THIS._transworker.postNotify(
                 "onUpdateScreen", THIS._screenUpdateData);
         },
@@ -111,7 +112,7 @@ var MZ700 = function(opt) {
             };
             if(THIS._vramTxTid == null) {
                 THIS._vramTxTid = setTimeout(function() {
-                    THIS.opt.onUpdateScreen(THIS._screenUpdateData);
+                    THIS.opt.onUpdateScreen();
                     THIS._screenUpdateData = {};
                     THIS._vramTxTid = null;
                 }, 100);
@@ -139,10 +140,10 @@ var MZ700 = function(opt) {
         stopSound: function(){
             THIS._transworker.postNotify("stopSound");
         },
-        onStartDataRecorder: function(state){
+        onStartDataRecorder: function(){
             THIS._transworker.postNotify("onStartDataRecorder");
         },
-        onStopDataRecorder: function(state){
+        onStopDataRecorder: function(){
             THIS._transworker.postNotify("onStopDataRecorder");
         }
     };
@@ -219,16 +220,15 @@ var MZ700 = function(opt) {
                     } else {
                         value = value & 0x7f;
                     }
-                    return value;
                     break;
                 case 0xE004:
-                    return THIS.intel8253.counter[0].read();
+                    value = THIS.intel8253.counter[0].read();
                     break;
                 case 0xE005:
-                    return THIS.intel8253.counter[1].read();
+                    value = THIS.intel8253.counter[1].read();
                     break;
                 case 0xE006:
-                    return THIS.intel8253.counter[2].read();
+                    value = THIS.intel8253.counter[2].read();
                     break;
                 case 0xE007:
                     break;
@@ -240,7 +240,6 @@ var MZ700 = function(opt) {
                     } else {
                         value = value & 0xfe;
                     }
-                    return value;
                     break;
             }
             return value;
@@ -483,11 +482,11 @@ MZ700.prototype.setKeyState = function(strobe, bit, state) {
     this.keymatrix.setKeyMatrixState(strobe, bit, state);
 };
 
-MZ700.prototype.clearBreakPoints = function(callback) {
+MZ700.prototype.clearBreakPoints = function() {
     this.z80.clearBreakPoints();
 };
 
-MZ700.prototype.getBreakPoints = function(callback) {
+MZ700.prototype.getBreakPoints = function() {
     return this.z80.getBreakPoints();
 };
 
