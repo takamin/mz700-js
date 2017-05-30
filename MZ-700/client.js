@@ -10,6 +10,7 @@ window.jQuery = require("jquery");
 
     var resizeScreen = function() {
 
+        console.log("resizeScreen");
         var bboxContainer = new BBox(container.get(0));
         var bboxScreen = new BBox(screen.get(0));
         var containerSize = bboxContainer.getSize();
@@ -29,7 +30,8 @@ window.jQuery = require("jquery");
 
     };
 
-    var liquidRoot = dock_n_liquid.select($("#liquid-panel-MZ-700").get(0));
+    var liquidRootElement = $("#liquid-panel-MZ-700").get(0);
+    var liquidRoot = dock_n_liquid.select(liquidRootElement);
     var dockPanelKb = $("#dock-panel-keyboard");
     var mz700js = MZ700Js.create({
         "urlPrefix" : "../",
@@ -44,8 +46,41 @@ window.jQuery = require("jquery");
             resizeScreen();
         }
     });
-    mz700js.reset();
+    var fullscreenButton = $("<button/>")
+        .attr("id","fullscreenButton");
+    var onFullscreenButtonClick = function() {
+        if(document.fullscreenElement == null) {
+            liquidRootElement.requestFullscreen();
+        } else {
+            document.exitFullscreen();
+        }
+    }
+    var onFullscreenChange = function() {
+        console.log("fullscreenchange");
+        if(document.fullscreenElement == null) {
+            $("#dock-panel-header").show();
+            $("#dock-panel-keyboard").show();
+            $("#dock-panel-bottom").show();
+            $("#dock-panel-right").show();
+            fullscreenButton.html("Fullscreen");
+        } else {
+            $("#dock-panel-header").hide();
+            $("#dock-panel-keyboard").hide();
+            $("#dock-panel-bottom").hide();
+            $("#dock-panel-right").hide();
+            fullscreenButton.html("Exit Fullscreen");
+        }
+        liquidRoot.layout();
+        resizeScreen();
+        liquidRoot.layout();
+        resizeScreen();
+    };
+    fullscreenButton.click(onFullscreenButtonClick);
+    $("#dock-panel-scrn-ctrl").append(fullscreenButton);
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    onFullscreenChange();
 
+    mz700js.reset();
     screen.find("canvas").css("height", "calc(100% - 1px)");
     dock_n_liquid.init(resizeScreen);
     dock_n_liquid.select($(".MZ-700").get(0)).layout();

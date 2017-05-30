@@ -14,19 +14,20 @@
     </head>
     <body>
         <div id="liquid-panel-MZ-700" class="dock MZ-700">
-            <div class="dock top" style="height:50px">
+            <div id="dock-panel-header" class="dock top" style="height:50px">
                 <h1 style="height:50px; line-height:50px; margin:0; font-size:12pt;"
                     ><span class="mz700scrn" charSize="16" padding="1" color="0" bgColor="7"
                         >MZ-700 FULL JAVASCRIPT EMULATOR</span></h1>
             </div>
-            <div class="dock left" style="width:700px;">
+            <div class="dock">
+                <div id="dock-panel-scrn-ctrl" class="dock top" style="text-align:right;height:40px;"></div>
                 <div class="dock MZ-700-body">
                     <div class="screen cmt-slot key-switcher"></div>
                 </div>
                 <div id="dock-panel-keyboard" class="dock bottom" style="height:250px;">
                     <div class="keyboard"></div>
                 </div>
-                <div class="dock bottom" style="height:170px;">
+                <div id="dock-panel-bottom" class="dock bottom" style="height:170px;">
                     <div class="dock top" style="height:80px;">
                         <div class="ctrl-panel"></div>
                     </div>
@@ -36,7 +37,7 @@
                     </div>
                 </div>
             </div>
-            <div class="dock">
+            <div id="dock-panel-right" class="dock right" style="width:700px;">
                 <div class="imm-exec"></div>
                 <div class="register-monitor open"></div>
                 <div class="memory open"></div>
