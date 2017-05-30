@@ -12,6 +12,7 @@
 .MZ-700 .screen:hover {
    border-color:red;
 }
+.MZ-700 #dock-panel-scrn-ctrl > button,
 .MZ-700 .ctrl-panel > button {
     background-color: blue;
     color: white;
@@ -21,10 +22,12 @@
     font-size: 11pt;
     font-weight:bold;
 }
+.MZ-700 #dock-panel-scrn-ctrl > button:hover,
 .MZ-700 .ctrl-panel > button:hover {
     background-color: white;
     color: blue;
 }
+.MZ-700 #dock-panel-scrn-ctrl > button:focus,
 .MZ-700 .ctrl-panel > button:focus {
     background-color: white;
     color: blue;
