@@ -5,8 +5,7 @@
   "private": false,
   "scripts": {
     "start": "node ./bin/www",
-    "test": "grunt lint && mocha && cd test && sh ./test.sh && cd ..",
-    "prepublish": "grunt lint && mocha && cd test && sh ./test.sh && cd .. && bower install && grunt release"
+    "test": "grunt lint && mocha && cd test && sh ./test.sh && cd .."
   },
   "bin": {
     "mz700-js": "./bin/www",
