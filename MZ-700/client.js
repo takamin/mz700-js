@@ -1,6 +1,7 @@
 window.jQuery = require("jquery");
 (function($) {
     require("jquery-ui");
+    require("fullscrn");
     var MZ700Js = require("./index.js");
     var dock_n_liquid = require("dock-n-liquid");
     var BBox = require("b-box");

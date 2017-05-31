@@ -1,7 +1,7 @@
 /* global Promise */
 (function(){
     "use strict";
-    var CliCommand = require("./cli-command");
+    var CliCommand = require("../lib/cli-command");
     var mztReadFile = require("../lib/mzt-read-file");
     var MZ_TapeHeader = require('../MZ-700/mz-tape-header');
 

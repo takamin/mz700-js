@@ -1,6 +1,6 @@
 (function(){
     "use strict";
-    var CliCommand = require("./cli-command");
+    var CliCommand = require("../lib/cli-command");
     function CliCommandConf() {
         this._sendKey = null;
         this._commands = {
