@@ -1,6 +1,6 @@
 (function(){
     "use strict";
-    var CliCommand = require("./cli-command");
+    var CliCommand = require("../lib/cli-command");
     var ansi = require('ansi-escape-sequences');
     var style = {};
     var fg = {};

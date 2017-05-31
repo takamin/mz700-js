@@ -1,6 +1,6 @@
 (function(){
     "use strict";
-    var CliCommand = require("./cli-command");
+    var CliCommand = require("../lib/cli-command");
     module.exports = new CliCommand("reg", function(mz700/*, args*/) {
         var reg = mz700.getRegister();
         console.log(

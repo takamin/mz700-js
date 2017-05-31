@@ -46,25 +46,25 @@
     var CliCommand = require("../lib/cli-command.js");
     var commands = new CliCommand();
     commands.install([
-        require("../lib/cli-command-exit.js"),
-        require("../lib/cli-command-register.js"),
-        require("../lib/cli-command-run.js"),
-        require("../lib/cli-command-stop.js"),
-        require("../lib/cli-command-step.js"),
-        require("../lib/cli-command-jump.js"),
-        require("../lib/cli-command-breakpoint.js"),
-        require("../lib/cli-command-mem.js")
+        require("../cli-commands/exit.js"),
+        require("../cli-commands/register.js"),
+        require("../cli-commands/run.js"),
+        require("../cli-commands/stop.js"),
+        require("../cli-commands/step.js"),
+        require("../cli-commands/jump.js"),
+        require("../cli-commands/breakpoint.js"),
+        require("../cli-commands/mem.js")
     ]);
-    var cliCommandSendKey = require("../lib/cli-command-sendkey.js");
-    var cliCommandVram = require("../lib/cli-command-vram.js");
-    var cliCommandCmt = require("../lib/cli-command-cmt.js");
+    var cliCommandSendKey = require("../cli-commands/sendkey.js");
+    var cliCommandVram = require("../cli-commands/vram.js");
+    var cliCommandCmt = require("../cli-commands/cmt.js");
     commands.install([
         cliCommandSendKey,
         cliCommandVram,
         cliCommandCmt
     ]);
 
-    commands.install(require("../lib/cli-command-conf.js"));
+    commands.install(require("../cli-commands/conf.js"));
 
     var mz700 = new MZ700({
         "onExecutionParameterUpdate" : function() { },
