@@ -2,26 +2,38 @@
 (function() {
     "use strict";
 
-    var getopt = require('node-getopt').create([
-            ['c',   'set-cmt=ARG',  'set cassete magnetic tape'],
-            ['h',   'help',     'display this help'],
-            ['v',   'version',  'show version']
-            ]).bindHelp().parseSystem();
-    var argv = require("hash-arg").get(["input_filename"], getopt.argv);
-
     var getPackageJson = require("../lib/get-package-json");
     var npmInfo = getPackageJson(__dirname + "/..");
-    if(getopt.options.version) {
-        console.log("");
-        console.log("mz700-cli v" + npmInfo.version);
-        console.log("===================");
-        console.log("");
-        console.log("* LICENSE:    " + npmInfo.license);
-        console.log("* REPOSITORY: " + npmInfo.repository.url);
-        console.log("* BUGS TO:    " + npmInfo.bugs.url);
+    var Getopt = require('node-getopt');
+    var getopt = new Getopt([
+            ['c',   'set-cmt=FILENAME',  'set MZT file as cassette magnetic tape'],
+            ['h',   'help',     'display this help'],
+            ['v',   'version',  'show version']
+            ]);
+    var cli = getopt.parseSystem();
+    var argv = require("hash-arg").get(["input_filename"], cli.argv);
+    var description = "The Cli-Version MZ-700 Emulator. -- " + npmInfo.name + "@" + npmInfo.version;
+    getopt.setHelp(
+            "Usage: mz700-cli [OPTION] [MZT-filename]\n" +
+            description + "\n" +
+            "\n" +
+            "[[OPTIONS]]\n" +
+            "\n" +
+            "Installation: npm install -g mz700-js\n" +
+            "Repository: https://github.com/takamin/mz700-js");
+
+    if(cli.options.help) {
+        getopt.showHelp();
         return;
     }
-    console.log("mz700-cli v" + npmInfo.version);
+
+    if(cli.options.version) {
+        console.log(description);
+        return;
+    }
+
+
+    console.log(description);
 
     var readline = require("linebyline")(process.stdin);
     var fnut = require("../lib/fnuts.js");
@@ -113,8 +125,8 @@
     mmioMapPeripheral(PCG700, [], [0xE010, 0xE011, 0xE012]);
 
     (new Promise(function(resolv, reject) {
-        if(getopt.options["set-cmt"]) {
-            var filename = getopt.options["set-cmt"];
+        if(cli.options["set-cmt"]) {
+            var filename = cli.options["set-cmt"];
             cliCommandCmt.func.call(
                 cliCommandCmt, mz700, ["set", filename]
             ).then(function(){

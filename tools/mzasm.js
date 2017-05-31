@@ -5,37 +5,53 @@ var Z80_assemble = require('../Z80/assembler');
 var MZ_TapeHeader = require('../MZ-700/mz-tape-header');
 var fnut = require('../lib/fnuts.js');
 var fs = require('fs');
-var getopt = require('node-getopt').create([
-        ['m',   'map=ARG',  'output map file name'],
-        ['z',   'output-MZT-header', 'output MZT header'],
-        ['a',   'loading-address=ARG', 'set loading address'],
-        ['e',   'execution-address=ARG', 'set execution address'],
-        ['t',   'reuse-mzt-header=ARG', 'input file is mz-tape file'],
-        ['o',   'output-file=ARG',  'filename to output'],
-        ['h',   'help',     'display this help'],
-        ['v',   'version',  'show version']
-        ]).bindHelp().parseSystem();
-
 var getPackageJson = require("../lib/get-package-json");
 var npmInfo = getPackageJson(__dirname + "/..");
-if(getopt.options.version) {
-    console.log("Z80 assembler for MZ-700 v" + npmInfo.version);
+var Getopt = require('node-getopt');
+var getopt = new Getopt([
+        ['m',   'map=FILENAME',  'output map file name'],
+        ['z',   'output-MZT-header', 'output MZT header'],
+        ['a',   'loading-address=ADDR', 'set loading address'],
+        ['e',   'execution-address=ADDR', 'set execution address'],
+        ['t',   'reuse-mzt-header=FILENAME', "reuse the MZT header."],
+        ['o',   'output-file=FILENAME',  'filename to output'],
+        ['h',   'help',     'display this help'],
+        ['v',   'version',  'show version']
+        ]);
+var cli = getopt.parseSystem();
+var description = "A simple Z80 assembler -- " + npmInfo.name + "@" + npmInfo.version;
+getopt.setHelp(
+        "Usage: mzasm [OPTION] filename\n" +
+        description + "\n" +
+        "\n" +
+        "[[OPTIONS]]\n" +
+        "\n" +
+        "Installation: npm install -g mz700-js\n" +
+        "Repository: https://github.com/takamin/mz700-js");
+
+if(cli.options.help) {
+    getopt.showHelp();
     return;
 }
 
-var args = require("hash-arg").get(["input_filename"], getopt.argv);
-if(getopt.argv.length < 1) {
+if(cli.options.version) {
+    console.log(description);
+    return;
+}
+
+var args = require("hash-arg").get(["input_filename"], cli.argv);
+if(cli.argv.length < 1) {
     console.error('error: no input file');
     return -1;
 }
 var input_filename = args.input_filename;
 var output_filename = null;
-if('output-file' in getopt.options) {
-    output_filename = getopt.options['output-file'];
+if('output-file' in cli.options) {
+    output_filename = cli.options['output-file'];
 } else {
     var ext = null;
-    if('reuse-mzt-header' in getopt.options
-    || 'output-MZT-header' in getopt.options)
+    if('reuse-mzt-header' in cli.options
+    || 'output-MZT-header' in cli.options)
     {
         ext = ".mzt";
     } else {
@@ -47,8 +63,8 @@ if('output-file' in getopt.options) {
 
 // Determine filename of address map
 var fnMap = null;
-if('map' in getopt.options) {
-    fnMap = getopt.options['map'];
+if('map' in cli.options) {
+    fnMap = cli.options['map'];
 } else {
     fnMap = fnut.exchangeExtension(
             input_filename, ".map");
@@ -58,27 +74,27 @@ if('map' in getopt.options) {
 // MZT-Header
 //
 var mzt_header = null;
-if('reuse-mzt-header' in getopt.options) {
+if('reuse-mzt-header' in cli.options) {
 
     //
     // Load MZT-Header from other MZT-File.
     //
-    var mzt_filebuf = fs.readFileSync(getopt.options['reuse-mzt-header']);
+    var mzt_filebuf = fs.readFileSync(cli.options['reuse-mzt-header']);
     mzt_header = new MZ_TapeHeader(mzt_filebuf, 0);
 
-} else if('output-MZT-header' in getopt.options) {
+} else if('output-MZT-header' in cli.options) {
 
     //
     // Create MZT-Header from the informations specified in command line options 
     //
     var load_addr = 0;
     var exec_addr = 0;
-    if('loading-address' in getopt.options) {
-        load_addr = parseInt(getopt.options['loading-address'], 0);
+    if('loading-address' in cli.options) {
+        load_addr = parseInt(cli.options['loading-address'], 0);
         exec_addr = load_addr;
     }
-    if('execution-address' in getopt.options) {
-        exec_addr = parseInt(getopt.options['execution-address'], 0);
+    if('execution-address' in cli.options) {
+        exec_addr = parseInt(cli.options['execution-address'], 0);
     }
     mzt_header = MZ_TapeHeader.createNew();
     mzt_header.setFilename(output_filename);
