@@ -47,11 +47,18 @@ window.jQuery = require("jquery");
     });
     var fullscreenButton = $("<button/>")
         .attr("id","fullscreenButton");
+    var fullscreenElement = document.getElementById("fullscrn-MZ-700");
     var onFullscreenButtonClick = function() {
-        if(document.fullscreenElement == null) {
-            liquidRootElement.requestFullscreen();
+        if(document.fullscreenElement === fullscreenElement) {
+            dock_n_liquid.exitFullscreen().then(function() {
+                resizeScreen();
+            });
+            //liquidRootElement.requestFullscreen();
         } else {
-            document.exitFullscreen();
+            dock_n_liquid.requestFullscreen(fullscreenElement).then(function() {
+                resizeScreen();
+            });
+            //document.exitFullscreen();
         }
     }
     var onFullscreenChange = function() {

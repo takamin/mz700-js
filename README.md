@@ -116,8 +116,9 @@ Available Browsers
 CHANGES
 -------
 
-* __v0.5.0__ - Add fullscreen feature.
-* __v0.4.0__ - Change and update the development environment. And for mz700scrn plugin, some features are added.
+* __v0.6.0__ - Some panels are resizable. And truely fullscreen mode is available.
+* v0.5.0 - Add fullscreen feature.
+* v0.4.0 - Change and update the development environment. And for mz700scrn plugin, some features are added.
 * v0.3.0 - Update web-emulator's screen by the command `mz700-js` or `npm start`
     * v0.3.1 - The grunt task `lint` is available. To run the check, type `grunt lint` on console.
 * v0.2.0 (1) The CMT-loading process is available on both web and cli emulators,
