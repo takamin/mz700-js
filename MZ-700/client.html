@@ -11,6 +11,17 @@
         <link rel="stylesheet" type="text/css" href="../lib/jquery.Z80-reg.css"/>
         <link rel="stylesheet" type="text/css" href="../lib/jquery.MZ-700-kb.css"/>
         <link rel="stylesheet" type="text/css" href="index.css"/>
+        <style>
+        .dock.resizer {
+            background-color: #ccc;
+        }
+        .dock.horizontal.resizer {
+            cursor: ew-resize;
+        }
+        .dock.vertical.resizer {
+            cursor: ns-resize;
+        }
+        </style>
     </head>
     <body>
         <div id="liquid-panel-MZ-700" class="dock MZ-700">
@@ -19,12 +30,12 @@
                     ><span class="mz700scrn" charSize="16" padding="1" color="0" bgColor="7"
                         >MZ-700 FULL JAVASCRIPT EMULATOR</span></h1>
             </div>
-            <div class="dock">
+            <div id="fullscrn-MZ-700" class="dock">
                 <div id="dock-panel-scrn-ctrl" class="dock top" style="text-align:right;height:40px;"></div>
                 <div class="dock MZ-700-body">
                     <div class="screen cmt-slot key-switcher"></div>
                 </div>
-                <div id="dock-panel-keyboard" class="dock bottom" style="height:250px;">
+                <div id="dock-panel-keyboard" class="dock bottom resizable" style="height:250px;">
                     <div class="keyboard"></div>
                 </div>
                 <div id="dock-panel-bottom" class="dock bottom" style="height:170px;">
@@ -37,7 +48,7 @@
                     </div>
                 </div>
             </div>
-            <div id="dock-panel-right" class="dock right" style="width:700px;">
+            <div id="dock-panel-right" class="dock right resizable" style="width:700px;">
                 <div class="imm-exec"></div>
                 <div class="register-monitor open"></div>
                 <div class="memory open"></div>
