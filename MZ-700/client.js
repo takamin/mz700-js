@@ -10,8 +10,6 @@ window.jQuery = require("jquery");
     var screen = container.find(".screen");
 
     var resizeScreen = function() {
-
-        console.log("resizeScreen");
         var bboxContainer = new BBox(container.get(0));
         var bboxScreen = new BBox(screen.get(0));
         var containerSize = bboxContainer.getSize();
@@ -49,11 +47,18 @@ window.jQuery = require("jquery");
     });
     var fullscreenButton = $("<button/>")
         .attr("id","fullscreenButton");
+    var fullscreenElement = document.getElementById("fullscrn-MZ-700");
     var onFullscreenButtonClick = function() {
-        if(document.fullscreenElement == null) {
-            liquidRootElement.requestFullscreen();
+        if(document.fullscreenElement === fullscreenElement) {
+            dock_n_liquid.exitFullscreen().then(function() {
+                resizeScreen();
+            });
+            //liquidRootElement.requestFullscreen();
         } else {
-            document.exitFullscreen();
+            dock_n_liquid.requestFullscreen(fullscreenElement).then(function() {
+                resizeScreen();
+            });
+            //document.exitFullscreen();
         }
     }
     var onFullscreenChange = function() {
@@ -78,13 +83,17 @@ window.jQuery = require("jquery");
     };
     fullscreenButton.click(onFullscreenButtonClick);
     $("#dock-panel-scrn-ctrl").append(fullscreenButton);
-    document.addEventListener("fullscreenchange", onFullscreenChange);
+    window.addEventListener("fullscreenchange", onFullscreenChange);
     onFullscreenChange();
 
     mz700js.reset();
     screen.find("canvas").css("height", "calc(100% - 1px)");
     dock_n_liquid.init(resizeScreen);
     dock_n_liquid.select($(".MZ-700").get(0)).layout();
+    window.addEventListener(
+            "reseize", function() {
+                console.log("!!!");
+                resizeScreen(); });
     resizeScreen();
 
 }(window.jQuery));
