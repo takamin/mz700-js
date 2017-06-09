@@ -56,6 +56,7 @@ window.jQuery = require("jquery");
         } else {
             dock_n_liquid.requestFullscreen(fullscreenElement).then(function() {
                 resizeScreen();
+                mz700js.acceptKey(true);
             });
         }
     }

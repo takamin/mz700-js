@@ -117,6 +117,7 @@ CHANGES
 -------
 
 * __v0.6.0__ - Some panels are resizable. And truely fullscreen mode is available.
+    * __v0.6.1__ - On fullscreen mode, The input from keyboard is enabled.
 * v0.5.0 - Add fullscreen feature.
 * v0.4.0 - Change and update the development environment. And for mz700scrn plugin, some features are added.
 * v0.3.0 - Update web-emulator's screen by the command `mz700-js` or `npm start`

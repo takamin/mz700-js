@@ -9,9 +9,6 @@
     background-color: black;
     padding:0;
 }
-.MZ-700 .screen:hover {
-   border-color:red;
-}
 .MZ-700 #dock-panel-scrn-ctrl > button,
 .MZ-700 .ctrl-panel > button {
     background-color: blue;
