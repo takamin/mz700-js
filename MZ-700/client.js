@@ -53,12 +53,11 @@ window.jQuery = require("jquery");
             dock_n_liquid.exitFullscreen().then(function() {
                 resizeScreen();
             });
-            //liquidRootElement.requestFullscreen();
         } else {
             dock_n_liquid.requestFullscreen(fullscreenElement).then(function() {
                 resizeScreen();
+                mz700js.acceptKey(true);
             });
-            //document.exitFullscreen();
         }
     }
     var onFullscreenChange = function() {
