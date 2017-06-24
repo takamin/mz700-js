@@ -1,21 +1,33 @@
 Full JavaScript MZ-700 Emulator
 ===============================
 
-This is a MZ-700 emulator running on the web browser written by JavaScript.
+This is an emulator of "MZ-700", a historical 8-bit micro computer written by JavaScript.
+It is runnable on the web browser.
 
-Initially, the New Monitor Program is running.
+The MZ-700 is produced by SHARP in Nov.15,1982.
+It equipped a Z80A CPU 3.58MHz,
+and represents various characters in eight colors
+and a monoral beep sound, but no graphics.
 
-You can drop a MZT-file to the screen to run.
+You can see on this [project-page](https://takamin.github.io/mz700-js/MZ-700/client.html)
 
-The MZ-700 is a Japanese 8-bit personal computer produced by SHARP in Nov.15,1982.
-It is powered by Z80A CPU 3.58MHz, and represents eight colors and various characters,
-but no graphics and monoral beep sound.
-It also equipped built-in cassette tape player/recorder and 4 color plotter printer.  
+There were three models:
 
-So, A lot of people were saying,
+* MZ-711 - The base model.
+* MZ-721 - A built-in cassette deck is available
+* MZ-731 - A cassette deck and 4 color plotter printer were built in.
 
-__There is no impossible things for MZ-700.__
+Many people were saying,
 
+__"MZ-700 Has No LIMIT"__
+
+In this emulator:
+
+* Initially and on reset, The MZ-NEW-MONITOR in the BOOT ROM will run.
+* You can drop a MZT-file to the screen to run it.
+
+And, this module bundle a tiny assembler and disassember for the Z80.
+And more, somewhat a craizy feature, the emulator on the CLI by Node.js is available.
 
 INSTALLATION
 ------------
@@ -118,6 +130,7 @@ CHANGES
 
 * __v0.6.0__ - Some panels are resizable. And truely fullscreen mode is available.
     * __v0.6.1__ - On fullscreen mode, The input from keyboard is enabled.
+    * __v0.6.2__ - Improve the beep sound and decrease the pop noise.
 * v0.5.0 - Add fullscreen feature.
 * v0.4.0 - Change and update the development environment. And for mz700scrn plugin, some features are added.
 * v0.3.0 - Update web-emulator's screen by the command `mz700-js` or `npm start`
