@@ -1,13 +1,32 @@
 (function() {
     var MZ700_Sound = function() {
+
+        this.attackTime = 0.010;
+        this.decayTime = 0.010;
+        this.sustainLebel = 0.8;
+        this.releaseTime = 0.050;
+
+        this.audio = null;
+        this.totalGain = null;
+        this.gain = 0;
+        this.poly = 128;
+        this.indexOsc = 0;
+        this.oscNodes = new Array(this.poly);
+        this.oscGainNodes = new Array(this.poly);
+
         window.AudioContext = window.AudioContext || window.webkitAudioContext;
         if(window.AudioContext) {
-            this.audio = { ctx: new AudioContext(), osc: null };
+            this.audio = new AudioContext();
+            this.totalGainNode = this.audio.createGain();
+            this.totalGainNode.gain.value = this.gain;
+            this.totalGainNode.connect(this.audio.destination);
         } else {
+
             console.warn("NO AudioContext API supported by this browser.");
             this.setGain = function(){};
             this.startSound = function(){};
             this.stopSound = function(){};
+
         }
     };
     MZ700_Sound.prototype.setGain = function(gain) {
@@ -18,48 +37,42 @@
             gain = 1.0;
         }
         this.gain = gain;
-        if(this.gainNode) {
-            this.gainNode.gain.value = this.gain;
+        if(this.totalGainNode) {
+            this.totalGainNode.gain.value = this.gain;
         }
     };
     MZ700_Sound.prototype.startSound = function(freq) {
-        if(this.audio.osc != null) {
-            if(this.audio.osc.frequency.value == freq) {
-                return;
+        if(this.oscGainNodes[this.indexOsc] != null) {
+            this.oscGainNodes[this.indexOsc].gain.linearRampToValueAtTime(0.0, this.audio.currentTime + this.releaseTime);
+            this.oscGainNodes[this.indexOsc].disconnect();
+            this.oscGainNodes[this.indexOsc] = null;
+            if(this.oscNodes[this.indexOsc] != null) {
+                this.oscNodes[this.indexOsc].stop();
+                this.oscNodes[this.indexOsc].disconnect();
+                this.oscNodes[this.indexOsc] = null;
             }
-            this.audio.osc.stop();
-            this.audio.osc.disconnect();
         }
-        this.audio.osc = this.audio.ctx.createOscillator();
-        this.audio.osc.start = this.audio.osc.start || this.audio.osc.noteOn;
-        this.audio.osc.frequency.value = freq;
-        this.gainNode = this.audio.ctx.createGain();
-        this.gainNode.gain.setValueAtTime(this.gain* 0.0, this.audio.ctx.currentTime);
-        this.gainNode.gain.linearRampToValueAtTime(this.gain * 0.7, this.audio.ctx.currentTime + 0.005);
-        this.gainNode.gain.linearRampToValueAtTime(this.gain * 1.0, this.audio.ctx.currentTime + 0.010);
-        this.gainNode.gain.linearRampToValueAtTime(this.gain * 0.5, this.audio.ctx.currentTime + 0.090);
-        this.audio.osc.connect(this.gainNode);
-        this.gainNode.connect(this.audio.ctx.destination);
-        this.audio.startTime = (new Date()).getTime();
-        this.audio.osc.start();
+        this.oscNodes[this.indexOsc] = this.audio.createOscillator();
+        this.oscNodes[this.indexOsc].type = "square";
+        this.oscNodes[this.indexOsc].frequency.value = freq;
+        this.oscNodes[this.indexOsc].start = this.oscNodes[this.indexOsc].start || this.oscNodes[this.indexOsc].noteOn;
+
+        this.oscGainNodes[this.indexOsc] = this.audio.createGain();
+        this.oscGainNodes[this.indexOsc].gain.value = 0.0;
+        this.oscGainNodes[this.indexOsc].gain.setValueAtTime(0.0, this.audio.currentTime);
+        this.oscGainNodes[this.indexOsc].gain.linearRampToValueAtTime(1.0, this.audio.currentTime + this.attackTime);
+        this.oscGainNodes[this.indexOsc].gain.linearRampToValueAtTime(this.sustainLebel, this.audio.currentTime + this.attackTime + this.decayTime);
+        this.oscGainNodes[this.indexOsc].connect(this.totalGainNode);
+
+        this.oscNodes[this.indexOsc].connect(this.oscGainNodes[this.indexOsc]);
+        this.oscNodes[this.indexOsc].start();
+
     };
     MZ700_Sound.prototype.stopSound = function() {
-        if(this.audio.osc != null) {
-            if((new Date()).getTime() - this.audio.startTime >= 10) {
-                this.audio.osc.stop();
-                this.audio.osc.disconnect();
-            } else {
-                window.setTimeout(
-                    (function(osc) {
-                        return function() {
-                            osc.stop();
-                            osc.disconnect();
-                        };
-                    }(this.audio.osc)),
-                    100);
-            }
-            //this.audio.osc = null;
+        if(this.oscGainNodes[this.indexOsc] != null) {
+            this.oscGainNodes[this.indexOsc].gain.linearRampToValueAtTime(0.0, this.audio.currentTime + this.releaseTime);
         }
+        this.indexOsc = (this.indexOsc + 1) % this.poly;
     };
     module.exports = MZ700_Sound;
 }());
