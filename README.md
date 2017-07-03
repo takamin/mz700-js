@@ -128,6 +128,7 @@ Available Browsers
 CHANGES
 -------
 
+* __v0.7.0__ - Change the layout by device type
 * __v0.6.0__ - Some panels are resizable. And truely fullscreen mode is available.
     * __v0.6.1__ - On fullscreen mode, The input from keyboard is enabled.
     * __v0.6.2__ - Improve the beep sound and decrease the pop noise.
