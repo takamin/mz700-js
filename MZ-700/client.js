@@ -1,4 +1,19 @@
 window.jQuery = require("jquery");
+
+// identify user agent
+var ua = navigator.userAgent;
+var deviceType = null;
+if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
+    ua.indexOf('Android') >= 0 && ua.indexOf('Mobile') >= 0)
+{
+    deviceType = "mobile";
+} else if (ua.indexOf('iPad') >= 0 || ua.indexOf('Android') >= 0) {
+    deviceType = "tablet";
+} else {
+    deviceType = "pc";
+}
+console.log("deviceType:", deviceType);
+
 (function($) {
     require("jquery-ui");
     require("fullscrn");
@@ -31,19 +46,40 @@ window.jQuery = require("jquery");
 
     var liquidRootElement = $("#liquid-panel-MZ-700").get(0);
     var liquidRoot = dock_n_liquid.select(liquidRootElement);
+
+    // Dock'n'Liquid panels
+    var dockPanelHeader = $("#dock-panel-header");
     var dockPanelKb = $("#dock-panel-keyboard");
+    var dockPanelRight = $("#dock-panel-right");
+    var dockPanelBottom = $("#dock-panel-bottom");
+
+    var onKeyboardPanelOpen = function() {
+        dockPanelKb.css("height", "250px");
+        liquidRoot.layout();
+        resizeScreen();
+    };
+    var onKeyboardPanelClose = function() {
+        dockPanelKb.css("height", "50px");
+        liquidRoot.layout();
+        resizeScreen();
+    };
+
+    // Remove software keybord for PC
+    if(deviceType == "pc") {
+        dockPanelKb.remove();
+        onKeyboardPanelOpen = function() {};
+        onKeyboardPanelClose = function() {};
+    }
+
+    // Remove right panel for mobile
+    if(deviceType == "mobile") {
+        dockPanelRight.remove();
+    }
+
     var mz700js = MZ700Js.create({
         "urlPrefix" : "../",
-        "onKeyboardPanelOpen": function() {
-            dockPanelKb.css("height", "250px");
-            liquidRoot.layout();
-            resizeScreen();
-        },
-        "onKeyboardPanelClose": function() {
-            dockPanelKb.css("height", "50px");
-            liquidRoot.layout();
-            resizeScreen();
-        }
+        "onKeyboardPanelOpen": onKeyboardPanelOpen,
+        "onKeyboardPanelClose": onKeyboardPanelClose
     });
     var fullscreenButton = $("<button/>")
         .attr("id","fullscreenButton");
@@ -63,16 +99,16 @@ window.jQuery = require("jquery");
     var onFullscreenChange = function() {
         console.log("fullscreenchange");
         if(document.fullscreenElement == null) {
-            $("#dock-panel-header").show();
-            $("#dock-panel-keyboard").show();
-            $("#dock-panel-bottom").show();
-            $("#dock-panel-right").show();
+            dockPanelHeader.show();
+            dockPanelKb.show();
+            dockPanelBottom.show();
+            dockPanelRight.show();
             fullscreenButton.html("Fullscreen");
         } else {
-            $("#dock-panel-header").hide();
-            $("#dock-panel-keyboard").hide();
-            $("#dock-panel-bottom").hide();
-            $("#dock-panel-right").hide();
+            dockPanelHeader.hide();
+            dockPanelKb.hide();
+            dockPanelBottom.hide();
+            dockPanelRight.hide();
             fullscreenButton.html("Exit Fullscreen");
         }
         liquidRoot.layout();
