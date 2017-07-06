@@ -66,7 +66,7 @@ console.log("deviceType:", deviceType);
 
     // Remove software keybord for PC
     if(deviceType == "pc") {
-        dockPanelKb.remove();
+        dockPanelKb.hide();
         onKeyboardPanelOpen = function() {};
         onKeyboardPanelClose = function() {};
     }
@@ -100,13 +100,17 @@ console.log("deviceType:", deviceType);
         console.log("fullscreenchange");
         if(document.fullscreenElement == null) {
             dockPanelHeader.show();
-            dockPanelKb.show();
+            if(deviceType != "pc") {
+                dockPanelKb.show();
+            }
             dockPanelBottom.show();
             dockPanelRight.show();
             fullscreenButton.html("Fullscreen");
         } else {
             dockPanelHeader.hide();
-            dockPanelKb.hide();
+            if(deviceType != "pc") {
+                dockPanelKb.hide();
+            }
             dockPanelBottom.hide();
             dockPanelRight.hide();
             fullscreenButton.html("Exit Fullscreen");
