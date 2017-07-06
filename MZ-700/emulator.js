@@ -4,7 +4,6 @@ var FractionalTimer = getModule("FractionalTimer")  || require("fractional-timer
 var MZ_TapeHeader   = getModule("MZ_TapeHeader")    || require('./mz-tape-header');
 var MZ_Tape         = getModule("MZ_Tape")          || require('./mz-tape');
 var MZ_DataRecorder = getModule("MZ_DataRecorder")  || require('./mz-data-recorder');
-var FTParam         = getModule("FTParam")          || require('../lib/ft-param');
 var Intel8253       = getModule("Intel8253")        || require('../lib/intel-8253');
 var FlipFlopCounter = getModule("FlipFlopCounter")  || require('../lib/flip-flop-counter');
 var IC556           = getModule("IC556")            || require('../lib/ic556');
@@ -159,7 +158,7 @@ var MZ700 = function(opt) {
     }, this);
 
     this.tid = null;
-    this.execParam = new FTParam(1, 1000, 7);
+    this.timerInterval = MZ700.DEFAULT_TIMER_INTERVAL;
 
     this.mmioMap = [];
     for(var address = 0xE000; address < 0xE800; address++) {
@@ -350,6 +349,10 @@ var MZ700 = function(opt) {
     });
 };
 
+MZ700.AVG_CYCLE = 40;
+MZ700.Z80_CLOCK = 3.579545 * 1000000;// 3.58 MHz
+MZ700.DEFAULT_TIMER_INTERVAL = MZ700.AVG_CYCLE * (1000 / MZ700.Z80_CLOCK)
+
 MZ700.prototype.mmioMapToRead = function(address) {
     address.forEach(function(a) {
         this.mmioMap[a - 0xE000].r = true;
@@ -531,11 +534,9 @@ MZ700.prototype.start = function() {
                 MZ700.prototype.start.caller);
         return false;
     }
-    this.tid = FractionalTimer.setInterval(
+    this.tid = FractionalTimer.setInterval(//TODO: Invoke Immediete `this.run()`
             function() { this.run(); }.bind(this),
-            this.execParam.timerInterval,
-            this.execParam.numOfTimer,
-            this.execParam.numOfExecInst);
+            this.timerInterval);
     return true;
 };
 
@@ -651,7 +652,7 @@ MZ700.prototype.dataRecorder_writeBit = function(state) {
 // timerInterval:      7 ...    1
 // ---------------- -------------
 MZ700.prototype.getExecutionParameter = function() {
-    return this.execParam;
+    return this.timerInterval;
 };
 
 MZ700.prototype.setExecutionParameter = function(param) {
@@ -659,7 +660,7 @@ MZ700.prototype.setExecutionParameter = function(param) {
     if(running) {
         this.stop();
     }
-    this.execParam.set(param);
+    this.timerInterval = param;
     this.opt.onExecutionParameterUpdate(param);
     if(running) {
         this.start();
