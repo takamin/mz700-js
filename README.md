@@ -128,10 +128,13 @@ Available Browsers
 CHANGES
 -------
 
-* __v0.7.0__ - Change the layout by device type
-* __v0.6.0__ - Some panels are resizable. And truely fullscreen mode is available.
-    * __v0.6.1__ - On fullscreen mode, The input from keyboard is enabled.
-    * __v0.6.2__ - Improve the beep sound and decrease the pop noise.
+* v0.7.0 - Change the layout by device type.(But the module was not compiled.)
+    * v0.7.1 - Change the layout by device type.
+    * __v0.7.2__ - Fix the bug on v0.7.1: The emulator could not accept key-inputs from
+    a physical keyboard when the software keyboard is removed on PC.
+* v0.6.0 - Some panels are resizable. And truely fullscreen mode is available.
+    * v0.6.1 - On fullscreen mode, The input from keyboard is enabled.
+    * v0.6.2 - Improve the beep sound and decrease the pop noise.
 * v0.5.0 - Add fullscreen feature.
 * v0.4.0 - Change and update the development environment. And for mz700scrn plugin, some features are added.
 * v0.3.0 - Update web-emulator's screen by the command `mz700-js` or `npm start`
