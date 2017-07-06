@@ -130,8 +130,9 @@ CHANGES
 
 * v0.7.0 - Change the layout by device type.(But the module was not compiled.)
     * v0.7.1 - Change the layout by device type.
-    * __v0.7.2__ - Fix the bug on v0.7.1: The emulator could not accept key-inputs from
+    * v0.7.2 - Fix the bug on v0.7.1: The emulator could not accept key-inputs from
     a physical keyboard when the software keyboard is removed on PC.
+    * __v0.7.3__ - Simplified the sliders that control the emulation speed.
 * v0.6.0 - Some panels are resizable. And truely fullscreen mode is available.
     * v0.6.1 - On fullscreen mode, The input from keyboard is enabled.
     * v0.6.2 - Improve the beep sound and decrease the pop noise.
