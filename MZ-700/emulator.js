@@ -94,6 +94,8 @@ var MZ700 = function(opt) {
                 console.error(ex);
             }
         },
+        started: function() { THIS._transworker.postNotify("start"); },
+        stopped: function() { THIS._transworker.postNotify("stop"); },
         onBreak: function() {
             THIS._transworker.postNotify("onBreak");
         },
@@ -532,6 +534,7 @@ MZ700.prototype.start = function() {
     this.tid = FractionalTimer.setInterval(//TODO: Invoke Immediete `this.run()`
             function() { this.run(); }.bind(this),
             this.timerInterval);
+    this.opt.started();
     return true;
 };
 
@@ -539,6 +542,7 @@ MZ700.prototype.stop = function() {
     if(this.tid != null) {
         FractionalTimer.clearInterval(this.tid);
         this.tid = null;
+        this.opt.stopped();
     }
 };
 
