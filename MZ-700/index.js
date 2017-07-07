@@ -89,7 +89,9 @@
                 .html("Reset").click(function() {
                     this.reset();
                 }.bind(this));
-            this.btnStart = $("<button/>").attr("type", "button")
+            this.btnStart = $("<button/>")
+                .attr("id", "btnStart")
+                .attr("type", "button")
                 .html("Run").click(function() {
                     if(this.isRunning) {
                         this.stop();
@@ -148,7 +150,6 @@
                 )
                 .append(this.btnReset)
                 .append(this.btnStart)
-                .append(this.btnStop)
                 .append(this.btnStep)
                 .append($("<br/>"))
                 .append($("<span/>").html("Speed:"))
@@ -587,6 +588,10 @@
     };
 
 
+    /**
+     * Update UI object's appearance by the running status of emulation.
+     * @returns {undefined}
+     */
     MZ700Js.prototype.updateUI = function() {
         this.btnReset.prop('disabled', '');
         if(!this.isRunning) {
