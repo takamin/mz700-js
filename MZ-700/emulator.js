@@ -36,12 +36,8 @@ var MZ700 = function(opt) {
     this.intel8253.counter[2].counter = 43200;
     this.intel8253.counter[2].value = 43200;
     this.intel8253.counter[2].addEventListener("timeup", function() {
-        console.log("i8253#2 timeup");
         if(this.INTMSK) {
-            console.log("RAISE INTERRUPT");
             this.z80.interrupt();
-        } else {
-            console.log("INTRRUPT MASKED");
         }
     }.bind(this));
 
@@ -410,7 +406,6 @@ MZ700.prototype.clock = function() {
 
 MZ700.prototype.setCassetteTape = function(tape_data) {
     if(tape_data.length > 0) {
-        this.tape_data = tape_data;// TODO: This line might be removed
         if(tape_data.length <= 128) {
             this.dataRecorder_setCmt([]);
             console.error("error buf.length <= 128");

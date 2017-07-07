@@ -91,12 +91,24 @@
                 }.bind(this));
             this.btnStart = $("<button/>").attr("type", "button")
                 .html("Run").click(function() {
-                    this.start();
-                }.bind(this));
-            this.btnStop = $("<button/>").attr("type", "button")
-                .html("Stop").click(function() {
-                    this.stop();
-                }.bind(this));
+                    if(this.isRunning) {
+                        this.stop();
+                    } else {
+                        this.start();
+                    }
+                }.bind(this))
+                .hover(
+                        function() {
+                            if(this.isRunning) {
+                                this.btnStart.html("Stop");
+                            }
+                        }.bind(this),
+                        function() {
+                            if(this.isRunning) {
+                                this.btnStart.html("Run");
+                            }
+                        }.bind(this)
+                );
             this.btnStep = $("<button/>").attr("type", "button")
                 .html("Step").click(function() {
                     this.stepIn();
@@ -150,20 +162,15 @@
             this.btnCmtRec = $("<button/>").attr("type", "button")
                 .html("RECPLAY").click(function() {
                     this.cmtMessageArea.empty();
-                    this.mz700comworker.dataRecorder_pushRec(
-                        function() {
-                            console.log("REC callback");
-                        }.bind(this));
+                    this.mz700comworker.dataRecorder_pushRec( function() { });
                 }.bind(this));
             this.btnCmtPlay = $("<button/>").attr("type", "button")
                 .html("PLAY").click(function() {
-                    this.mz700comworker.dataRecorder_pushPlay(
-                        function() { console.log("PLAY callback"); });
+                    this.mz700comworker.dataRecorder_pushPlay( function() { });
                 }.bind(this));
             this.btnCmtStop = $("<button/>").attr("type", "button")
                 .html("STOP").click(function() {
-                    this.mz700comworker.dataRecorder_pushStop(
-                        function() { console.log("STOP callback"); });
+                    this.mz700comworker.dataRecorder_pushStop( function() { });
                 }.bind(this));
             this.btnCmtEject = $("<button/>").attr("type", "button")
                 .html("EJECT").click(function() {
@@ -272,6 +279,16 @@
                     'onExecutionParameterUpdate': function(param) {
                         this.onExecutionParameterUpdate(param);
                     },
+                    "start": function() {
+                        this.isRunning = true;
+                        this.updateUI();
+                    },
+                    "stop": function() {
+                        this.isRunning = false;
+                        this.scrollToShowPC();
+                        this.setCurrentExecLine();
+                        this.updateUI();
+                    },
                     'onBreak': function() { this.stop(); },
                     'onUpdateScreen': (this.mz700scrn == null) ? function() {} :
                         function(updateData) { this.mz700scrn.write(updateData); }.bind(this),
@@ -318,7 +335,7 @@
                 } else {
                     if(!this.reg_upd_tid) {
                         this.reg_upd_tid = setInterval(function() {
-                            this.showStatus();
+                            this.updateRegister();
                         }.bind(this), duration);
                     }
                 }
@@ -330,7 +347,7 @@
                         .css("text-align", "center")
                         .append($("<button type='button'>Update</button>")
                             .click(function() {
-                                this.showStatus();
+                                this.updateRegister();
                             }.bind(this))
                         )
                         .append($("<br/>"))
@@ -421,9 +438,6 @@
                     this.mz700comworker.writeAsmCode(bin, function(execAddr) {
                         this.mz700comworker.setPC(execAddr, function() {
                             this.mz700comworker.exec(1, function(/*result*/){
-                                this.setCurrentExecLine();
-                                this.showStatus();
-                                this.updateUI();
                                 this.mz700comworker.setPC(savedPC, function() {});
                             }.bind(this));
                         }.bind(this));
@@ -482,18 +496,11 @@
      */
     MZ700Js.prototype.runServerMZT = function (name) {
         this.mz700comworker.stop(function() {
-            this.isRunning = false;
-            this.scrollToShowPC();
-            this.setCurrentExecLine();
-            this.showStatus();
-            this.updateUI();
             $.getJSON("mzt", {"name": name}, function(tape_data) {
-                this.setMztData(tape_data);
-                this.setCurrentExecLine();
-                this.showStatus();
-                this.updateUI();
-                this.start();
-                this.acceptKey(true);
+                this.setMztData(tape_data, function() {
+                    this.start();
+                    this.acceptKey(true);
+                }.bind(this));
             }.bind(this));
         }.bind(this));
     };
@@ -508,9 +515,10 @@
      * 4. A program counter will be set to its execution address.
      *
      * @param {object} tape_data MZT tape data as byte array
+     * @param {function|null} callback A function invoked after loading the tape
      * @returns {undefined}
      */
-    MZ700Js.prototype.setMztData = function(tape_data) {
+    MZ700Js.prototype.setMztData = function(tape_data, callback) {
         this.mz700comworker.setCassetteTape(tape_data, function(mztape_array) {
             if(mztape_array != null) {
                 $("#mzt_info").html("MZT: '" + mztape_array[0].header.filename + "' Loading...");
@@ -523,9 +531,9 @@
                         this.assemble(function() {
                             this.mz700comworker.setPC(mztape_array[0].header.addr_exec, function() {
                                 $("#mzt_info").html("MZT: '" + mztape_array[0].header.filename + "'");
-                                this.setCurrentExecLine();
-                                this.showStatus();
-                                this.updateUI();
+                                if(callback) {
+                                    callback();
+                                }
                             }.bind(this));
                         }.bind(this));
                     }.bind(this));
@@ -537,17 +545,9 @@
     MZ700Js.prototype.reset = function(callback) {
         this.clearCurrentExecLine();
         this.mz700comworker.stop(function() {
-            this.isRunning = false;
-            this.setCurrentExecLine();
-            this.showStatus();
-            this.updateUI();
             this.mz700comworker.reset(function() {
                 this.txtAsmSrc.val($($("textarea.default.source").get(0)).val());
                 this.assemble(function() {
-                    this.scrollToShowPC();
-                    this.setCurrentExecLine();
-                    this.showStatus();
-                    this.updateUI();
                     if(callback) {
                         callback();
                     }
@@ -560,29 +560,16 @@
     MZ700Js.NUM_OF_EXEC_OPCODE = 20000;
     MZ700Js.prototype.start = function() {
         this.clearCurrentExecLine();
-        this.mz700comworker.start(function(success) {
-            if(success) {
-                this.isRunning = true;
-                this.updateUI();
-            }
-        }.bind(this));
+        this.mz700comworker.start(function() {});
     };
     MZ700Js.prototype.stop = function() {
-        this.mz700comworker.stop(function() {
-            this.isRunning = false;
-            this.scrollToShowPC();
-            this.setCurrentExecLine();
-            this.showStatus();
-            this.updateUI();
-        }.bind(this));
+        this.mz700comworker.stop(function() {});
     };
     MZ700Js.prototype.stepIn = function() {
         this.clearCurrentExecLine();
         this.mz700comworker.exec(1, function(/*result*/){
-            this.setCurrentExecLine();
-            this.showStatus();
-            this.updateUI();
             this.scrollToShowPC();
+            this.setCurrentExecLine();
         }.bind(this));
     };
     MZ700Js.prototype.stepOver = function() {
@@ -590,11 +577,9 @@
     };
 
     MZ700Js.prototype.updateExecutionParameter = function() {
-        console.log("MZ700Js.updateExecutionParameter", this._timerInterval);
         this.mz700comworker.setExecutionParameter(this._timerInterval, function(){});
     };
     MZ700Js.prototype.onExecutionParameterUpdate = function(param) {
-        console.log("MZ700Js.onExecutionParameterUpdate", param);
         this._timerInterval = param;
         var sliderValue = Math.log10(MZ700.DEFAULT_TIMER_INTERVAL / param);
         this.sliderExecParamTimerInterval.val(sliderValue);
@@ -605,17 +590,15 @@
     MZ700Js.prototype.updateUI = function() {
         this.btnReset.prop('disabled', '');
         if(!this.isRunning) {
-            this.btnStop.prop('disabled', 'disabled');
-            this.btnStart.prop('disabled', '');
+            $(".MZ-700").removeClass("running");
             this.btnStep.prop('disabled', '');
         } else {
-            this.btnStop.prop('disabled', '');
-            this.btnStart.prop('disabled', 'disabled');
+            $(".MZ-700").addClass("running");
             this.btnStep.prop('disabled', 'disabled');
         }
     };
 
-    MZ700Js.prototype.showStatus = function () {
+    MZ700Js.prototype.updateRegister = function () {
         (function(app) {
             app.mz700comworker.getRegister(function(reg) {
                 app.regview.Z80RegView("update", reg);
@@ -792,8 +775,6 @@
                 }, this);
                 this.mz700comworker.writeAsmCode(this.assembled, function(execAddr) {
                     this.mz700comworker.setPC(execAddr, function() {
-                        this.setCurrentExecLine();
-                        this.showStatus();
                         callback();
                     });
                 }.bind(this));

@@ -9,8 +9,7 @@
     background-color: black;
     padding:0;
 }
-.MZ-700 #dock-panel-scrn-ctrl > button,
-.MZ-700 .ctrl-panel > button {
+.MZ-700 button {
     background-color: blue;
     color: white;
     border: solid 2px blue;
@@ -19,17 +18,19 @@
     font-size: 11pt;
     font-weight:bold;
 }
-.MZ-700 #dock-panel-scrn-ctrl > button:hover,
-.MZ-700 .ctrl-panel > button:hover {
+.MZ-700.running #btnStart {
+    color: blue;
+    background-color: white;
+}
+.MZ-700 button:hover {
     background-color: white;
     color: blue;
 }
-.MZ-700 #dock-panel-scrn-ctrl > button:focus,
-.MZ-700 .ctrl-panel > button:focus {
-    background-color: white;
-    color: blue;
+.MZ-700 button:disabled {
+    border-color: gray;
+    background-color: gray;
+    color: silver;
 }
-
 .MZ-700 .ctrl-panel > span.key-switcher {
     padding:5px;
     border-style:solid;
@@ -48,27 +49,6 @@
     color: blue;
 }
 
-.MZ-700 .data-recorder > button {
-    background-color: blue;
-    color: white;
-    border: solid 2px blue;
-    padding: 5px;
-    margin: 5px 2px;
-    font-size: 11pt;
-    font-weight:bold;
-}
-.MZ-700 .data-recorder > button:hover {
-    background-color: white;
-    color: blue;
-}
-.MZ-700 .data-recorder > button:focus {
-    background-color: white;
-    color: blue;
-}
-.MZ-700 .data-recorder > button:disabled {
-    background-color: gray;
-    color: silver;
-}
 .MZ-700 .data-recorder .cmt-message {
     font-weight: bold;
 }
