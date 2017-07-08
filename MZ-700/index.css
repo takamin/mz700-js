@@ -18,6 +18,9 @@
     font-size: 11pt;
     font-weight:bold;
 }
+.MZ-700 #btnStart {
+    width:50px;
+}
 .MZ-700.running #btnStart {
     color: blue;
     background-color: white;

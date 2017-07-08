@@ -106,9 +106,7 @@
                             }
                         }.bind(this),
                         function() {
-                            if(this.isRunning) {
-                                this.btnStart.html("Run");
-                            }
+                            this.btnStart.html("Run");
                         }.bind(this)
                 );
             this.btnStep = $("<button/>").attr("type", "button")
@@ -148,13 +146,14 @@
                         "colOn": 'blue', "colOff":"silver"
                     })
                 )
-                .append(this.btnReset)
                 .append(this.btnStart)
+                .append(this.btnReset)
                 .append(this.btnStep)
-                .append($("<br/>"))
-                .append($("<span/>").html("Speed:"))
-                .append($("<span/>").attr("id", "exec-param3"))
-                .append(this.sliderExecParamTimerInterval);
+                .append($("<span/>")
+                        .css("padding", "0 1em")
+                        .html("Speed:")
+                        .append($("<span/>").attr("id", "exec-param3"))
+                        .append(this.sliderExecParamTimerInterval));
 
             //
             // Data Recorder Control
