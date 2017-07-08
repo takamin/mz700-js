@@ -9,8 +9,7 @@
     background-color: black;
     padding:0;
 }
-.MZ-700 #dock-panel-scrn-ctrl > button,
-.MZ-700 .ctrl-panel > button {
+.MZ-700 button {
     background-color: blue;
     color: white;
     border: solid 2px blue;
@@ -19,17 +18,22 @@
     font-size: 11pt;
     font-weight:bold;
 }
-.MZ-700 #dock-panel-scrn-ctrl > button:hover,
-.MZ-700 .ctrl-panel > button:hover {
+.MZ-700 #btnStart {
+    width:50px;
+}
+.MZ-700.running #btnStart {
+    color: blue;
+    background-color: white;
+}
+.MZ-700 button:hover {
     background-color: white;
     color: blue;
 }
-.MZ-700 #dock-panel-scrn-ctrl > button:focus,
-.MZ-700 .ctrl-panel > button:focus {
-    background-color: white;
-    color: blue;
+.MZ-700 button:disabled {
+    border-color: gray;
+    background-color: gray;
+    color: silver;
 }
-
 .MZ-700 .ctrl-panel > span.key-switcher {
     padding:5px;
     border-style:solid;
@@ -37,6 +41,8 @@
     border-width:3px;
     background-color: blue;
     color: white;
+    font-family: Arial;
+    font-weight: bold;
 }
 .MZ-700 .ctrl-panel > span.key-switcher:hover {
     background-color: white;
@@ -48,27 +54,6 @@
     color: blue;
 }
 
-.MZ-700 .data-recorder > button {
-    background-color: blue;
-    color: white;
-    border: solid 2px blue;
-    padding: 5px;
-    margin: 5px 2px;
-    font-size: 11pt;
-    font-weight:bold;
-}
-.MZ-700 .data-recorder > button:hover {
-    background-color: white;
-    color: blue;
-}
-.MZ-700 .data-recorder > button:focus {
-    background-color: white;
-    color: blue;
-}
-.MZ-700 .data-recorder > button:disabled {
-    background-color: gray;
-    color: silver;
-}
 .MZ-700 .data-recorder .cmt-message {
     font-weight: bold;
 }
@@ -139,13 +124,54 @@
     width:200px;
 }
 
-
-#mzt_info {
-    color:white;
-    background-color:blue;
+.data-recorder {
+    background:#333;
+    color:#ccc;
     font-weight:bold;
-    font-size:12pt;
-    text-align:center;
-    padding:10px 0;
-    margin:10px 0 0 2px;
+    font-family: Arial;
+}
+.MZ-700 .data-recorder button {
+    border-color:#444;
+    background-color:#555;
+    color:silver;
+}
+.MZ-700 .data-recorder button:hover {
+    color:white;
+    background-color:#000000;
+}
+.MZ-700 .data-recorder button:disabled {
+    color:gray;
+    background-color:#666666;
+}
+.MZ-700 .data-recorder .cmt-message {
+    display: inline-block;
+    min-width:100px;
+    background-color:#eee;
+    color:#222;
+    padding:5px;
+    border-radius:3px;
+    text-align: center;
+}
+.MZ-700 .data-recorder .cmt-message a.download-link {
+    display: inline-block;
+    border-radius:5px;
+    background-color: blue;
+    color:white;
+    margin-left:10px;
+    padding:2px;
+    font-size:9pt;
+    text-decoration:none;
+}
+.MZ-700 .data-recorder .cmt-message a.download-link:before {
+    content:"▼MZT";
+}
+.MZ-700 .speed-control-slider {
+    display: inline-block;
+    height:24px;
+    line-height:24px;
+    padding: 0 1em;
+    background-color:white;
+    color:blue;
+    font-family: Arial;
+    font-weight: bold;
 }

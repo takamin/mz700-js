@@ -89,15 +89,29 @@
                 .html("Reset").click(function() {
                     this.reset();
                 }.bind(this));
-            this.btnStart = $("<button/>").attr("type", "button")
+            this.btnStart = $("<button/>")
+                .attr("id", "btnStart")
+                .attr("type", "button")
+                .attr("title", "[F8]")
                 .html("Run").click(function() {
-                    this.start();
-                }.bind(this));
-            this.btnStop = $("<button/>").attr("type", "button")
-                .html("Stop").click(function() {
-                    this.stop();
-                }.bind(this));
+                    if(this.isRunning) {
+                        this.stop();
+                    } else {
+                        this.start();
+                    }
+                }.bind(this))
+                .hover(
+                        function() {
+                            if(this.isRunning) {
+                                this.btnStart.html("Stop");
+                            }
+                        }.bind(this),
+                        function() {
+                            this.btnStart.html("Run");
+                        }.bind(this)
+                );
             this.btnStep = $("<button/>").attr("type", "button")
+                .attr("title", "[F9]")
                 .html("Step").click(function() {
                     this.stepIn();
                 }.bind(this));
@@ -134,66 +148,40 @@
                         "colOn": 'blue', "colOff":"silver"
                     })
                 )
-                .append(this.btnReset)
                 .append(this.btnStart)
-                .append(this.btnStop)
+                .append(this.btnReset)
                 .append(this.btnStep)
-                .append($("<br/>"))
-                .append($("<span/>").html("Speed:"))
-                .append($("<span/>").attr("id", "exec-param3"))
-                .append(this.sliderExecParamTimerInterval);
+                .append($("<span/>")
+                        .addClass("speed-control-slider")
+                        .html("Speed:")
+                        .append(this.sliderExecParamTimerInterval));
 
             //
             // Data Recorder Control
             //
             var dataRecorder = $(".MZ-700 .data-recorder");
             this.btnCmtRec = $("<button/>").attr("type", "button")
-                .html("RECPLAY").click(function() {
-                    this.cmtMessageArea.empty();
-                    this.mz700comworker.dataRecorder_pushRec(
-                        function() {
-                            console.log("REC callback");
-                        }.bind(this));
+                .html("<span style='color:red'>●</span> RECPLAY").click(function() {
+                    this.cmtMessageArea.empty().html("Recording ...");
+                    this.mz700comworker.dataRecorder_pushRec( function() { });
                 }.bind(this));
             this.btnCmtPlay = $("<button/>").attr("type", "button")
-                .html("PLAY").click(function() {
-                    this.mz700comworker.dataRecorder_pushPlay(
-                        function() { console.log("PLAY callback"); });
+                .html("<span style='display:inline-block;transform:rotate(-90deg);'>▼</span> PLAY").click(function() {
+                    this.mz700comworker.dataRecorder_pushPlay( function() { });
                 }.bind(this));
             this.btnCmtStop = $("<button/>").attr("type", "button")
-                .html("STOP").click(function() {
-                    this.mz700comworker.dataRecorder_pushStop(
-                        function() { console.log("STOP callback"); });
+                .html("<span>■</span> STOP").click(function() {
+                    this.mz700comworker.dataRecorder_pushStop( function() { });
                 }.bind(this));
             this.btnCmtEject = $("<button/>").attr("type", "button")
-                .html("EJECT").click(function() {
+                .html("<span>▲</span>EJECT").click(function() {
                     this.mz700comworker.dataRecorder_ejectCmt(
                         function(bytes) {
-                            console.log("EJECT callback");
-                            if(bytes == null || bytes.length < 128) {
-                                console.log("CMT has too short length data");
-                                return;
-                            }
-                            var header = new MZ_TapeHeader(bytes, 0);
-                            var byteArr = new Uint8Array(bytes);
-                            var blob = new Blob([byteArr], {'type': "application/octet-stream"});
-                            this.cmtMessageArea.empty().append(
-                                    $("<a/>")
-                                        .attr("download", header.filename + ".MZT")
-                                        .attr("type", "application/octet-stream")
-                                        .attr("href", URL.createObjectURL(blob))
-                                        .html("<u>↓</u> " + header.filename + ":" +
-                                            header.addr_load.HEX(4) + "-" +
-                                            (header.addr_load + header.file_size - 1).HEX(4) + "-" +
-                                            header.addr_exec.HEX(4)
-                                            )
-                                    );
+                            this.createCmtDownloadLink(bytes);
                         }.bind(this));
                 }.bind(this));
-            this.btnCmtSet = $("#mzt_info").html(
-                    "DROP MZT INTO HERE TO LOAD BY MONITOR COMMAND");
             if (window.File && window.FileReader && window.FileList && window.Blob) {
-                var dropZone2 = this.btnCmtSet.get(0);
+                var dropZone2 = dataRecorder.get(0);
                 dropZone2.addEventListener('dragover', function(evt) {
                     evt.stopPropagation();
                     evt.preventDefault();
@@ -208,24 +196,25 @@
                         var reader = new FileReader();
                         reader.onload = function(/*e*/) {
                             var tape_data = new Uint8Array(reader.result);
-                            this.mz700comworker.setCassetteTape(tape_data, function(mztape_array) {
-                                if(mztape_array != null) {
-                                    $("#mzt_info").html(
-                                            "MZT: '" + mztape_array[0].header.filename + "' (TO LOAD, USE L COMMAND)");
-                                }
+                            this.mz700comworker.setCassetteTape(tape_data, function() {
+                                this.mz700comworker.getCassetteTape(function(bytes) {
+                                    this.createCmtDownloadLink(bytes);
+                                }.bind(this));
                             }.bind(this));
                         }.bind(this);
                         reader.readAsArrayBuffer(f);
                     }
                 }.bind(this), false);
             }
-            this.cmtMessageArea = $("<span/>").addClass("cmt-message");
+            this.cmtMessageArea = $("<span/>").addClass("cmt-message").html("(EMPTY)");
             dataRecorder
+                .html("CMT: ")
+                .attr("title", "Drop MZT file here to load with 'L' command")
+                .append(this.cmtMessageArea)
                 .append(this.btnCmtRec)
                 .append(this.btnCmtPlay)
                 .append(this.btnCmtStop)
-                .append(this.btnCmtEject)
-                .append(this.cmtMessageArea);
+                .append(this.btnCmtEject);
 
             //
             // Keyboard
@@ -272,6 +261,16 @@
                     'onExecutionParameterUpdate': function(param) {
                         this.onExecutionParameterUpdate(param);
                     },
+                    "start": function() {
+                        this.isRunning = true;
+                        this.updateUI();
+                    },
+                    "stop": function() {
+                        this.isRunning = false;
+                        this.scrollToShowPC();
+                        this.setCurrentExecLine();
+                        this.updateUI();
+                    },
                     'onBreak': function() { this.stop(); },
                     'onUpdateScreen': (this.mz700scrn == null) ? function() {} :
                         function(updateData) { this.mz700scrn.write(updateData); }.bind(this),
@@ -291,6 +290,9 @@
                         this.btnCmtStop.prop("disabled", false);
                     }.bind(this),
                     "onStopDataRecorder": function(){
+                        this.mz700comworker.getCassetteTape(function(bytes) {
+                            this.createCmtDownloadLink(bytes);
+                        }.bind(this));
                         this.btnCmtRec.prop("disabled", false);
                         this.btnCmtEject.prop("disabled", false);
                         this.btnCmtStop.prop("disabled", true);
@@ -318,7 +320,7 @@
                 } else {
                     if(!this.reg_upd_tid) {
                         this.reg_upd_tid = setInterval(function() {
-                            this.showStatus();
+                            this.updateRegister();
                         }.bind(this), duration);
                     }
                 }
@@ -330,7 +332,7 @@
                         .css("text-align", "center")
                         .append($("<button type='button'>Update</button>")
                             .click(function() {
-                                this.showStatus();
+                                this.updateRegister();
                             }.bind(this))
                         )
                         .append($("<br/>"))
@@ -421,9 +423,6 @@
                     this.mz700comworker.writeAsmCode(bin, function(execAddr) {
                         this.mz700comworker.setPC(execAddr, function() {
                             this.mz700comworker.exec(1, function(/*result*/){
-                                this.setCurrentExecLine();
-                                this.showStatus();
-                                this.updateUI();
                                 this.mz700comworker.setPC(savedPC, function() {});
                             }.bind(this));
                         }.bind(this));
@@ -482,18 +481,11 @@
      */
     MZ700Js.prototype.runServerMZT = function (name) {
         this.mz700comworker.stop(function() {
-            this.isRunning = false;
-            this.scrollToShowPC();
-            this.setCurrentExecLine();
-            this.showStatus();
-            this.updateUI();
             $.getJSON("mzt", {"name": name}, function(tape_data) {
-                this.setMztData(tape_data);
-                this.setCurrentExecLine();
-                this.showStatus();
-                this.updateUI();
-                this.start();
-                this.acceptKey(true);
+                this.setMztData(tape_data, function() {
+                    this.start();
+                    this.acceptKey(true);
+                }.bind(this));
             }.bind(this));
         }.bind(this));
     };
@@ -508,24 +500,27 @@
      * 4. A program counter will be set to its execution address.
      *
      * @param {object} tape_data MZT tape data as byte array
+     * @param {function|null} callback A function invoked after loading the tape
      * @returns {undefined}
      */
-    MZ700Js.prototype.setMztData = function(tape_data) {
+    MZ700Js.prototype.setMztData = function(tape_data, callback) {
         this.mz700comworker.setCassetteTape(tape_data, function(mztape_array) {
             if(mztape_array != null) {
-                $("#mzt_info").html("MZT: '" + mztape_array[0].header.filename + "' Loading...");
+                this.cmtMessageArea.html("MZT: '" + mztape_array[0].header.filename + "' Loading...");
                 this.mz700comworker.loadCassetteTape(function() {
-                    $("#mzt_info").html("MZT: '" + mztape_array[0].header.filename + "' Loading......");
+                    this.cmtMessageArea.html("MZT: '" + mztape_array[0].header.filename + "' Loading......");
                     this.mz700comworker.disassemble(mztape_array, function(result) {
                         var outbuf = result.outbuf;
                         this.txtAsmSrc.val(outbuf);
-                        $("#mzt_info").html("MZT: '" + mztape_array[0].header.filename + "' Loaded");
+                        this.cmtMessageArea.html("MZT: '" + mztape_array[0].header.filename + "' Loaded");
                         this.assemble(function() {
                             this.mz700comworker.setPC(mztape_array[0].header.addr_exec, function() {
-                                $("#mzt_info").html("MZT: '" + mztape_array[0].header.filename + "'");
-                                this.setCurrentExecLine();
-                                this.showStatus();
-                                this.updateUI();
+                                this.mz700comworker.getCassetteTape(function(bytes) {
+                                    this.createCmtDownloadLink(bytes);
+                                }.bind(this));
+                                if(callback) {
+                                    callback();
+                                }
                             }.bind(this));
                         }.bind(this));
                     }.bind(this));
@@ -537,21 +532,16 @@
     MZ700Js.prototype.reset = function(callback) {
         this.clearCurrentExecLine();
         this.mz700comworker.stop(function() {
-            this.isRunning = false;
-            this.setCurrentExecLine();
-            this.showStatus();
-            this.updateUI();
             this.mz700comworker.reset(function() {
                 this.txtAsmSrc.val($($("textarea.default.source").get(0)).val());
                 this.assemble(function() {
-                    this.scrollToShowPC();
-                    this.setCurrentExecLine();
-                    this.showStatus();
-                    this.updateUI();
-                    if(callback) {
-                        callback();
-                    }
-                    this.start();
+                    this.mz700comworker.getCassetteTape(function(bytes) {
+                        this.createCmtDownloadLink(bytes);
+                        if(callback) {
+                            callback();
+                        }
+                        this.start();
+                    }.bind(this));
                 }.bind(this));
             }.bind(this));
         }.bind(this));
@@ -560,29 +550,16 @@
     MZ700Js.NUM_OF_EXEC_OPCODE = 20000;
     MZ700Js.prototype.start = function() {
         this.clearCurrentExecLine();
-        this.mz700comworker.start(function(success) {
-            if(success) {
-                this.isRunning = true;
-                this.updateUI();
-            }
-        }.bind(this));
+        this.mz700comworker.start(function() {});
     };
     MZ700Js.prototype.stop = function() {
-        this.mz700comworker.stop(function() {
-            this.isRunning = false;
-            this.scrollToShowPC();
-            this.setCurrentExecLine();
-            this.showStatus();
-            this.updateUI();
-        }.bind(this));
+        this.mz700comworker.stop(function() {});
     };
     MZ700Js.prototype.stepIn = function() {
         this.clearCurrentExecLine();
         this.mz700comworker.exec(1, function(/*result*/){
-            this.setCurrentExecLine();
-            this.showStatus();
-            this.updateUI();
             this.scrollToShowPC();
+            this.setCurrentExecLine();
         }.bind(this));
     };
     MZ700Js.prototype.stepOver = function() {
@@ -590,32 +567,31 @@
     };
 
     MZ700Js.prototype.updateExecutionParameter = function() {
-        console.log("MZ700Js.updateExecutionParameter", this._timerInterval);
         this.mz700comworker.setExecutionParameter(this._timerInterval, function(){});
     };
     MZ700Js.prototype.onExecutionParameterUpdate = function(param) {
-        console.log("MZ700Js.onExecutionParameterUpdate", param);
         this._timerInterval = param;
         var sliderValue = Math.log10(MZ700.DEFAULT_TIMER_INTERVAL / param);
         this.sliderExecParamTimerInterval.val(sliderValue);
-        $("#exec-param3").html((Math.round(sliderValue*100))/100);
     };
 
 
+    /**
+     * Update UI object's appearance by the running status of emulation.
+     * @returns {undefined}
+     */
     MZ700Js.prototype.updateUI = function() {
         this.btnReset.prop('disabled', '');
         if(!this.isRunning) {
-            this.btnStop.prop('disabled', 'disabled');
-            this.btnStart.prop('disabled', '');
+            $(".MZ-700").removeClass("running");
             this.btnStep.prop('disabled', '');
         } else {
-            this.btnStop.prop('disabled', '');
-            this.btnStart.prop('disabled', 'disabled');
+            $(".MZ-700").addClass("running");
             this.btnStep.prop('disabled', 'disabled');
         }
     };
 
-    MZ700Js.prototype.showStatus = function () {
+    MZ700Js.prototype.updateRegister = function () {
         (function(app) {
             app.mz700comworker.getRegister(function(reg) {
                 app.regview.Z80RegView("update", reg);
@@ -792,8 +768,6 @@
                 }, this);
                 this.mz700comworker.writeAsmCode(this.assembled, function(execAddr) {
                     this.mz700comworker.setPC(execAddr, function() {
-                        this.setCurrentExecLine();
-                        this.showStatus();
                         callback();
                     });
                 }.bind(this));
@@ -818,25 +792,21 @@
     };
 
     MZ700Js.prototype.onkeyup = function(e) {
+        switch(e.keyCode) {
+        case 119://F8 - RUN/STOP
+            if(this.isRunning) {
+                this.stop();
+            } else {
+                this.start();
+            }
+            return;
+        case 120://F9 - STEP OVER
+            this.stepOver();
+            return;
+        }
         if(this.keyAcceptanceState) {
             this.updateKeyStates(e, false);
             return false;
-        }
-        else {
-            switch(e.keyCode) {
-            case 119://F8 - RUN
-                this.start();
-                break;
-            case 120://F9 - STOP
-                this.stop();
-                break;
-            case 121://F10 - STEP OVER
-                this.stepOver();
-                break;
-            case 122://F11 - STEP IN
-                this.stepIn();
-                break;
-            }
         }
     };
 
@@ -852,6 +822,28 @@
             }
         }
     };
+    MZ700Js.prototype.createCmtDownloadLink = function(bytes) {
+        if(bytes == null || bytes.length < 128) {
+            this.cmtMessageArea.empty().append("(EMPTY)");
+            return;
+        }
+        var header = new MZ_TapeHeader(bytes, 0);
+        var byteArr = new Uint8Array(bytes);
+        var blob = new Blob([byteArr], {'type': "application/octet-stream"});
+        this.cmtMessageArea.empty().html(header.filename).append(
+                $("<a/>").addClass("download-link")
+                    .attr("download", header.filename + ".MZT")
+                    .attr("type", "application/octet-stream")
+                    .attr("href", URL.createObjectURL(blob))
+                    .html("")
+                    .attr("title",
+                        "Download " + header.filename + ".MZT" +
+                        " (" + header.file_size + " bytes) " +
+                        " ADDR:(" + header.addr_load.HEX(4) + " - " +
+                        (header.addr_load + header.file_size - 1).HEX(4) + ") EXEC:" +
+                        header.addr_exec.HEX(4))
+                );
+    }
 
     module.exports = MZ700Js;
 }());

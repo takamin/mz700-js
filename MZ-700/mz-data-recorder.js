@@ -22,6 +22,14 @@ MZ_DataRecorder.prototype.isCmtSet = function() {
     return (this._cmt != null);
 };
 
+/**
+ * Retrieves magnetic data, if a tape is set.
+ * @returns {Buffer|null} pseudo magnetic data.
+ */
+MZ_DataRecorder.prototype.getCmt = function() {
+    return this._cmt;
+};
+
 MZ_DataRecorder.prototype.setCmt = function(cmt) {
     var m = this.motor();
     if(m) {
