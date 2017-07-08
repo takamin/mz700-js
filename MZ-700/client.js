@@ -121,7 +121,7 @@ console.log("deviceType:", deviceType);
         resizeScreen();
     };
     fullscreenButton.click(onFullscreenButtonClick);
-    $("#dock-panel-scrn-ctrl").append(fullscreenButton);
+    $(".ctrl-panel").append(fullscreenButton);
     window.addEventListener("fullscreenchange", onFullscreenChange);
     onFullscreenChange();
 

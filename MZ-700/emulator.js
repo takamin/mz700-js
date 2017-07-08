@@ -36,12 +36,8 @@ var MZ700 = function(opt) {
     this.intel8253.counter[2].counter = 43200;
     this.intel8253.counter[2].value = 43200;
     this.intel8253.counter[2].addEventListener("timeup", function() {
-        console.log("i8253#2 timeup");
         if(this.INTMSK) {
-            console.log("RAISE INTERRUPT");
             this.z80.interrupt();
-        } else {
-            console.log("INTRRUPT MASKED");
         }
     }.bind(this));
 
@@ -98,6 +94,8 @@ var MZ700 = function(opt) {
                 console.error(ex);
             }
         },
+        started: function() { THIS._transworker.postNotify("start"); },
+        stopped: function() { THIS._transworker.postNotify("stop"); },
         onBreak: function() {
             THIS._transworker.postNotify("onBreak");
         },
@@ -410,7 +408,6 @@ MZ700.prototype.clock = function() {
 
 MZ700.prototype.setCassetteTape = function(tape_data) {
     if(tape_data.length > 0) {
-        this.tape_data = tape_data;// TODO: This line might be removed
         if(tape_data.length <= 128) {
             this.dataRecorder_setCmt([]);
             console.error("error buf.length <= 128");
@@ -424,6 +421,18 @@ MZ700.prototype.setCassetteTape = function(tape_data) {
     }
     this.dataRecorder_setCmt(tape_data);
     return this.mzt_array;
+};
+
+/**
+ * Get CMT content without ejecting.
+ * @returns {Buffer|null} CMT data buffer
+ */
+MZ700.prototype.getCassetteTape = function() {
+    var cmt = this.dataRecorder.getCmt();
+    if(cmt == null) {
+        return null;
+    }
+    return MZ_Tape.toBytes(cmt);
 };
 
 MZ700.prototype.loadCassetteTape = function() {
@@ -537,6 +546,7 @@ MZ700.prototype.start = function() {
     this.tid = FractionalTimer.setInterval(//TODO: Invoke Immediete `this.run()`
             function() { this.run(); }.bind(this),
             this.timerInterval);
+    this.opt.started();
     return true;
 };
 
@@ -544,6 +554,7 @@ MZ700.prototype.stop = function() {
     if(this.tid != null) {
         FractionalTimer.clearInterval(this.tid);
         this.tid = null;
+        this.opt.stopped();
     }
 };
 
@@ -599,19 +610,7 @@ MZ700.prototype.dataRecorder_ejectCmt = function() {
     if(this.dataRecorder.isCmtSet()) {
         var cmt = this.dataRecorder.ejectCmt();
         if(cmt != null) {
-            var data = MZ_Tape.toBytes(cmt);
-            if(data == null) {
-                console.log("MZ700.dataRecorder_ejectCmt returns null.");
-            } else {
-                console.log("MZ700.dataRecorder_ejectCmt returns " +
-                    data.length + " bytes data");
-            }
-            return data;
-        }
-        else {
-            console.log(
-                    "MZ700.dataRecorder_ejectCmt returns " +
-                    "0 bytes data, because NO CMT was set");
+            return MZ_Tape.toBytes(cmt);
         }
     }
     return [];
