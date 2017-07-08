@@ -119,13 +119,44 @@
     width:200px;
 }
 
-
-#mzt_info {
-    color:white;
-    background-color:blue;
+.data-recorder {
+    background:#333;
+    color:#ccc;
     font-weight:bold;
-    font-size:12pt;
-    text-align:center;
-    padding:10px 0;
-    margin:10px 0 0 2px;
+    font-family: Arial;
+}
+.MZ-700 .data-recorder button {
+    border-color:#444;
+    background-color:#555;
+    color:silver;
+}
+.MZ-700 .data-recorder button:hover {
+    color:white;
+    background-color:#000000;
+}
+.MZ-700 .data-recorder button:disabled {
+    color:gray;
+    background-color:#666666;
+}
+.MZ-700 .data-recorder .cmt-message {
+    display: inline-block;
+    min-width:100px;
+    background-color:#eee;
+    color:#222;
+    padding:5px;
+    border-radius:3px;
+    text-align: center;
+}
+.MZ-700 .data-recorder .cmt-message a.download-link {
+    display: inline-block;
+    border-radius:5px;
+    background-color: blue;
+    color:white;
+    margin-left:10px;
+    padding:2px;
+    font-size:9pt;
+    text-decoration:none;
+}
+.MZ-700 .data-recorder .cmt-message a.download-link:before {
+    content:"▼MZT";
 }

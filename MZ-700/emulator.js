@@ -423,6 +423,18 @@ MZ700.prototype.setCassetteTape = function(tape_data) {
     return this.mzt_array;
 };
 
+/**
+ * Get CMT content without ejecting.
+ * @returns {Buffer|null} CMT data buffer
+ */
+MZ700.prototype.getCassetteTape = function() {
+    var cmt = this.dataRecorder.getCmt();
+    if(cmt == null) {
+        return null;
+    }
+    return MZ_Tape.toBytes(cmt);
+};
+
 MZ700.prototype.loadCassetteTape = function() {
     for(var i = 0; i < this.mzt_array.length; i++) {
         var mzt = this.mzt_array[i];
@@ -598,19 +610,7 @@ MZ700.prototype.dataRecorder_ejectCmt = function() {
     if(this.dataRecorder.isCmtSet()) {
         var cmt = this.dataRecorder.ejectCmt();
         if(cmt != null) {
-            var data = MZ_Tape.toBytes(cmt);
-            if(data == null) {
-                console.log("MZ700.dataRecorder_ejectCmt returns null.");
-            } else {
-                console.log("MZ700.dataRecorder_ejectCmt returns " +
-                    data.length + " bytes data");
-            }
-            return data;
-        }
-        else {
-            console.log(
-                    "MZ700.dataRecorder_ejectCmt returns " +
-                    "0 bytes data, because NO CMT was set");
+            return MZ_Tape.toBytes(cmt);
         }
     }
     return [];

@@ -177,31 +177,11 @@
                 .html("EJECT").click(function() {
                     this.mz700comworker.dataRecorder_ejectCmt(
                         function(bytes) {
-                            console.log("EJECT callback");
-                            if(bytes == null || bytes.length < 128) {
-                                console.log("CMT has too short length data");
-                                return;
-                            }
-                            var header = new MZ_TapeHeader(bytes, 0);
-                            var byteArr = new Uint8Array(bytes);
-                            var blob = new Blob([byteArr], {'type': "application/octet-stream"});
-                            this.cmtMessageArea.empty().append(
-                                    $("<a/>")
-                                        .attr("download", header.filename + ".MZT")
-                                        .attr("type", "application/octet-stream")
-                                        .attr("href", URL.createObjectURL(blob))
-                                        .html("<u>↓</u> " + header.filename + ":" +
-                                            header.addr_load.HEX(4) + "-" +
-                                            (header.addr_load + header.file_size - 1).HEX(4) + "-" +
-                                            header.addr_exec.HEX(4)
-                                            )
-                                    );
+                            this.createCmtDownloadLink(bytes);
                         }.bind(this));
                 }.bind(this));
-            this.btnCmtSet = $("#mzt_info").html(
-                    "DROP MZT INTO HERE TO LOAD BY MONITOR COMMAND");
             if (window.File && window.FileReader && window.FileList && window.Blob) {
-                var dropZone2 = this.btnCmtSet.get(0);
+                var dropZone2 = dataRecorder.get(0);
                 dropZone2.addEventListener('dragover', function(evt) {
                     evt.stopPropagation();
                     evt.preventDefault();
@@ -216,24 +196,25 @@
                         var reader = new FileReader();
                         reader.onload = function(/*e*/) {
                             var tape_data = new Uint8Array(reader.result);
-                            this.mz700comworker.setCassetteTape(tape_data, function(mztape_array) {
-                                if(mztape_array != null) {
-                                    $("#mzt_info").html(
-                                            "MZT: '" + mztape_array[0].header.filename + "' (TO LOAD, USE L COMMAND)");
-                                }
+                            this.mz700comworker.setCassetteTape(tape_data, function() {
+                                this.mz700comworker.getCassetteTape(function(bytes) {
+                                    this.createCmtDownloadLink(bytes);
+                                }.bind(this));
                             }.bind(this));
                         }.bind(this);
                         reader.readAsArrayBuffer(f);
                     }
                 }.bind(this), false);
             }
-            this.cmtMessageArea = $("<span/>").addClass("cmt-message");
+            this.cmtMessageArea = $("<span/>").addClass("cmt-message").html("EMPTY");
             dataRecorder
+                .html("CMT: ")
+                .attr("title", "Drop MZT file here to load with 'L' command")
+                .append(this.cmtMessageArea)
                 .append(this.btnCmtRec)
                 .append(this.btnCmtPlay)
                 .append(this.btnCmtStop)
-                .append(this.btnCmtEject)
-                .append(this.cmtMessageArea);
+                .append(this.btnCmtEject);
 
             //
             // Keyboard
@@ -309,6 +290,9 @@
                         this.btnCmtStop.prop("disabled", false);
                     }.bind(this),
                     "onStopDataRecorder": function(){
+                        this.mz700comworker.getCassetteTape(function(bytes) {
+                            this.createCmtDownloadLink(bytes);
+                        }.bind(this));
                         this.btnCmtRec.prop("disabled", false);
                         this.btnCmtEject.prop("disabled", false);
                         this.btnCmtStop.prop("disabled", true);
@@ -522,16 +506,18 @@
     MZ700Js.prototype.setMztData = function(tape_data, callback) {
         this.mz700comworker.setCassetteTape(tape_data, function(mztape_array) {
             if(mztape_array != null) {
-                $("#mzt_info").html("MZT: '" + mztape_array[0].header.filename + "' Loading...");
+                this.cmtMessageArea.html("MZT: '" + mztape_array[0].header.filename + "' Loading...");
                 this.mz700comworker.loadCassetteTape(function() {
-                    $("#mzt_info").html("MZT: '" + mztape_array[0].header.filename + "' Loading......");
+                    this.cmtMessageArea.html("MZT: '" + mztape_array[0].header.filename + "' Loading......");
                     this.mz700comworker.disassemble(mztape_array, function(result) {
                         var outbuf = result.outbuf;
                         this.txtAsmSrc.val(outbuf);
-                        $("#mzt_info").html("MZT: '" + mztape_array[0].header.filename + "' Loaded");
+                        this.cmtMessageArea.html("MZT: '" + mztape_array[0].header.filename + "' Loaded");
                         this.assemble(function() {
                             this.mz700comworker.setPC(mztape_array[0].header.addr_exec, function() {
-                                $("#mzt_info").html("MZT: '" + mztape_array[0].header.filename + "'");
+                                this.mz700comworker.getCassetteTape(function(bytes) {
+                                    this.createCmtDownloadLink(bytes);
+                                }.bind(this));
                                 if(callback) {
                                     callback();
                                 }
@@ -838,6 +824,28 @@
             }
         }
     };
+    MZ700Js.prototype.createCmtDownloadLink = function(bytes) {
+        if(bytes == null || bytes.length < 128) {
+            this.cmtMessageArea.empty().append("(EMPTY)");
+            return;
+        }
+        var header = new MZ_TapeHeader(bytes, 0);
+        var byteArr = new Uint8Array(bytes);
+        var blob = new Blob([byteArr], {'type': "application/octet-stream"});
+        this.cmtMessageArea.empty().html(header.filename).append(
+                $("<a/>").addClass("download-link")
+                    .attr("download", header.filename + ".MZT")
+                    .attr("type", "application/octet-stream")
+                    .attr("href", URL.createObjectURL(blob))
+                    .html("")
+                    .attr("title",
+                        "Download " + header.filename + ".MZT" +
+                        " (" + header.file_size + " bytes) " +
+                        " ADDR:(" + header.addr_load.HEX(4) + " - " +
+                        (header.addr_load + header.file_size - 1).HEX(4) + ") EXEC:" +
+                        header.addr_exec.HEX(4))
+                );
+    }
 
     module.exports = MZ700Js;
 }());
