@@ -165,3 +165,13 @@
 .MZ-700 .data-recorder .cmt-message a.download-link:before {
     content:"▼MZT";
 }
+.MZ-700 .speed-control-slider {
+    display: inline-block;
+    height:24px;
+    line-height:24px;
+    padding: 0 1em;
+    background-color:white;
+    color:blue;
+    font-family: Arial;
+    font-weight: bold;
+}

@@ -152,9 +152,8 @@
                 .append(this.btnReset)
                 .append(this.btnStep)
                 .append($("<span/>")
-                        .css("padding", "0 1em")
+                        .addClass("speed-control-slider")
                         .html("Speed:")
-                        .append($("<span/>").attr("id", "exec-param3"))
                         .append(this.sliderExecParamTimerInterval));
 
             //
@@ -574,7 +573,6 @@
         this._timerInterval = param;
         var sliderValue = Math.log10(MZ700.DEFAULT_TIMER_INTERVAL / param);
         this.sliderExecParamTimerInterval.val(sliderValue);
-        $("#exec-param3").html((Math.round(sliderValue*100))/100);
     };
 
 
