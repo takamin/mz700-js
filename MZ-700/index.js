@@ -92,6 +92,7 @@
             this.btnStart = $("<button/>")
                 .attr("id", "btnStart")
                 .attr("type", "button")
+                .attr("title", "[F8]")
                 .html("Run").click(function() {
                     if(this.isRunning) {
                         this.stop();
@@ -110,6 +111,7 @@
                         }.bind(this)
                 );
             this.btnStep = $("<button/>").attr("type", "button")
+                .attr("title", "[F9]")
                 .html("Step").click(function() {
                     this.stepIn();
                 }.bind(this));
@@ -160,20 +162,20 @@
             //
             var dataRecorder = $(".MZ-700 .data-recorder");
             this.btnCmtRec = $("<button/>").attr("type", "button")
-                .html("RECPLAY").click(function() {
-                    this.cmtMessageArea.empty();
+                .html("<span style='color:red'>●</span> RECPLAY").click(function() {
+                    this.cmtMessageArea.empty().html("Recording ...");
                     this.mz700comworker.dataRecorder_pushRec( function() { });
                 }.bind(this));
             this.btnCmtPlay = $("<button/>").attr("type", "button")
-                .html("PLAY").click(function() {
+                .html("<span style='display:inline-block;transform:rotate(-90deg);'>▼</span> PLAY").click(function() {
                     this.mz700comworker.dataRecorder_pushPlay( function() { });
                 }.bind(this));
             this.btnCmtStop = $("<button/>").attr("type", "button")
-                .html("STOP").click(function() {
+                .html("<span>■</span> STOP").click(function() {
                     this.mz700comworker.dataRecorder_pushStop( function() { });
                 }.bind(this));
             this.btnCmtEject = $("<button/>").attr("type", "button")
-                .html("EJECT").click(function() {
+                .html("<span>▲</span>EJECT").click(function() {
                     this.mz700comworker.dataRecorder_ejectCmt(
                         function(bytes) {
                             this.createCmtDownloadLink(bytes);
@@ -205,7 +207,7 @@
                     }
                 }.bind(this), false);
             }
-            this.cmtMessageArea = $("<span/>").addClass("cmt-message").html("EMPTY");
+            this.cmtMessageArea = $("<span/>").addClass("cmt-message").html("(EMPTY)");
             dataRecorder
                 .html("CMT: ")
                 .attr("title", "Drop MZT file here to load with 'L' command")
@@ -534,10 +536,13 @@
             this.mz700comworker.reset(function() {
                 this.txtAsmSrc.val($($("textarea.default.source").get(0)).val());
                 this.assemble(function() {
-                    if(callback) {
-                        callback();
-                    }
-                    this.start();
+                    this.mz700comworker.getCassetteTape(function(bytes) {
+                        this.createCmtDownloadLink(bytes);
+                        if(callback) {
+                            callback();
+                        }
+                        this.start();
+                    }.bind(this));
                 }.bind(this));
             }.bind(this));
         }.bind(this));
@@ -789,25 +794,21 @@
     };
 
     MZ700Js.prototype.onkeyup = function(e) {
+        switch(e.keyCode) {
+        case 119://F8 - RUN/STOP
+            if(this.isRunning) {
+                this.stop();
+            } else {
+                this.start();
+            }
+            return;
+        case 120://F9 - STEP OVER
+            this.stepOver();
+            return;
+        }
         if(this.keyAcceptanceState) {
             this.updateKeyStates(e, false);
             return false;
-        }
-        else {
-            switch(e.keyCode) {
-            case 119://F8 - RUN
-                this.start();
-                break;
-            case 120://F9 - STOP
-                this.stop();
-                break;
-            case 121://F10 - STEP OVER
-                this.stepOver();
-                break;
-            case 122://F11 - STEP IN
-                this.stepIn();
-                break;
-            }
         }
     };
 

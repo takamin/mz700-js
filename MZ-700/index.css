@@ -41,6 +41,8 @@
     border-width:3px;
     background-color: blue;
     color: white;
+    font-family: Arial;
+    font-weight: bold;
 }
 .MZ-700 .ctrl-panel > span.key-switcher:hover {
     background-color: white;
