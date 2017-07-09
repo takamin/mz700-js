@@ -378,8 +378,9 @@
                         .append(this.asmList))
                 .append("<span>* Click a line, and set break point</span>");
 
-            this.txtAsmSrc = $("<textarea type='text'/>");
-            this.tabSource = $("<div/>").append(this.txtAsmSrc).hide();
+            this.txtAsmSrc = $("<textarea type='text'/>")
+                .val($($("textarea.default.source").get(0)).val());
+            this.tabSource = $("<div/>").append(this.txtAsmSrc);
             this.autoAssemble = false;
             var setAutoAssemble = function(checked) {
                 this.autoAssemble = checked;
@@ -451,6 +452,7 @@
             this.updateExecutionParameter();
             this.onExecutionParameterUpdate(param);
         }.bind(this));
+        this.assemble();
     };
     MZ700Js.prototype.mmioMapPeripheral = function(peripheral, mapToRead, mapToWrite) {
         this.MMIO.entry(peripheral, mapToRead, mapToWrite);
@@ -524,15 +526,12 @@
         this.clearCurrentExecLine();
         this.mz700comworker.stop(function() {
             this.mz700comworker.reset(function() {
-                this.txtAsmSrc.val($($("textarea.default.source").get(0)).val());
-                this.assemble(function() {
-                    this.mz700comworker.getCassetteTape(function(bytes) {
-                        this.createCmtDownloadLink(bytes);
-                        if(callback) {
-                            callback();
-                        }
-                        this.start();
-                    }.bind(this));
+                this.mz700comworker.getCassetteTape(function(bytes) {
+                    this.createCmtDownloadLink(bytes);
+                    if(callback) {
+                        callback();
+                    }
+                    this.start();
                 }.bind(this));
             }.bind(this));
         }.bind(this));
