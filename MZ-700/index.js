@@ -662,7 +662,7 @@
     };
     MZ700Js.prototype.assemble = function(callback) {
         if(this.forceAssemble || this.autoAssemble) {
-            MZ700Js.prototype._assemble.call(this, function() {
+            this._assemble(function() {
                 this.showTabAsmList();
                 if(callback) {
                     callback();
