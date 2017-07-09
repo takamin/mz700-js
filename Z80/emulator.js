@@ -126,6 +126,23 @@ Z80.prototype.decrementAt = function(addr) {
     this.memory.poke(addr, result);
 };
 
+/**
+ * Disassemble
+ *
+ * fields of result element of array:
+ *    @type {number}      addr
+ *    @type {number}      refs
+ *    @type {number[]}    code
+ *    @type {string[]}    mnemonic
+ *    @type {number}      ref_addr
+ *
+ * @param {Buffer}  buf     machine code byte buffer
+ * @param {number}  offset  start index of the buffer
+ * @param {number}  size    buffer size
+ * @param {number}  addr    memory address of the offset
+ *
+ * @returns {object[]}  assembled line data object
+ */
 Z80.dasm = function (buf, offset, size, addr) {
     offset = offset || 0;
     size = size || buf.length - offset;
