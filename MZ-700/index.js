@@ -400,8 +400,7 @@
                         }.bind(this)).html("Syntax highlight"))
                         .append($("<button type='button'/>").click(function() {
                             this.showTabSource();
-                        }.bind(this)).html("Plain text"))
-                        .append($("<span/>").html("Assemble on load MZT")))
+                        }.bind(this)).html("Plain text")))
                 .append($("<div/>").addClass("tabPageContainer clearfix")
                     .append(this.tabAsmList)
                     .append(this.tabSource))
