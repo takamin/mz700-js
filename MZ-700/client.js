@@ -12,7 +12,6 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
 } else {
     deviceType = "pc";
 }
-console.log("deviceType:", deviceType);
 
 (function($) {
     require("jquery-ui");
@@ -97,7 +96,6 @@ console.log("deviceType:", deviceType);
         }
     }
     var onFullscreenChange = function() {
-        console.log("fullscreenchange");
         if(document.fullscreenElement == null) {
             dockPanelHeader.show();
             if(deviceType != "pc") {
@@ -130,8 +128,7 @@ console.log("deviceType:", deviceType);
     dock_n_liquid.init(resizeScreen);
     dock_n_liquid.select($(".MZ-700").get(0)).layout();
     window.addEventListener(
-            "reseize", function() {
-                console.log("!!!");
+            "resize", function() {
                 resizeScreen(); });
     resizeScreen();
 
