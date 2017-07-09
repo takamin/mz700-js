@@ -1,15 +1,20 @@
 Full JavaScript MZ-700 Emulator
 ===============================
 
-This is an emulator of "MZ-700", a historical 8-bit micro computer written by JavaScript.
-It is runnable on the web browser.
+This is an emulator of "MZ-700", a Japanese historical 8-bit micro computer.
+
+This emulator is written in JavaScript.
+It works on the modern HTML5 web browser.
+I would strongly recommend Google Chrome,
+because of the emulation speed and its stability.
+
+In order to check that works on your browser before install to your PC,
+You can visit this [project-page](https://takamin.github.io/mz700-js/MZ-700/client.html).
 
 The MZ-700 is produced by SHARP in Nov.15,1982.
 It equipped a Z80A CPU 3.58MHz,
 and represents various characters in eight colors
 and a monoral beep sound, but no graphics.
-
-You can see on this [project-page](https://takamin.github.io/mz700-js/MZ-700/client.html)
 
 There were three models:
 
@@ -133,7 +138,8 @@ CHANGES
     * v0.7.2 - Fix the bug on v0.7.1: The emulator could not accept key-inputs from
     a physical keyboard when the software keyboard is removed on PC.
     * v0.7.3 - Simplified the sliders that control the emulation speed.
-    * __v0.7.4__ - Improve the UI.
+    * v0.7.4 - Improve the UI.
+    * __v0.7.5__ - Optimize the features of MZT loading, assembling and disassembling.
 * v0.6.0 - Some panels are resizable. And truely fullscreen mode is available.
     * v0.6.1 - On fullscreen mode, The input from keyboard is enabled.
     * v0.6.2 - Improve the beep sound and decrease the pop noise.

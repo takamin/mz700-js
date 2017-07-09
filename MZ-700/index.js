@@ -65,19 +65,24 @@
                         evt.preventDefault();
                         evt.dataTransfer.dropEffect = 'copy'; // Explicitly show this is a copy.
                     }, false);
-                    dropZone1.addEventListener('drop', (function(app) { return function(evt) {
+                    dropZone1.addEventListener('drop', function(evt) {
                         evt.stopPropagation();
                         evt.preventDefault();
                         var files = evt.dataTransfer.files; // FileList object.
                         if(files.length > 0) {
-                            var f = files[0];
-                            var reader = new FileReader();
-                            reader.onload = function(/*e*/) {
-                                app.setMztData(new Uint8Array(reader.result));
-                            };
-                            reader.readAsArrayBuffer(f);
+                            this.mz700comworker.stop(function() {
+                                var f = files[0];
+                                var reader = new FileReader();
+                                reader.onload = function(/*e*/) {
+                                    this.setMztData(new Uint8Array(reader.result), function() {
+                                        this.start();
+                                        this.acceptKey(true);
+                                    }.bind(this));
+                                }.bind(this);
+                                reader.readAsArrayBuffer(f);
+                            }.bind(this));
                         }
-                    };}(this)), false);
+                    }.bind(this), false);
                 }
             }
 
@@ -263,6 +268,7 @@
                     },
                     "start": function() {
                         this.isRunning = true;
+                        this.clearCurrentExecLine();
                         this.updateUI();
                     },
                     "stop": function() {
@@ -378,34 +384,23 @@
                         .append(this.asmList))
                 .append("<span>* Click a line, and set break point</span>");
 
-            this.txtAsmSrc = $("<textarea type='text'/>");
-            this.tabSource = $("<div/>");
-            this.tabSource
-                .append($("<button type='button'>Assemble</button>")
-                        .click(function() {
-                            this.forceAssemble = true;
-                            this.assemble();
-                            this.forceAssemble = false;
-                        }.bind(this)))
-                .append($("<br/>"))
-                .append(this.txtAsmSrc).hide();
-            this.autoAssemble = false;
-            var setAutoAssemble = function(checked) {
-                this.autoAssemble = checked;
-            }.bind(this);
+            this.txtAsmSrc = $("<textarea type='text'/>")
+                .val($($("textarea.default.source").get(0)).val());
+            this.tabSource = $("<div/>").append(this.txtAsmSrc);
             $(".source-list")
                 .append($("<div/>")
                         .append($("<button type='button'/>").click(function() {
-                            this.forceAssemble = true;
-                            this.assemble();
-                            this.forceAssemble = false;
+                            if(Object.keys(this.listRows).length !== 0) {
+                                this.showTabAsmList();
+                            } else {
+                                this.assemble(function() {
+                                    this.showTabAsmList();
+                                }.bind(this));
+                            }
                         }.bind(this)).html("Syntax highlight"))
                         .append($("<button type='button'/>").click(function() {
                             this.showTabSource();
                         }.bind(this)).html("Plain text"))
-                        .append($("<input type='checkbox'/>").click(function() {
-                            setAutoAssemble($(this).prop('checked'));
-                        }))
                         .append($("<span/>").html("Assemble on load MZT")))
                 .append($("<div/>").addClass("tabPageContainer clearfix")
                     .append(this.tabAsmList)
@@ -460,6 +455,10 @@
             this.updateExecutionParameter();
             this.onExecutionParameterUpdate(param);
         }.bind(this));
+
+        this.assemble(function() {
+            this.showTabAsmList();
+        }.bind(this));
     };
     MZ700Js.prototype.mmioMapPeripheral = function(peripheral, mapToRead, mapToWrite) {
         this.MMIO.entry(peripheral, mapToRead, mapToWrite);
@@ -504,23 +503,21 @@
      * @returns {undefined}
      */
     MZ700Js.prototype.setMztData = function(tape_data, callback) {
+        callback = callback || function(){};
         this.mz700comworker.setCassetteTape(tape_data, function(mztape_array) {
             if(mztape_array != null) {
                 this.cmtMessageArea.html("MZT: '" + mztape_array[0].header.filename + "' Loading...");
                 this.mz700comworker.loadCassetteTape(function() {
-                    this.cmtMessageArea.html("MZT: '" + mztape_array[0].header.filename + "' Loading......");
-                    this.mz700comworker.disassemble(mztape_array, function(result) {
-                        var outbuf = result.outbuf;
-                        this.txtAsmSrc.val(outbuf);
-                        this.cmtMessageArea.html("MZT: '" + mztape_array[0].header.filename + "' Loaded");
-                        this.assemble(function() {
+                    this.cmtMessageArea.html("MZT: '" + mztape_array[0].header.filename + "' Loaded");
+                    this.mz700comworker.getCassetteTape(function(bytes) {
+                        this.createCmtDownloadLink(bytes);
+                        this.mz700comworker.disassemble(mztape_array, function(result) {
+                            this.txtAsmSrc.val(result.outbuf);
+                            this.showTabSource();
+                            this.asmList.empty();
+                            this.listRows = {};
                             this.mz700comworker.setPC(mztape_array[0].header.addr_exec, function() {
-                                this.mz700comworker.getCassetteTape(function(bytes) {
-                                    this.createCmtDownloadLink(bytes);
-                                }.bind(this));
-                                if(callback) {
-                                    callback();
-                                }
+                                callback();
                             }.bind(this));
                         }.bind(this));
                     }.bind(this));
@@ -530,18 +527,14 @@
     };
 
     MZ700Js.prototype.reset = function(callback) {
-        this.clearCurrentExecLine();
         this.mz700comworker.stop(function() {
             this.mz700comworker.reset(function() {
-                this.txtAsmSrc.val($($("textarea.default.source").get(0)).val());
-                this.assemble(function() {
-                    this.mz700comworker.getCassetteTape(function(bytes) {
-                        this.createCmtDownloadLink(bytes);
-                        if(callback) {
-                            callback();
-                        }
-                        this.start();
-                    }.bind(this));
+                this.mz700comworker.getCassetteTape(function(bytes) {
+                    this.createCmtDownloadLink(bytes);
+                    if(callback) {
+                        callback();
+                    }
+                    this.start();
                 }.bind(this));
             }.bind(this));
         }.bind(this));
@@ -549,7 +542,6 @@
     MZ700Js.EXEC_TIMER_INTERVAL = 100;
     MZ700Js.NUM_OF_EXEC_OPCODE = 20000;
     MZ700Js.prototype.start = function() {
-        this.clearCurrentExecLine();
         this.mz700comworker.start(function() {});
     };
     MZ700Js.prototype.stop = function() {
@@ -661,21 +653,6 @@
         this.tabAsmList.show();
     };
     MZ700Js.prototype.assemble = function(callback) {
-        if(this.forceAssemble || this.autoAssemble) {
-            MZ700Js.prototype._assemble.call(this, function() {
-                this.showTabAsmList();
-                if(callback) {
-                    callback();
-                }
-            }.bind(this));
-        } else {
-            this.showTabSource();
-            if(callback) {
-                callback();
-            }
-        }
-    };
-    MZ700Js.prototype._assemble = function(callback) {
         this.mz700comworker.getBreakPoints(function(breakpoints) {
             this.mz700comworker.assemble(this.txtAsmSrc.val(), function(assembled) {
                 this.assembled = assembled;
@@ -766,11 +743,9 @@
                         this.listRows[asm_line.address] = [$row];
                     }
                 }, this);
-                this.mz700comworker.writeAsmCode(this.assembled, function(execAddr) {
-                    this.mz700comworker.setPC(execAddr, function() {
-                        callback();
-                    });
-                }.bind(this));
+                this.mz700comworker.writeAsmCode(this.assembled, function() {
+                    callback();
+                });
             }.bind(this));
         }.bind(this));
     };
