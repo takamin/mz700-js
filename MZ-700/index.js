@@ -766,11 +766,9 @@
                         this.listRows[asm_line.address] = [$row];
                     }
                 }, this);
-                this.mz700comworker.writeAsmCode(this.assembled, function(execAddr) {
-                    this.mz700comworker.setPC(execAddr, function() {
-                        callback();
-                    });
-                }.bind(this));
+                this.mz700comworker.writeAsmCode(this.assembled, function() {
+                    callback();
+                });
             }.bind(this));
         }.bind(this));
     };
