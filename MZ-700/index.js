@@ -379,16 +379,7 @@
                 .append("<span>* Click a line, and set break point</span>");
 
             this.txtAsmSrc = $("<textarea type='text'/>");
-            this.tabSource = $("<div/>");
-            this.tabSource
-                .append($("<button type='button'>Assemble</button>")
-                        .click(function() {
-                            this.forceAssemble = true;
-                            this.assemble();
-                            this.forceAssemble = false;
-                        }.bind(this)))
-                .append($("<br/>"))
-                .append(this.txtAsmSrc).hide();
+            this.tabSource = $("<div/>").append(this.txtAsmSrc).hide();
             this.autoAssemble = false;
             var setAutoAssemble = function(checked) {
                 this.autoAssemble = checked;
