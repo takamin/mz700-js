@@ -373,24 +373,24 @@
                             this.readMemory(addr, callback);
                         }.bind(this.mz700comworker)))
                 .DropDownPanel("create", { "caption" : "Memory" });
+
             //
             // ソースリストを表示する
             //
+
+            // Assemble list
             this.asmList = $("<div/>").addClass("assemble_list");
-            this.tabAsmList = $("<div/>");
-            this.tabAsmList.append(
-                    $("<div/>")
-                        .addClass("y-scroll-pane")
-                        .append(this.asmList))
+            this.tabAsmList = $("<div/>")
+                .append($("<div/>").addClass("y-scroll-pane").append(this.asmList))
                 .append("<span>* Click a line, and set break point</span>");
 
             this.txtAsmSrc = $("<textarea type='text'/>")
-                .val($($("textarea.default.source").get(0)).val())
                 .bind("change", function() {
                     //Clear assemble list
                     this.listRows = {};
                 }.bind(this));
             this.tabSource = $("<div/>").append(this.txtAsmSrc);
+
             $(".source-list")
                 .append($("<div/>")
                         .append($("<button type='button'/>").click(function() {
@@ -401,14 +401,16 @@
                                     this.showTabAsmList();
                                 }.bind(this));
                             }
-                        }.bind(this)).html("Syntax highlight"))
+                        }.bind(this)).html("Assemble List"))
                         .append($("<button type='button'/>").click(function() {
                             this.showTabSource();
-                        }.bind(this)).html("Plain text")))
+                        }.bind(this)).html("Source List")))
                 .append($("<div/>").addClass("tabPageContainer clearfix")
                     .append(this.tabAsmList)
                     .append(this.tabSource))
                 .DropDownPanel("create", { "caption" : "Assembly source" });
+
+            this.txtAsmSrc.val($($("textarea.default.source").get(0)).val());
 
             //
             //直接実行ボタン
@@ -656,101 +658,89 @@
         this.tabAsmList.show();
     };
     MZ700Js.prototype.assemble = function(callback) {
-        this.mz700comworker.getBreakPoints(function(breakpoints) {
-            this.mz700comworker.assemble(this.txtAsmSrc.val(), function(assembled) {
-                this.assembled = assembled;
-                var asm_list = this.assembled.list;
-                this.asmList.empty();
-                this.listRows = {};
-                var line_number = 0;
-                asm_list.forEach(function(asm_line) {
-                    line_number++;
-                    var $row = $("<div/>")
-                        .addClass('row')
-                        .addClass("pc" + asm_line.address.HEX(4))
-                        .click((function(app, address, size){
-                            return function() {
-                                if(size > 0) {
-                                    var row = $(".pc" + address.HEX(4));
-                                    if(row.hasClass('breakPoint')) {
-                                        row.removeClass('breakPoint');
-                                        app.mz700comworker.removeBreak(address, size, null);
-                                    } else {
-                                        row.addClass('breakPoint');
-                                        app.mz700comworker.addBreak(address, size, null);
-                                    }
-                                }
-                            };
-                        })(this, asm_line.address, asm_line.bytecode.length));
-
-                    // Set breakpoint class
-                    if(breakpoints[asm_line.address] && asm_line.bytecode.length > 0) {
-                        $row.addClass('breakPoint');
-                    }
-
-                    this.asmList.append($row);
-
-                    // attributes column
-                    $row.append($('<span class="colRowAttr" '
-                                + 'style="display:inline-block; width:20px; text-align:center;"></span>'));
-
-                    // line number
-                    $row.append($('<span class="colLineNumber" '
-                                + 'style="display:inline-block; width:40px; padding-right:6px; text-align:right;">'
-                                + line_number + '</span>'));
-
-                    // address
-                    $row.append($('<span class="colAddress" '
-                                + 'style="display:inline-block; width:40px;">'
-                                + asm_line.address.HEX(4) + '</span>'));
-
-                    // code
-                    var codeHex = '';
-                    asm_line.bytecode.forEach(function(code) {
-                        codeHex += code.HEX(2);
-                    });
-                    $row.append($('<span class="colMachineCode" '
-                                + 'style="display:inline-block; width:80px;">'
-                                + codeHex + '</span>'));
-
-                    // label
-                    if(asm_line.label != null) {
-                        $row.append($('<span class="colLabel" '
-                                    + 'style="display:inline-block; width:70px;"/>')
-                                    .html((asm_line.label==null ? '' : (asm_line.label+':'))));
-                    }
-
-                    // mnemonic
-                    if(asm_line.mnemonic != null) {
-                        if(asm_line.label == null) {
-                            $row.append($('<span style="display:inline-block; width:70px;"></span>'));
-                        }
-                        $row.append($('<span class="colMnemonic" '
-                                    + 'style="display:inline-block; width:50px;"/>')
-                                    .html(asm_line.mnemonic));
-                        $row.append($('<span class="colOperand" '
-                                    + 'style="display:inline-block; width:100px;"/>')
-                                    .html(asm_line.operand));
-                    }
-                    // comment
-                        $row.append($('<span class="colComment" '
-                                    + 'style="display:inline-block; white-space:pre;"/>')
-                                    .html((asm_line.comment==null ? '' : asm_line.comment)));
-
-                    //
-                    // Push the row to hashed array by its address
-                    //
-                    if(asm_line.address in this.listRows) {
-                        this.listRows[asm_line.address].push($row);
-                    } else {
-                        this.listRows[asm_line.address] = [$row];
-                    }
-                }, this);
-                this.mz700comworker.writeAsmCode(this.assembled, function() {
+        this.mz700comworker.assemble(this.txtAsmSrc.val(), function(assembled) {
+                this.createAssembleList(assembled.list);
+                this.mz700comworker.writeAsmCode(assembled, function() {
                     callback();
                 });
-            }.bind(this));
         }.bind(this));
+    };
+    MZ700Js.prototype.createAssembleList = function(asm_list) {
+        this.mz700comworker.getBreakPoints(function(breakpoints) {
+            this.asmList.empty();
+            this.listRows = {};
+
+            asm_list.forEach(function(asm_line, index) {
+                var addr = asm_line.address;
+                var size = asm_line.bytecode.length;
+
+                var $row = $("<div/>").addClass('row').addClass("pc" + addr.HEX(4));
+                if(size > 0) {
+                    $row.click(function() {
+                        var row = $(".pc" + addr.HEX(4));
+                        if(row.hasClass('breakPoint')) {
+                            row.removeClass('breakPoint');
+                            this.mz700comworker.removeBreak(addr, size, null);
+                        } else {
+                            row.addClass('breakPoint');
+                            this.mz700comworker.addBreak(addr, size, null);
+                        }
+                    }.bind(this));
+                }
+
+                // Set breakpoint class
+                if(breakpoints[addr] && asm_line.bytecode.length > 0) {
+                    $row.addClass('breakPoint');
+                }
+
+                this.createAsmRow($row, asm_line, index + 1);
+
+                // Display row
+                this.asmList.append($row);
+
+                // Push the row to hashed array by its address
+                if(addr in this.listRows) {
+                    this.listRows[addr].push($row);
+                } else {
+                    this.listRows[addr] = [$row];
+                }
+            }, this);
+        }.bind(this));
+    };
+    MZ700Js.prototype.createAsmRow = function($row, asm_line, rownum) {
+
+        var addr = asm_line.address;
+
+        // attributes column
+        $row.append($('<span class="colRowAttr"></span>'));
+
+        // line number
+        $row.append($('<span class="colLineNumber">' + rownum + '</span>'));
+
+        // address
+        $row.append($('<span class="colAddress" style="">' + addr.HEX(4) + '</span>'));
+
+        // code
+        $row.append($('<span class="colMachineCode">' + asm_line.bytecode.map(
+                    function(c){return c.HEX(2);}).join("") + '</span>'));
+
+        // label
+        if(asm_line.label != null) {
+            $row.append($('<span class="colLabel"/>')
+                    .html(asm_line.label+':'));
+        }
+
+        // mnemonic
+        if(asm_line.mnemonic != null) {
+            if(asm_line.label == null) {
+                $row.append($('<span class="colLabel"> </span>'));
+            }
+            $row.append($('<span class="colMnemonic"/>').html(asm_line.mnemonic));
+            $row.append($('<span class="colOperand"/>').html(asm_line.operand));
+        }
+        // comment
+        $row.append($('<span class="colComment"/>')
+                    .html((asm_line.comment == null ? ' ' : asm_line.comment)));
     };
 
     MZ700Js.prototype.acceptKey = function(state) {
