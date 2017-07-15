@@ -98,6 +98,12 @@
 .y-scroll-pane {
     overflow-y: scroll;
 }
+
+.assemble_list {
+    overflow-x: auto;
+    width:635px;
+}
+
 .tabPageContainer {
     padding:10px;
     font-family:monospace;
@@ -174,4 +180,10 @@
     color:blue;
     font-family: Arial;
     font-weight: bold;
+}
+.MZ-700 .register-monitor {
+    width: 675px;
+}
+.MZ-700 .memory {
+    width: 550px;
 }
