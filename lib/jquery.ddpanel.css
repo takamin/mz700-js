@@ -50,4 +50,5 @@
 .DropDownPanel .content {
     padding:6px;
     background-color:white;
+    overflow: auto;
 }
