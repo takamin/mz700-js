@@ -53,7 +53,7 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
     var dockPanelBottom = $("#dock-panel-bottom");
 
     var onKeyboardPanelOpen = function() {
-        dockPanelKb.css("height", "250px");
+        dockPanelKb.css("height", "270px");
         liquidRoot.layout();
         resizeScreen();
     };
@@ -70,8 +70,8 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
         onKeyboardPanelClose = function() {};
     }
 
-    // Remove right panel for mobile
-    if(deviceType == "mobile") {
+    // Remove right panel for mobile or tablet
+    if(deviceType == "mobile" || deviceType == "tablet") {
         dockPanelRight.remove();
     }
 
