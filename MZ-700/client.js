@@ -53,7 +53,7 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
     var dockPanelBottom = $("#dock-panel-bottom");
 
     var onKeyboardPanelOpen = function() {
-        dockPanelKb.css("height", "250px");
+        dockPanelKb.css("height", "270px");
         liquidRoot.layout();
         resizeScreen();
     };
