@@ -141,7 +141,10 @@ CHANGES
     * v0.7.4 - Improve the UI.
     * v0.7.5 - Optimize the features of MZT loading, assembling and disassembling.
     * v0.7.6 - Tweak UI
-    * __v0.7.7__ - Fixed a bug in the 'mz700-cli' command on speed control parameters.
+    * v0.7.7 - Fixed a bug in the 'mz700-cli' command on speed control parameters.
+    * __v0.7.8__ - Improve the screen keyboard for the mobile and tablet.
+        * It might be able to scroll horizontally.
+        * It will be opened at startup.
 * v0.6.0 - Some panels are resizable. And truely fullscreen mode is available.
     * v0.6.1 - On fullscreen mode, The input from keyboard is enabled.
     * v0.6.2 - Improve the beep sound and decrease the pop noise.
