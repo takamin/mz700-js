@@ -1,5 +1,11 @@
-Full JavaScript MZ-700 Emulator
+MZ-700 Full JavaScript Emulator
 ===============================
+
+<a href="https://takamin.github.io/mz700-js/MZ-700/client.html"
+target="_blank" title="Click to run this emulator on the Github page">
+<img src="https://github.com/takamin/mz700-js/blob/gh-pages/image/title.png?raw=true"
+width="100%" style="max-width:900px"/>
+</a>
 
 This is an emulator of "MZ-700", a Japanese historical 8-bit micro computer.
 
@@ -25,6 +31,12 @@ There were three models:
 Many people were saying,
 
 __"MZ-700 Has No LIMIT"__
+
+<a href="http://bicycle.life.coocan.jp/takamints/index.php/MZ-700"
+target="_blank" title="Click to play some free 8 bit game">
+<img src="http://bicycle.life.coocan.jp/takamints/modules/MZ-700/image/MZ-700.png"
+width="100%" style="max-width:900px"/>
+</a>
 
 In this emulator:
 
