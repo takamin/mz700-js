@@ -30,6 +30,9 @@
         .dock.resizer:hover {
             background-color: #ccc;
         }
+        .dock.resizer.resizing {
+            background-color: blue;
+        }
         .dock.horizontal.resizer {
             cursor: ew-resize;
         }
@@ -52,7 +55,8 @@
                 <div id="dock-panel-keyboard" class="dock bottom" style="height:270px;">
                     <div class="keyboard open"></div>
                 </div>
-                <div id="dock-panel-bottom" class="dock bottom" style="height:80px;">
+                <div id="dock-panel-bottom" class="dock bottom"
+                    style="height:100px;margin-top:15px;overflow-x:auto;">
                     <div class="ctrl-panel"></div>
                     <div class="data-recorder"></div>
                 </div>
