@@ -50,7 +50,6 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
     var dockPanelHeader = $("#dock-panel-header");
     var dockPanelKb = $("#dock-panel-keyboard");
     var dockPanelRight = $("#dock-panel-right");
-    var dockPanelBottom = $("#dock-panel-bottom");
 
     var onKeyboardPanelOpen = function() {
         dockPanelKb.css("height", "270px");
@@ -83,14 +82,16 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
     }
     var fullscreenButton = $("<button/>")
         .attr("id","fullscreenButton");
-    var fullscreenElement = document.getElementById("fullscrn-MZ-700");
+    var fullscreenElement = document.body;
     var onFullscreenButtonClick = function() {
         if(document.fullscreenElement === fullscreenElement) {
-            dock_n_liquid.exitFullscreen().then(function() {
+            document.exitFullscreen().then(function() {
+                liquidRoot.layout();
                 resizeScreen();
             });
         } else {
-            dock_n_liquid.requestFullscreen(fullscreenElement).then(function() {
+            fullscreenElement.requestFullscreen().then(function() {
+                liquidRoot.layout();
                 resizeScreen();
                 mz700js.acceptKey(true);
             });
@@ -99,25 +100,19 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
     var onFullscreenChange = function() {
         if(document.fullscreenElement == null) {
             dockPanelHeader.show();
-            dockPanelKb.show();
-            dockPanelBottom.show();
             dockPanelRight.show();
             fullscreenButton.html("Fullscreen");
         } else {
             dockPanelHeader.hide();
-            dockPanelKb.hide();
-            dockPanelBottom.hide();
             dockPanelRight.hide();
             fullscreenButton.html("Exit Fullscreen");
         }
         liquidRoot.layout();
         resizeScreen();
-        liquidRoot.layout();
-        resizeScreen();
     };
     fullscreenButton.click(onFullscreenButtonClick);
     $(".ctrl-panel").append(fullscreenButton);
-    window.addEventListener("fullscreenchange", onFullscreenChange);
+    document.addEventListener("fullscreenchange", onFullscreenChange);
     onFullscreenChange();
 
     mz700js.reset();
@@ -126,6 +121,7 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
     dock_n_liquid.select($(".MZ-700").get(0)).layout();
     window.addEventListener(
             "resize", function() {
+                liquidRoot.layout();
                 resizeScreen(); });
     resizeScreen();
 

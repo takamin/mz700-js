@@ -34,6 +34,9 @@
     background-color: gray;
     color: silver;
 }
+.MZ-700 .ctrl-panel {
+    background-color: white;
+}
 .MZ-700 .ctrl-panel > span.key-switcher {
     padding:5px;
     border-style:solid;
