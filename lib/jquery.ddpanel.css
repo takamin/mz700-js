@@ -19,7 +19,7 @@
     margin:0;
 }
 .DropDownPanel.open .heading {
-    background-color:#44f;
+    background-color:blue;
     border-width: 0 0 0 0;
 }
 .DropDownPanel .heading .caption {
@@ -37,12 +37,8 @@
     margin: 0;
     border: 3px solid white;
 }
-.DropDownPanel.close {
-    opacity:0.7;
-}
 .DropDownPanel.open {
-    border-color: #44f;
-    opacity:0.8;
+    border-color: blue;
 }
 .DropDownPanel.open .heading .button {
     transform:rotate(180deg);

@@ -34,6 +34,14 @@
     background-color: gray;
     color: silver;
 }
+
+.MZ-700 .ctrl-panel {
+    background-color: white;
+    min-width:690px;
+}
+.MZ-700 .ctrl-panel input[type='range'] {
+    width:100px;
+}
 .MZ-700 .ctrl-panel > span.key-switcher {
     padding:5px;
     border-style:solid;
@@ -135,6 +143,7 @@
     color:#ccc;
     font-weight:bold;
     font-family: Arial;
+    min-width:690px;
 }
 .MZ-700 .data-recorder button {
     border-color:#444;
