@@ -385,7 +385,11 @@
                 .append("<span>* Click a line, and set break point</span>");
 
             this.txtAsmSrc = $("<textarea type='text'/>")
-                .val($($("textarea.default.source").get(0)).val());
+                .val($($("textarea.default.source").get(0)).val())
+                .bind("change", function() {
+                    //Clear assemble list
+                    this.listRows = {};
+                }.bind(this));
             this.tabSource = $("<div/>").append(this.txtAsmSrc);
             $(".source-list")
                 .append($("<div/>")
