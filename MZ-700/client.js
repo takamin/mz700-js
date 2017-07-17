@@ -58,17 +58,10 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
         resizeScreen();
     };
     var onKeyboardPanelClose = function() {
-        dockPanelKb.css("height", "50px");
+        dockPanelKb.css("height", "52px");
         liquidRoot.layout();
         resizeScreen();
     };
-
-    // Remove software keybord for PC
-    if(deviceType == "pc") {
-        dockPanelKb.hide();
-        onKeyboardPanelOpen = function() {};
-        onKeyboardPanelClose = function() {};
-    }
 
     // Remove right panel for mobile or tablet
     if(deviceType == "mobile" || deviceType == "tablet") {
@@ -80,6 +73,14 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
         "onKeyboardPanelOpen": onKeyboardPanelOpen,
         "onKeyboardPanelClose": onKeyboardPanelClose
     });
+
+    // Close keyboard panel on PC.
+    if(deviceType == "pc") {
+        mz700js.kb.DropDownPanel("close");
+    } else {
+        // Open on mobile and tablet
+        mz700js.kb.DropDownPanel("open");
+    }
     var fullscreenButton = $("<button/>")
         .attr("id","fullscreenButton");
     var fullscreenElement = document.getElementById("fullscrn-MZ-700");
@@ -98,17 +99,13 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
     var onFullscreenChange = function() {
         if(document.fullscreenElement == null) {
             dockPanelHeader.show();
-            if(deviceType != "pc") {
-                dockPanelKb.show();
-            }
+            dockPanelKb.show();
             dockPanelBottom.show();
             dockPanelRight.show();
             fullscreenButton.html("Fullscreen");
         } else {
             dockPanelHeader.hide();
-            if(deviceType != "pc") {
-                dockPanelKb.hide();
-            }
+            dockPanelKb.hide();
             dockPanelBottom.hide();
             dockPanelRight.hide();
             fullscreenButton.html("Exit Fullscreen");
