@@ -4,8 +4,9 @@
     text-align:center;
 }
 .mz700keymatrix > .keyboard-base-panel {
-    width: 700px;
+    width: 640px;
     margin-left: auto;
+    margin-right: auto;
     text-align:left;
 }
 .mz700keymatrix .button {

@@ -1,5 +1,11 @@
-Full JavaScript MZ-700 Emulator
+MZ-700 Full JavaScript Emulator
 ===============================
+
+<a href="https://takamin.github.io/mz700-js/MZ-700/client.html"
+target="_blank" title="Click to run this emulator on the Github page">
+<img src="https://github.com/takamin/mz700-js/blob/gh-pages/image/title.png?raw=true"
+width="100%" style="max-width:900px"/>
+</a>
 
 This is an emulator of "MZ-700", a Japanese historical 8-bit micro computer.
 
@@ -25,6 +31,12 @@ There were three models:
 Many people were saying,
 
 __"MZ-700 Has No LIMIT"__
+
+<a href="http://bicycle.life.coocan.jp/takamints/index.php/MZ-700"
+target="_blank" title="Click to play some free 8 bit game">
+<img src="http://bicycle.life.coocan.jp/takamints/modules/MZ-700/image/MZ-700.png"
+width="100%" style="max-width:900px"/>
+</a>
 
 In this emulator:
 
@@ -146,7 +158,10 @@ CHANGES
         * It might be able to scroll horizontally.
         * It will be opened at startup.
     * v0.7.9 - Do not fold the rows in the right side panels.
-    * __v0.7.10__ - Fix a bug that could not parse an address on memory-dump widget.
+    * v0.7.10 - Fix a bug that could not parse an address on memory-dump widget.
+    * __v0.7.11__ - Improves the usability.
+        * The screen keyboard and any control buttons are available in fullscreen mode.
+        * Tweak the layout styles.
 * v0.6.0 - Some panels are resizable. And truely fullscreen mode is available.
     * v0.6.1 - On fullscreen mode, The input from keyboard is enabled.
     * v0.6.2 - Improve the beep sound and decrease the pop noise.
