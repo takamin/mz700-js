@@ -66,6 +66,7 @@ module.exports = function(grunt) {
                 "./lib/jquery.Z80-reg.js",
                 "./lib/jquery_plugin_class.js",
                 "./lib/mzt-read-file.js",
+                "./lib/oct.js",
                 "./lib/parse-addr.js",
                 "./lib/PCG-700.js",
                 "./MZ-700/client.js",
