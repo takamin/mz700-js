@@ -202,9 +202,7 @@
                         reader.onload = function(/*e*/) {
                             var tape_data = new Uint8Array(reader.result);
                             this.mz700comworker.setCassetteTape(tape_data, function() {
-                                this.mz700comworker.getCassetteTape(function(bytes) {
-                                    this.createCmtDownloadLink(bytes);
-                                }.bind(this));
+                                this.createCmtDownloadLink(tape_data);
                             }.bind(this));
                         }.bind(this);
                         reader.readAsArrayBuffer(f);
@@ -514,16 +512,14 @@
                 this.cmtMessageArea.html("MZT: '" + mztape_array[0].header.filename + "' Loading...");
                 this.mz700comworker.loadCassetteTape(function() {
                     this.cmtMessageArea.html("MZT: '" + mztape_array[0].header.filename + "' Loaded");
-                    this.mz700comworker.getCassetteTape(function(bytes) {
-                        this.createCmtDownloadLink(bytes);
-                        this.mz700comworker.disassemble(mztape_array, function(result) {
-                            this.txtAsmSrc.val(result.outbuf);
-                            this.showTabSource();
-                            this.asmList.empty();
-                            this.listRows = {};
-                            this.mz700comworker.setPC(mztape_array[0].header.addr_exec, function() {
-                                callback();
-                            }.bind(this));
+                    this.createCmtDownloadLink(tape_data);
+                    this.mz700comworker.disassemble(mztape_array, function(result) {
+                        this.txtAsmSrc.val(result.outbuf);
+                        this.showTabSource();
+                        this.asmList.empty();
+                        this.listRows = {};
+                        this.mz700comworker.setPC(mztape_array[0].header.addr_exec, function() {
+                            callback();
                         }.bind(this));
                     }.bind(this));
                 }.bind(this));
