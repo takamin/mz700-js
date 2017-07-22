@@ -11,6 +11,7 @@ var MZ700KeyMatrix  = getModule("MZ700KeyMatrix")   || require('./mz700-key-matr
 var MZ700_Memory    = getModule("MZ700_Memory")     || require("./memory.js");
 var Z80             = getModule("Z80")              || require('../Z80/emulator');
 var Z80_assemble    = getModule("Z80_assemble")     || require("../Z80/assembler.js");
+var Z80LineAssembler = require("../Z80/z80-line-assembler");
 var MZ700 = function(opt) {
     "use strict";
 
@@ -583,16 +584,29 @@ MZ700.prototype.assemble = function(text_asm) {
 MZ700.prototype.disassemble = function(mztape_array) {
     var outbuf = "";
     var dasmlist = [];
+    var asmHeaderLines = null;
     mztape_array.forEach(function(mzt) {
-        outbuf += MZ_TapeHeader.prototype.getHeadline.apply(mzt.header) + "\n";
+        var mztHeaderLines = MZ_TapeHeader.prototype.getHeadline.apply(mzt.header);
+        outbuf += mztHeaderLines + "\n";
         dasmlist = Z80.dasm(
             mzt.body.buffer, 0,
             mzt.header.file_size,
             mzt.header.addr_load);
+        asmHeaderLines = mztHeaderLines.split("\n").map(function(line) {
+            var asmline = new Z80LineAssembler();
+            asmline.setComment(line);
+            return asmline;
+        });
     });
     var dasmlines = Z80.dasmlines(dasmlist);
     outbuf += dasmlines.join("\n") + "\n";
-    return {"outbuf": outbuf, "dasmlines": dasmlines};
+    Array.prototype.splice.apply(dasmlist,
+            [0,0].concat(asmHeaderLines));
+    return {
+        outbuf: outbuf,
+        dasmlines: dasmlines,
+        asmlist: dasmlist
+    };
 };
 
 MZ700.prototype.dataRecorder_setCmt = function(bytes) {

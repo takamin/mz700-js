@@ -1,4 +1,6 @@
 build/
-node_modules
-bower_components
+docs/
+node_modules/
+bower_components/
 npm-debug.log
+tags
