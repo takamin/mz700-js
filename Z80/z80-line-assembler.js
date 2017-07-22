@@ -1,12 +1,124 @@
 "use strict";
 var oct = require("../lib/oct");
-var Z80LineAssembler = function(source, address, dictionary) {
-    this.address = address;
+
+/**
+ * Z80 assembled line class.
+ * Assemble one line source code.
+ *
+ * @param {string} source   One line Z80 source code.
+ * @param {number} address  Starting address of the source.
+ * @param {object} dictionary   The map label to address.
+ * @constructor
+ */
+var Z80LineAssembler = function() {
+
+    /**
+     * Code starting address
+     * @type {number}
+     */
+    this.address = null;
+
+    /**
+     * Z80 machine codes
+     * @type {number[]}
+     */
     this.bytecode = [];
+
+    /**
+     * Attached label
+     * @type {string}
+     */
     this.label = null;
+
+    /**
+     * Z80 mnemonic
+     * @type {string}
+     */
     this.mnemonic = null;
-    this.operand = [];
-    this.comment = null;
+
+    /**
+     * operand for mnemonic
+     * @type {string}
+     */
+    this.operand = null;
+
+    /**
+     * Comment for this line
+     * @type {string}
+     */
+    this.comment = "";
+
+    /**
+     * The address that may be jumped or called to
+     * @type {number|null}
+     */
+    this.ref_addr_to =  null;
+
+    /**
+     * Referenced count of this address as a distination of the instructions JP, JR, or CALL.
+     * @type {number}
+     */
+    this.referenced_count = 0;
+
+}
+
+/**
+ * Set address.
+ * @param {number} address starting address of this code
+ * @returns {undefined}
+ */
+Z80LineAssembler.prototype.setAddress = function(address) {
+    this.address = address;
+};
+
+/**
+ * Set referencing address.
+ * @param {number|null} ref_addr_to starting address of this code
+ * @returns {undefined}
+ */
+Z80LineAssembler.prototype.setRefAddrTo = function(ref_addr_to) {
+    this.ref_addr_to = ref_addr_to;
+};
+
+/**
+ * Set label for address.
+ * @param {string|null} label   A label to be set or remove by null
+ * @returns {undefined}
+ */
+Z80LineAssembler.prototype.setLabel = function(label) {
+    this.label = label;
+};
+
+/**
+ * Set comment
+ * @param {string} comment comment string.
+ * @returns {undefined}
+ */
+Z80LineAssembler.prototype.setComment = function(comment) {
+    this.address = this.address || 0;
+    this.comment = comment;
+};
+
+/**
+ * Create Z80 assembler instruction code line.
+ *
+ * @param {string}          mnemonic    Mnemonic.
+ * @param {string|null}     operand     Operand for mnemonic.
+ * @param {number[]|null}   machineCode Machine codes.
+ *
+ * @returns {Z80LineAssembler} assembled line object
+ */
+Z80LineAssembler.create = function(mnemonic, operand, machineCode) {
+    var asmline = new Z80LineAssembler();
+    asmline.mnemonic = mnemonic;
+    asmline.operand = operand || "";
+    asmline.bytecode = machineCode || [];
+    return asmline;
+};
+
+Z80LineAssembler.assemble = function(source, address, dictionary) {
+    var asmline = new Z80LineAssembler();
+    asmline.address = address;
 
     var tokens = Z80LineAssembler.tokenize(source);
 
@@ -27,36 +139,50 @@ var Z80LineAssembler = function(source, address, dictionary) {
         }
     }
     if(found_label >= 0) {
-        this.label = tokens.slice(0, found_label).join('');
+        asmline.label = tokens.slice(0, found_label).join('');
         tokens.splice(0, found_label + 1);
         found_comment -= (found_label + 1);
     }
     if(found_comment >= 0) {
-        this.comment = tokens.slice(found_comment).join('');
+        asmline.comment = tokens.slice(found_comment).join('');
         tokens.splice(found_comment);
     }
     if(tokens.length > 0) {
-        this.mnemonic = tokens[0];
-        this.operand = tokens.slice(1).join('');
+        asmline.mnemonic = tokens[0];
+        asmline.operand = tokens.slice(1).join('');
     }
     if(tokens.length > 0) {
         try {
-            this.bytecode = this.assembleMnemonic(tokens, this.label, dictionary);
+            asmline.bytecode = asmline.assembleMnemonic(tokens, dictionary);
         } catch(e) {
-            this.comment += "*** ASSEMBLE ERROR - " + e;
+            asmline.comment += "*** ASSEMBLE ERROR - " + e;
         }
     }
+    return asmline;
 };
 
+/**
+ * Next starting address of this line.
+ * @returns {number} Address.
+ */
 Z80LineAssembler.prototype.getNextAddress = function()
 {
-    var address = this.address;
-    if(this.bytecode != null) {
-        address += this.bytecode.length;
-    }
-    return address;
+    return this.address + this.bytecode.length;
 };
 
+/**
+ * Last address of the binary codes.
+ * @returns {number} Address.
+ */
+Z80LineAssembler.prototype.getLastAddress = function() {
+    return this.address + this.bytecode.length - 1;
+};
+
+/**
+ * Resolve the address if it was referenced by a label.
+ * @param {object} dictionary   A label to address map.
+ * @returns {undefined}
+ */
 Z80LineAssembler.prototype.resolveAddress = function(dictionary)
 {
     for(var j = 0; j < this.bytecode.length; j++) {
@@ -173,7 +299,8 @@ Z80LineAssembler.tokenize = function(line) {
     return toks;
 };
 
-Z80LineAssembler.prototype.assembleMnemonic = function(toks, label, dictionary) {
+Z80LineAssembler.prototype.assembleMnemonic = function(toks, dictionary) {
+    var label = this.label;
     //
     // Pseudo Instruction
     //

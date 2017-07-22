@@ -515,9 +515,7 @@
                     this.createCmtDownloadLink(tape_data);
                     this.mz700comworker.disassemble(mztape_array, function(result) {
                         this.txtAsmSrc.val(result.outbuf);
-                        this.showTabSource();
-                        this.asmList.empty();
-                        this.listRows = {};
+                        this.createAssembleList(result.asmlist);
                         this.mz700comworker.setPC(mztape_array[0].header.addr_exec, function() {
                             callback();
                         }.bind(this));

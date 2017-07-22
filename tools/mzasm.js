@@ -137,13 +137,10 @@ fs.readFile(input_filename, 'utf-8', function(err, data) {
     //
     // Output address map
     //
-    var mapEntries = Object.keys(asm.label2value).map(function(label) {
-        return { "label": label, "address": asm.label2value[label] };
-    }).sort(function(a,b){ return a.address - b.address; });
-    if(mapEntries.length > 0) {
-        var mapInfo = mapEntries.map(function(item) {
-            return [item.label, ":\t", item.address.HEX(4), "H"].join('');
-        }).join("\n");
-        fs.writeFileSync(fnMap, mapInfo);
+    var map = asm.getMap().map(function(item) {
+        return [item.label, ":\t", item.address.HEX(4), "H"].join('');
+    }).join("\n");
+    if(map.length > 0) {
+        fs.writeFileSync(fnMap, map);
     }
 });

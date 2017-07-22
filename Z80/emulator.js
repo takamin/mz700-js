@@ -1,10 +1,16 @@
-/* global getModule */
 "use strict";
-(function() {
 var oct = require("../lib/oct");
-var MemoryBlock = getModule("MemoryBlock") || require("./memory-block.js");
-var Z80_Register = getModule("Z80_Register") || require("./register.js");
-var Z80BinUtil = getModule("Z80BinUtil") || require("./bin-util.js");
+var MemoryBlock = require("./memory-block.js");
+var Z80_Register = require("./register.js");
+var Z80BinUtil = require("./bin-util.js");
+var Z80LineAssembler = require("./z80-line-assembler");
+
+/**
+ * Z80 emulator class.
+ *
+ * @param {object} opt  The options to create.
+ * @constructor
+ */
 var Z80 = function(opt) {
     opt = opt || { memory: null, };
     this.memory = opt.memory;
@@ -132,11 +138,11 @@ Z80.prototype.decrementAt = function(addr) {
  *
  * fields of result element of array:
  *
- *    * addr      number
- *    * refs      number
- *    * code      number[]
- *    * mnemonic  string[]
- *    * ref_addr  number
+ *    * addr                number
+ *    * referenced_count    number
+ *    * code                number[]
+ *    * mnemonic            string[]
+ *    * ref_addr_to         number
  *
  * @param {Buffer}  buf     machine code byte buffer
  * @param {number}  offset  start index of the buffer
@@ -163,17 +169,34 @@ Z80.dasm = function (buf, offset, size, addr) {
     memory_block.mem = buf;
     var cpu = new Z80({memory: memory_block});
     cpu.reg.PC = memory_block.startAddr;
-    dasmlist.push({ code:[], mnemonic:["ORG", memory_block.startAddr.HEX(4) + "H"] });
+
+    var orgInst = Z80LineAssembler.create(
+                "ORG",  memory_block.startAddr.HEX(4) + "H");
+    orgInst.setAddress(memory_block.startAddr),
+    dasmlist.push(orgInst);
+
     while(cpu.reg.PC < memory_block.startAddr + memory_block.size) {
         var dis = cpu.disassemble(cpu.reg.PC, addr - offset + size);
-        dis.addr = cpu.reg.PC;
-        dis.refs = 0;
+        dis.setAddress(cpu.reg.PC);
+        if(dis.bytecode.length > 0) {
+            dis.setComment('; ' + dis.address.HEX(4) + "H " +
+                    dis.bytecode.map(function(b) {
+                        return b.HEX(2);
+                    }).join(" "));
+        }
         dasmlist.push( dis );
-        cpu.reg.PC += dis.code.length;
+        cpu.reg.PC += dis.bytecode.length;
     }
     return Z80.processAddressReference(dasmlist);
 };
 
+/**
+ * Disassemble one operation code of Z80.
+ *
+ * @param {number} addr The starting address
+ * @param {number} last_addr    The last address to assemble.
+ * @returns {object} A disassembled result.
+ */
 Z80.prototype.disassemble = function(addr, last_addr) {
     var disasm = null;
     var errmsg = "";
@@ -184,84 +207,83 @@ Z80.prototype.disassemble = function(addr, last_addr) {
             errmsg = "UNKNOWN OPECODE";
         } else if(opecodeEntry.disasm == null) {
             errmsg = "NO DISASSEMBLER";
-        } else if((disasm = opecodeEntry.disasm(this.memory, addr)) == null) {
-            errmsg = "NULL RETURNED";
-        } else if(addr + disasm.code.length > last_addr) {
-            disasm = null;
+        } else {
+            var dasmEntry = opecodeEntry.disasm(this.memory, addr);
+            if(dasmEntry == null) {
+                errmsg = "NULL RETURNED";
+            } else if(addr + dasmEntry.code.length > last_addr) {
+                disasm = null;
+            } else {
+                disasm = Z80LineAssembler.create(
+                    dasmEntry.mnemonic[0],
+                    dasmEntry.mnemonic.slice(1).join(","),
+                    dasmEntry.code);
+                if("ref_addr_to" in dasmEntry) {
+                    disasm.setRefAddrTo(dasmEntry.ref_addr_to);
+                }
+            }
         }
     } catch(e) {
         errmsg = "EXCEPTION THROWN";
     }
     if(disasm == null) {
-        disasm = {
-            code:[opecode],
-            mnemonic:["DEFB", opecode.HEX(2) + "H; *** UNKNOWN OPCODE: " + errmsg]
-        }
+        disasm = Z80LineAssembler.create(
+            "DEFB", opecode.HEX(2) + "H", [opecode]);
+        disasm.setComment(";*** DISASSEMBLE FAIL: " + errmsg);
     }
     return disasm;
 };
 
+/**
+ * Create information of the referenced count.
+ * @param {object[]} dasmlist   A result of disassembling.
+ * @return {object[]} Same object to parameter.
+ */
 Z80.processAddressReference = function(dasmlist) {
-    var addr2dis = {};
-    var i, j, dis;
-    for(i = 0; i < dasmlist.length; i++) {
-        dis = dasmlist[i];
-        addr2dis[dis.addr] = i;
-    }
-    for(i = 0; i < dasmlist.length; i++) {
-        dis = dasmlist[i];
-        if("ref_addr" in dis) {
-            if(dis.ref_addr in addr2dis) {
-                j = addr2dis[dis.ref_addr];
-                dasmlist[j].refs++;
-            }
+    var addr2line = {};
+    dasmlist.forEach(function(dis, lineno) {
+        addr2line[dis.address] = lineno;
+    });
+    dasmlist.forEach(function(dis, i, arr) {
+        if(dis.ref_addr_to != null && dis.ref_addr_to in addr2line) {
+            var lineno = addr2line[dis.ref_addr_to];
+            arr[lineno].referenced_count++;
         }
-    }
+    });
+    dasmlist.forEach(function(dis, i, arr) {
+        if(dis.referenced_count > 0) {
+            arr[i].setLabel("$" + dis.address.HEX(4) + "H");
+        }
+    });
     return dasmlist;
 };
 
 Z80.dasmlines = function(dasmlist) {
-    var dasmlines = [];
-    var i, j;
-    for(j = 0; j < dasmlist.length; j++) {
-        var dis = dasmlist[j];
+    return dasmlist.map(function(dis) {
         var addr;
-        if(dis.refs > 0) {
-            addr = "$" + dis.addr.HEX(4) + "H:";
+        if(dis.referenced_count > 0) {
+            addr = "$" + dis.address.HEX(4) + "H:";
         } else {
             addr = "       ";
         }
         addr += "   ";
 
-        var mne = dis.mnemonic[0];
-        if(dis.mnemonic.length > 1) {
+        var mne = dis.mnemonic;
+        if(mne && dis.operand) {
             while(mne.length < 8) {
                 mne += " ";
             }
         }
-        var operands = "";
-        for(i = 1; i < dis.mnemonic.length; i++) {
-            var operand = dis.mnemonic[i];
-            operands += operand;
-            if(i < dis.mnemonic.length - 1) {
-                operands += ",";
-            }
-        }
-        var line = addr + '      ' + mne + operands;
+        var line = addr + '      ' + mne + dis.operand;
         while(line.length < 40) {
             line += ' ';
         }
+        if(dis.comment != "") {
+            line += dis.comment;
+        }
 
-        var codes = [];
-        for(i = 0; i < dis.code.length; i++) {
-            codes.push(dis.code[i].HEX(2));
-        }
-        if(codes.length > 0) {
-            line += '; ' + dis.addr.HEX(4) + "H " + codes.join(' ');
-        }
-        dasmlines.push(line);
-    }
-    return dasmlines;
+        return line;
+    });
 };
 
 /*
@@ -5070,13 +5092,13 @@ Z80.prototype.createOpecodeTable = function() {
         var code = [opecode];
         var mnemonic = [];
         var e,n0,n1;
-        var ref_addr = null;
+        var ref_addr_to = null;
 
         switch(opecode & oct("0300")) {
             case oct("0000"):
                 mnemonic.push("JR");
                 e = Z80BinUtil.getSignedByte(mem.peek(addr+1));
-                ref_addr = addr + e + 2;
+                ref_addr_to = addr + e + 2;
                 code.push(e & 0xff);
                 if(e + 2 >= 0) { e = "+" + (e + 2); } else { e = "" + (e + 2); }
                 switch(opecode & oct("0070")) {
@@ -5088,7 +5110,7 @@ Z80.prototype.createOpecodeTable = function() {
                     default:
                         throw "UNKNOWN OPCODE";
                 }
-                mnemonic.push(ref_addr.HEX(4) + 'H;(' + e + ')' );
+                mnemonic.push(ref_addr_to.HEX(4) + 'H;(' + e + ')' );
                 break;
             case oct("0300"):
                 mnemonic.push("JP");
@@ -5097,7 +5119,7 @@ Z80.prototype.createOpecodeTable = function() {
                     case 2:
                         n0 = mem.peek(addr+1);
                         n1 = mem.peek(addr+2);
-                        ref_addr = Z80BinUtil.pair(n1, n0);
+                        ref_addr_to = Z80BinUtil.pair(n1, n0);
                         code.push(n0);
                         code.push(n1);
                         switch(opecode & oct("0070")) {
@@ -5115,7 +5137,7 @@ Z80.prototype.createOpecodeTable = function() {
                     case 3:
                         n0 = mem.peek(addr+1);
                         n1 = mem.peek(addr+2);
-                        ref_addr = Z80BinUtil.pair(n1, n0);
+                        ref_addr_to = Z80BinUtil.pair(n1, n0);
                         code.push(n0);
                         code.push(n1);
                         mnemonic.push(n1.HEX(2) + n0.HEX(2) + 'H');
@@ -5125,7 +5147,7 @@ Z80.prototype.createOpecodeTable = function() {
             default:
                 throw "UNKNOWN OPCODE";
         }
-        return { code:code, mnemonic:mnemonic, ref_addr: ref_addr };
+        return { code:code, mnemonic:mnemonic, ref_addr_to: ref_addr_to };
     };
     this.opecodeTable[oct("0303")] = {
         mnemonic:"JP nn",
@@ -5370,11 +5392,11 @@ Z80.prototype.createOpecodeTable = function() {
         },
         disasm: function(mem,addr) {
             var e = Z80BinUtil.getSignedByte(mem.peek(addr+1));
-            var ref_addr = addr + e + 2;
+            var ref_addr_to = addr + e + 2;
             return {
                 code:[mem.peek(addr), mem.peek(addr + 1)],
-                mnemonic:['DJNZ', ref_addr.HEX(4) + 'H;(' + (((e + 2 >= 0) ? "+" : "" ) + (e + 2)) + ')'],
-                ref_addr: ref_addr
+                mnemonic:['DJNZ', ref_addr_to.HEX(4) + 'H;(' + (((e + 2 >= 0) ? "+" : "" ) + (e + 2)) + ')'],
+                ref_addr_to: ref_addr_to
             };
         }
     };
@@ -5395,7 +5417,7 @@ Z80.prototype.createOpecodeTable = function() {
             return {
                 code:[m.peek(a),l,h],
                 mnemonic:["CALL",""+addr.HEX(4)+"H"],
-                ref_addr:addr
+                ref_addr_to:addr
             };
         }
     };
@@ -5417,7 +5439,7 @@ Z80.prototype.createOpecodeTable = function() {
             return {
                 code:[m.peek(a),l,h],
                 mnemonic:["CALL","NZ",addr.HEX(4)+"H"],
-                ref_addr:addr
+                ref_addr_to:addr
             };
         }
     };
@@ -5439,7 +5461,7 @@ Z80.prototype.createOpecodeTable = function() {
             return {
                 code:[m.peek(a),l,h],
                 mnemonic:["CALL","Z",addr.HEX(4)+"H"],
-                ref_addr:addr
+                ref_addr_to:addr
             };
         }
     };
@@ -5461,7 +5483,7 @@ Z80.prototype.createOpecodeTable = function() {
             return {
                 code:[m.peek(a),l,h],
                 mnemonic:["CALL","NC",addr.HEX(4)+"H"],
-                ref_addr:addr
+                ref_addr_to:addr
             };
         }
     };
@@ -5483,7 +5505,7 @@ Z80.prototype.createOpecodeTable = function() {
             return {
                 code:[m.peek(a),l,h],
                 mnemonic:["CALL","C",addr.HEX(4)+"H"],
-                ref_addr:addr
+                ref_addr_to:addr
             };
         }
     };
@@ -5505,7 +5527,7 @@ Z80.prototype.createOpecodeTable = function() {
             return {
                 code:[m.peek(a),l,h],
                 mnemonic:["CALL","PO",addr.HEX(4)+"H"],
-                ref_addr:addr
+                ref_addr_to:addr
             };
         }
     };
@@ -5527,7 +5549,7 @@ Z80.prototype.createOpecodeTable = function() {
             return {
                 code:[m.peek(a),l,h],
                 mnemonic:["CALL","PE",addr.HEX(4)+"H"],
-                ref_addr:addr
+                ref_addr_to:addr
             };
         }
     };
@@ -5549,7 +5571,7 @@ Z80.prototype.createOpecodeTable = function() {
             return {
                 code:[m.peek(a),l,h],
                 mnemonic:["CALL","P",addr.HEX(4)+"H"],
-                ref_addr:addr
+                ref_addr_to:addr
             };
         }
     };
@@ -5571,7 +5593,7 @@ Z80.prototype.createOpecodeTable = function() {
             return {
                 code:[m.peek(a),l,h],
                 mnemonic:["CALL","M",addr.HEX(4)+"H"],
-                ref_addr:addr
+                ref_addr_to:addr
             };
         }
     };
@@ -6044,5 +6066,3 @@ Z80.prototype.createOpecodeTable = function() {
 };
 
 module.exports = context.exportModule("Z80", Z80);
-
-}());
