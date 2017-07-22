@@ -162,7 +162,9 @@ CHANGES
     * v0.7.11 - Improves the usability.
         * The screen keyboard and any control buttons are available in fullscreen mode.
         * Tweak the layout styles.
-    * __v0.7.12__ - Clear the assemble result when the source is chaged, and It will reassemble.
+    * v0.7.12 - Clear the assemble result when the source is chaged, and It will reassemble.
+    * __v0.7.13__ - Refactors the disassembler. It generates assembling informations to display.
+        And an improvement of the development environment such as jsdoc and ctags was done.
 * v0.6.0 - Some panels are resizable. And truely fullscreen mode is available.
     * v0.6.1 - On fullscreen mode, The input from keyboard is enabled.
     * v0.6.2 - Improve the beep sound and decrease the pop noise.
@@ -220,11 +222,10 @@ Please use MSYS or Git bash of GitHub for Windows. (4) The dependency `--saved` 
     * v0.1.16 - Add CLI emulator and debugger `mz700-cli`.
     * v0.1.17 - Changed initial keystroke durations of CLI emulator and allow those values to be changed by added `conf` command .
 
-WANT TO DO
-----------
+TODO
+-----
 
 * Visualize the memory banks to show which is selected.
-* <s>Change the running speed.</s> - __Done__
 * Disassemble around the break point or the program counter.
 * With disassembling, create a list of addresses that are distinations of jumping instruction.
 * Emulate plotter printer of MZ-731.

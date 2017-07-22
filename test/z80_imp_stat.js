@@ -98,7 +98,7 @@ var check_asm_dasm = function (codes) {
         ++errDisasm;
         errorMessages = ["Error on disassemble the code " + JSON.stringify(dis)];
     } else {
-        var asm = dis.mnemonic[0] + " " + dis.mnemonic.slice(1).join(',');    
+        var asm = dis.mnemonic + " " + dis.operand;
 
         //
         // ASSEMBLE

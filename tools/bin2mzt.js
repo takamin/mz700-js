@@ -26,18 +26,18 @@ getopt.setHelp(
 
 if(cli.options.help) {
     getopt.showHelp();
-    return;
+    process.exit(0);
 }
 
 if(cli.options.version) {
     console.log(description);
-    return;
+    process.exit(0);
 }
 
 var args = require("hash-arg").get(["input_filename"], cli.argv);
 if(cli.argv.length < 1) {
     console.error('error: no input file');
-    return -1;
+    process.exit(-1);
 }
 var input_filename = args.input_filename;
 var output_filename = null;

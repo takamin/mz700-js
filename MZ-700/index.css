@@ -68,35 +68,30 @@
 /**
  * アセンブルリスト
  */
-.assemble_list .row .colLabel {
-    color:blue;
-    font-weight:bold;
+
+/* Row */
+.assemble_list .row > span {
+    display:inline-block;
 }
-.assemble_list .row .colComment {
-    color:#008800;
-}
+.assemble_list .row .colRowAttr     { width:20px; text-align:center; }
+.assemble_list .row .colLineNumber  { width:40px; padding-right:6px; text-align:right; }
+.assemble_list .row .colAddress     { width:40px; }
+.assemble_list .row .colMachineCode { width:80px; }
+.assemble_list .row .colLabel       { width:70px; color:blue; font-weight:bold; }
+.assemble_list .row .colMnemonic    { width:50px; }
+.assemble_list .row .colOperand     { width:100px; }
+.assemble_list .row .colComment     { color:#008800; white-space:pre; }
+
 .assemble_list .row.current {
     color:black;
     background-color: yellow;
 }
-.assemble_list .row.breakPoint {
-    background-color: silver;
-}
-.assemble_list .row.current.breakPoint {
-    background-color: yellow;
-}
-.assemble_list .row.current .colRowAttr {
-    color:red;
-}
-.assemble_list .row.breakPoint .colRowAttr {
-    color:red;
-}
-.assemble_list .row.breakPoint .colRowAttr::before {
-    content:"●";
-}
-.assemble_list .row.current .colRowAttr::after {
-    content:"⇒";
-}
+.assemble_list .row.breakPoint          { background-color: silver; }
+.assemble_list .row.breakPoint .colRowAttr { color:red; }
+.assemble_list .row.breakPoint .colRowAttr::before { content:"●"; }
+.assemble_list .row.current.breakPoint  { background-color: yellow; }
+.assemble_list .row.current .colRowAttr { color:red; }
+.assemble_list .row.current .colRowAttr::after { content:"⇒"; }
 
 #updateReg {
     width:80px;
