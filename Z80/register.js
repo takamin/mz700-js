@@ -1,6 +1,5 @@
-/* global getModule */
 (function() {
-    var Z80BinUtil = getModule("Z80BinUtil") || require("./bin-util.js");
+    var Z80BinUtil = require("./bin-util.js");
     var Z80_Register = function() {
         this.B = 0;
         this.C = 0;
@@ -901,5 +900,5 @@
     ];
     }());
 
-    module.exports = context.exportModule("Z80_Register", Z80_Register);
+    module.exports = Z80_Register;
 }());

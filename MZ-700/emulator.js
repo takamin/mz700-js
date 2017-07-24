@@ -1,16 +1,15 @@
-/* global getModule */
 require("../lib/ex_number.js");
-var FractionalTimer = getModule("FractionalTimer")  || require("fractional-timer");
-var MZ_TapeHeader   = getModule("MZ_TapeHeader")    || require('./mz-tape-header');
-var MZ_Tape         = getModule("MZ_Tape")          || require('./mz-tape');
-var MZ_DataRecorder = getModule("MZ_DataRecorder")  || require('./mz-data-recorder');
-var Intel8253       = getModule("Intel8253")        || require('../lib/intel-8253');
-var FlipFlopCounter = getModule("FlipFlopCounter")  || require('../lib/flip-flop-counter');
-var IC556           = getModule("IC556")            || require('../lib/ic556');
-var MZ700KeyMatrix  = getModule("MZ700KeyMatrix")   || require('./mz700-key-matrix');
-var MZ700_Memory    = getModule("MZ700_Memory")     || require("./memory.js");
-var Z80             = getModule("Z80")              || require('../Z80/emulator');
-var Z80_assemble    = getModule("Z80_assemble")     || require("../Z80/assembler.js");
+var FractionalTimer = require("fractional-timer");
+var MZ_TapeHeader   = require('./mz-tape-header');
+var MZ_Tape         = require('./mz-tape');
+var MZ_DataRecorder = require('./mz-data-recorder');
+var Intel8253       = require('../lib/intel-8253');
+var FlipFlopCounter = require('../lib/flip-flop-counter');
+var IC556           = require('../lib/ic556');
+var MZ700KeyMatrix  = require('./mz700-key-matrix');
+var MZ700_Memory    = require("./memory.js");
+var Z80             = require('../Z80/emulator');
+var Z80_assemble    = require("../Z80/assembler.js");
 var Z80LineAssembler = require("../Z80/z80-line-assembler");
 var MZ700 = function(opt) {
     "use strict";

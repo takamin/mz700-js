@@ -1,5 +1,4 @@
-/* global getModule */
-var MemoryBlock = getModule("MemoryBlock") || require("../Z80/memory-block.js");
+var MemoryBlock = require("../Z80/memory-block.js");
 function MZ700_MonitorRom() {
     this.create();
 }

@@ -211,5 +211,5 @@
         });
         return s2key;
     })();
-    module.exports = context.exportModule("MZ700KeyMatrix", MZ700KeyMatrix);
+    module.exports = MZ700KeyMatrix;
 }());
