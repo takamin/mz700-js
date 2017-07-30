@@ -107,14 +107,14 @@
     width:635px;
 }
 
-.tabPageContainer {
+.tabAsmList {
     padding:10px;
     font-family:monospace;
     font-size:10pt;
     border:solid 1px gray;
     height:480px;
 }
-.tabPageContainer .y-scroll-pane {
+.source-list .y-scroll-pane {
     height: 440px;
 }
 .source-list textarea {

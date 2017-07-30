@@ -1,5 +1,4 @@
-/* global getModule */
-var IMem = getModule("IMem") || require("./imem");
+var IMem = require("./imem");
 
 //
 // MemoryBank

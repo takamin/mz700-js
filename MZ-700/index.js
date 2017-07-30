@@ -9,6 +9,7 @@
     var MZ700 = require("../MZ-700/emulator.js");
     var MZ700_Sound = require("../MZ-700/sound.js");
     var MMIO = require("../MZ-700/mmio");
+    require("../lib/jquery.tabview.js");
     require("../lib/jquery.ddpanel.js");
     require("../lib/jquery.soundctrl.js");
     require("../lib/jquery.Z80-mem.js");
@@ -23,7 +24,6 @@
             "onKeyboardPanelClose": function() {}
         };
         this.isRunning = false;
-        this.listRows = {};
         this.mz700scrn = null;
         this.keyAcceptanceState = true;
         this.keystates = {};
@@ -266,13 +266,13 @@
                     },
                     "start": function() {
                         this.isRunning = true;
-                        this.clearCurrentExecLine();
-                        this.updateUI();
+                        this.clearCurrentExecLine(function() {
+                            this.updateUI();
+                        }.bind(this));
                     },
                     "stop": function() {
                         this.isRunning = false;
                         this.scrollToShowPC();
-                        this.setCurrentExecLine();
                         this.updateUI();
                     },
                     'onBreak': function() { this.stop(); },
@@ -377,46 +377,34 @@
             //
 
             // Assemble list
-            this.asmList = $("<div/>").addClass("assemble_list");
-            this.tabAsmList = $("<div/>")
-                .append($("<div/>").addClass("y-scroll-pane").append(this.asmList))
-                .append("<span>* Click a line, and set break point</span>");
+            //
+            // TODO: Make asmList to class object that has source file and assembling states.
+            //
+            this.tabSource = $("<div/>").addClass("tabSource").append(
+                    $("<textarea type='text'/>")
+                        .bind("change", function() {
+                            //Clear assemble list
+                            $(".source-list").tabview("currentPage")
+                                .tabview("data", "listRows", {});
+                        }.bind(this))
+                    );
 
-            this.txtAsmSrc = $("<textarea type='text'/>")
-                .bind("change", function() {
-                    //Clear assemble list
-                    this.listRows = {};
-                }.bind(this));
-            this.tabSource = $("<div/>").append(this.txtAsmSrc);
+            var asmView = this.createAssembleView();
+            this.setAssembleViewSource(asmView,
+                    $($("textarea.default.source").get(0)).val());
 
-            $(".source-list")
-                .append($("<div/>")
-                        .append($("<button type='button'/>").click(function() {
-                            if(Object.keys(this.listRows).length !== 0) {
-                                this.showTabAsmList();
-                            } else {
-                                this.assemble(function() {
-                                    this.showTabAsmList();
-                                }.bind(this));
-                            }
-                        }.bind(this)).html("Assemble List"))
-                        .append($("<button type='button'/>").click(function() {
-                            this.showTabSource();
-                        }.bind(this)).html("Source List")))
-                .append($("<div/>").addClass("tabPageContainer clearfix")
-                    .append(this.tabAsmList)
-                    .append(this.tabSource))
-                .DropDownPanel("create", { "caption" : "Assembly source" });
+            $(".source-list").tabview("create").tabview("add", "PCG-700 sample", asmView)
+            .DropDownPanel("create", { "caption" : "Assembly source" });
 
-            this.txtAsmSrc.val($($("textarea.default.source").get(0)).val());
+
+            this.assemble();
 
             //
             //直接実行ボタン
             //
             var runImm = function(src) {
                 var bin = new Z80_assemble(src);
-                this.clearCurrentExecLine();
-                this.mz700comworker.getRegister(function(reg) {
+                this.clearCurrentExecLine(function(reg) {
                     var savedPC = reg.PC;
                     this.mz700comworker.writeAsmCode(bin, function(execAddr) {
                         this.mz700comworker.setPC(execAddr, function() {
@@ -459,15 +447,43 @@
             this.onExecutionParameterUpdate(param);
         }.bind(this));
 
-        this.assemble(function() {
-            this.showTabAsmList();
-        }.bind(this));
     };
     MZ700Js.prototype.mmioMapPeripheral = function(peripheral, mapToRead, mapToWrite) {
         this.MMIO.entry(peripheral, mapToRead, mapToWrite);
         this.mz700comworker.mmioMapToWrite(mapToRead, function(){});
         this.mz700comworker.mmioMapToWrite(mapToWrite, function(){});
     };
+
+    MZ700Js.prototype.createAssembleView = function() {
+        var asmList = $("<div/>").addClass("assemble_list");
+        return $("<div/>").tabview("create")
+            .tabview("add", "Assemble List",
+                $("<div/>").addClass("tabAsmList")
+                    .append($("<div/>").addClass("y-scroll-pane").append(asmList))
+                    .append("<span>* Click a line, and set break point</span>"),
+                function() {
+                    var listRows = $(".source-list").tabview("currentPage")
+                        .tabview("data", "listRows");
+                    if(Object.keys(listRows).length === 0) {
+                        this.assemble(function() {});
+                    }
+                }.bind(this))
+            .tabview("add", "Source List", this.tabSource)
+            .tabview("data", "listRows", {});
+    };
+
+    MZ700Js.prototype.getAssembleViewList = function(asmView) {
+        return asmView.find(".assemble_list");
+    };
+
+    MZ700Js.prototype.getAssembleViewSource = function(asmView) {
+        return asmView.find("textarea").val();
+    };
+
+    MZ700Js.prototype.setAssembleViewSource = function(asmView, source) {
+        asmView.find("textarea").val(source);
+    };
+
     /**
      *
      * Download and Run a MZT file that is placed on server.
@@ -514,7 +530,9 @@
                     this.cmtMessageArea.html("MZT: '" + mztape_array[0].header.filename + "' Loaded");
                     this.createCmtDownloadLink(tape_data);
                     this.mz700comworker.disassemble(mztape_array, function(result) {
-                        this.txtAsmSrc.val(result.outbuf);
+                        this.setAssembleViewSource(
+                                $(".source-list").tabview("currentPage"),
+                                result.outbuf);
                         this.createAssembleList(result.asmlist);
                         this.mz700comworker.setPC(mztape_array[0].header.addr_exec, function() {
                             callback();
@@ -547,10 +565,10 @@
         this.mz700comworker.stop(function() {});
     };
     MZ700Js.prototype.stepIn = function() {
-        this.clearCurrentExecLine();
-        this.mz700comworker.exec(1, function(/*result*/){
-            this.scrollToShowPC();
-            this.setCurrentExecLine();
+        this.clearCurrentExecLine(function() {
+            this.mz700comworker.exec(1, function(/*result*/){
+                this.scrollToShowPC();
+            }.bind(this));
         }.bind(this));
     };
     MZ700Js.prototype.stepOver = function() {
@@ -615,7 +633,7 @@
             if($target.length <= 0) {
                 return;
             }
-            var $base = this.asmList;
+            var $base = this.getAssembleViewList($(".source-list").tabview("currentPage"));
             var $scrl_wnd = $base.parent();
             var wnd_height = parseInt($scrl_wnd.css("height"));
             var wnd_scrl = $scrl_wnd.scrollTop();
@@ -623,47 +641,52 @@
             if(scrl_to < wnd_scrl + 0.1 * wnd_height || wnd_scrl + 0.9 * wnd_height < scrl_to) {
                 $scrl_wnd.animate({ scrollTop : scrl_to - 0.2 * wnd_height }, 'fast');
             }
-        });
+            var addr = reg.PC;
+            var listRows = $(".source-list").tabview("currentPage")
+                .tabview("data", "listRows");
+            if(addr in listRows) {
+                listRows[addr].forEach(function(row) {
+                    row.addClass("current");
+                });
+            }
+            $(".source-list").tabview("currentPage")
+                .tabview("data", "listRows", listRows);
+        }.bind(this));
     };
-    MZ700Js.prototype.setCurrentExecLine = function() {
+    MZ700Js.prototype.clearCurrentExecLine = function(callback) {
         this.mz700comworker.getRegister(function(reg) {
             var addr = reg.PC;
-            var rows = this.listRows;
-            if(addr in rows) {
-                rows[addr].forEach(function(row) { row.addClass("current"); });
+            var listRows = $(".source-list").tabview("currentPage")
+                .tabview("data", "listRows");
+            if(addr in listRows) {
+                listRows[addr].forEach(function(row) {
+                    row.removeClass("current");
+                });
+            }
+            $(".source-list").tabview("currentPage")
+                .tabview("data", "listRows", listRows);
+            if(callback) {
+                callback(reg);
             }
         }.bind(this));
     }
-    MZ700Js.prototype.clearCurrentExecLine = function() {
-        this.mz700comworker.getRegister(function(reg) {
-            var addr = reg.PC;
-            var rows = this.listRows;
-            if(addr in rows) {
-                rows[addr].forEach(function(row) { row.removeClass("current"); });
-            }
-        }.bind(this));
-    }
-    MZ700Js.prototype.showTabSource = function () {
-        this.tabSource.show();
-        this.tabAsmList.hide();
-    };
-    MZ700Js.prototype.showTabAsmList = function () {
-        this.tabSource.hide();
-        this.tabAsmList.show();
-    };
     MZ700Js.prototype.assemble = function(callback) {
-        this.mz700comworker.assemble(this.txtAsmSrc.val(), function(assembled) {
+        var source = this.getAssembleViewSource(
+                $(".source-list").tabview("currentPage"));
+        this.mz700comworker.assemble(source, function(assembled) {
                 this.createAssembleList(assembled.list);
                 this.mz700comworker.writeAsmCode(assembled, function() {
-                    callback();
+                    if(callback) {
+                        callback();
+                    }
                 });
         }.bind(this));
     };
     MZ700Js.prototype.createAssembleList = function(asm_list) {
         this.mz700comworker.getBreakPoints(function(breakpoints) {
-            this.asmList.empty();
-            this.listRows = {};
-
+            var asmList = this.getAssembleViewList($(".source-list").tabview("currentPage"));
+            asmList.empty();
+            var listRows = {};
             asm_list.forEach(function(asm_line, index) {
                 var addr = asm_line.address;
                 var size = asm_line.bytecode.length;
@@ -690,15 +713,17 @@
                 this.createAsmRow($row, asm_line, index + 1);
 
                 // Display row
-                this.asmList.append($row);
+                asmList.append($row);
 
                 // Push the row to hashed array by its address
-                if(addr in this.listRows) {
-                    this.listRows[addr].push($row);
+                if(addr in listRows) {
+                    listRows[addr].push($row);
                 } else {
-                    this.listRows[addr] = [$row];
+                    listRows[addr] = [$row];
                 }
             }, this);
+            $(".source-list").tabview("currentPage")
+                .tabview("data", "listRows", listRows);
         }.bind(this));
     };
     MZ700Js.prototype.createAsmRow = function($row, asm_line, rownum) {
@@ -805,6 +830,9 @@
                         (header.addr_load + header.file_size - 1).HEX(4) + ") EXEC:" +
                         header.addr_exec.HEX(4))
                 );
+        $(".source-list").tabview("caption",
+                $(".source-list").tabview("index"),
+                header.filename);
     }
 
     module.exports = MZ700Js;
