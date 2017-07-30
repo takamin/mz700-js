@@ -163,8 +163,10 @@ CHANGES
         * The screen keyboard and any control buttons are available in fullscreen mode.
         * Tweak the layout styles.
     * v0.7.12 - Clear the assemble result when the source is chaged, and It will reassemble.
-    * __v0.7.13__ - Refactors the disassembler. It generates assembling informations to display.
+    * v0.7.13 - Refactors the disassembler. It generates assembling informations to display.
         And an improvement of the development environment such as jsdoc and ctags was done.
+    * __v0.7.14__ - Currently Implementing the feature of the assemble source editor that
+        could edit multiple file with tabbed page. This work is not completed.
 * v0.6.0 - Some panels are resizable. And truely fullscreen mode is available.
     * v0.6.1 - On fullscreen mode, The input from keyboard is enabled.
     * v0.6.2 - Improve the beep sound and decrease the pop noise.
