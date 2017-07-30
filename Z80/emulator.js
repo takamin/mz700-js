@@ -6065,4 +6065,4 @@ Z80.prototype.createOpecodeTable = function() {
     };
 };
 
-module.exports = context.exportModule("Z80", Z80);
+module.exports = Z80;

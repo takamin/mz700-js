@@ -1,6 +1,5 @@
-/* global getModule */
 (function() {
-    var Z80BinUtil = getModule("Z80BinUtil") || require("./bin-util.js");
+    var Z80BinUtil = require("./bin-util.js");
 
     //
     // IMem
@@ -65,5 +64,5 @@
         return Z80BinUtil.pair(H,L);
     };
 
-    module.exports = context.exportModule("IMem", IMem);
+    module.exports = IMem;
 }());

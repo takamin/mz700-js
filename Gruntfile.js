@@ -62,6 +62,7 @@ module.exports = function(grunt) {
                 "./lib/jquery.MZ-700-kb.js",
                 "./lib/jquery.MZ-700-vram.js",
                 "./lib/jquery.soundctrl.js",
+                "./lib/jquery.tabview.js",
                 "./lib/jquery.Z80-mem.js",
                 "./lib/jquery.Z80-reg.js",
                 "./lib/jquery_plugin_class.js",

@@ -1,5 +1,4 @@
-/* global getModule */
-var MZ_TapeHeader = getModule("MZ_TapeHeader") || require('./mz-tape-header');
+var MZ_TapeHeader = require('./mz-tape-header');
 var MZ_Tape = function(tapeData) {
     this._index = 0;
     this._tapeData = tapeData;
