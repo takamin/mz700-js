@@ -6,7 +6,7 @@
     "source": {
         "include": ["MZ-700", "Z80", "lib", "package.json", "README.md"],
         "includePattern": ".js$",
-        "excludePattern": "(node_modules/|docs)"
+        "excludePattern": "(node_modules|docs|bundle)"
     },
     "plugins": [
         "plugins/markdown"
