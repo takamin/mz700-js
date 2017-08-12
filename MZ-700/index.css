@@ -111,7 +111,6 @@
     padding:10px;
     font-family:monospace;
     font-size:10pt;
-    border:solid 1px gray;
     height:480px;
 }
 .source-list .y-scroll-pane {
@@ -119,7 +118,10 @@
 }
 .source-list textarea {
     height:450px;
-    width:100%;
+    box-sizing: border-box;
+    width:calc(100% - 5px);
+    margin:2px;
+    padding:2px;
     border:none;
     resize:vertical;
 }
@@ -162,7 +164,7 @@
     border-radius:3px;
     text-align: center;
 }
-.MZ-700 .data-recorder .cmt-message a.download-link {
+.MZ-700 .data-recorder .cmt-message a {
     display: inline-block;
     border-radius:5px;
     background-color: blue;
@@ -171,6 +173,7 @@
     padding:2px;
     font-size:9pt;
     text-decoration:none;
+    cursor: pointer;
 }
 .MZ-700 .data-recorder .cmt-message a.download-link:before {
     content:"▼MZT";

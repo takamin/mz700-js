@@ -607,6 +607,7 @@ MZ700.prototype.disassemble = function(mztape_array) {
         asmlist: dasmlist
     };
 };
+MZ700.disassemble = MZ700.prototype.disassemble;
 
 MZ700.prototype.dataRecorder_setCmt = function(bytes) {
     var cmt = null;
