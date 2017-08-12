@@ -75,9 +75,8 @@
                                 var f = files[0];
                                 var reader = new FileReader();
                                 reader.onload = function(/*e*/) {
-                                    this.setMztData(new Uint8Array(reader.result), function() {
-                                        this.start();
-                                        this.acceptKey(true);
+                                    this.setMztData(new Uint8Array(reader.result), function(mztape_array) {
+                                        this.start(mztape_array[0].header.addr_exec);
                                     }.bind(this));
                                 }.bind(this);
                                 reader.readAsArrayBuffer(f);
@@ -455,8 +454,16 @@
     };
     MZ700Js.EXEC_TIMER_INTERVAL = 100;
     MZ700Js.NUM_OF_EXEC_OPCODE = 20000;
-    MZ700Js.prototype.start = function() {
-        this.mz700comworker.start(function() {});
+    MZ700Js.prototype.start = function(addr) {
+        if(addr == null) {
+            this.mz700comworker.start(function() {});
+        } else {
+            this.mz700comworker.setPC(addr, function() {
+                this.mz700comworker.start(function() {
+                    this.acceptKey(true);
+                }.bind(this));
+            }.bind(this));
+        }
     };
     MZ700Js.prototype.stop = function() {
         this.mz700comworker.stop(function() {});
@@ -535,9 +542,8 @@
     MZ700Js.prototype.runServerMZT = function (name) {
         this.mz700comworker.stop(function() {
             $.getJSON("mzt", {"name": name}, function(tape_data) {
-                this.setMztData(tape_data, function() {
-                    this.start();
-                    this.acceptKey(true);
+                this.setMztData(tape_data, function(mztape_array) {
+                    this.start(mztape_array[0].header.addr_exec);
                 }.bind(this));
             }.bind(this));
         }.bind(this));
@@ -564,7 +570,7 @@
                 this.mz700comworker.loadCassetteTape(function() {
                     this.cmtMessageArea.html("MZT: '" + mztape_array[0].header.filename + "' Loaded");
                     this.createCmtDownloadLink(tape_data);
-                    this.disassemble(mztape_array, callback);
+                    callback(mztape_array);
                 }.bind(this));
             }
         }.bind(this));
@@ -607,14 +613,20 @@
             .asmlist("clearCurrentAddr");
     }
 
-    MZ700Js.prototype.disassemble = function(mztape_array, callback) {
-        this.mz700comworker.disassemble(mztape_array, function(result) {
+    MZ700Js.prototype.disassemble = function(mztape_array) {
+        var running = this.isRunning;
+        this.mz700comworker.stop(function() {
+            var result = MZ700.disassemble(mztape_array);
             $(".source-list").tabview("currentPage")
                 .asmlist("text", result.outbuf, false);
+            $(".source-list").tabview("caption",
+                    $(".source-list").tabview("index"),
+                    mztape_array[0].header.filename);
             this.createAssembleList(result.asmlist);
-            this.mz700comworker.setPC(mztape_array[0].header.addr_exec, function() {
-                callback();
-            }.bind(this));
+            if(running) {
+                this.start();
+                this.acceptKey(true);
+            }
         }.bind(this));
     };
 
@@ -704,9 +716,17 @@
                         (header.addr_load + header.file_size - 1).HEX(4) + ") EXEC:" +
                         header.addr_exec.HEX(4))
                 );
-        $(".source-list").tabview("caption",
-                $(".source-list").tabview("index"),
-                header.filename);
+        if($(".source-list").length > 0) {
+            this.cmtMessageArea.append(
+                $("<a/>").html("Disassemble").click(function() {
+                    this.mz700comworker.getCassetteTape(function(tape_data) {
+                        if(tape_data != null) {
+                            var mztape_array = MZ700.parseMZT(tape_data);
+                            this.disassemble(mztape_array);
+                        }
+                    });
+                }.bind(this)));
+        }
     }
 
     module.exports = MZ700Js;
