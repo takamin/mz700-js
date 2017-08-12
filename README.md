@@ -165,8 +165,13 @@ CHANGES
     * v0.7.12 - Clear the assemble result when the source is chaged, and It will reassemble.
     * v0.7.13 - Refactors the disassembler. It generates assembling informations to display.
         And an improvement of the development environment such as jsdoc and ctags was done.
-    * __v0.7.14__ - Currently Implementing the feature of the assemble source editor that
+    * v0.7.14 - Currently Implementing the feature of the assemble source editor that
         could edit multiple file with tabbed page. This work is not completed.
+    * __v0.7.15__ - When the MZT is dropped to the screen or CMT panel,
+        a disassemble button is shown in the filename area.
+        And the MZT is not disassembled in automatic.
+        To disassemble it, you need to push that disassemble button.
+        And, the tab page styles were applied to the assemble source view.
 * v0.6.0 - Some panels are resizable. And truely fullscreen mode is available.
     * v0.6.1 - On fullscreen mode, The input from keyboard is enabled.
     * v0.6.2 - Improve the beep sound and decrease the pop noise.
