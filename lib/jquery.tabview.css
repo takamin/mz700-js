@@ -1,0 +1,37 @@
+.tabview {
+    padding:2px;
+}
+.tabs > button.tab {
+    height:28px;
+}
+.tabs > button.tab {
+    border-top-right-radius: 5px;
+    border-width: 1px;
+    border-bottom-width: 0px;
+    border-style: solid;
+    border-color: gray;
+    background-color:silver;
+    color: gray;
+    margin: 2px 0 0 0;
+}
+.tabs > button.tab:focus,
+.tabs > button.tab:active {
+  background-image: none;
+  outline: 0;
+  -webkit-box-shadow: none;
+          box-shadow: none;
+}
+.tabs > button.selected.tab {
+    background-color:white;
+    color: blue;
+    height:29px;
+}
+.tabs > button.tab:hover {
+    color: red;
+}
+.tabPageContainer {
+    border-width: 1px;
+    border-style: solid;
+    border-color: gray;
+    margin-top: -1px;
+}

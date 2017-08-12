@@ -111,7 +111,6 @@
     padding:10px;
     font-family:monospace;
     font-size:10pt;
-    border:solid 1px gray;
     height:480px;
 }
 .source-list .y-scroll-pane {
@@ -119,7 +118,10 @@
 }
 .source-list textarea {
     height:450px;
-    width:100%;
+    box-sizing: border-box;
+    width:calc(100% - 5px);
+    margin:2px;
+    padding:2px;
     border:none;
     resize:vertical;
 }
