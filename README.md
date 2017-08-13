@@ -172,6 +172,7 @@ CHANGES
         And the MZT is not disassembled in automatic.
         To disassemble it, you need to push that disassemble button.
         And, the tab page styles were applied to the assemble source view.
+    * v0.7.16 - Fix a CLI emulation bug that could not start to run.
 * v0.6.0 - Some panels are resizable. And truely fullscreen mode is available.
     * v0.6.1 - On fullscreen mode, The input from keyboard is enabled.
     * v0.6.2 - Improve the beep sound and decrease the pop noise.
