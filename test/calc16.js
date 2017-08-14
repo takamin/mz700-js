@@ -42,6 +42,54 @@ var test_set = [
         tester.runMnemonics(cpu, ["ADC HL,DE"]);
         report(cpu, "ADC HL(0),DE(1):C=1", cpu.reg.getHL() == 2);
     }},
+    { name: "ADD HL,SP", test: function() {
+        cpu.reg.setBC(0);
+        cpu.reg.setDE(0);
+        cpu.reg.setHL(0x2000);
+        cpu.reg.SP = 0x1fff;
+        cpu.reg.clearFlagC();
+        tester.runMnemonics(cpu, ["ADD HL,SP"]);
+        report(cpu, "ADD HL(0x2000),SP(0x1fff):C=0", cpu.reg.getHL() == 0x3fff);
+        cpu.reg.setBC(0);
+        cpu.reg.setDE(0);
+        cpu.reg.setHL(0x2000);
+        cpu.reg.SP = 0x1fff;
+        cpu.reg.setFlagC();
+        tester.runMnemonics(cpu, ["ADD HL,SP"]);
+        report(cpu, "ADD HL(0x2000),SP(0x1fff):C=1", cpu.reg.getHL() == 0x3fff);
+    }},
+    { name: "ADC HL,SP", test: function() {
+        cpu.reg.setBC(0);
+        cpu.reg.setDE(0);
+        cpu.reg.setHL(0x2000);
+        cpu.reg.SP = 0x1fff;
+        cpu.reg.clearFlagC();
+        tester.runMnemonics(cpu, ["ADC HL,SP"]);
+        report(cpu, "ADC HL(0x2000),SP(0x1fff):C=0", cpu.reg.getHL() == 0x3fff);
+        cpu.reg.setBC(0);
+        cpu.reg.setDE(0);
+        cpu.reg.setHL(0x2000);
+        cpu.reg.SP = 0x1fff;
+        cpu.reg.setFlagC();
+        tester.runMnemonics(cpu, ["ADC HL,SP"]);
+        report(cpu, "ADC HL(0x2000),SP(0x1fff):C=1", cpu.reg.getHL() == 0x4000);
+    }},
+    { name: "SBC HL,SP", test: function() {
+        cpu.reg.setBC(0);
+        cpu.reg.setDE(0);
+        cpu.reg.setHL(0x2000);
+        cpu.reg.SP = 0x1fff;
+        cpu.reg.clearFlagC();
+        tester.runMnemonics(cpu, ["SBC HL,SP"]);
+        report(cpu, "SBC HL(0x2000),SP(0x1fff):C=0", cpu.reg.getHL() == 1);
+        cpu.reg.setBC(0);
+        cpu.reg.setDE(0);
+        cpu.reg.setHL(0x2000);
+        cpu.reg.SP = 0x1fff;
+        cpu.reg.setFlagC();
+        tester.runMnemonics(cpu, ["SBC HL,SP"]);
+        report(cpu, "SBC HL(0x2000),SP(0x1fff):C=1", cpu.reg.getHL() == 0);
+    }},
 ];
 module.exports = {
     name: "16 bit calcuration",
