@@ -1211,7 +1211,7 @@ Z80.prototype.createOpecodeTable = function() {
         mnemonic:"LD SP,(nn)",
         cycle:20,
         proc: function() {
-            THIS.reg.SP = THIS.fetchPair();
+            THIS.reg.SP = THIS.memory.peekPair(THIS.fetchPair());
         },
         disasm: function(mem, addr) {
             var opcode = mem.peek(addr);
