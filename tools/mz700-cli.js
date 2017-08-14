@@ -67,6 +67,8 @@
 
     var mz700 = new MZ700({
         "onExecutionParameterUpdate" : function() { },
+        "started": function() { },
+        "stopped": function() { },
         "onBreak" : function() { },
         "onVramUpdate": function(index, dispcode, attr){
             cliCommandVram.setAt(index, dispcode, attr);

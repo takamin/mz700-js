@@ -4556,7 +4556,7 @@ Z80.prototype.createOpecodeTable = function() {
         mnemonic:"LD SP,(nn)",
         cycle:20,
         proc: function() {
-            THIS.reg.SP = THIS.fetchPair();
+            THIS.reg.SP = THIS.memory.peekPair(THIS.fetchPair());
         },
         disasm: function(mem, addr) {
             var opcode = mem.peek(addr);
@@ -6758,7 +6758,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0071")] = {
         mnemonic:"ADD HL,SP",
         cycle: 11,
-        proc: function() { THIS.reg.ADD_HL(THIS.reg.getSP()); },
+        proc: function() { THIS.reg.ADD_HL(THIS.reg.SP); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -6806,7 +6806,7 @@ Z80.prototype.createOpecodeTable = function() {
     opeMisc[oct("0172")] = {
         mnemonic:"ADC HL,SP",
         cycle: 15,
-        proc: function() { THIS.reg.ADC_HL(THIS.reg.getSP()); },
+        proc: function() { THIS.reg.ADC_HL(THIS.reg.SP); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr),mem.peek(addr+1)],
@@ -6854,7 +6854,7 @@ Z80.prototype.createOpecodeTable = function() {
     opeMisc[oct("0162")] = {
         mnemonic:"SBC HL,SP",
         cycle: 15,
-        proc: function() { THIS.reg.SBC_HL(THIS.reg.getSP()); },
+        proc: function() { THIS.reg.SBC_HL(THIS.reg.SP); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr),mem.peek(addr+1)],

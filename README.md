@@ -167,11 +167,17 @@ CHANGES
         And an improvement of the development environment such as jsdoc and ctags was done.
     * v0.7.14 - Currently Implementing the feature of the assemble source editor that
         could edit multiple file with tabbed page. This work is not completed.
-    * __v0.7.15__ - When the MZT is dropped to the screen or CMT panel,
+    * v0.7.15 - When the MZT is dropped to the screen or CMT panel,
         a disassemble button is shown in the filename area.
         And the MZT is not disassembled in automatic.
         To disassemble it, you need to push that disassemble button.
         And, the tab page styles were applied to the assemble source view.
+    * v0.7.16 - Fix a CLI emulation bug that could not start to run.
+    * __v0.7.17__ - Fix following Z80 core emulation bugs about the stack pointer.
+        And this version seems to be able to run the __"Tiny XEVIOUS for MZ-700"__ (but incompletely).
+        * The instruction `LD SP,(nn)` had been loading `nn` to SP.
+        * Three instructions of `ADD HL,SP`, `ADC HL,SP` and `SBC HL,SP` had been invoking
+        undefined method and stopping with an error.
 * v0.6.0 - Some panels are resizable. And truely fullscreen mode is available.
     * v0.6.1 - On fullscreen mode, The input from keyboard is enabled.
     * v0.6.2 - Improve the beep sound and decrease the pop noise.

@@ -114,6 +114,27 @@ var test_set = [
         report(cpu, "LD HL,1234h (7)", cpu.reg.IX == 0);
         report(cpu, "LD HL,1234h (8)", cpu.reg.IY == 0);
     }},
+    { name: "LD SP,(1234h)", test: function() {
+        cpu.reg.setBC(0);
+        cpu.reg.setDE(0);
+        cpu.reg.setHL(0);
+        cpu.reg.A = 0;
+        cpu.reg.F = 0;
+        cpu.reg.SP = 0xfffe;
+        cpu.reg.IX = 0;
+        cpu.reg.IY = 0;
+        cpu.memory.poke(0x1234, 0xCD);
+        cpu.memory.poke(0x1235, 0xAB);
+        tester.runMnemonics(cpu, ["LD SP,(1234h)"]);
+        report(cpu, "LD SP,(1234h) (1)", cpu.reg.getBC() == 0);
+        report(cpu, "LD SP,(1234h) (2)", cpu.reg.getDE() == 0);
+        report(cpu, "LD SP,(1234h) (3)", cpu.reg.getHL() == 0);
+        report(cpu, "LD SP,(1234h) (4)", cpu.reg.A == 0);
+        report(cpu, "LD SP,(1234h) (5)", cpu.reg.F == 0);
+        report(cpu, "LD SP,(1234h) (6)", cpu.reg.SP == 0xABCD);
+        report(cpu, "LD SP,(1234h) (7)", cpu.reg.IX == 0);
+        report(cpu, "LD SP,(1234h) (8)", cpu.reg.IY == 0);
+    }},
 ];
 module.exports = {
     name: "16 bit load group",
