@@ -518,7 +518,7 @@
      */
     MZ700Js.prototype.runServerMZT = function (name) {
         this.mz700comworker.stop(function() {
-            $.getJSON("mzt", {"name": name}, function(tape_data) {
+            $.getJSON("mzt/" + name + ".json", function(tape_data) {
                 this.setMztData(tape_data, function(mztape_array) {
                     this.start(mztape_array[0].header.addr_exec);
                 }.bind(this));
