@@ -585,7 +585,10 @@ MZ700.prototype.disassemble = function(mztape_array) {
     var dasmlist = [];
     var asmHeaderLines = null;
     mztape_array.forEach(function(mzt) {
-        var mztHeaderLines = MZ_TapeHeader.prototype.getHeadline.apply(mzt.header);
+        console.assert(
+            mzt.header.constructor === MZ_TapeHeader,
+            "No MZT-header");
+        var mztHeaderLines = mzt.header.getHeadline();
         outbuf += mztHeaderLines + "\n";
         dasmlist = Z80.dasm(
             mzt.body.buffer, 0,
