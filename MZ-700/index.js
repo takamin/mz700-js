@@ -21,8 +21,6 @@
     var MZ700Js = function() {
         this.opt = {
             "urlPrefix": "",
-            "onKeyboardPanelOpen": function() {},
-            "onKeyboardPanelClose": function() {}
         };
         this.isRunning = false;
         this.mz700scrn = null;
@@ -227,11 +225,6 @@
                 onStateChange: function(strobe, bit, state) {
                     this.mz700comworker.setKeyState(strobe, bit, state, null);
                 }.bind(this)
-            })
-            .DropDownPanel("create", {
-                "caption": "Keyboard",
-                "onOpen": this.opt.onKeyboardPanelOpen,
-                "onClose": this.opt.onKeyboardPanelClose
             });
 
             //
@@ -239,20 +232,6 @@
             //
             window.onkeydown = MZ700Js.prototype.onkeydown.bind(this);
             window.onkeyup = MZ700Js.prototype.onkeyup.bind(this);
-
-            //画面クリック、キー入力ボタン等で、キー入力を受け付ける。
-            $(".MZ-700 .key-switcher").click(function(event) {
-                this.acceptKey(true);
-                event.stopPropagation();
-            }.bind(this));
-
-            //ウィンドウクリックでキー入力解除
-            $(window).click(function() {
-                this.acceptKey(false);
-            }.bind(this));
-
-            //初期状態でキー入力を受け付ける
-            this.acceptKey(true);
 
             //
             // Create MZ-700 Worker
@@ -459,9 +438,7 @@
             this.mz700comworker.start(function() {});
         } else {
             this.mz700comworker.setPC(addr, function() {
-                this.mz700comworker.start(function() {
-                    this.acceptKey(true);
-                }.bind(this));
+                this.mz700comworker.start(function() {});
             }.bind(this));
         }
     };
@@ -625,7 +602,6 @@
             this.createAssembleList(result.asmlist);
             if(running) {
                 this.start();
-                this.acceptKey(true);
             }
         }.bind(this));
     };

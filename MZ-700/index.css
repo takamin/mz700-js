@@ -35,6 +35,36 @@
     color: silver;
 }
 
+#physical-interface
+{
+    overflow: auto;
+    background-color: white;
+}
+.screen {
+    position:fixed;
+}
+#physical-interface
+{
+    position:fixed;
+    opacity:0.0;
+}
+@media screen and (orientation: portrait) {
+    .screen {
+        position:relative;
+    }
+    #physical-interface
+    {
+        position:relative;
+        opacity:1;
+    }
+}
+@media screen and (orientation: landscape) {
+    #physical-interface.hover,
+    #physical-interface:hover
+    {
+        opacity:0.8;
+    }
+}
 .MZ-700 .ctrl-panel {
     background-color: white;
     min-width:690px;
