@@ -464,11 +464,11 @@ MZ700.prototype.reset = function() {
 };
 
 MZ700.prototype.getRegister = function() {
-    return this.z80.reg;
+    return this.z80.reg.cloneRaw();
 };
 
 MZ700.prototype.getRegisterB = function() {
-    return this.z80.regB;
+    return this.z80.regB.cloneRaw();
 };
 
 MZ700.prototype.setPC = function(addr) {
