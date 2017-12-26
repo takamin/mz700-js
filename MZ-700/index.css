@@ -35,7 +35,7 @@
     color: silver;
 }
 
-#physical-interface
+#physical-interface /*, .keyboard*/
 {
     overflow: auto;
     background-color: white;
@@ -43,7 +43,14 @@
 .screen {
     position:fixed;
 }
-#physical-interface
+/*
+.keyboard
+{
+    position:fixed;
+    opacity:0.5;
+}
+*/
+#physical-interface,
 {
     position:fixed;
     opacity:0.0;
@@ -52,7 +59,7 @@
     .screen {
         position:relative;
     }
-    #physical-interface
+    #physical-interface /*, .keyboard */
     {
         position:relative;
         opacity:1;
@@ -60,7 +67,7 @@
 }
 @media screen and (orientation: landscape) {
     #physical-interface.hover,
-    #physical-interface:hover
+    #physical-interface:hover /*, .keyboard:hover */
     {
         opacity:0.8;
     }
@@ -223,4 +230,15 @@
 }
 .MZ-700 .memory {
     width: 550px;
+}
+
+.MZ-700 button.toggle.on
+{
+    background-color: white;
+    color: blue;
+}
+.MZ-700 button.toggle.off
+{
+    background-color: blue;
+    color: white;
 }
