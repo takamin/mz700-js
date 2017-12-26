@@ -16,15 +16,52 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
 (function($) {
     require("jquery-ui");
     require("fullscrn");
-    var MZ700Js = require("./index.js");
+    var MZ700JsBase = require("./index.js");
+    var MZ700Js = function() {
+        MZ700JsBase.call(this);
+    };
+    MZ700Js.prototype = new MZ700JsBase();
+    MZ700Js.prototype.create = function(opt) {
+        MZ700JsBase.prototype.create.call(this, opt);
+        this.btnToggleScreenKeyboard = $("<button/>")
+            .attr("type", "button")
+            .attr("class", "toggle")
+            .attr("id", "btnToggleScreenKeyboard")
+            .html("Keyboard").click(function() {
+                this.btnToggleScreenKeyboard_click();
+            }.bind(this));
+        $(".MZ-700 .ctrl-panel")
+            .append(this.btnToggleScreenKeyboard)
+    };
+    MZ700Js.prototype.btnToggleScreenKeyboard_click = function() {
+        if(this.btnToggleScreenKeyboard.hasClass("on")) {
+            this.hideScreenKeyboard();
+        } else {
+            this.showScreenKeyboard();
+        }
+    };
+    MZ700Js.prototype.showScreenKeyboard = function() {
+        this.btnToggleScreenKeyboard.addClass("on");
+        this.btnToggleScreenKeyboard.removeClass("off");
+        $(".keyboard").show();
+        this.resizeScreen();
+    };
+    MZ700Js.prototype.hideScreenKeyboard = function() {
+        this.btnToggleScreenKeyboard.removeClass("on");
+        this.btnToggleScreenKeyboard.addClass("off");
+        $(".keyboard").hide();
+        this.resizeScreen();
+    };
+
     var dock_n_liquid = require("dock-n-liquid");
     var BBox = require("b-box");
 
     var container = $(".MZ-700-body");
     var screen = container.find(".screen");
     var phif = $("#physical-interface");
+    var keyboard = $(".keyboard");
 
-    var resizeScreen = function() {
+    MZ700Js.prototype.resizeScreen = function() {
         var bboxContainer = new BBox(container.get(0));
         var bboxScreen = new BBox(screen.get(0));
         var containerSize = bboxContainer.getSize();
@@ -56,6 +93,22 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
         }
         phif.css("margin-left", phifMargin._w + "px")
             .css("margin-top", phifMargin._h + "px");
+
+        /*
+        var kbBBox = new BBox(keyboard.get(0));
+        var kbSize = kbBBox.getSize();
+        var kbMargin = new BBox.Size(
+                (containerSize._w - kbSize._w) / 2,
+                phifMargin._h - kbSize._h);
+        if(kbMargin._w < 0) {
+            kbMargin._w = 0;
+        }
+        if(kbMargin._h < 0) {
+            kbMargin._h = 0;
+        }
+        keyboard.css("margin-left", kbMargin._w + "px")
+            .css("margin-top", kbMargin._h + "px");
+        */
     };
 
     var liquidRootElement = $("#liquid-panel-MZ-700").get(0);
@@ -71,9 +124,8 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
         dockPanelRight.remove();
     }
 
-    var mz700js = MZ700Js.create({
-        "urlPrefix" : "../",
-    });
+    var mz700js = new MZ700Js();
+    mz700js.create({ "urlPrefix" : "../" });
 
     if(deviceType != "mobile") {
         /*
@@ -81,6 +133,7 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
             phif.css("opacity", 0.8);
         }
         */
+        mz700js.hideScreenKeyboard();
         var mouseMoveTimeoutId = null;
         var showCtrlPanelFor = function(timeLimit) {
             if(mouseMoveTimeoutId) {
@@ -94,6 +147,9 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
             }, timeLimit);
         };
         screen.mousemove(function() {
+            showCtrlPanelFor(5000);
+        });
+        keyboard.mousemove(function() {
             showCtrlPanelFor(5000);
         });
         container.mouseenter(function() {
@@ -118,12 +174,12 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
         if(document.fullscreenElement === fullscreenElement) {
             document.exitFullscreen().then(function() {
                 liquidRoot.layout();
-                resizeScreen();
+                mz700js.resizeScreen();
             });
         } else {
             fullscreenElement.requestFullscreen().then(function() {
                 liquidRoot.layout();
-                resizeScreen();
+                mz700js.resizeScreen();
                 mz700js.acceptKey(true);
             });
         }
@@ -139,7 +195,7 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
             fullscreenButton.html("Exit Fullscreen");
         }
         liquidRoot.layout();
-        resizeScreen();
+        mz700js.resizeScreen();
     };
     fullscreenButton.click(onFullscreenButtonClick);
     $(".ctrl-panel").append(fullscreenButton);
@@ -148,12 +204,12 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
 
     mz700js.reset();
     screen.find("canvas").css("height", "calc(100% - 1px)");
-    dock_n_liquid.init(resizeScreen);
+    dock_n_liquid.init(function() { mz700js.resizeScreen(); });
     dock_n_liquid.select($(".MZ-700").get(0)).layout();
     window.addEventListener(
             "resize", function() {
                 liquidRoot.layout();
-                resizeScreen(); });
-    resizeScreen();
+                mz700js.resizeScreen(); });
+    mz700js.resizeScreen();
 
 }(window.jQuery));
