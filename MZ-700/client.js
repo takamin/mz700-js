@@ -93,22 +93,6 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
         }
         phif.css("margin-left", phifMargin._w + "px")
             .css("margin-top", phifMargin._h + "px");
-
-        /*
-        var kbBBox = new BBox(keyboard.get(0));
-        var kbSize = kbBBox.getSize();
-        var kbMargin = new BBox.Size(
-                (containerSize._w - kbSize._w) / 2,
-                phifMargin._h - kbSize._h);
-        if(kbMargin._w < 0) {
-            kbMargin._w = 0;
-        }
-        if(kbMargin._h < 0) {
-            kbMargin._h = 0;
-        }
-        keyboard.css("margin-left", kbMargin._w + "px")
-            .css("margin-top", kbMargin._h + "px");
-        */
     };
 
     var liquidRootElement = $("#liquid-panel-MZ-700").get(0);
@@ -116,7 +100,6 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
 
     // Dock'n'Liquid panels
     var dockPanelHeader = $("#dock-panel-header");
-    //var dockPanelKb = $("#dock-panel-keyboard");
     var dockPanelRight = $("#dock-panel-right");
 
     // Remove right panel for mobile or tablet
@@ -128,21 +111,19 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
     mz700js.create({ "urlPrefix" : "../" });
 
     if(deviceType != "mobile") {
-        /*
-        if(deviceType == "tablet") {
-            phif.css("opacity", 0.8);
-        }
-        */
         mz700js.hideScreenKeyboard();
         var mouseMoveTimeoutId = null;
         var showCtrlPanelFor = function(timeLimit) {
             if(mouseMoveTimeoutId) {
                 clearTimeout(mouseMoveTimeoutId);
-            } else {
-                phif.addClass("hover");
             }
+            phif.addClass("hover");
+            phif.show();
+            mz700js.resizeScreen();
             mouseMoveTimeoutId = setTimeout(function() {
                 phif.removeClass("hover");
+                phif.hide();
+                mz700js.resizeScreen();
                 mouseMoveTimeoutId = null;
             }, timeLimit);
         };
@@ -150,6 +131,9 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
             showCtrlPanelFor(5000);
         });
         keyboard.mousemove(function() {
+            showCtrlPanelFor(5000);
+        });
+        phif.mousemove(function() {
             showCtrlPanelFor(5000);
         });
         container.mouseenter(function() {
@@ -160,13 +144,6 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
         });
     }
 
-    // Close keyboard panel on PC.
-    if(deviceType == "pc") {
-        //mz700js.kb.DropDownPanel("close");
-    } else {
-        //// Open on mobile and tablet
-        //mz700js.kb.DropDownPanel("open");
-    }
     var fullscreenButton = $("<button/>")
         .attr("id","fullscreenButton");
     var fullscreenElement = document.body;
