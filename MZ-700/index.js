@@ -169,7 +169,7 @@
                     this.mz700comworker.dataRecorder_pushRec( function() { });
                 }.bind(this));
             this.btnCmtPlay = $("<button/>").attr("type", "button")
-                .html("<span style='display:inline-block;transform:rotate(-90deg);'>▼</span> PLAY").click(function() {
+                .html("<span class='cmtPlayImage'></span> PLAY").click(function() {
                     this.mz700comworker.dataRecorder_pushPlay( function() { });
                 }.bind(this));
             this.btnCmtStop = $("<button/>").attr("type", "button")
