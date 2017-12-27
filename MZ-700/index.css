@@ -43,13 +43,15 @@
 .screen {
     position:fixed;
 }
-/*
-.keyboard
-{
-    position:fixed;
-    opacity:0.5;
+
+.cmtPlayImage:before {
+    content:"▼";
 }
-*/
+.cmtPlayImage {
+    display:inline-block;
+    transform:rotate(-90deg);
+}
+
 #physical-interface,
 {
     position:fixed;
@@ -59,17 +61,17 @@
     .screen {
         position:relative;
     }
-    #physical-interface /*, .keyboard */
+    #physical-interface
     {
         position:relative;
         opacity:1;
     }
 }
 @media screen and (orientation: landscape) {
-    #physical-interface.hover,
-    #physical-interface:hover /*, .keyboard:hover */
+    #physical-interface.hover
     {
         opacity:0.8;
+        display:block;
     }
 }
 .MZ-700 .ctrl-panel {
