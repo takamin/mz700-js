@@ -89,34 +89,86 @@
                 .addClass("key-switcher")
                 .html("Key-In");
             this.btnReset = $("<button/>").attr("type", "button")
-                .html("Reset").click(function() {
+                .addClass("imaged").append($("<img/>")
+                        .attr("src", "../image/btnReset-off.png")
+                        .attr("title", "Reset").attr("alt", "Reset"))
+                .click(function() {
                     this.reset();
-                }.bind(this));
+                }.bind(this))
+                .hover(
+                        function() {
+                            this.btnReset.find("img")
+                                .attr("src", "../image/btnReset-on.png");
+                        }.bind(this),
+                        function() {
+                            this.btnReset.find("img")
+                                .attr("src", "../image/btnReset-off.png");
+                        }.bind(this)
+                );
             this.btnStart = $("<button/>")
                 .attr("id", "btnStart")
                 .attr("type", "button")
                 .attr("title", "[F8]")
-                .html("Run").click(function() {
+                .addClass("imaged").append($("<img/>")
+                        .attr("src", "../image/btnRun-off.png")
+                        .attr("title", "Run").attr("alt", "Run"))
+                .click(function() {
                     if(this.isRunning) {
                         this.stop();
+                        this.btnStart.find("img")
+                            .attr("src", "../image/btnRun-off.png")
+                            .attr("title", "Stop").attr("alt", "Stop");
                     } else {
                         this.start();
+                        this.btnStart.find("img")
+                            .attr("src", "../image/btnStop-off.png")
+                            .attr("title", "Run").attr("alt", "Run");
                     }
                 }.bind(this))
                 .hover(
                         function() {
                             if(this.isRunning) {
-                                this.btnStart.html("Stop");
+                                this.btnStart.find("img")
+                                    .attr("src", "../image/btnStop-on.png")
+                                    .attr("title", "Stop").attr("alt", "Stop");
+                            } else {
+                                this.btnStart.find("img")
+                                    .attr("src", "../image/btnRun-on.png")
+                                    .attr("title", "Run").attr("alt", "Run");
                             }
                         }.bind(this),
                         function() {
-                            this.btnStart.html("Run");
+                            if(this.isRunning) {
+                                this.btnStart.find("img")
+                                    .attr("src", "../image/btnStop-off.png")
+                                    .attr("title", "Stop").attr("alt", "Stop");
+                            } else {
+                                this.btnStart.find("img")
+                                    .attr("src", "../image/btnRun-off.png")
+                                    .attr("title", "Run").attr("alt", "Run");
+                            }
                         }.bind(this)
                 );
             this.btnStep = $("<button/>").attr("type", "button")
-                .attr("title", "[F9]")
-                .html("Step").click(function() {
+                .attr("title", "[F9]").addClass("imaged")
+                .prop("disabled", "disabled")
+                .append($("<img/>")
+                        .attr("src", "../image/btnStepIn-disabled.png")
+                        .attr("title", "Step-In")
+                        .attr("alt", "Step-In"))
+                .click(function() {
                     this.stepIn();
+                }.bind(this))
+                .hover(function() {
+                    if(!this.isRunning) {
+                        this.btnStep.find("img")
+                            .attr("src", "../image/btnStepIn-on.png");
+                    }
+                }.bind(this), function() {
+                    if(!this.isRunning) {
+                        this.btnStep.find("img")
+                            .attr("src", "../image/btnStepIn-off.png");
+                    }
                 }.bind(this));
 
             //
@@ -470,13 +522,14 @@
      * @returns {undefined}
      */
     MZ700Js.prototype.updateUI = function() {
-        this.btnReset.prop('disabled', '');
         if(!this.isRunning) {
             $(".MZ-700").removeClass("running");
-            this.btnStep.prop('disabled', '');
+            this.btnStep.prop('disabled', '')
+                        .find("img").attr("src", "../image/btnStepIn-off.png");
         } else {
             $(".MZ-700").addClass("running");
-            this.btnStep.prop('disabled', 'disabled');
+            this.btnStep.prop('disabled', 'disabled')
+                        .find("img").attr("src", "../image/btnStepIn-disabled.png");
         }
     };
 
