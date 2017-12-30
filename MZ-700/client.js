@@ -25,9 +25,12 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
         MZ700JsBase.prototype.create.call(this, opt);
         this.btnToggleScreenKeyboard = $("<button/>")
             .attr("type", "button")
-            .attr("class", "toggle")
+            .attr("class", "toggle imaged")
             .attr("id", "btnToggleScreenKeyboard")
-            .html("Keyboard").click(function() {
+            .append($("<img/>")
+                .attr("src", "../image/btnKeyboard-off.png")
+                .attr("title", "Keyboard").attr("alt", "Keyboard"))
+            .click(function() {
                 this.btnToggleScreenKeyboard_click();
             }.bind(this));
         $(".MZ-700 .ctrl-panel")
@@ -43,12 +46,16 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
     MZ700Js.prototype.showScreenKeyboard = function() {
         this.btnToggleScreenKeyboard.addClass("on");
         this.btnToggleScreenKeyboard.removeClass("off");
+        this.btnToggleScreenKeyboard.find("img")
+            .attr("src", "../image/btnKeyboard-on.png");
         $(".keyboard").show();
         this.resizeScreen();
     };
     MZ700Js.prototype.hideScreenKeyboard = function() {
         this.btnToggleScreenKeyboard.removeClass("on");
         this.btnToggleScreenKeyboard.addClass("off");
+        this.btnToggleScreenKeyboard.find("img")
+            .attr("src", "../image/btnKeyboard-off.png");
         $(".keyboard").hide();
         this.resizeScreen();
     };
@@ -116,14 +123,16 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
         var showCtrlPanelFor = function(timeLimit) {
             if(mouseMoveTimeoutId) {
                 clearTimeout(mouseMoveTimeoutId);
+            } else {
+                phif.addClass("hover");
+                phif.show(0, function() {
+                    mz700js.resizeScreen();
+                    mz700js.resizeScreen();
+                });
             }
-            phif.addClass("hover");
-            phif.show();
-            mz700js.resizeScreen();
             mouseMoveTimeoutId = setTimeout(function() {
                 phif.removeClass("hover");
                 phif.hide();
-                mz700js.resizeScreen();
                 mouseMoveTimeoutId = null;
             }, timeLimit);
         };
@@ -145,7 +154,11 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
     }
 
     var fullscreenButton = $("<button/>")
-        .attr("id","fullscreenButton");
+        .attr("id","fullscreenButton").addClass("toggle imaged off")
+        .append($("<img/>")
+            .attr("src", "../image/btnFullscreen-off.png")
+            .attr("title", "Fullscreen")
+            .attr("alt", "Fullscreen"));
     var fullscreenElement = document.body;
     var onFullscreenButtonClick = function() {
         if(document.fullscreenElement === fullscreenElement) {
@@ -165,11 +178,19 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
         if(document.fullscreenElement == null) {
             dockPanelHeader.show();
             dockPanelRight.show();
-            fullscreenButton.html("Fullscreen");
+            fullscreenButton.removeClass("on").addClass("off")
+                .find("img")
+                    .attr("src", "../image/btnFullscreen-off.png")
+                    .attr("title", "Fullscreen")
+                    .attr("alt", "Fullscreen");
         } else {
             dockPanelHeader.hide();
             dockPanelRight.hide();
-            fullscreenButton.html("Exit Fullscreen");
+            fullscreenButton.removeClass("off").addClass("on")
+                .find("img")
+                    .attr("src", "../image/btnFullscreen-on.png")
+                    .attr("title", "Exit Fullscreen")
+                    .attr("alt", "Exit Fullscreen");
         }
         liquidRoot.layout();
         mz700js.resizeScreen();
