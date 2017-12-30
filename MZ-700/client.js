@@ -116,14 +116,15 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
         var showCtrlPanelFor = function(timeLimit) {
             if(mouseMoveTimeoutId) {
                 clearTimeout(mouseMoveTimeoutId);
+            } else {
+                phif.addClass("hover");
+                phif.show(0, function() {
+                    mz700js.resizeScreen();
+                });
             }
-            phif.addClass("hover");
-            phif.show();
-            mz700js.resizeScreen();
             mouseMoveTimeoutId = setTimeout(function() {
                 phif.removeClass("hover");
                 phif.hide();
-                mz700js.resizeScreen();
                 mouseMoveTimeoutId = null;
             }, timeLimit);
         };

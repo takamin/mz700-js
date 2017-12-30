@@ -8,6 +8,7 @@
     border: solid 1px black;
     background-color: black;
     padding:0;
+    z-index: -1;
 }
 .MZ-700 button {
     background-color: blue;
@@ -44,9 +45,6 @@
     position:fixed;
 }
 
-.cmtPlayImage:before {
-    content:"▼";
-}
 .cmtPlayImage {
     display:inline-block;
     transform:rotate(-90deg);
@@ -68,7 +66,7 @@
     }
 }
 @media screen and (orientation: landscape) {
-    #physical-interface.hover
+    #physical-interface
     {
         opacity:0.8;
         display:block;
