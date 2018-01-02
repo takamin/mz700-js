@@ -305,6 +305,10 @@
                         this.scrollToShowPC();
                         this.updateUI();
                     },
+                    "onNotifyClockFreq": function(clockCount) {
+                        $(".speed-control-slider").attr("title",
+                            "Clock: " + (Math.round(100.0 * clockCount / 1000000) / 100) + " MHz");
+                    },
                     'onBreak': function() { this.stop(); },
                     'onUpdateScreen': (this.mz700scrn == null) ? function() {} :
                         function(updateData) { this.mz700scrn.write(updateData); }.bind(this),
