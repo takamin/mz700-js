@@ -96,6 +96,10 @@ var MZ700 = function(opt) {
         },
         started: function() { THIS._transworker.postNotify("start"); },
         stopped: function() { THIS._transworker.postNotify("stop"); },
+        notifyClockFreq: function(clockCount) {
+            THIS._transworker.postNotify(
+                    "onNotifyClockFreq", [ clockCount ]);
+        },
         onBreak: function() {
             THIS._transworker.postNotify("onBreak");
         },
@@ -157,6 +161,7 @@ var MZ700 = function(opt) {
 
     this.tid = null;
     this.timerInterval = MZ700.DEFAULT_TIMER_INTERVAL;
+    this.tidMeasClock = null;
 
     this.mmioMap = [];
     for(var address = 0xE000; address < 0xE800; address++) {
@@ -459,11 +464,11 @@ MZ700.prototype.reset = function() {
 };
 
 MZ700.prototype.getRegister = function() {
-    return this.z80.reg;
+    return this.z80.reg.cloneRaw();
 };
 
 MZ700.prototype.getRegisterB = function() {
-    return this.z80.regB;
+    return this.z80.regB.cloneRaw();
 };
 
 MZ700.prototype.setPC = function(addr) {
@@ -543,10 +548,16 @@ MZ700.prototype.start = function() {
                 MZ700.prototype.start.caller);
         return false;
     }
-    this.tid = FractionalTimer.setInterval(//TODO: Invoke Immediete `this.run()`
-            function() { this.run(); }.bind(this),
-            this.timerInterval);
+    this.tid = FractionalTimer.setInterval(
+        this.run.bind(this), this.timerInterval);
     this.opt.started();
+
+    var t_cycle_0 = 0;
+    this.tidMeasClock = setInterval(function() {
+        this.opt.notifyClockFreq(this.z80.tick - t_cycle_0);
+        t_cycle_0 = this.z80.tick;
+    }.bind(this), 1000);
+
     return true;
 };
 
@@ -555,6 +566,10 @@ MZ700.prototype.stop = function() {
         FractionalTimer.clearInterval(this.tid);
         this.tid = null;
         this.opt.stopped();
+    }
+    if(this.tidMeasClock != null) {
+        clearInterval(this.tidMeasClock);
+        this.tidMeasClock = null;
     }
 };
 

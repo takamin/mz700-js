@@ -1,11 +1,8 @@
 require("../lib/context.js");
 var UnitTest = require("./UnitTest");
-UnitTest.test(require('./reg'));
 UnitTest.test(require('./asm'));
-UnitTest.test(require('./load8'));
 UnitTest.test(require('./load16'));
 UnitTest.test(require('./rotate'));
 UnitTest.test(require('./calc16'));
 UnitTest.test(require('./trans'));
-UnitTest.test(require('./search'));
 UnitTest.test(require('./res'));

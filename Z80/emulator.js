@@ -502,7 +502,7 @@ Z80.prototype.createOpecodeTable = function() {
 					proc:
 						function (opecode, dstRegName, srcRegName) {
 							return function() {
-                                THIS.reg[dstRegName] = THIS.reg[srcRegName];
+                                THIS.reg["set" + dstRegName]( THIS.reg["get" + srcRegName]() );
 							}
 						}(opecode, dstRegName, srcRegName),
                     "cycle": 4,
@@ -555,43 +555,43 @@ Z80.prototype.createOpecodeTable = function() {
 	//---------------------------------------------------------------------------------
     this.opecodeTable[oct("0006")] = {
         mnemonic:"LD B,n",
-        proc: function() { THIS.reg.B = THIS.fetch(); },
+        proc: function() { THIS.reg.setB( THIS.fetch() ); },
         "cycle": 7,
         disasm: disa_0x_r_110
     };
     this.opecodeTable[oct("0016")] = {
         mnemonic:"LD C,n",
-        proc: function() { THIS.reg.C = THIS.fetch(); },
+        proc: function() { THIS.reg.setC( THIS.fetch() ); },
         "cycle": 7,
         disasm: disa_0x_r_110
     };
     this.opecodeTable[oct("0026")] = {
         mnemonic:"LD D,n",
-        proc: function() { THIS.reg.D = THIS.fetch(); },
+        proc: function() { THIS.reg.setD( THIS.fetch() ); },
         "cycle": 7,
         disasm: disa_0x_r_110
     };
     this.opecodeTable[oct("0036")] = {
         mnemonic:"LD E,n",
-        proc: function() { THIS.reg.E = THIS.fetch(); },
+        proc: function() { THIS.reg.setE( THIS.fetch() ); },
         "cycle": 7,
         disasm: disa_0x_r_110
     };
     this.opecodeTable[oct("0046")] = {
         mnemonic:"LD H,n",
-        proc: function() { THIS.reg.H = THIS.fetch(); },
+        proc: function() { THIS.reg.setH( THIS.fetch() ); },
         "cycle": 7,
         disasm: disa_0x_r_110
     };
     this.opecodeTable[oct("0056")] = {
         mnemonic:"LD L,n",
-        proc: function() { THIS.reg.L = THIS.fetch(); },
+        proc: function() { THIS.reg.setL( THIS.fetch() ); },
         "cycle": 7,
         disasm: disa_0x_r_110
     };
     this.opecodeTable[oct("0076")] = {
         mnemonic:"LD A,n",
-        proc: function() { THIS.reg.A = THIS.fetch(); },
+        proc: function() { THIS.reg.setA( THIS.fetch() ); },
         "cycle": 7,
         disasm: disa_0x_r_110
     };
@@ -600,43 +600,43 @@ Z80.prototype.createOpecodeTable = function() {
 	//---------------------------------------------------------------------------------
     this.opecodeTable[oct("0106")] = {
         mnemonic:"LD B,(HL)",
-        proc: function() { THIS.reg.B = THIS.memory.peek(THIS.reg.getHL()); },
+        proc: function() { THIS.reg.setB( THIS.memory.peek(THIS.reg.getHL()) ); },
         "cycle": 7,
         disasm: disa_0x_r_110
     };
     this.opecodeTable[oct("0116")] = {
         mnemonic:"LD C,(HL)",
-        proc: function() { THIS.reg.C = THIS.memory.peek(THIS.reg.getHL()); },
+        proc: function() { THIS.reg.setC( THIS.memory.peek(THIS.reg.getHL()) ); },
         "cycle": 7,
         disasm: disa_0x_r_110
     };
     this.opecodeTable[oct("0126")] = {
         mnemonic:"LD D,(HL)",
-        proc: function() { THIS.reg.D = THIS.memory.peek(THIS.reg.getHL()); },
+        proc: function() { THIS.reg.setD( THIS.memory.peek(THIS.reg.getHL()) ); },
         "cycle": 7,
         disasm: disa_0x_r_110
     };
     this.opecodeTable[oct("0136")] = {
         mnemonic:"LD E,(HL)",
-        proc: function() { THIS.reg.E = THIS.memory.peek(THIS.reg.getHL()); },
+        proc: function() { THIS.reg.setE( THIS.memory.peek(THIS.reg.getHL()) ); },
         "cycle": 7,
         disasm: disa_0x_r_110
     };
     this.opecodeTable[oct("0146")] = {
         mnemonic:"LD H,(HL)",
-        proc: function() { THIS.reg.H = THIS.memory.peek(THIS.reg.getHL()); },
+        proc: function() { THIS.reg.setH( THIS.memory.peek(THIS.reg.getHL()) ); },
         "cycle": 7,
         disasm: disa_0x_r_110
     };
     this.opecodeTable[oct("0156")] = {
         mnemonic:"LD L,(HL)",
-        proc: function() { THIS.reg.L = THIS.memory.peek(THIS.reg.getHL()); },
+        proc: function() { THIS.reg.setL( THIS.memory.peek(THIS.reg.getHL()) ); },
         "cycle": 7,
         disasm: disa_0x_r_110
     };
     this.opecodeTable[oct("0176")] = {
         mnemonic:"LD A,(HL)",
-        proc: function() { THIS.reg.A = THIS.memory.peek(THIS.reg.getHL()); },
+        proc: function() { THIS.reg.setA( THIS.memory.peek(THIS.reg.getHL()) ); },
         "cycle": 7,
         disasm: disa_0x_r_110
     };
@@ -645,43 +645,43 @@ Z80.prototype.createOpecodeTable = function() {
 	//---------------------------------------------------------------------------------
     this.opecodeTable[oct("0160")] = {
         mnemonic:"LD (HL),B",
-        proc: function() { THIS.memory.poke(THIS.reg.getHL(), THIS.reg.B); },
+        proc: function() { THIS.memory.poke(THIS.reg.getHL(), THIS.reg.getB()); },
         "cycle": 10,
         disasm: disa_0x_r_110
     };
     this.opecodeTable[oct("0161")] = {
         mnemonic:"LD (HL),C",
-        proc: function() { THIS.memory.poke(THIS.reg.getHL(), THIS.reg.C); },
+        proc: function() { THIS.memory.poke(THIS.reg.getHL(), THIS.reg.getC()); },
         "cycle": 10,
         disasm: disa_0x_r_110
     };
     this.opecodeTable[oct("0162")] = {
         mnemonic:"LD (HL),D",
-        proc: function() { THIS.memory.poke(THIS.reg.getHL(), THIS.reg.D); },
+        proc: function() { THIS.memory.poke(THIS.reg.getHL(), THIS.reg.getD()); },
         "cycle": 10,
         disasm: disa_0x_r_110
     };
     this.opecodeTable[oct("0163")] = {
         mnemonic:"LD (HL),E",
-        proc: function() { THIS.memory.poke(THIS.reg.getHL(), THIS.reg.E); },
+        proc: function() { THIS.memory.poke(THIS.reg.getHL(), THIS.reg.getE()); },
         "cycle": 10,
         disasm: disa_0x_r_110
     };
     this.opecodeTable[oct("0164")] = {
         mnemonic:"LD (HL),H",
-        proc: function() { THIS.memory.poke(THIS.reg.getHL(), THIS.reg.H); },
+        proc: function() { THIS.memory.poke(THIS.reg.getHL(), THIS.reg.getH()); },
         "cycle": 10,
         disasm: disa_0x_r_110
     };
     this.opecodeTable[oct("0165")] = {
         mnemonic:"LD (HL),L",
-        proc: function() { THIS.memory.poke(THIS.reg.getHL(), THIS.reg.L); },
+        proc: function() { THIS.memory.poke(THIS.reg.getHL(), THIS.reg.getL()); },
         "cycle": 10,
         disasm: disa_0x_r_110
     };
     this.opecodeTable[oct("0167")] = {
         mnemonic:"LD (HL),A",
-        proc: function() { THIS.memory.poke(THIS.reg.getHL(), THIS.reg.A); },
+        proc: function() { THIS.memory.poke(THIS.reg.getHL(), THIS.reg.getA()); },
         "cycle": 10,
         disasm: disa_0x_r_110
     };
@@ -699,7 +699,7 @@ Z80.prototype.createOpecodeTable = function() {
 	//---------------------------------------------------------------------------------
 	this.opecodeTable[oct("0012")] = {
         mnemonic:"LD A,(BC)",
-        proc: function() { THIS.reg.A = THIS.memory.peek(THIS.reg.getBC()); },
+        proc: function() { THIS.reg.setA( THIS.memory.peek(THIS.reg.getBC()) ); },
         "cycle": 7,
         disasm: function(mem,addr) {return {code:[mem.peek(addr)], mnemonic: ["LD", "A", "(BC)"]};}
     };
@@ -708,7 +708,7 @@ Z80.prototype.createOpecodeTable = function() {
 	//---------------------------------------------------------------------------------
 	this.opecodeTable[oct("0032")] = {
         mnemonic:"LD A,(DE)",
-        proc: function() { THIS.reg.A = THIS.memory.peek(THIS.reg.getDE()); },
+        proc: function() { THIS.reg.setA( THIS.memory.peek(THIS.reg.getDE()) ); },
         "cycle": 7,
         disasm: function(mem,addr) {return {code:[mem.peek(addr)], mnemonic: ["LD", "A", "(DE)"]};}
     };
@@ -716,7 +716,7 @@ Z80.prototype.createOpecodeTable = function() {
 	// LD A,(nn)	A<-(nn)					00 111 010	<-  n   ->	<-  n   ->
 	//---------------------------------------------------------------------------------
 	this.opecodeTable[oct("0072")] = { mnemonic:"LD A,(nn)",
-        proc: function() { THIS.reg.A = THIS.memory.peek(THIS.fetchPair()); },
+        proc: function() { THIS.reg.setA( THIS.memory.peek(THIS.fetchPair()) ); },
         "cycle": 13,
         disasm: function(mem,addr) {
             return {
@@ -728,21 +728,21 @@ Z80.prototype.createOpecodeTable = function() {
 	// LD (BC),A	(BC)<-A					00 000 010
 	//---------------------------------------------------------------------------------
 	this.opecodeTable[oct("0002")] = { mnemonic:"LD (BC),A",
-        proc: function() { THIS.memory.poke(THIS.reg.getBC(), THIS.reg.A); },
+        proc: function() { THIS.memory.poke(THIS.reg.getBC(), THIS.reg.getA()); },
         "cycle": 7,
         disasm: function(mem,addr) {return {code:[mem.peek(addr)], mnemonic: ["LD", "(BC)","A"]};} };
 	//---------------------------------------------------------------------------------
 	// LD (DE),A	(DE)<-A					00 010 010
 	//---------------------------------------------------------------------------------
 	this.opecodeTable[oct("0022")] = { mnemonic:"LD (DE),A",
-        proc: function() { THIS.memory.poke(THIS.reg.getDE(), THIS.reg.A); },
+        proc: function() { THIS.memory.poke(THIS.reg.getDE(), THIS.reg.getA()); },
         "cycle": 7,
         disasm: function(mem,addr) {return {code:[mem.peek(addr)], mnemonic: ["LD", "(DE)","A"]};} };
 	//---------------------------------------------------------------------------------
 	// LD (nn),A	(nn)<-A					00 110 010	<-  n   ->	<-  n   ->
 	//---------------------------------------------------------------------------------
 	this.opecodeTable[oct("0062")] = { mnemonic:"LD (nn),A",
-        proc: function() { THIS.memory.poke(THIS.fetchPair(), THIS.reg.A); },
+        proc: function() { THIS.memory.poke(THIS.fetchPair(), THIS.reg.getA()); },
         "cycle": 13,
         disasm: function(mem,addr) {
             return {
@@ -788,7 +788,7 @@ Z80.prototype.createOpecodeTable = function() {
     //---------------------------------------------------------------------------------
 	opeMisc[oct("0107")] = {
         mnemonic:"LD I,A",
-        proc: function() { THIS.reg.I = THIS.reg.A; },
+        proc: function() { THIS.reg.I = THIS.reg.getA(); },
         "cycle": 9,
         disasm: function(mem,addr) {
             return {
@@ -802,7 +802,7 @@ Z80.prototype.createOpecodeTable = function() {
     //---------------------------------------------------------------------------------
 	opeMisc[oct("0117")] = {
         mnemonic:"LD R,A",
-        proc: function() { THIS.reg.R = THIS.regB.R = THIS.reg.A; },
+        proc: function() { THIS.reg.R = THIS.regB.R = THIS.reg.getA(); },
         "cycle": 9,
         disasm: function(mem,addr) {
             return {
@@ -832,7 +832,7 @@ Z80.prototype.createOpecodeTable = function() {
 
     opeIX[oct("0106")] = {
         mnemonic:"LD B,(IX+d)",
-        proc: function() { THIS.reg.B = THIS.memory.peek(THIS.reg.IX + THIS.fetch()); },
+        proc: function() { THIS.reg.setB( THIS.memory.peek(THIS.reg.IX + THIS.fetch()) ); },
         "cycle": 19,
         disasm: function(mem, addr) {
             return disasm_LD_r_idx_d(mem, addr, "B", "IX");
@@ -840,7 +840,7 @@ Z80.prototype.createOpecodeTable = function() {
     };
     opeIX[oct("0116")] = {
         mnemonic:"LD C,(IX+d)",
-        proc: function() { THIS.reg.C = THIS.memory.peek(THIS.reg.IX + THIS.fetch()); },
+        proc: function() { THIS.reg.setC( THIS.memory.peek(THIS.reg.IX + THIS.fetch()) ); },
         "cycle": 19,
         disasm: function(mem, addr) {
             return disasm_LD_r_idx_d(mem, addr, "C", "IX");
@@ -848,7 +848,7 @@ Z80.prototype.createOpecodeTable = function() {
     };
     opeIX[oct("0126")] = {
         mnemonic:"LD D,(IX+d)",
-        proc: function() { THIS.reg.D = THIS.memory.peek(THIS.reg.IX + THIS.fetch()); },
+        proc: function() { THIS.reg.setD( THIS.memory.peek(THIS.reg.IX + THIS.fetch()) ); },
         "cycle": 19,
         disasm: function(mem, addr) {
             return disasm_LD_r_idx_d(mem, addr, "D", "IX");
@@ -856,7 +856,7 @@ Z80.prototype.createOpecodeTable = function() {
     };
     opeIX[oct("0136")] = {
         mnemonic:"LD E,(IX+d)",
-        proc: function() { THIS.reg.E = THIS.memory.peek(THIS.reg.IX + THIS.fetch()); },
+        proc: function() { THIS.reg.setE( THIS.memory.peek(THIS.reg.IX + THIS.fetch()) ); },
         "cycle": 19,
         disasm: function(mem, addr) {
             return disasm_LD_r_idx_d(mem, addr, "E", "IX");
@@ -864,7 +864,7 @@ Z80.prototype.createOpecodeTable = function() {
     };
     opeIX[oct("0146")] = {
         mnemonic:"LD H,(IX+d)",
-        proc: function() { THIS.reg.H = THIS.memory.peek(THIS.reg.IX + THIS.fetch()); },
+        proc: function() { THIS.reg.setH( THIS.memory.peek(THIS.reg.IX + THIS.fetch()) ); },
         "cycle": 19,
         disasm: function(mem, addr) {
             return disasm_LD_r_idx_d(mem, addr, "H", "IX");
@@ -872,7 +872,7 @@ Z80.prototype.createOpecodeTable = function() {
     };
     opeIX[oct("0156")] = {
         mnemonic:"LD L,(IX+d)",
-        proc: function() { THIS.reg.L = THIS.memory.peek(THIS.reg.IX + THIS.fetch()); },
+        proc: function() { THIS.reg.setL( THIS.memory.peek(THIS.reg.IX + THIS.fetch()) ); },
         "cycle": 19,
         disasm: function(mem, addr) {
             return disasm_LD_r_idx_d(mem, addr, "L", "IX");
@@ -880,7 +880,7 @@ Z80.prototype.createOpecodeTable = function() {
     };
     opeIX[oct("0176")] = {
         mnemonic:"LD A,(IX+d)",
-        proc: function() { THIS.reg.A = THIS.memory.peek(THIS.reg.IX + THIS.fetch()); },
+        proc: function() { THIS.reg.setA( THIS.memory.peek(THIS.reg.IX + THIS.fetch()) ); },
         "cycle": 19,
         disasm: function(mem, addr) {
             return disasm_LD_r_idx_d(mem, addr, "A", "IX");
@@ -892,7 +892,7 @@ Z80.prototype.createOpecodeTable = function() {
     //---------------------------------------------------------------------------------
     opeIX[oct("0160")] = {
         mnemonic:"LD (IX+d),B",
-        proc: function() { THIS.memory.poke(THIS.reg.IX + THIS.fetch(), THIS.reg.B); },
+        proc: function() { THIS.memory.poke(THIS.reg.IX + THIS.fetch(), THIS.reg.getB()); },
         "cycle": 19,
         disasm: function(mem, addr) {
             return disasm_LD_idx_d_r(mem, addr, "IX", "B");
@@ -900,7 +900,7 @@ Z80.prototype.createOpecodeTable = function() {
     };
     opeIX[oct("0161")] = {
         mnemonic:"LD (IX+d),C",
-        proc: function() { THIS.memory.poke(THIS.reg.IX + THIS.fetch(), THIS.reg.C); },
+        proc: function() { THIS.memory.poke(THIS.reg.IX + THIS.fetch(), THIS.reg.getC()); },
         "cycle": 19,
         disasm: function(mem, addr) {
             return disasm_LD_idx_d_r(mem, addr, "IX", "C");
@@ -908,7 +908,7 @@ Z80.prototype.createOpecodeTable = function() {
     };
     opeIX[oct("0162")] = {
         mnemonic:"LD (IX+d),D",
-        proc: function() { THIS.memory.poke(THIS.reg.IX + THIS.fetch(), THIS.reg.D); },
+        proc: function() { THIS.memory.poke(THIS.reg.IX + THIS.fetch(), THIS.reg.getD()); },
         "cycle": 19,
         disasm: function(mem, addr) {
             return disasm_LD_idx_d_r(mem, addr, "IX", "D");
@@ -916,7 +916,7 @@ Z80.prototype.createOpecodeTable = function() {
     };
     opeIX[oct("0163")] = {
         mnemonic:"LD (IX+d),E",
-        proc: function() { THIS.memory.poke(THIS.reg.IX + THIS.fetch(), THIS.reg.E); },
+        proc: function() { THIS.memory.poke(THIS.reg.IX + THIS.fetch(), THIS.reg.getE()); },
         "cycle": 19,
         disasm: function(mem, addr) {
             return disasm_LD_idx_d_r(mem, addr, "IX", "E");
@@ -924,7 +924,7 @@ Z80.prototype.createOpecodeTable = function() {
     };
     opeIX[oct("0164")] = {
         mnemonic:"LD (IX+d),H",
-        proc: function() { THIS.memory.poke(THIS.reg.IX + THIS.fetch(), THIS.reg.H); },
+        proc: function() { THIS.memory.poke(THIS.reg.IX + THIS.fetch(), THIS.reg.getH()); },
         "cycle": 19,
         disasm: function(mem, addr) {
             return disasm_LD_idx_d_r(mem, addr, "IX", "H");
@@ -932,7 +932,7 @@ Z80.prototype.createOpecodeTable = function() {
     };
     opeIX[oct("0165")] = {
         mnemonic:"LD (IX+d),L",
-        proc: function() { THIS.memory.poke(THIS.reg.IX + THIS.fetch(), THIS.reg.L); },
+        proc: function() { THIS.memory.poke(THIS.reg.IX + THIS.fetch(), THIS.reg.getL()); },
         "cycle": 19,
         disasm: function(mem, addr) {
             return disasm_LD_idx_d_r(mem, addr, "IX", "L");
@@ -940,7 +940,7 @@ Z80.prototype.createOpecodeTable = function() {
     };
     opeIX[oct("0167")] = {
         mnemonic:"LD (IX+d),A",
-        proc: function() { THIS.memory.poke(THIS.reg.IX + THIS.fetch(), THIS.reg.A); },
+        proc: function() { THIS.memory.poke(THIS.reg.IX + THIS.fetch(), THIS.reg.getA()); },
         "cycle": 19,
         disasm: function(mem, addr) {
             return disasm_LD_idx_d_r(mem, addr, "IX", "A");
@@ -952,7 +952,7 @@ Z80.prototype.createOpecodeTable = function() {
     //---------------------------------------------------------------------------------
     opeIY[oct("0106")] = {
         mnemonic:"LD B,(IY+d)",
-        proc: function() { THIS.reg.B = THIS.memory.peek(THIS.reg.IY + THIS.fetch()); },
+        proc: function() { THIS.reg.setB( THIS.memory.peek(THIS.reg.IY + THIS.fetch()) ); },
         "cycle": 19,
         disasm: function(mem, addr) {
             return disasm_LD_r_idx_d(mem, addr, "B", "IY");
@@ -960,7 +960,7 @@ Z80.prototype.createOpecodeTable = function() {
     };
     opeIY[oct("0116")] = {
         mnemonic:"LD C,(IY+d)",
-        proc: function() { THIS.reg.C = THIS.memory.peek(THIS.reg.IY + THIS.fetch()); },
+        proc: function() { THIS.reg.setC( THIS.memory.peek(THIS.reg.IY + THIS.fetch()) ); },
         "cycle": 19,
         disasm: function(mem, addr) {
             return disasm_LD_r_idx_d(mem, addr, "C", "IY");
@@ -968,7 +968,7 @@ Z80.prototype.createOpecodeTable = function() {
     };
     opeIY[oct("0126")] = {
         mnemonic:"LD D,(IY+d)",
-        proc: function() { THIS.reg.D = THIS.memory.peek(THIS.reg.IY + THIS.fetch()); },
+        proc: function() { THIS.reg.setD( THIS.memory.peek(THIS.reg.IY + THIS.fetch()) ); },
         "cycle": 19,
         disasm: function(mem, addr) {
             return disasm_LD_r_idx_d(mem, addr, "D", "IY");
@@ -976,7 +976,7 @@ Z80.prototype.createOpecodeTable = function() {
     };
     opeIY[oct("0136")] = {
         mnemonic:"LD E,(IY+d)",
-        proc: function() { THIS.reg.E = THIS.memory.peek(THIS.reg.IY + THIS.fetch()); },
+        proc: function() { THIS.reg.setE( THIS.memory.peek(THIS.reg.IY + THIS.fetch()) ); },
         "cycle": 19,
         disasm: function(mem, addr) {
             return disasm_LD_r_idx_d(mem, addr, "E", "IY");
@@ -984,7 +984,7 @@ Z80.prototype.createOpecodeTable = function() {
     };
     opeIY[oct("0146")] = {
         mnemonic:"LD H,(IY+d)",
-        proc: function() { THIS.reg.H = THIS.memory.peek(THIS.reg.IY + THIS.fetch()); },
+        proc: function() { THIS.reg.setH( THIS.memory.peek(THIS.reg.IY + THIS.fetch()) ); },
         "cycle": 19,
         disasm: function(mem, addr) {
             return disasm_LD_r_idx_d(mem, addr, "H", "IY");
@@ -992,7 +992,7 @@ Z80.prototype.createOpecodeTable = function() {
     };
     opeIY[oct("0156")] = {
         mnemonic:"LD L,(IY+d)",
-        proc: function() { THIS.reg.L = THIS.memory.peek(THIS.reg.IY + THIS.fetch()); },
+        proc: function() { THIS.reg.setL( THIS.memory.peek(THIS.reg.IY + THIS.fetch()) ); },
         "cycle": 19,
         disasm: function(mem, addr) {
             return disasm_LD_r_idx_d(mem, addr, "L", "IY");
@@ -1000,7 +1000,7 @@ Z80.prototype.createOpecodeTable = function() {
     };
     opeIY[oct("0176")] = {
         mnemonic:"LD A,(IY+d)",
-        proc: function() { THIS.reg.A = THIS.memory.peek(THIS.reg.IY + THIS.fetch()); },
+        proc: function() { THIS.reg.setA( THIS.memory.peek(THIS.reg.IY + THIS.fetch()) ); },
         "cycle": 19,
         disasm: function(mem, addr) {
             return disasm_LD_r_idx_d(mem, addr, "A", "IY");
@@ -1012,7 +1012,7 @@ Z80.prototype.createOpecodeTable = function() {
     //---------------------------------------------------------------------------------
     opeIY[oct("0160")] = {
         mnemonic:"LD (IY+d),B",
-        proc: function() { THIS.memory.poke(THIS.reg.IY + THIS.fetch(), THIS.reg.B); },
+        proc: function() { THIS.memory.poke(THIS.reg.IY + THIS.fetch(), THIS.reg.getB()); },
         "cycle": 19,
         disasm: function(mem, addr) {
             return disasm_LD_idx_d_r(mem, addr, "IY", "B");
@@ -1020,7 +1020,7 @@ Z80.prototype.createOpecodeTable = function() {
     };
     opeIY[oct("0161")] = {
         mnemonic:"LD (IY+d),C",
-        proc: function() { THIS.memory.poke(THIS.reg.IY + THIS.fetch(), THIS.reg.C); },
+        proc: function() { THIS.memory.poke(THIS.reg.IY + THIS.fetch(), THIS.reg.getC()); },
         "cycle": 19,
         disasm: function(mem, addr) {
             return disasm_LD_idx_d_r(mem, addr, "IY", "C");
@@ -1028,7 +1028,7 @@ Z80.prototype.createOpecodeTable = function() {
     };
     opeIY[oct("0162")] = {
         mnemonic:"LD (IY+d),D",
-        proc: function() { THIS.memory.poke(THIS.reg.IY + THIS.fetch(), THIS.reg.D); },
+        proc: function() { THIS.memory.poke(THIS.reg.IY + THIS.fetch(), THIS.reg.getD()); },
         "cycle": 19,
         disasm: function(mem, addr) {
             return disasm_LD_idx_d_r(mem, addr, "IY", "D");
@@ -1036,7 +1036,7 @@ Z80.prototype.createOpecodeTable = function() {
     };
     opeIY[oct("0163")] = {
         mnemonic:"LD (IY+d),E",
-        proc: function() { THIS.memory.poke(THIS.reg.IY + THIS.fetch(), THIS.reg.E); },
+        proc: function() { THIS.memory.poke(THIS.reg.IY + THIS.fetch(), THIS.reg.getE()); },
         "cycle": 19,
         disasm: function(mem, addr) {
             return disasm_LD_idx_d_r(mem, addr, "IY", "E");
@@ -1044,7 +1044,7 @@ Z80.prototype.createOpecodeTable = function() {
     };
     opeIY[oct("0164")] = {
         mnemonic:"LD (IY+d),H",
-        proc: function() { THIS.memory.poke(THIS.reg.IY + THIS.fetch(), THIS.reg.H); },
+        proc: function() { THIS.memory.poke(THIS.reg.IY + THIS.fetch(), THIS.reg.getH()); },
         "cycle": 19,
         disasm: function(mem, addr) {
             return disasm_LD_idx_d_r(mem, addr, "IY", "H");
@@ -1052,7 +1052,7 @@ Z80.prototype.createOpecodeTable = function() {
     };
     opeIY[oct("0165")] = {
         mnemonic:"LD (IY+d),L",
-        proc: function() { THIS.memory.poke(THIS.reg.IY + THIS.fetch(), THIS.reg.L); },
+        proc: function() { THIS.memory.poke(THIS.reg.IY + THIS.fetch(), THIS.reg.getL()); },
         "cycle": 19,
         disasm: function(mem, addr) {
             return disasm_LD_idx_d_r(mem, addr, "IY", "L");
@@ -1060,7 +1060,7 @@ Z80.prototype.createOpecodeTable = function() {
     };
     opeIY[oct("0167")] = {
         mnemonic:"LD (IY+d),A",
-        proc: function() { THIS.memory.poke(THIS.reg.IY + THIS.fetch(), THIS.reg.A); },
+        proc: function() { THIS.memory.poke(THIS.reg.IY + THIS.fetch(), THIS.reg.getA()); },
         "cycle": 19,
         disasm: function(mem, addr) {
             return disasm_LD_idx_d_r(mem, addr, "IY", "A");
@@ -1097,8 +1097,8 @@ Z80.prototype.createOpecodeTable = function() {
         mnemonic:"LD BC,nn",
         cycle: 10,
         proc: function() {
-            THIS.reg.C = THIS.fetch();
-            THIS.reg.B = THIS.fetch();
+            THIS.reg.setC( THIS.fetch() );
+            THIS.reg.setB( THIS.fetch() );
         },
         disasm: disasm_LD_dd_nn
     };
@@ -1106,8 +1106,8 @@ Z80.prototype.createOpecodeTable = function() {
         mnemonic:"LD DE,nn",
         cycle: 10,
         proc: function() {
-            THIS.reg.E = THIS.fetch();
-            THIS.reg.D = THIS.fetch();
+            THIS.reg.setE( THIS.fetch() );
+            THIS.reg.setD( THIS.fetch() );
         },
         disasm: disasm_LD_dd_nn
     };
@@ -1115,8 +1115,8 @@ Z80.prototype.createOpecodeTable = function() {
         mnemonic:"LD HL,nn",
         cycle: 10,
         proc: function() {
-            THIS.reg.L = THIS.fetch();
-            THIS.reg.H = THIS.fetch();
+            THIS.reg.setL( THIS.fetch() );
+            THIS.reg.setH( THIS.fetch() );
         },
         disasm: disasm_LD_dd_nn
     };
@@ -1137,8 +1137,8 @@ Z80.prototype.createOpecodeTable = function() {
         cycle:16,
         proc: function() {
             var nn = THIS.fetchPair();
-            THIS.reg.L = THIS.memory.peek(nn + 0);
-            THIS.reg.H = THIS.memory.peek(nn + 1);
+            THIS.reg.setL( THIS.memory.peek(nn + 0) );
+            THIS.reg.setH( THIS.memory.peek(nn + 1) );
         },
         disasm: function(mem, addr) {
             var opcode = mem.peek(addr);
@@ -1155,8 +1155,8 @@ Z80.prototype.createOpecodeTable = function() {
         cycle:20,
         proc: function() {
             var nn = THIS.fetchPair();
-            THIS.reg.C = THIS.memory.peek(nn + 0);
-            THIS.reg.B = THIS.memory.peek(nn + 1);
+            THIS.reg.setC( THIS.memory.peek(nn + 0) );
+            THIS.reg.setB( THIS.memory.peek(nn + 1) );
         },
         disasm: function(mem, addr) {
             var opcode = mem.peek(addr);
@@ -1174,8 +1174,8 @@ Z80.prototype.createOpecodeTable = function() {
         cycle:20,
         proc: function() {
             var nn = THIS.fetchPair();
-            THIS.reg.E = THIS.memory.peek(nn + 0);
-            THIS.reg.D = THIS.memory.peek(nn + 1);
+            THIS.reg.setE( THIS.memory.peek(nn + 0) );
+            THIS.reg.setD( THIS.memory.peek(nn + 1) );
         },
         disasm: function(mem, addr) {
             var opcode = mem.peek(addr);
@@ -1193,8 +1193,8 @@ Z80.prototype.createOpecodeTable = function() {
         cycle:20,
         proc: function() {
             var nn = THIS.fetchPair();
-            THIS.reg.L = THIS.memory.peek(nn + 0);
-            THIS.reg.H = THIS.memory.peek(nn + 1);
+            THIS.reg.setL( THIS.memory.peek(nn + 0) );
+            THIS.reg.setH( THIS.memory.peek(nn + 1) );
         },
         disasm: function(mem, addr) {
             var opcode = mem.peek(addr);
@@ -1233,8 +1233,8 @@ Z80.prototype.createOpecodeTable = function() {
         cycle:16,
         proc: function() {
             var nn = THIS.fetchPair();
-            THIS.memory.poke(nn + 0, THIS.reg.L); 
-            THIS.memory.poke(nn + 1, THIS.reg.H);
+            THIS.memory.poke(nn + 0, THIS.reg.getL()); 
+            THIS.memory.poke(nn + 1, THIS.reg.getH());
         },
         disasm: function(mem, addr) {
             var opcode = mem.peek(addr);
@@ -1251,8 +1251,8 @@ Z80.prototype.createOpecodeTable = function() {
         cycle:20,
         proc: function() {
             var nn = THIS.fetchPair();
-            THIS.memory.poke(nn + 0, THIS.reg.C);
-            THIS.memory.poke(nn + 1, THIS.reg.B);
+            THIS.memory.poke(nn + 0, THIS.reg.getC());
+            THIS.memory.poke(nn + 1, THIS.reg.getB());
         },
         disasm: function(mem, addr) {
             var opcode = mem.peek(addr);
@@ -1270,8 +1270,8 @@ Z80.prototype.createOpecodeTable = function() {
         cycle:20,
         proc: function() {
             var nn = THIS.fetchPair();
-            THIS.memory.poke(nn + 0, THIS.reg.E);
-            THIS.memory.poke(nn + 1, THIS.reg.D);
+            THIS.memory.poke(nn + 0, THIS.reg.getE());
+            THIS.memory.poke(nn + 1, THIS.reg.getD());
         },
         disasm: function(mem, addr) {
             var opcode = mem.peek(addr);
@@ -1289,8 +1289,8 @@ Z80.prototype.createOpecodeTable = function() {
         cycle:20,
         proc: function() {
             var nn = THIS.fetchPair();
-            THIS.memory.poke(nn + 0, THIS.reg.L);
-            THIS.memory.poke(nn + 1, THIS.reg.H);
+            THIS.memory.poke(nn + 0, THIS.reg.getL());
+            THIS.memory.poke(nn + 1, THIS.reg.getH());
         },
         disasm: function(mem, addr) {
             var opcode = mem.peek(addr);
@@ -1345,8 +1345,8 @@ Z80.prototype.createOpecodeTable = function() {
         mnemonic:"PUSH BC",
         cycle:11,
         proc: function() {
-            THIS.memory.poke(--THIS.reg.SP, THIS.reg.B);
-            THIS.memory.poke(--THIS.reg.SP, THIS.reg.C); },
+            THIS.memory.poke(--THIS.reg.SP, THIS.reg.getB());
+            THIS.memory.poke(--THIS.reg.SP, THIS.reg.getC()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -1358,8 +1358,8 @@ Z80.prototype.createOpecodeTable = function() {
         mnemonic:"PUSH DE",
         cycle:11,
         proc: function() {
-            THIS.memory.poke(--THIS.reg.SP, THIS.reg.D);
-            THIS.memory.poke(--THIS.reg.SP, THIS.reg.E); },
+            THIS.memory.poke(--THIS.reg.SP, THIS.reg.getD());
+            THIS.memory.poke(--THIS.reg.SP, THIS.reg.getE()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -1371,8 +1371,8 @@ Z80.prototype.createOpecodeTable = function() {
         mnemonic:"PUSH HL",
         cycle:11,
         proc: function() {
-            THIS.memory.poke(--THIS.reg.SP, THIS.reg.H);
-            THIS.memory.poke(--THIS.reg.SP, THIS.reg.L); },
+            THIS.memory.poke(--THIS.reg.SP, THIS.reg.getH());
+            THIS.memory.poke(--THIS.reg.SP, THIS.reg.getL()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -1384,8 +1384,8 @@ Z80.prototype.createOpecodeTable = function() {
         mnemonic:"PUSH AF",
         cycle:11,
         proc: function() {
-            THIS.memory.poke(--THIS.reg.SP, THIS.reg.A);
-            THIS.memory.poke(--THIS.reg.SP, THIS.reg.F); },
+            THIS.memory.poke(--THIS.reg.SP, THIS.reg.getA());
+            THIS.memory.poke(--THIS.reg.SP, THIS.reg.getF()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -1400,8 +1400,8 @@ Z80.prototype.createOpecodeTable = function() {
         mnemonic:"POP BC",
         cycle:10,
         proc: function() {
-            THIS.reg.C = THIS.memory.peek(THIS.reg.SP++);
-            THIS.reg.B = THIS.memory.peek(THIS.reg.SP++); },
+            THIS.reg.setC( THIS.memory.peek(THIS.reg.SP++) );
+            THIS.reg.setB( THIS.memory.peek(THIS.reg.SP++) ); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -1413,8 +1413,8 @@ Z80.prototype.createOpecodeTable = function() {
         mnemonic:"POP DE",
         cycle:10,
         proc: function() {
-            THIS.reg.E = THIS.memory.peek(THIS.reg.SP++);
-            THIS.reg.D = THIS.memory.peek(THIS.reg.SP++); },
+            THIS.reg.setE( THIS.memory.peek(THIS.reg.SP++) );
+            THIS.reg.setD( THIS.memory.peek(THIS.reg.SP++) ); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -1426,8 +1426,8 @@ Z80.prototype.createOpecodeTable = function() {
         mnemonic:"POP HL",
         cycle:10,
         proc: function() {
-            THIS.reg.L = THIS.memory.peek(THIS.reg.SP++);
-            THIS.reg.H = THIS.memory.peek(THIS.reg.SP++); },
+            THIS.reg.setL( THIS.memory.peek(THIS.reg.SP++) );
+            THIS.reg.setH( THIS.memory.peek(THIS.reg.SP++) ); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -1439,8 +1439,8 @@ Z80.prototype.createOpecodeTable = function() {
         mnemonic:"POP AF",
         cycle:10,
         proc: function() {
-            THIS.reg.F = THIS.memory.peek(THIS.reg.SP++);
-            THIS.reg.A = THIS.memory.peek(THIS.reg.SP++); },
+            THIS.reg.setF( THIS.memory.peek(THIS.reg.SP++) );
+            THIS.reg.setA( THIS.memory.peek(THIS.reg.SP++) ); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -1682,12 +1682,12 @@ Z80.prototype.createOpecodeTable = function() {
         mnemonic:"EX DE,HL ",
         cycle:4,
         proc: function () {
-            var tmp = THIS.reg.D;
-            THIS.reg.D = THIS.reg.H;
-            THIS.reg.H = tmp;
-            tmp = THIS.reg.E;
-            THIS.reg.E = THIS.reg.L;
-            THIS.reg.L = tmp;
+            var tmp = THIS.reg.getD();
+            THIS.reg.setD( THIS.reg.getH() );
+            THIS.reg.setH( tmp );
+            tmp = THIS.reg.getE();
+            THIS.reg.setE( THIS.reg.getL() );
+            THIS.reg.setL( tmp );
         },
         disasm: function(mem, addr) {
             return {
@@ -1703,12 +1703,12 @@ Z80.prototype.createOpecodeTable = function() {
         mnemonic:"EX AF,AF'",
         cycle:4,
         proc: function () {
-            var tmp = THIS.reg.A;
-            THIS.reg.A = THIS.regB.A;
-            THIS.regB.A = tmp;
-            tmp = THIS.reg.F;
-            THIS.reg.F = THIS.regB.F;
-            THIS.regB.F = tmp;
+            var tmp = THIS.reg.getA();
+            THIS.reg.setA( THIS.regB.getA() );
+            THIS.regB.setA( tmp );
+            tmp = THIS.reg.getF();
+            THIS.reg.setF( THIS.regB.getF() );
+            THIS.regB.setF( tmp );
         },
         disasm: function(mem, addr) {
             return {
@@ -1724,26 +1724,26 @@ Z80.prototype.createOpecodeTable = function() {
         mnemonic:"EXX",
         cycle:4,
         proc: function () {
-            var tmp = THIS.reg.B;
-            THIS.reg.B = THIS.regB.B;
-            THIS.regB.B = tmp;
-            tmp = THIS.reg.C;
-            THIS.reg.C = THIS.regB.C;
-            THIS.regB.C = tmp;
+            var tmp = THIS.reg.getB();
+            THIS.reg.setB( THIS.regB.getB() );
+            THIS.regB.setB( tmp );
+            tmp = THIS.reg.getC();
+            THIS.reg.setC( THIS.regB.getC() );
+            THIS.regB.setC( tmp );
 
-            tmp = THIS.reg.D;
-            THIS.reg.D = THIS.regB.D;
-            THIS.regB.D = tmp;
-            tmp = THIS.reg.E;
-            THIS.reg.E = THIS.regB.E;
-            THIS.regB.E = tmp;
+            tmp = THIS.reg.getD();
+            THIS.reg.setD( THIS.regB.getD() );
+            THIS.regB.setD( tmp );
+            tmp = THIS.reg.getE();
+            THIS.reg.setE( THIS.regB.getE() );
+            THIS.regB.setE( tmp );
 
-            tmp = THIS.reg.H;
-            THIS.reg.H = THIS.regB.H;
-            THIS.regB.H = tmp;
-            tmp = THIS.reg.L;
-            THIS.reg.L = THIS.regB.L;
-            THIS.regB.L = tmp;
+            tmp = THIS.reg.getH();
+            THIS.reg.setH( THIS.regB.getH() );
+            THIS.regB.setH( tmp );
+            tmp = THIS.reg.getL();
+            THIS.reg.setL( THIS.regB.getL() );
+            THIS.regB.setL( tmp );
         },
         disasm: function(mem, addr) {
             return {
@@ -1760,12 +1760,12 @@ Z80.prototype.createOpecodeTable = function() {
         cycle:19,
         proc: function () {
             var tmp = THIS.memory.peek(THIS.reg.SP + 1);
-            THIS.memory.poke(THIS.reg.SP + 1, THIS.reg.H);
-            THIS.reg.H = tmp;
+            THIS.memory.poke(THIS.reg.SP + 1, THIS.reg.getH());
+            THIS.reg.setH( tmp );
 
             tmp = THIS.memory.peek(THIS.reg.SP);
-            THIS.memory.poke(THIS.reg.SP, THIS.reg.L);
-            THIS.reg.L = tmp;
+            THIS.memory.poke(THIS.reg.SP, THIS.reg.getL());
+            THIS.reg.setL( tmp );
         },
         disasm: function(mem, addr) {
             return {
@@ -1960,7 +1960,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0200")] = {
         mnemonic:"ADD A,B",
         cycle:4,
-        proc: function() { THIS.reg.addAcc(THIS.reg.B); },
+        proc: function() { THIS.reg.addAcc(THIS.reg.getB()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -1971,7 +1971,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0201")] = {
         mnemonic:"ADD A,C",
         cycle:4,
-        proc: function() { THIS.reg.addAcc(THIS.reg.C); },
+        proc: function() { THIS.reg.addAcc(THIS.reg.getC()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -1982,7 +1982,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0202")] = {
         mnemonic:"ADD A,D",
         cycle:4,
-        proc: function() { THIS.reg.addAcc(THIS.reg.D); },
+        proc: function() { THIS.reg.addAcc(THIS.reg.getD()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -1993,7 +1993,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0203")] = {
         mnemonic:"ADD A,E",
         cycle:4,
-        proc: function() { THIS.reg.addAcc(THIS.reg.E); },
+        proc: function() { THIS.reg.addAcc(THIS.reg.getE()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2004,7 +2004,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0204")] = {
         mnemonic:"ADD A,H",
         cycle:4,
-        proc: function() { THIS.reg.addAcc(THIS.reg.H); },
+        proc: function() { THIS.reg.addAcc(THIS.reg.getH()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2015,7 +2015,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0205")] = {
         mnemonic:"ADD A,L",
         cycle:4,
-        proc: function() { THIS.reg.addAcc(THIS.reg.L); },
+        proc: function() { THIS.reg.addAcc(THIS.reg.getL()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2026,7 +2026,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0207")] = {
         mnemonic:"ADD A,A",
         cycle:4,
-        proc: function() { THIS.reg.addAcc(THIS.reg.A); },
+        proc: function() { THIS.reg.addAcc(THIS.reg.getA()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2108,7 +2108,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0210")] = {
         mnemonic:"ADC A,B",
         cycle:4,
-        proc: function() { THIS.reg.addAccWithCarry(THIS.reg.B); },
+        proc: function() { THIS.reg.addAccWithCarry(THIS.reg.getB()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2119,7 +2119,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0211")] = {
         mnemonic:"ADC A,C",
         cycle:4,
-        proc: function() { THIS.reg.addAccWithCarry(THIS.reg.C); },
+        proc: function() { THIS.reg.addAccWithCarry(THIS.reg.getC()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2130,7 +2130,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0212")] = {
         mnemonic:"ADC A,D",
         cycle:4,
-        proc: function() { THIS.reg.addAccWithCarry(THIS.reg.D); },
+        proc: function() { THIS.reg.addAccWithCarry(THIS.reg.getD()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2141,7 +2141,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0213")] = {
         mnemonic:"ADC A,E",
         cycle:4,
-        proc: function() { THIS.reg.addAccWithCarry(THIS.reg.E); },
+        proc: function() { THIS.reg.addAccWithCarry(THIS.reg.getE()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2152,7 +2152,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0214")] = {
         mnemonic:"ADC A,H",
         cycle:4,
-        proc: function() { THIS.reg.addAccWithCarry(THIS.reg.H); },
+        proc: function() { THIS.reg.addAccWithCarry(THIS.reg.getH()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2163,7 +2163,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0215")] = {
         mnemonic:"ADC A,L",
         cycle:4,
-        proc: function() { THIS.reg.addAccWithCarry(THIS.reg.L); },
+        proc: function() { THIS.reg.addAccWithCarry(THIS.reg.getL()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2174,7 +2174,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0217")] = {
         mnemonic:"ADC A,A",
         cycle:4,
-        proc: function() { THIS.reg.addAccWithCarry(THIS.reg.A); },
+        proc: function() { THIS.reg.addAccWithCarry(THIS.reg.getA()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2239,7 +2239,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0220")] = {
         mnemonic:"SUB A,B",
         cycle:4,
-        proc: function() { THIS.reg.subAcc(THIS.reg.B); },
+        proc: function() { THIS.reg.subAcc(THIS.reg.getB()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2250,7 +2250,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0221")] = {
         mnemonic:"SUB A,C",
         cycle:4,
-        proc: function() { THIS.reg.subAcc(THIS.reg.C); },
+        proc: function() { THIS.reg.subAcc(THIS.reg.getC()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2261,7 +2261,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0222")] = {
         mnemonic:"SUB A,D",
         cycle:4,
-        proc: function() { THIS.reg.subAcc(THIS.reg.D); },
+        proc: function() { THIS.reg.subAcc(THIS.reg.getD()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2272,7 +2272,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0223")] = {
         mnemonic:"SUB A,E",
         cycle:4,
-        proc: function() { THIS.reg.subAcc(THIS.reg.E); },
+        proc: function() { THIS.reg.subAcc(THIS.reg.getE()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2283,7 +2283,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0224")] = {
         mnemonic:"SUB A,H",
         cycle:4,
-        proc: function() { THIS.reg.subAcc(THIS.reg.H); },
+        proc: function() { THIS.reg.subAcc(THIS.reg.getH()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2294,7 +2294,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0225")] = {
         mnemonic:"SUB A,L",
         cycle:4,
-        proc: function() { THIS.reg.subAcc(THIS.reg.L); },
+        proc: function() { THIS.reg.subAcc(THIS.reg.getL()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2305,7 +2305,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0227")] = {
         mnemonic:"SUB A,A",
         cycle:4,
-        proc: function() { THIS.reg.subAcc(THIS.reg.A); },
+        proc: function() { THIS.reg.subAcc(THIS.reg.getA()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2372,7 +2372,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0230")] = {
         mnemonic:"SBC A,B",
         cycle:4,
-        proc: function() { THIS.reg.subAccWithCarry(THIS.reg.B); },
+        proc: function() { THIS.reg.subAccWithCarry(THIS.reg.getB()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2383,7 +2383,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0231")] = {
         mnemonic:"SBC A,C",
         cycle:4,
-        proc: function() { THIS.reg.subAccWithCarry(THIS.reg.C); },
+        proc: function() { THIS.reg.subAccWithCarry(THIS.reg.getC()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2394,7 +2394,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0232")] = {
         mnemonic:"SBC A,D",
         cycle:4,
-        proc: function() { THIS.reg.subAccWithCarry(THIS.reg.D); },
+        proc: function() { THIS.reg.subAccWithCarry(THIS.reg.getD()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2405,7 +2405,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0233")] = {
         mnemonic:"SBC A,E",
         cycle:4,
-        proc: function() { THIS.reg.subAccWithCarry(THIS.reg.E); },
+        proc: function() { THIS.reg.subAccWithCarry(THIS.reg.getE()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2416,7 +2416,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0234")] = {
         mnemonic:"SBC A,H",
         cycle:4,
-        proc: function() { THIS.reg.subAccWithCarry(THIS.reg.H); },
+        proc: function() { THIS.reg.subAccWithCarry(THIS.reg.getH()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2427,7 +2427,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0235")] = {
         mnemonic:"SBC A,L",
         cycle:4,
-        proc: function() { THIS.reg.subAccWithCarry(THIS.reg.L); },
+        proc: function() { THIS.reg.subAccWithCarry(THIS.reg.getL()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2438,7 +2438,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0237")] = {
         mnemonic:"SBC A,A",
         cycle:4,
-        proc: function() { THIS.reg.subAccWithCarry(THIS.reg.A); },
+        proc: function() { THIS.reg.subAccWithCarry(THIS.reg.getA()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2503,7 +2503,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0240")] = {
         mnemonic:"AND B",
         cycle:4,
-        proc: function() { THIS.reg.andAcc(THIS.reg.B); },
+        proc: function() { THIS.reg.andAcc(THIS.reg.getB()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2514,7 +2514,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0241")] = {
         mnemonic:"AND C",
         cycle:4,
-        proc: function() { THIS.reg.andAcc(THIS.reg.C); },
+        proc: function() { THIS.reg.andAcc(THIS.reg.getC()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2525,7 +2525,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0242")] = {
         mnemonic:"AND D",
         cycle:4,
-        proc: function() { THIS.reg.andAcc(THIS.reg.D); },
+        proc: function() { THIS.reg.andAcc(THIS.reg.getD()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2536,7 +2536,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0243")] = {
         mnemonic:"AND E",
         cycle:4,
-        proc: function() { THIS.reg.andAcc(THIS.reg.E); },
+        proc: function() { THIS.reg.andAcc(THIS.reg.getE()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2547,7 +2547,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0244")] = {
         mnemonic:"AND H",
         cycle:4,
-        proc: function() { THIS.reg.andAcc(THIS.reg.H); },
+        proc: function() { THIS.reg.andAcc(THIS.reg.getH()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2558,7 +2558,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0245")] = {
         mnemonic:"AND L",
         cycle:4,
-        proc: function() { THIS.reg.andAcc(THIS.reg.L); },
+        proc: function() { THIS.reg.andAcc(THIS.reg.getL()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2569,7 +2569,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0247")] = {
         mnemonic:"AND A",
         cycle:4,
-        proc: function() { THIS.reg.andAcc(THIS.reg.A); },
+        proc: function() { THIS.reg.andAcc(THIS.reg.getA()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2635,7 +2635,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0260")] = {
         mnemonic:"OR B",
         cycle:4,
-        proc: function() { THIS.reg.orAcc(THIS.reg.B); },
+        proc: function() { THIS.reg.orAcc(THIS.reg.getB()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2646,7 +2646,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0261")] = {
         mnemonic:"OR C",
         cycle:4,
-        proc: function() { THIS.reg.orAcc(THIS.reg.C); },
+        proc: function() { THIS.reg.orAcc(THIS.reg.getC()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2657,7 +2657,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0262")] = {
         mnemonic:"OR D",
         cycle:4,
-        proc: function() { THIS.reg.orAcc(THIS.reg.D); },
+        proc: function() { THIS.reg.orAcc(THIS.reg.getD()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2668,7 +2668,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0263")] = {
         mnemonic:"OR E",
         cycle:4,
-        proc: function() { THIS.reg.orAcc(THIS.reg.E); },
+        proc: function() { THIS.reg.orAcc(THIS.reg.getE()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2679,7 +2679,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0264")] = {
         mnemonic:"OR H",
         cycle:4,
-        proc: function() { THIS.reg.orAcc(THIS.reg.H); },
+        proc: function() { THIS.reg.orAcc(THIS.reg.getH()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2690,7 +2690,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0265")] = {
         mnemonic:"OR L",
         cycle:4,
-        proc: function() { THIS.reg.orAcc(THIS.reg.L); },
+        proc: function() { THIS.reg.orAcc(THIS.reg.getL()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2701,7 +2701,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0267")] = {
         mnemonic:"OR A",
         cycle:4,
-        proc: function() { THIS.reg.orAcc(THIS.reg.A); },
+        proc: function() { THIS.reg.orAcc(THIS.reg.getA()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2768,7 +2768,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0250")] = {
         mnemonic:"XOR B",
         cycle:4,
-        proc: function() { THIS.reg.xorAcc(THIS.reg.B); },
+        proc: function() { THIS.reg.xorAcc(THIS.reg.getB()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2779,7 +2779,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0251")] = {
         mnemonic:"XOR C",
         cycle:4,
-        proc: function() { THIS.reg.xorAcc(THIS.reg.C); },
+        proc: function() { THIS.reg.xorAcc(THIS.reg.getC()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2790,7 +2790,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0252")] = {
         mnemonic:"XOR D",
         cycle:4,
-        proc: function() { THIS.reg.xorAcc(THIS.reg.D); },
+        proc: function() { THIS.reg.xorAcc(THIS.reg.getD()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2801,7 +2801,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0253")] = {
         mnemonic:"XOR E",
         cycle:4,
-        proc: function() { THIS.reg.xorAcc(THIS.reg.E); },
+        proc: function() { THIS.reg.xorAcc(THIS.reg.getE()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2812,7 +2812,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0254")] = {
         mnemonic:"XOR H",
         cycle:4,
-        proc: function() { THIS.reg.xorAcc(THIS.reg.H); },
+        proc: function() { THIS.reg.xorAcc(THIS.reg.getH()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2823,7 +2823,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0255")] = {
         mnemonic:"XOR L",
         cycle:4,
-        proc: function() { THIS.reg.xorAcc(THIS.reg.L); },
+        proc: function() { THIS.reg.xorAcc(THIS.reg.getL()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2834,7 +2834,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0257")] = {
         mnemonic:"XOR A",
         cycle:4,
-        proc: function() { THIS.reg.xorAcc(THIS.reg.A); },
+        proc: function() { THIS.reg.xorAcc(THIS.reg.getA()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2898,7 +2898,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0270")] = {
         mnemonic:"CP B",
         cycle:4,
-        proc: function() { THIS.reg.compareAcc(THIS.reg.B); },
+        proc: function() { THIS.reg.compareAcc(THIS.reg.getB()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2909,7 +2909,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0271")] = {
         mnemonic:"CP C",
         cycle:4,
-        proc: function() { THIS.reg.compareAcc(THIS.reg.C); },
+        proc: function() { THIS.reg.compareAcc(THIS.reg.getC()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2920,7 +2920,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0272")] = {
         mnemonic:"CP D",
         cycle:4,
-        proc: function() { THIS.reg.compareAcc(THIS.reg.D); },
+        proc: function() { THIS.reg.compareAcc(THIS.reg.getD()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2931,7 +2931,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0273")] = {
         mnemonic:"CP E",
         cycle:4,
-        proc: function() { THIS.reg.compareAcc(THIS.reg.E); },
+        proc: function() { THIS.reg.compareAcc(THIS.reg.getE()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2942,7 +2942,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0274")] = {
         mnemonic:"CP H",
         cycle:4,
-        proc: function() { THIS.reg.compareAcc(THIS.reg.H); },
+        proc: function() { THIS.reg.compareAcc(THIS.reg.getH()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2953,7 +2953,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0275")] = {
         mnemonic:"CP L",
         cycle:4,
-        proc: function() { THIS.reg.compareAcc(THIS.reg.L); },
+        proc: function() { THIS.reg.compareAcc(THIS.reg.getL()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -2964,7 +2964,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0277")] = {
         mnemonic:"CP A",
         cycle:4,
-        proc: function() { THIS.reg.compareAcc(THIS.reg.A); },
+        proc: function() { THIS.reg.compareAcc(THIS.reg.getA()); },
         disasm: function(mem, addr) {
             return {
                 code:[mem.peek(addr)],
@@ -3865,7 +3865,7 @@ Z80.prototype.createOpecodeTable = function() {
         mnemonic:"RLC B",
         cycle: 4,
         proc: function() {
-            THIS.reg.B = THIS.reg.RLC(THIS.reg.B);
+            THIS.reg.setB( THIS.reg.RLC(THIS.reg.getB()) );
         },
         disasm:function(mem, addr) {
             return {
@@ -3878,7 +3878,7 @@ Z80.prototype.createOpecodeTable = function() {
         mnemonic:"RLC C",
         cycle: 4,
         proc: function() {
-            THIS.reg.C = THIS.reg.RLC(THIS.reg.C);
+            THIS.reg.setC( THIS.reg.RLC(THIS.reg.getC()) );
         },
         disasm:function(mem, addr) {
             return {
@@ -3891,7 +3891,7 @@ Z80.prototype.createOpecodeTable = function() {
         mnemonic:"RLC D",
         cycle: 4,
         proc: function() {
-            THIS.reg.D = THIS.reg.RLC(THIS.reg.D);
+            THIS.reg.setD( THIS.reg.RLC(THIS.reg.getD()) );
         },
         disasm:function(mem, addr) {
             return {
@@ -3904,7 +3904,7 @@ Z80.prototype.createOpecodeTable = function() {
         mnemonic:"RLC E",
         cycle: 4,
         proc: function() {
-            THIS.reg.E = THIS.reg.RLC(THIS.reg.E);
+            THIS.reg.setE( THIS.reg.RLC(THIS.reg.getE()) );
         },
         disasm:function(mem, addr) {
             return {
@@ -3917,7 +3917,7 @@ Z80.prototype.createOpecodeTable = function() {
         mnemonic:"RLC H",
         cycle: 4,
         proc: function() {
-            THIS.reg.H = THIS.reg.RLC(THIS.reg.H);
+            THIS.reg.setH( THIS.reg.RLC(THIS.reg.getH()) );
         },
         disasm:function(mem, addr) {
             return {
@@ -3930,7 +3930,7 @@ Z80.prototype.createOpecodeTable = function() {
         mnemonic:"RLC L",
         cycle: 4,
         proc: function() {
-            THIS.reg.L = THIS.reg.RLC(THIS.reg.L);
+            THIS.reg.setL( THIS.reg.RLC(THIS.reg.getL()) );
         },
         disasm:function(mem, addr) {
             return {
@@ -3943,7 +3943,7 @@ Z80.prototype.createOpecodeTable = function() {
         mnemonic:"RLC A",
         cycle: 4,
         proc: function() {
-            THIS.reg.A = THIS.reg.RLC(THIS.reg.A);
+            THIS.reg.setA( THIS.reg.RLC(THIS.reg.getA()) );
         },
         disasm:function(mem, addr) {
             return {
@@ -3997,37 +3997,37 @@ Z80.prototype.createOpecodeTable = function() {
     opeRotate[oct("0020")] = {
         mnemonic:"RL B",
         cycle: 8,
-        proc: function() { THIS.reg.B = THIS.reg.RL(THIS.reg.B); },
+        proc: function() { THIS.reg.setB( THIS.reg.RL(THIS.reg.getB()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RL","B"] };}
     };
     opeRotate[oct("0021")] = {
         mnemonic:"RL C",
         cycle: 8,
-        proc: function() { THIS.reg.C = THIS.reg.RL(THIS.reg.C); },
+        proc: function() { THIS.reg.setC( THIS.reg.RL(THIS.reg.getC()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RL","C"] };}
     };
     opeRotate[oct("0022")] = {
         mnemonic:"RL D",
         cycle: 8,
-        proc: function() { THIS.reg.D = THIS.reg.RL(THIS.reg.D); },
+        proc: function() { THIS.reg.setD( THIS.reg.RL(THIS.reg.getD()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RL","D"] };}
     };
     opeRotate[oct("0023")] = {
         mnemonic:"RL E",
         cycle: 8,
-        proc: function() { THIS.reg.E = THIS.reg.RL(THIS.reg.E); },
+        proc: function() { THIS.reg.setE( THIS.reg.RL(THIS.reg.getE()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RL","E"] };}
     };
     opeRotate[oct("0024")] = {
         mnemonic:"RL H",
         cycle: 8,
-        proc: function() { THIS.reg.H = THIS.reg.RL(THIS.reg.H); },
+        proc: function() { THIS.reg.setH( THIS.reg.RL(THIS.reg.getH()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RL","H"] };}
     };
     opeRotate[oct("0025")] = {
         mnemonic:"RL L",
         cycle: 8,
-        proc: function() { THIS.reg.L = THIS.reg.RL(THIS.reg.L); },
+        proc: function() { THIS.reg.setL( THIS.reg.RL(THIS.reg.getL()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RL","L"] };}
     };
     opeRotate[oct("0026")] = {
@@ -4039,7 +4039,7 @@ Z80.prototype.createOpecodeTable = function() {
     opeRotate[oct("0027")] = {
         mnemonic:"RL A",
         cycle: 8,
-        proc: function() { THIS.reg.A = THIS.reg.RL(THIS.reg.A); },
+        proc: function() { THIS.reg.setA( THIS.reg.RL(THIS.reg.getA()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RL","A"] };}
     };
     opeRotateIX[oct("0026")] = {
@@ -4068,43 +4068,43 @@ Z80.prototype.createOpecodeTable = function() {
     opeRotate[oct("0010")] = {
         mnemonic:"RRC B",
         cycle: 4,
-        proc: function() { THIS.reg.B = THIS.reg.RRC(THIS.reg.B); },
+        proc: function() { THIS.reg.setB( THIS.reg.RRC(THIS.reg.getB()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RRC","B"] };}
     };
     opeRotate[oct("0011")] = {
         mnemonic:"RRC C",
         cycle: 4,
-        proc: function() { THIS.reg.C = THIS.reg.RRC(THIS.reg.C); },
+        proc: function() { THIS.reg.setC( THIS.reg.RRC(THIS.reg.getC()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RRC","C"] };}
     };
     opeRotate[oct("0012")] = {
         mnemonic:"RRC D",
         cycle: 4,
-        proc: function() { THIS.reg.D = THIS.reg.RRC(THIS.reg.D); },
+        proc: function() { THIS.reg.setD( THIS.reg.RRC(THIS.reg.getD()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RRC","D"] };}
     };
     opeRotate[oct("0013")] = {
         mnemonic:"RRC E",
         cycle: 4,
-        proc: function() { THIS.reg.E = THIS.reg.RRC(THIS.reg.E); },
+        proc: function() { THIS.reg.setE( THIS.reg.RRC(THIS.reg.getE()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RRC","E"] };}
     };
     opeRotate[oct("0014")] = {
         mnemonic:"RRC H",
         cycle: 4,
-        proc: function() { THIS.reg.H = THIS.reg.RRC(THIS.reg.H); },
+        proc: function() { THIS.reg.setH( THIS.reg.RRC(THIS.reg.getH()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RRC","H"] };}
     };
     opeRotate[oct("0015")] = {
         mnemonic:"RRC L",
         cycle: 4,
-        proc: function() { THIS.reg.L = THIS.reg.RRC(THIS.reg.L); },
+        proc: function() { THIS.reg.setL( THIS.reg.RRC(THIS.reg.getL()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RRC","L"] };}
     };
     opeRotate[oct("0017")] = {
         mnemonic:"RRC A",
         cycle: 4,
-        proc: function() { THIS.reg.A = THIS.reg.RRC(THIS.reg.A); },
+        proc: function() { THIS.reg.setA( THIS.reg.RRC(THIS.reg.getA()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RRC","A"] };}
     };
     opeRotate[oct("0016")] = {
@@ -4139,37 +4139,37 @@ Z80.prototype.createOpecodeTable = function() {
     opeRotate[oct("0030")] = {
         mnemonic:"RR B",
         cycle: 8,
-        proc: function() { THIS.reg.B = THIS.reg.RR(THIS.reg.B); },
+        proc: function() { THIS.reg.setB( THIS.reg.RR(THIS.reg.getB()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RR","B"] };}
     };
     opeRotate[oct("0031")] = {
         mnemonic:"RR C",
         cycle: 8,
-        proc: function() { THIS.reg.C = THIS.reg.RR(THIS.reg.C); },
+        proc: function() { THIS.reg.setC( THIS.reg.RR(THIS.reg.getC()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RR","C"] };}
     };
     opeRotate[oct("0032")] = {
         mnemonic:"RR D",
         cycle: 8,
-        proc: function() { THIS.reg.D = THIS.reg.RR(THIS.reg.D); },
+        proc: function() { THIS.reg.setD( THIS.reg.RR(THIS.reg.getD()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RR","D"] };}
     };
     opeRotate[oct("0033")] = {
         mnemonic:"RR E",
         cycle: 8,
-        proc: function() { THIS.reg.E = THIS.reg.RR(THIS.reg.E); },
+        proc: function() { THIS.reg.setE( THIS.reg.RR(THIS.reg.getE()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RR","E"] };}
     };
     opeRotate[oct("0034")] = {
         mnemonic:"RR H",
         cycle: 8,
-        proc: function() { THIS.reg.H = THIS.reg.RR(THIS.reg.H); },
+        proc: function() { THIS.reg.setH( THIS.reg.RR(THIS.reg.getH()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RR","H"] };}
     };
     opeRotate[oct("0035")] = {
         mnemonic:"RR L",
         cycle: 8,
-        proc: function() { THIS.reg.L = THIS.reg.RR(THIS.reg.L); },
+        proc: function() { THIS.reg.setL( THIS.reg.RR(THIS.reg.getL()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RR","L"] };}
     };
     opeRotate[oct("0036")] = {
@@ -4181,7 +4181,7 @@ Z80.prototype.createOpecodeTable = function() {
     opeRotate[oct("0037")] = {
         mnemonic:"RR A",
         cycle: 8,
-        proc: function() { THIS.reg.A = THIS.reg.RR(THIS.reg.A); },
+        proc: function() { THIS.reg.setA( THIS.reg.RR(THIS.reg.getA()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["RR","A"] };}
     };
     opeRotateIX[oct("0036")] = {
@@ -4210,43 +4210,43 @@ Z80.prototype.createOpecodeTable = function() {
     opeRotate[oct("0040")] = {
         mnemonic:"SLA B",
         cycle:8,
-        proc: function() { THIS.reg.B = THIS.reg.SLA(THIS.reg.B); },
+        proc: function() { THIS.reg.setB( THIS.reg.SLA(THIS.reg.getB()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SLA","B"] };}
     };
     opeRotate[oct("0041")] = {
         mnemonic:"SLA C",
         cycle:8,
-        proc: function() { THIS.reg.C = THIS.reg.SLA(THIS.reg.C); },
+        proc: function() { THIS.reg.setC( THIS.reg.SLA(THIS.reg.getC()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SLA","C"] };}
     };
     opeRotate[oct("0042")] = {
         mnemonic:"SLA D",
         cycle:8,
-        proc: function() { THIS.reg.D = THIS.reg.SLA(THIS.reg.D); },
+        proc: function() { THIS.reg.setD( THIS.reg.SLA(THIS.reg.getD()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SLA","D"] };}
     };
     opeRotate[oct("0043")] = {
         mnemonic:"SLA E",
         cycle:8,
-        proc: function() { THIS.reg.E = THIS.reg.SLA(THIS.reg.E); },
+        proc: function() { THIS.reg.setE( THIS.reg.SLA(THIS.reg.getE()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SLA","E"] };}
     };
     opeRotate[oct("0044")] = {
         mnemonic:"SLA H",
         cycle:8,
-        proc: function() { THIS.reg.H = THIS.reg.SLA(THIS.reg.H); },
+        proc: function() { THIS.reg.setH( THIS.reg.SLA(THIS.reg.getH()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SLA","H"] };}
     };
     opeRotate[oct("0045")] = {
         mnemonic:"SLA L",
         cycle:8,
-        proc: function() { THIS.reg.L = THIS.reg.SLA(THIS.reg.L); },
+        proc: function() { THIS.reg.setL( THIS.reg.SLA(THIS.reg.getL()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SLA","L"] };}
     };
     opeRotate[oct("0047")] = {
         mnemonic:"SLA A",
         cycle:8,
-        proc: function() { THIS.reg.A = THIS.reg.SLA(THIS.reg.A); },
+        proc: function() { THIS.reg.setA( THIS.reg.SLA(THIS.reg.getA()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SLA","A"] };}
     };
     opeRotate[oct("0046")] = {
@@ -4281,43 +4281,43 @@ Z80.prototype.createOpecodeTable = function() {
     opeRotate[oct("0050")] = {
         mnemonic:"SRA B",
         cycle: 8,
-        proc: function() { THIS.reg.B = THIS.reg.SRA(THIS.reg.B); },
+        proc: function() { THIS.reg.setB( THIS.reg.SRA(THIS.reg.getB()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SRA","B"] };}
     };
     opeRotate[oct("0051")] = {
         mnemonic:"SRA C",
         cycle: 8,
-        proc: function() { THIS.reg.C = THIS.reg.SRA(THIS.reg.C); },
+        proc: function() { THIS.reg.setC( THIS.reg.SRA(THIS.reg.getC()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SRA","C"] };}
     };
     opeRotate[oct("0052")] = {
         mnemonic:"SRA D",
         cycle: 8,
-        proc: function() { THIS.reg.D = THIS.reg.SRA(THIS.reg.D); },
+        proc: function() { THIS.reg.setD( THIS.reg.SRA(THIS.reg.getD()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SRA","D"] };}
     };
     opeRotate[oct("0053")] = {
         mnemonic:"SRA E",
         cycle: 8,
-        proc: function() { THIS.reg.E = THIS.reg.SRA(THIS.reg.E); },
+        proc: function() { THIS.reg.setE( THIS.reg.SRA(THIS.reg.getE()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SRA","E"] };}
     };
     opeRotate[oct("0054")] = {
         mnemonic:"SRA H",
         cycle: 8,
-        proc: function() { THIS.reg.H = THIS.reg.SRA(THIS.reg.H); },
+        proc: function() { THIS.reg.setH( THIS.reg.SRA(THIS.reg.getH()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SRA","H"] };}
     };
     opeRotate[oct("0055")] = {
         mnemonic:"SRA L",
         cycle: 8,
-        proc: function() { THIS.reg.L = THIS.reg.SRA(THIS.reg.L); },
+        proc: function() { THIS.reg.setL( THIS.reg.SRA(THIS.reg.getL()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SRA","L"] };}
     };
     opeRotate[oct("0057")] = {
         mnemonic:"SRA A",
         cycle: 8,
-        proc: function() { THIS.reg.A = THIS.reg.SRA(THIS.reg.A); },
+        proc: function() { THIS.reg.setA( THIS.reg.SRA(THIS.reg.getA()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SRA","A"] };}
     };
     opeRotate[oct("0056")] = {
@@ -4352,43 +4352,43 @@ Z80.prototype.createOpecodeTable = function() {
     opeRotate[oct("0070")] = {
         mnemonic:"SRL B",
         cycle: 8,
-        proc: function() { THIS.reg.B = THIS.reg.SRL(THIS.reg.B); },
+        proc: function() { THIS.reg.setB( THIS.reg.SRL(THIS.reg.getB()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SRL","B"] };}
     };
     opeRotate[oct("0071")] = {
         mnemonic:"SRL C",
         cycle: 8,
-        proc: function() { THIS.reg.C = THIS.reg.SRL(THIS.reg.C); },
+        proc: function() { THIS.reg.setC( THIS.reg.SRL(THIS.reg.getC()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SRL","C"] };}
     };
     opeRotate[oct("0072")] = {
         mnemonic:"SRL D",
         cycle: 8,
-        proc: function() { THIS.reg.D = THIS.reg.SRL(THIS.reg.D); },
+        proc: function() { THIS.reg.setD( THIS.reg.SRL(THIS.reg.getD()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SRL","D"] };}
     };
     opeRotate[oct("0073")] = {
         mnemonic:"SRL E",
         cycle: 8,
-        proc: function() { THIS.reg.E = THIS.reg.SRL(THIS.reg.E); },
+        proc: function() { THIS.reg.setE( THIS.reg.SRL(THIS.reg.getE()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SRL","E"] };}
     };
     opeRotate[oct("0074")] = {
         mnemonic:"SRL H",
         cycle: 8,
-        proc: function() { THIS.reg.H = THIS.reg.SRL(THIS.reg.H); },
+        proc: function() { THIS.reg.setH( THIS.reg.SRL(THIS.reg.getH()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SRL","H"] };}
     };
     opeRotate[oct("0075")] = {
         mnemonic:"SRL L",
         cycle: 8,
-        proc: function() { THIS.reg.L = THIS.reg.SRL(THIS.reg.L); },
+        proc: function() { THIS.reg.setL( THIS.reg.SRL(THIS.reg.getL()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SRL","L"] };}
     };
     opeRotate[oct("0077")] = {
         mnemonic:"SRL A",
         cycle: 8,
-        proc: function() { THIS.reg.A = THIS.reg.SRL(THIS.reg.A); },
+        proc: function() { THIS.reg.setA( THIS.reg.SRL(THIS.reg.getA()) ); },
         disasm: function(mem, addr) { return { code:[mem.peek(addr), mem.peek(addr+1)], mnemonic:["SRL","A"] };}
     };
     opeRotate[oct("0076")] = {
@@ -4426,12 +4426,12 @@ Z80.prototype.createOpecodeTable = function() {
         proc: function() {
             var adr = THIS.reg.getHL();
             var n = THIS.memory.peek(adr);
-            var AH = THIS.reg.A & 0xf0;
-            var AL = THIS.reg.A & 0x0f;
+            var AH = THIS.reg.getA() & 0xf0;
+            var AL = THIS.reg.getA() & 0x0f;
             var nH = (n >> 4) & 0x0f;
             var nL = (n >> 0) & 0x0f;
             
-            THIS.reg.A = AH | nH;
+            THIS.reg.setA( AH | nH );
             n = (nL << 4) | AL;
             
             THIS.memory.poke(adr, n);
@@ -4449,12 +4449,12 @@ Z80.prototype.createOpecodeTable = function() {
         proc: function() {
             var adr = THIS.reg.getHL();
             var n = THIS.memory.peek(adr);
-            var AH = THIS.reg.A & 0xf0;
-            var AL = THIS.reg.A & 0x0F;
+            var AH = THIS.reg.getA() & 0xf0;
+            var AL = THIS.reg.getA() & 0x0F;
             var nH = (n >> 4) & 0x0f;
             var nL = (n >> 0) & 0x0f;
 
-            THIS.reg.A = AH | nL;
+            THIS.reg.setA( AH | nL );
             n = (AL << 4) | nH;
             
             THIS.memory.poke(adr, n);
@@ -4481,7 +4481,7 @@ Z80.prototype.createOpecodeTable = function() {
                 proc: (function(b,r) {
                     if(r != 6) {
                         return function() {
-                            var value = THIS.reg[reg8[r]];
+                            var value = THIS.reg["get" + reg8[r]]();
                             if( (value & (1 << b)) != 0) {
                                 THIS.reg.clearFlagZ();
                             } else {
@@ -4761,7 +4761,7 @@ Z80.prototype.createOpecodeTable = function() {
                 proc: (function(b,r) {
                     if(r != 6) {
                         return function() {
-                            THIS.reg[reg8[r]] |= (1 << b);
+                            THIS.reg["set" + reg8[r]]( THIS.reg["get" + reg8[r]]() | (1 << b) );
                         };
                     } else {
                         return function() {
@@ -4941,7 +4941,7 @@ Z80.prototype.createOpecodeTable = function() {
     var procRES_8bit = function(b,r) {
         var bits = ~(1 << b);
         return function() {
-            THIS.reg[r] &= bits;
+            THIS.reg["set" + r]( THIS.reg["get" + r]() & bits );
         };
     };
     var disaRES_8bit = function(b,r) {
@@ -5262,7 +5262,7 @@ Z80.prototype.createOpecodeTable = function() {
     opeIX[/* DD 44 = 01-000-100 = */ oct("0104")] = {
         mnemonic:"LD B,IXH",
         proc: function() {
-            THIS.reg.B = ((THIS.reg.IX >> 8) & 0xff);
+            THIS.reg.setB( ((THIS.reg.IX >> 8) & 0xff) );
         },
         disasm: function(mem, addr) {
             return {
@@ -5274,7 +5274,7 @@ Z80.prototype.createOpecodeTable = function() {
     opeIX[/* DD 4D = 01-001-101 = */ oct("0115")] = {
         mnemonic:"LD C,IXL",
         proc: function() {
-            THIS.reg.C = (THIS.reg.IX & 0xff);
+            THIS.reg.setC( (THIS.reg.IX & 0xff) );
         },
         disasm: function(mem, addr) {
             return {
@@ -5286,7 +5286,7 @@ Z80.prototype.createOpecodeTable = function() {
     opeIX[/* DD 60 = 01-100-000 = */ oct("0140")] = {
         mnemonic:"LD IXH,B",
         proc: function() {
-            THIS.reg.IX = (0xff00 & (THIS.reg.B << 8)) | (THIS.reg.IX & 0xff);
+            THIS.reg.IX = (0xff00 & (THIS.reg.getB() << 8)) | (THIS.reg.IX & 0xff);
         },
         disasm: function(mem, addr) {
             return {
@@ -5298,7 +5298,7 @@ Z80.prototype.createOpecodeTable = function() {
     opeIX[/* DD 67 = 01-100-111 = */ oct("0147")] = {
         mnemonic:"LD IXH,A",
         proc: function() {
-            THIS.reg.IX = (0xff00 & (THIS.reg.A << 8)) | (THIS.reg.IX & 0xff);
+            THIS.reg.IX = (0xff00 & (THIS.reg.getA() << 8)) | (THIS.reg.IX & 0xff);
         },
         disasm: function(mem, addr) {
             return {
@@ -5310,7 +5310,7 @@ Z80.prototype.createOpecodeTable = function() {
     opeIX[/* DD 69 = 01-101-001 = */ oct("0151")] = {
         mnemonic:"LD IXL,C",
         proc: function() {
-            THIS.reg.IX = (0xff00 & THIS.reg.IX ) | (THIS.reg.C & 0xff);
+            THIS.reg.IX = (0xff00 & THIS.reg.IX ) | (THIS.reg.getC() & 0xff);
         },
         disasm: function(mem, addr) {
             return {
@@ -5322,7 +5322,7 @@ Z80.prototype.createOpecodeTable = function() {
     opeIX[/* DD 6F = 01-101-111 = */ oct("0157")] = {
         mnemonic:"LD IXL,A",
         proc: function() {
-            THIS.reg.IX = (0xff00 & THIS.reg.IX ) | (THIS.reg.A & 0xff);
+            THIS.reg.IX = (0xff00 & THIS.reg.IX ) | (THIS.reg.getA() & 0xff);
         },
         disasm: function(mem, addr) {
             return {
@@ -5334,7 +5334,7 @@ Z80.prototype.createOpecodeTable = function() {
     opeIX[/* DD 7D = 01-111-101 = */ oct("0175")] = {
         mnemonic:"LD A,IXL",
         proc: function() {
-            THIS.reg.A = (THIS.reg.IX & 0xff);
+            THIS.reg.setA( (THIS.reg.IX & 0xff) );
         },
         disasm: function(mem, addr) {
             return {
@@ -5386,7 +5386,7 @@ Z80.prototype.createOpecodeTable = function() {
         proc: function() {
             var e = THIS.fetch();
             THIS.reg.decrement("B");
-            if(THIS.reg.B) {
+            if(THIS.reg.getB()) {
                 THIS.reg.jumpRel(e);
             }
         },
@@ -5754,7 +5754,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0333")] = {
         mnemonic:"IN A,(n)",
         cycle:11,
-        proc: function() { THIS.reg.A = THIS.readIoPort(THIS.fetch()); },
+        proc: function() { THIS.reg.setA( THIS.readIoPort(THIS.fetch()) ); },
         disasm: function(mem,addr) {
             return {
                 code:[mem.peek(addr),mem.peek(addr+1)],
@@ -5765,7 +5765,7 @@ Z80.prototype.createOpecodeTable = function() {
     opeMisc[oct("0100")] = {
         mnemonic:"IN B,(C)",
         cycle:12,
-        proc: function() { THIS.reg.B = THIS.readIoPort(THIS.reg.C); },
+        proc: function() { THIS.reg.setB( THIS.readIoPort(THIS.reg.getC()) ); },
         disasm: function(mem,addr) {
             return {
                 code:[mem.peek(addr),mem.peek(addr+1)],
@@ -5776,7 +5776,7 @@ Z80.prototype.createOpecodeTable = function() {
     opeMisc[oct("0110")] = {
         mnemonic:"IN C,(C)",
         cycle:12,
-        proc: function() { THIS.reg.C = THIS.readIoPort(THIS.reg.C); },
+        proc: function() { THIS.reg.setC( THIS.readIoPort(THIS.reg.getC()) ); },
         disasm: function(mem,addr) {
             return {
                 code:[mem.peek(addr),mem.peek(addr+1)],
@@ -5787,7 +5787,7 @@ Z80.prototype.createOpecodeTable = function() {
     opeMisc[oct("0120")] = {
         mnemonic:"IN D,(C)",
         cycle:12,
-        proc: function() { THIS.reg.D = THIS.readIoPort(THIS.reg.C); },
+        proc: function() { THIS.reg.setD( THIS.readIoPort(THIS.reg.getC()) ); },
         disasm: function(mem,addr) {
             return {
                 code:[mem.peek(addr),mem.peek(addr+1)],
@@ -5798,7 +5798,7 @@ Z80.prototype.createOpecodeTable = function() {
     opeMisc[oct("0130")] = {
         mnemonic:"IN E,(C)",
         cycle:12,
-        proc: function() { THIS.reg.E = THIS.readIoPort(THIS.reg.C); },
+        proc: function() { THIS.reg.setE( THIS.readIoPort(THIS.reg.getC()) ); },
         disasm: function(mem,addr) {
             return {
                 code:[mem.peek(addr),mem.peek(addr+1)],
@@ -5809,7 +5809,7 @@ Z80.prototype.createOpecodeTable = function() {
     opeMisc[oct("0140")] = {
         mnemonic:"IN H,(C)",
         cycle:12,
-        proc: function() { THIS.reg.H = THIS.readIoPort(THIS.reg.C); },
+        proc: function() { THIS.reg.setH( THIS.readIoPort(THIS.reg.getC()) ); },
         disasm: function(mem,addr) {
             return {
                 code:[mem.peek(addr),mem.peek(addr+1)],
@@ -5820,7 +5820,7 @@ Z80.prototype.createOpecodeTable = function() {
     opeMisc[oct("0150")] = {
         mnemonic:"IN L,(C)",
         cycle:12,
-        proc: function() { THIS.reg.L = THIS.readIoPort(THIS.reg.C); },
+        proc: function() { THIS.reg.setL( THIS.readIoPort(THIS.reg.getC()) ); },
         disasm: function(mem,addr) {
             return {
                 code:[mem.peek(addr),mem.peek(addr+1)],
@@ -5831,7 +5831,7 @@ Z80.prototype.createOpecodeTable = function() {
     opeMisc[oct("0170")] = {//oct("001110000")
         mnemonic:"IN A,(C)",
         cycle:12,
-        proc: function() { THIS.reg.A = THIS.readIoPort(THIS.reg.C); },
+        proc: function() { THIS.reg.setA( THIS.readIoPort(THIS.reg.getC()) ); },
         disasm: function(mem,addr) {
             return {
                 code:[mem.peek(addr),mem.peek(addr+1)],
@@ -5843,8 +5843,8 @@ Z80.prototype.createOpecodeTable = function() {
         mnemonic:"INI",
         cycle:16,
         proc: function() {
-            THIS.reg.B = (THIS.reg.B - 1) & 0xff;
-            THIS.memory.poke(THIS.reg.getHL(), THIS.readIoPort(THIS.reg.C));
+            THIS.reg.setB( (THIS.reg.getB() - 1) & 0xff );
+            THIS.memory.poke(THIS.reg.getHL(), THIS.readIoPort(THIS.reg.getC()));
             THIS.postINI();
         },
         disasm: function(mem,addr) {
@@ -5858,10 +5858,10 @@ Z80.prototype.createOpecodeTable = function() {
         mnemonic:"INIR",
         cycle:"21 x reg B",
         proc: function() {
-            THIS.reg.B = (THIS.reg.B - 1) & 0xff;
-            THIS.memory.poke(THIS.reg.getHL(), THIS.readIoPort(THIS.reg.C));
+            THIS.reg.setB( (THIS.reg.getB() - 1) & 0xff );
+            THIS.memory.poke(THIS.reg.getHL(), THIS.readIoPort(THIS.reg.getC()));
             THIS.postINI();
-            if(THIS.reg.B != 0) {
+            if(THIS.reg.getB() != 0) {
                 THIS.reg.PC -= 2;
             }
             return 21;
@@ -5877,8 +5877,8 @@ Z80.prototype.createOpecodeTable = function() {
         mnemonic:"IND",
         cycle:16,
         proc: function() {
-            THIS.reg.B = (THIS.reg.B - 1) & 0xff;
-            THIS.memory.poke(THIS.reg.getHL(), THIS.readIoPort(THIS.reg.C));
+            THIS.reg.setB( (THIS.reg.getB() - 1) & 0xff );
+            THIS.memory.poke(THIS.reg.getHL(), THIS.readIoPort(THIS.reg.getC()));
             THIS.postIND();
         },
         disasm: function(mem,addr) {
@@ -5892,10 +5892,10 @@ Z80.prototype.createOpecodeTable = function() {
         mnemonic:"INDR",
         cycle:"21 x reg B",
         proc: function() {
-            THIS.reg.B = (THIS.reg.B - 1) & 0xff;
-            THIS.memory.poke(THIS.reg.getHL(), THIS.readIoPort(THIS.reg.C));
+            THIS.reg.setB( (THIS.reg.getB() - 1) & 0xff );
+            THIS.memory.poke(THIS.reg.getHL(), THIS.readIoPort(THIS.reg.getC()));
             THIS.postIND();
-            if(THIS.reg.B != 0) {
+            if(THIS.reg.getB() != 0) {
                 THIS.reg.PC -= 2;
             }
             return 21;
@@ -5910,7 +5910,7 @@ Z80.prototype.createOpecodeTable = function() {
     this.opecodeTable[oct("0323")] = {
         mnemonic:"OUT (n),A",
         cycle:11,
-        proc: function() { THIS.writeIoPort(THIS.fetch(), THIS.reg.A); },
+        proc: function() { THIS.writeIoPort(THIS.fetch(), THIS.reg.getA()); },
         disasm: function(mem,addr) {
             return {
                 code:[mem.peek(addr),mem.peek(addr+1)],
@@ -5921,7 +5921,7 @@ Z80.prototype.createOpecodeTable = function() {
     opeMisc[oct("0101")] = {
         mnemonic:"OUT (C),B",
         cycle:12,
-        proc: function() { THIS.writeIoPort(THIS.reg.C, THIS.reg.B); },
+        proc: function() { THIS.writeIoPort(THIS.reg.getC(), THIS.reg.getB()); },
         disasm: function(mem,addr) {
             return {
                 code:[mem.peek(addr),mem.peek(addr+1)],
@@ -5932,7 +5932,7 @@ Z80.prototype.createOpecodeTable = function() {
     opeMisc[oct("0111")] = {
         mnemonic:"OUT (C),C",
         cycle:12,
-        proc: function() { THIS.writeIoPort(THIS.reg.C, THIS.reg.C); },
+        proc: function() { THIS.writeIoPort(THIS.reg.getC(), THIS.reg.getC()); },
         disasm: function(mem,addr) {
             return {
                 code:[mem.peek(addr),mem.peek(addr+1)],
@@ -5943,7 +5943,7 @@ Z80.prototype.createOpecodeTable = function() {
     opeMisc[oct("0121")] = {
         mnemonic:"OUT (C),D",
         cycle:12,
-        proc: function() { THIS.writeIoPort(THIS.reg.C, THIS.reg.D); },
+        proc: function() { THIS.writeIoPort(THIS.reg.getC(), THIS.reg.getD()); },
         disasm: function(mem,addr) {
             return {
                 code:[mem.peek(addr),mem.peek(addr+1)],
@@ -5954,7 +5954,7 @@ Z80.prototype.createOpecodeTable = function() {
     opeMisc[oct("0131")] = {
         mnemonic:"OUT (C),E",
         cycle:12,
-        proc: function() { THIS.writeIoPort(THIS.reg.C, THIS.reg.E); },
+        proc: function() { THIS.writeIoPort(THIS.reg.getC(), THIS.reg.getE()); },
         disasm: function(mem,addr) {
             return {
                 code:[mem.peek(addr),mem.peek(addr+1)],
@@ -5965,7 +5965,7 @@ Z80.prototype.createOpecodeTable = function() {
     opeMisc[oct("0141")] = {
         mnemonic:"OUT (C),H",
         cycle:12,
-        proc: function() { THIS.writeIoPort(THIS.reg.C, THIS.reg.H); },
+        proc: function() { THIS.writeIoPort(THIS.reg.getC(), THIS.reg.getH()); },
         disasm: function(mem,addr) {
             return {
                 code:[mem.peek(addr),mem.peek(addr+1)],
@@ -5976,7 +5976,7 @@ Z80.prototype.createOpecodeTable = function() {
     opeMisc[oct("0151")] = {
         mnemonic:"OUT (C),L",
         cycle:12,
-        proc: function() { THIS.writeIoPort(THIS.reg.C, THIS.reg.L); },
+        proc: function() { THIS.writeIoPort(THIS.reg.getC(), THIS.reg.getL()); },
         disasm: function(mem,addr) {
             return {
                 code:[mem.peek(addr),mem.peek(addr+1)],
@@ -5987,7 +5987,7 @@ Z80.prototype.createOpecodeTable = function() {
     opeMisc[oct("0171")] = {
         mnemonic:"OUT (C),A",
         cycle:12,
-        proc: function() { THIS.writeIoPort(THIS.reg.C, THIS.reg.A); },
+        proc: function() { THIS.writeIoPort(THIS.reg.getC(), THIS.reg.getA()); },
         disasm: function(mem,addr) {
             return {
                 code:[mem.peek(addr),mem.peek(addr+1)],
@@ -5999,8 +5999,8 @@ Z80.prototype.createOpecodeTable = function() {
         mnemonic:"OUTI",
         cycle:16,
         proc: function() {
-            THIS.reg.B = (THIS.reg.B - 1) & 0xff;
-            THIS.writeIoPort(THIS.reg.C, THIS.memory.peek(THIS.reg.getHL()));
+            THIS.reg.setB( (THIS.reg.getB() - 1) & 0xff );
+            THIS.writeIoPort(THIS.reg.getC(), THIS.memory.peek(THIS.reg.getHL()));
             THIS.postOUTI();
         },
         disasm: function(mem,addr) {
@@ -6014,10 +6014,10 @@ Z80.prototype.createOpecodeTable = function() {
         mnemonic:"OTIR",
         cycle:"21 x reg B",
         proc: function() {
-            THIS.reg.B = (THIS.reg.B - 1) & 0xff;
-            THIS.writeIoPort(THIS.reg.C, THIS.memory.peek(THIS.reg.getHL()));
+            THIS.reg.setB( (THIS.reg.getB() - 1) & 0xff );
+            THIS.writeIoPort(THIS.reg.getC(), THIS.memory.peek(THIS.reg.getHL()));
             THIS.postOUTI();
-            if(THIS.reg.B != 0) {
+            if(THIS.reg.getB() != 0) {
                 THIS.reg.PC -= 2;
             }
             return 21;
@@ -6033,8 +6033,8 @@ Z80.prototype.createOpecodeTable = function() {
         mnemonic:"OUTD",
         cycle:16,
         proc: function() {
-            THIS.reg.B = (THIS.reg.B - 1) & 0xff;
-            THIS.writeIoPort(THIS.reg.C, THIS.memory.peek(THIS.reg.getHL()));
+            THIS.reg.setB( (THIS.reg.getB() - 1) & 0xff );
+            THIS.writeIoPort(THIS.reg.getC(), THIS.memory.peek(THIS.reg.getHL()));
             THIS.postOUTD();
         },
         disasm: function(mem,addr) {
@@ -6048,10 +6048,10 @@ Z80.prototype.createOpecodeTable = function() {
         mnemonic:"OTDR",
         cycle:"21 x reg B",
         proc: function() {
-            THIS.reg.B = (THIS.reg.B - 1) & 0xff;
-            THIS.writeIoPort(THIS.reg.C, THIS.memory.peek(THIS.reg.getHL()));
+            THIS.reg.setB( (THIS.reg.getB() - 1) & 0xff );
+            THIS.writeIoPort(THIS.reg.getC(), THIS.memory.peek(THIS.reg.getHL()));
             THIS.postOUTD();
-            if(THIS.reg.B != 0) {
+            if(THIS.reg.getB() != 0) {
                 THIS.reg.PC -= 2;
             }
             return 21;

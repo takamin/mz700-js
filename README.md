@@ -145,7 +145,7 @@ Available Browsers
 CHANGES
 -------
 
-* v0.8.\* - Improving UI experience
+* v0.8.\* - Improving UI experiences. Some emulation codes are now written as Asm.js.
 * v0.7.0 - Change the layout by device type.(But the module was not compiled.)
     * v0.7.1 - Change the layout by device type.
     * v0.7.2 - Fix the bug on v0.7.1: The emulator could not accept key-inputs from

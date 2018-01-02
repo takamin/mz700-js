@@ -1,6 +1,6 @@
 {
   "name": "mz700-js",
-  "version": "0.8.4",
+  "version": "0.8.5",
   "description": "MZ-700 Full JavaScript Emulator",
   "private": false,
   "scripts": {
@@ -79,7 +79,9 @@
       "node": true,
       "mocha": true
     },
-    "globals": {},
+    "globals": {
+        "ArrayBuffer": true
+    },
     "rules": {
       "no-console": "off",
       "valid-jsdoc": "warn"
