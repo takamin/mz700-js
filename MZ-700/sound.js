@@ -1,4 +1,6 @@
 (function() {
+    var FREQ_MIN = -24000;
+    var FREQ_MAX = 24000;
     var MZ700_Sound = function() {
 
         this.attackTime = 0.010;
@@ -18,7 +20,7 @@
         if(window.AudioContext) {
             this.audio = new AudioContext();
             this.totalGainNode = this.audio.createGain();
-            this.totalGainNode.gain.value = this.gain;
+            this.totalGainNode.gain.setValueAtTime(this.gain, this.audio.currentTime);
             this.totalGainNode.connect(this.audio.destination);
         } else {
 
@@ -38,7 +40,7 @@
         }
         this.gain = gain;
         if(this.totalGainNode) {
-            this.totalGainNode.gain.value = this.gain;
+            this.totalGainNode.gain.setValueAtTime(this.gain, this.audio.currentTime);
         }
     };
     MZ700_Sound.prototype.startSound = function(freq) {
@@ -54,11 +56,18 @@
         }
         this.oscNodes[this.indexOsc] = this.audio.createOscillator();
         this.oscNodes[this.indexOsc].type = "square";
-        this.oscNodes[this.indexOsc].frequency.value = freq;
+        if(isFinite(freq)) {
+            if(freq < FREQ_MIN) {
+                freq = FREQ_MIN;
+            } else if(freq > FREQ_MAX) {
+                freq = FREQ_MAX;
+            }
+            this.oscNodes[this.indexOsc].frequency.setValueAtTime(
+                    freq, this.audio.currentTime);
+        }
         this.oscNodes[this.indexOsc].start = this.oscNodes[this.indexOsc].start || this.oscNodes[this.indexOsc].noteOn;
 
         this.oscGainNodes[this.indexOsc] = this.audio.createGain();
-        this.oscGainNodes[this.indexOsc].gain.value = 0.0;
         this.oscGainNodes[this.indexOsc].gain.setValueAtTime(0.0, this.audio.currentTime);
         this.oscGainNodes[this.indexOsc].gain.linearRampToValueAtTime(1.0, this.audio.currentTime + this.attackTime);
         this.oscGainNodes[this.indexOsc].gain.linearRampToValueAtTime(this.sustainLebel, this.audio.currentTime + this.attackTime + this.decayTime);
