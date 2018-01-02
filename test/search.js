@@ -16,7 +16,7 @@ function report(cpu, name, result) {
 var test_set = [
     { name: "CPI", test: function() {
         cpu.reg.setBC(0x0028);
-        cpu.reg.A = 0x27;
+        cpu.reg.setA( 0x27 );
         cpu.reg.setHL(0xD000);
         for(var i = 0; i < 0x28; i++) {
             cpu.memory.poke(0xD000 + i, i);
@@ -31,7 +31,7 @@ var test_set = [
     }},
     { name: "CPIR", test: function() {
         cpu.reg.setBC(0x0028);
-        cpu.reg.A = 0x27;
+        cpu.reg.setA( 0x27 );
         cpu.reg.setHL(0xD000);
         for(var i = 0; i < 0x28; i++) {
             cpu.memory.poke(0xD000 + i, i);
@@ -46,7 +46,7 @@ var test_set = [
     }},
     { name: "CPIR 2", test: function() {
         cpu.reg.setBC(0x0028);
-        cpu.reg.A = 0x10;
+        cpu.reg.setA( 0x10 );
         cpu.reg.setHL(0xD000);
         for(var i = 0; i < 0x28; i++) {
             cpu.memory.poke(0xD000 + i, i);
@@ -61,7 +61,7 @@ var test_set = [
     }},
     { name: "CPD", test: function() {
         cpu.reg.setBC(0x0028);
-        cpu.reg.A = 0x27;
+        cpu.reg.setA( 0x27 );
         cpu.reg.setHL(0xD027);
         for(var i = 0; i < 0x28; i++) {
             cpu.memory.poke(0xD027 - i, i);
@@ -76,7 +76,7 @@ var test_set = [
     }},
     { name: "CPDR", test: function() {
         cpu.reg.setBC(0x0028);
-        cpu.reg.A = 0x27;
+        cpu.reg.setA( 0x27 );
         cpu.reg.setHL(0xD027);
         for(var i = 0; i < 0x28; i++) {
             cpu.memory.poke(0xD027 - i, i);
@@ -90,8 +90,8 @@ var test_set = [
         report(cpu, "CPDR Z flag", cpu.reg.flagZ() == true);
     }},
 ];
-module.exports = {
+UnitTest.test({
     name: "search",
     test_set: test_set
-};
+});
 
