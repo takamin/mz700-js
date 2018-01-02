@@ -20,7 +20,8 @@
         if(window.AudioContext) {
             this.audio = new AudioContext();
             this.totalGainNode = this.audio.createGain();
-            this.totalGainNode.gain.setValueAtTime(this.gain, this.audio.currentTime);
+            this.totalGainNode.gain.setValueAtTime(
+                    this.gain, this.audio.currentTime);
             this.totalGainNode.connect(this.audio.destination);
         } else {
 
@@ -40,48 +41,58 @@
         }
         this.gain = gain;
         if(this.totalGainNode) {
-            this.totalGainNode.gain.setValueAtTime(this.gain, this.audio.currentTime);
+            this.totalGainNode.gain.setValueAtTime(
+                    this.gain, this.audio.currentTime);
         }
     };
     MZ700_Sound.prototype.startSound = function(freq) {
-        if(this.oscGainNodes[this.indexOsc] != null) {
-            this.oscGainNodes[this.indexOsc].gain.linearRampToValueAtTime(0.0, this.audio.currentTime + this.releaseTime);
-            this.oscGainNodes[this.indexOsc].disconnect();
-            this.oscGainNodes[this.indexOsc] = null;
-            if(this.oscNodes[this.indexOsc] != null) {
-                this.oscNodes[this.indexOsc].stop();
-                this.oscNodes[this.indexOsc].disconnect();
-                this.oscNodes[this.indexOsc] = null;
-            }
+        var indexOsc = this.indexOsc;
+        var oscGainNode = this.oscGainNodes[indexOsc];
+        if(oscGainNode != null) {
+            oscGainNode.gain.linearRampToValueAtTime(
+                    0.0, this.audio.currentTime + this.releaseTime);
+            oscGainNode.disconnect();
         }
-        this.oscNodes[this.indexOsc] = this.audio.createOscillator();
-        this.oscNodes[this.indexOsc].type = "square";
+        this.oscGainNodes[indexOsc] = this.audio.createGain();
+        oscGainNode = this.oscGainNodes[indexOsc];
+        oscGainNode.gain.setValueAtTime(0.0, this.audio.currentTime);
+        oscGainNode.gain.linearRampToValueAtTime(
+                1.0, this.audio.currentTime + this.attackTime);
+        oscGainNode.gain.linearRampToValueAtTime(
+                this.sustainLebel,
+                this.audio.currentTime + this.attackTime + this.decayTime);
+        oscGainNode.connect(this.totalGainNode);
+
+        var oscNode = this.oscNodes[indexOsc];
+        if(oscNode != null) {
+            oscNode.stop();
+            oscNode.disconnect();
+        }
+        this.oscNodes[indexOsc] = this.audio.createOscillator();
+        oscNode = this.oscNodes[indexOsc];
+        oscNode.type = "square";
         if(isFinite(freq)) {
             if(freq < FREQ_MIN) {
                 freq = FREQ_MIN;
             } else if(freq > FREQ_MAX) {
                 freq = FREQ_MAX;
             }
-            this.oscNodes[this.indexOsc].frequency.setValueAtTime(
+            oscNode.frequency.setValueAtTime(
                     freq, this.audio.currentTime);
         }
-        this.oscNodes[this.indexOsc].start = this.oscNodes[this.indexOsc].start || this.oscNodes[this.indexOsc].noteOn;
-
-        this.oscGainNodes[this.indexOsc] = this.audio.createGain();
-        this.oscGainNodes[this.indexOsc].gain.setValueAtTime(0.0, this.audio.currentTime);
-        this.oscGainNodes[this.indexOsc].gain.linearRampToValueAtTime(1.0, this.audio.currentTime + this.attackTime);
-        this.oscGainNodes[this.indexOsc].gain.linearRampToValueAtTime(this.sustainLebel, this.audio.currentTime + this.attackTime + this.decayTime);
-        this.oscGainNodes[this.indexOsc].connect(this.totalGainNode);
-
-        this.oscNodes[this.indexOsc].connect(this.oscGainNodes[this.indexOsc]);
-        this.oscNodes[this.indexOsc].start();
+        oscNode.start = oscNode.start || oscNode.noteOn;
+        oscNode.connect(oscGainNode);
+        oscNode.start();
 
     };
     MZ700_Sound.prototype.stopSound = function() {
-        if(this.oscGainNodes[this.indexOsc] != null) {
-            this.oscGainNodes[this.indexOsc].gain.linearRampToValueAtTime(0.0, this.audio.currentTime + this.releaseTime);
+        var indexOsc = this.indexOsc;
+        var oscGainNode = this.oscGainNodes[indexOsc];
+        if(oscGainNode != null) {
+            oscGainNode.gain.linearRampToValueAtTime(
+                    0.0, this.audio.currentTime + this.releaseTime);
         }
-        this.indexOsc = (this.indexOsc + 1) % this.poly;
+        this.indexOsc = (indexOsc + 1) % this.poly;
     };
     module.exports = MZ700_Sound;
 }());
