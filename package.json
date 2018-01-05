@@ -80,7 +80,7 @@
       "mocha": true
     },
     "globals": {
-        "ArrayBuffer": true
+      "ArrayBuffer": true
     },
     "rules": {
       "no-console": "off",
