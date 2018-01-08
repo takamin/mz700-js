@@ -110,6 +110,7 @@
                     var sliderValue = this.sliderExecParamTimerInterval.val();
                     this._timerInterval = MZ700.DEFAULT_TIMER_INTERVAL / Math.pow(10, sliderValue);
                     this.updateExecutionParameter();
+                    cookies.setItem("speedSliderValue", this._timerInterval, Infinity);
                 }.bind(this));
 
 
@@ -404,11 +405,19 @@
         }
 
         this._timerInterval = MZ700.DEFAULT_TIMER_INTERVAL;
-        this.mz700comworker.getExecutionParameter(function(param) {
+        if(cookies.hasItem("speedSliderValue")) {
+            var param = parseFloat(cookies.getItem("speedSliderValue"));
             this._timerInterval = param;
             this.updateExecutionParameter();
             this.onExecutionParameterUpdate(param);
-        }.bind(this));
+        } else {
+            this.mz700comworker.getExecutionParameter(function(param) {
+                this._timerInterval = param;
+                this.updateExecutionParameter();
+                this.onExecutionParameterUpdate(param);
+                cookies.setItem("speedSliderValue", this._timerInterval, Infinity);
+            }.bind(this));
+        }
 
     };
 
