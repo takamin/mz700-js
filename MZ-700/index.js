@@ -18,6 +18,8 @@
     require("../lib/jquery.MZ-700-vram");
     require("../lib/jquery.MZ-700-kb.js");
 
+    var cookies = require("../lib/cookies");
+
     var MZ700Js = function() {
         this.opt = {
             "urlPrefix": "",
@@ -114,6 +116,14 @@
             // Monoral buzzer sound
             var sound = new MZ700_Sound();
 
+            var mute = false;
+            if(cookies.hasItem("mute")) {
+                mute = (cookies.getItem("mute")=="true");
+            }
+            var volume = 10;
+            if(cookies.hasItem("volume")) {
+                volume = parseInt(cookies.getItem("volume"));
+            }
             $(".MZ-700 .ctrl-panel")
                 .append(this.keyEventReceiver)
                 .append(
@@ -121,11 +131,17 @@
                     $("<span/>")
                     .soundctrl("create", {
                         "maxVolume": 10,
-                        "initialVolume": 10,
-                        "initialMute": false,
+                        "initialVolume": volume,
+                        "initialMute": mute,
                         "onChangeVolume": function(volume) {
+                            if(!this.mute) {
+                                cookies.setItem("volume", volume, Infinity);
+                            }
                             sound.setGain(volume / 10);
-                        }.bind(this),
+                        },
+                        "onChangeMute": function(mute) {
+                            cookies.setItem("mute", mute, Infinity);
+                        },
                         "urlIconOn": this.opt.urlPrefix + "image/icon-sound-on.svg",
                         "urlIconOff": this.opt.urlPrefix + "image/icon-sound-off.svg",
                         "colOn": 'blue', "colOff":"silver"
