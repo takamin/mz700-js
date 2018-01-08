@@ -18,6 +18,8 @@
     require("../lib/jquery.MZ-700-vram");
     require("../lib/jquery.MZ-700-kb.js");
 
+    var cookies = require("../lib/cookies");
+
     var MZ700Js = function() {
         this.opt = {
             "urlPrefix": "",
@@ -108,12 +110,21 @@
                     var sliderValue = this.sliderExecParamTimerInterval.val();
                     this._timerInterval = MZ700.DEFAULT_TIMER_INTERVAL / Math.pow(10, sliderValue);
                     this.updateExecutionParameter();
+                    cookies.setItem("speedSliderValue", this._timerInterval, Infinity);
                 }.bind(this));
 
 
             // Monoral buzzer sound
             var sound = new MZ700_Sound();
 
+            var mute = false;
+            if(cookies.hasItem("mute")) {
+                mute = (cookies.getItem("mute")=="true");
+            }
+            var volume = 10;
+            if(cookies.hasItem("volume")) {
+                volume = parseInt(cookies.getItem("volume"));
+            }
             $(".MZ-700 .ctrl-panel")
                 .append(this.keyEventReceiver)
                 .append(
@@ -121,11 +132,17 @@
                     $("<span/>")
                     .soundctrl("create", {
                         "maxVolume": 10,
-                        "initialVolume": 10,
-                        "initialMute": false,
+                        "initialVolume": volume,
+                        "initialMute": mute,
                         "onChangeVolume": function(volume) {
+                            if(!this.mute) {
+                                cookies.setItem("volume", volume, Infinity);
+                            }
                             sound.setGain(volume / 10);
-                        }.bind(this),
+                        },
+                        "onChangeMute": function(mute) {
+                            cookies.setItem("mute", mute, Infinity);
+                        },
                         "urlIconOn": this.opt.urlPrefix + "image/icon-sound-on.svg",
                         "urlIconOff": this.opt.urlPrefix + "image/icon-sound-off.svg",
                         "colOn": 'blue', "colOff":"silver"
@@ -388,11 +405,19 @@
         }
 
         this._timerInterval = MZ700.DEFAULT_TIMER_INTERVAL;
-        this.mz700comworker.getExecutionParameter(function(param) {
+        if(cookies.hasItem("speedSliderValue")) {
+            var param = parseFloat(cookies.getItem("speedSliderValue"));
             this._timerInterval = param;
             this.updateExecutionParameter();
             this.onExecutionParameterUpdate(param);
-        }.bind(this));
+        } else {
+            this.mz700comworker.getExecutionParameter(function(param) {
+                this._timerInterval = param;
+                this.updateExecutionParameter();
+                this.onExecutionParameterUpdate(param);
+                cookies.setItem("speedSliderValue", this._timerInterval, Infinity);
+            }.bind(this));
+        }
 
     };
 
@@ -403,7 +428,7 @@
         return $("<button/>").attr("type", "button")
         .addClass("imaged").append($("<img/>")
                 .attr("title", "Reset").attr("alt", "Reset"))
-        .click(this.reset.bind(this))
+        .click(function() { this.reset(); }.bind(this))
         .hover(this.btnReset_hover.bind(this),
             this.btnReset_notHover.bind(this));
     };
@@ -619,7 +644,7 @@
      */
     MZ700Js.prototype.runServerMZT = function (name) {
         this.mz700comworker.stop(function() {
-            $.getJSON("mzt", {"name": name}, function(tape_data) {
+            $.getJSON("mzt/" + name + ".json", function(tape_data) {
                 this.setMztData(tape_data, function(mztape_array) {
                     this.start(mztape_array[0].header.addr_exec);
                 }.bind(this));
