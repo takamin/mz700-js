@@ -428,7 +428,7 @@
         return $("<button/>").attr("type", "button")
         .addClass("imaged").append($("<img/>")
                 .attr("title", "Reset").attr("alt", "Reset"))
-        .click(this.reset.bind(this))
+        .click(function() { this.reset(); }.bind(this))
         .hover(this.btnReset_hover.bind(this),
             this.btnReset_notHover.bind(this));
     };
