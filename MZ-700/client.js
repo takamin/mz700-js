@@ -25,9 +25,12 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
         MZ700JsBase.prototype.create.call(this, opt);
         this.btnToggleScreenKeyboard = $("<button/>")
             .attr("type", "button")
-            .attr("class", "toggle")
+            .attr("class", "toggle imaged")
             .attr("id", "btnToggleScreenKeyboard")
-            .html("Keyboard").click(function() {
+            .append($("<img/>")
+                .attr("src", "../image/btnKeyboard-off.png")
+                .attr("title", "Keyboard").attr("alt", "Keyboard"))
+            .click(function() {
                 this.btnToggleScreenKeyboard_click();
             }.bind(this));
         $(".MZ-700 .ctrl-panel")
@@ -43,12 +46,16 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
     MZ700Js.prototype.showScreenKeyboard = function() {
         this.btnToggleScreenKeyboard.addClass("on");
         this.btnToggleScreenKeyboard.removeClass("off");
+        this.btnToggleScreenKeyboard.find("img")
+            .attr("src", "../image/btnKeyboard-on.png");
         $(".keyboard").show();
         this.resizeScreen();
     };
     MZ700Js.prototype.hideScreenKeyboard = function() {
         this.btnToggleScreenKeyboard.removeClass("on");
         this.btnToggleScreenKeyboard.addClass("off");
+        this.btnToggleScreenKeyboard.find("img")
+            .attr("src", "../image/btnKeyboard-off.png");
         $(".keyboard").hide();
         this.resizeScreen();
     };
@@ -93,22 +100,6 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
         }
         phif.css("margin-left", phifMargin._w + "px")
             .css("margin-top", phifMargin._h + "px");
-
-        /*
-        var kbBBox = new BBox(keyboard.get(0));
-        var kbSize = kbBBox.getSize();
-        var kbMargin = new BBox.Size(
-                (containerSize._w - kbSize._w) / 2,
-                phifMargin._h - kbSize._h);
-        if(kbMargin._w < 0) {
-            kbMargin._w = 0;
-        }
-        if(kbMargin._h < 0) {
-            kbMargin._h = 0;
-        }
-        keyboard.css("margin-left", kbMargin._w + "px")
-            .css("margin-top", kbMargin._h + "px");
-        */
     };
 
     var liquidRootElement = $("#liquid-panel-MZ-700").get(0);
@@ -116,7 +107,6 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
 
     // Dock'n'Liquid panels
     var dockPanelHeader = $("#dock-panel-header");
-    //var dockPanelKb = $("#dock-panel-keyboard");
     var dockPanelRight = $("#dock-panel-right");
 
     // Remove right panel for mobile or tablet
@@ -128,11 +118,6 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
     mz700js.create({ "urlPrefix" : "../" });
 
     if(deviceType != "mobile") {
-        /*
-        if(deviceType == "tablet") {
-            phif.css("opacity", 0.8);
-        }
-        */
         mz700js.hideScreenKeyboard();
         var mouseMoveTimeoutId = null;
         var showCtrlPanelFor = function(timeLimit) {
@@ -140,9 +125,14 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
                 clearTimeout(mouseMoveTimeoutId);
             } else {
                 phif.addClass("hover");
+                phif.show(0, function() {
+                    mz700js.resizeScreen();
+                    mz700js.resizeScreen();
+                });
             }
             mouseMoveTimeoutId = setTimeout(function() {
                 phif.removeClass("hover");
+                phif.hide();
                 mouseMoveTimeoutId = null;
             }, timeLimit);
         };
@@ -150,6 +140,9 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
             showCtrlPanelFor(5000);
         });
         keyboard.mousemove(function() {
+            showCtrlPanelFor(5000);
+        });
+        phif.mousemove(function() {
             showCtrlPanelFor(5000);
         });
         container.mouseenter(function() {
@@ -160,15 +153,12 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
         });
     }
 
-    // Close keyboard panel on PC.
-    if(deviceType == "pc") {
-        //mz700js.kb.DropDownPanel("close");
-    } else {
-        //// Open on mobile and tablet
-        //mz700js.kb.DropDownPanel("open");
-    }
     var fullscreenButton = $("<button/>")
-        .attr("id","fullscreenButton");
+        .attr("id","fullscreenButton").addClass("toggle imaged off")
+        .append($("<img/>")
+            .attr("src", "../image/btnFullscreen-off.png")
+            .attr("title", "Fullscreen")
+            .attr("alt", "Fullscreen"));
     var fullscreenElement = document.body;
     var onFullscreenButtonClick = function() {
         if(document.fullscreenElement === fullscreenElement) {
@@ -188,11 +178,19 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
         if(document.fullscreenElement == null) {
             dockPanelHeader.show();
             dockPanelRight.show();
-            fullscreenButton.html("Fullscreen");
+            fullscreenButton.removeClass("on").addClass("off")
+                .find("img")
+                    .attr("src", "../image/btnFullscreen-off.png")
+                    .attr("title", "Fullscreen")
+                    .attr("alt", "Fullscreen");
         } else {
             dockPanelHeader.hide();
             dockPanelRight.hide();
-            fullscreenButton.html("Exit Fullscreen");
+            fullscreenButton.removeClass("off").addClass("on")
+                .find("img")
+                    .attr("src", "../image/btnFullscreen-on.png")
+                    .attr("title", "Exit Fullscreen")
+                    .attr("alt", "Exit Fullscreen");
         }
         liquidRoot.layout();
         mz700js.resizeScreen();
@@ -211,5 +209,54 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
                 liquidRoot.layout();
                 mz700js.resizeScreen(); });
     mz700js.resizeScreen();
+
+    //
+    // Load MZT specified by parameter 'mzt'.
+    //
+    var parseRequest = require("../lib/parse-request");
+    var requestJsonp = require("../lib/jsonp");
+    var request = parseRequest();
+    if("mzt" in request.parameters) {
+        var name = request.parameters.mzt;
+        requestJsonp("https://takamin.github.io/MZ-700/mzt/" + name + ".js");
+        window.loadMZT = function(tape_data) {
+            mz700js.setMztData(tape_data, function(mztape_array) {
+                mz700js.start(mztape_array[0].header.addr_exec);
+            });
+        };
+    }
+
+    //
+    // Setup buttons to load MZT
+    //
+    requestJsonp("https://takamin.github.io/MZ-700/mzt/mzt-list.js");
+    window.mztList = function(files) {
+        var mztButtons = $("<div/>");
+        files.forEach(function(mzt) {
+            mztButtons.append(
+                $("<button/>").attr("type", "button")
+                .css("padding", 0).css("height", "24px")
+                .css("border", "solid 0px transparent")
+                .append(
+                    $("<span/>").addClass("mz700scrn")
+                    .css("padding", 0).css("margin", 0)
+                    .attr("charSize", "8").attr("padding", "1")
+                    .attr("color", mzt.mz700_buttonStyle.color)
+                    .attr("bgColor", mzt.mz700_buttonStyle.bgColor)
+                    .html(mzt.name))
+                .click(function() {
+                    window.location.href = request.path + "?mzt=" + mzt.path;
+                }));
+        });
+        $("#physical-interface").append(mztButtons);
+        liquidRoot.layout();
+        mz700js.resizeScreen();
+    };
+    $("button.mzt-loder").each(function() {
+        $(this).click(function() {
+            var name = $(this).attr("name");
+            window.location.href = request.path + "?mzt=" + name;
+        });
+    });
 
 }(window.jQuery));

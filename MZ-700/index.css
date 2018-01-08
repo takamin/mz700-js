@@ -8,6 +8,7 @@
     border: solid 1px black;
     background-color: black;
     padding:0;
+    z-index: -1;
 }
 .MZ-700 button {
     background-color: blue;
@@ -17,13 +18,6 @@
     margin: 5px 2px;
     font-size: 11pt;
     font-weight:bold;
-}
-.MZ-700 #btnStart {
-    width:50px;
-}
-.MZ-700.running #btnStart {
-    color: blue;
-    background-color: white;
 }
 .MZ-700 button:hover {
     background-color: white;
@@ -35,7 +29,7 @@
     color: silver;
 }
 
-#physical-interface /*, .keyboard*/
+#physical-interface
 {
     overflow: auto;
     background-color: white;
@@ -43,13 +37,12 @@
 .screen {
     position:fixed;
 }
-/*
-.keyboard
-{
-    position:fixed;
-    opacity:0.5;
+
+.cmtPlayImage {
+    display:inline-block;
+    transform:rotate(-90deg);
 }
-*/
+
 #physical-interface,
 {
     position:fixed;
@@ -59,15 +52,14 @@
     .screen {
         position:relative;
     }
-    #physical-interface /*, .keyboard */
+    #physical-interface
     {
         position:relative;
         opacity:1;
     }
 }
 @media screen and (orientation: landscape) {
-    #physical-interface.hover,
-    #physical-interface:hover /*, .keyboard:hover */
+    #physical-interface
     {
         opacity:0.8;
     }
@@ -80,6 +72,7 @@
     width:100px;
 }
 .MZ-700 .ctrl-panel > span.key-switcher {
+    margin:0px;
     padding:5px;
     border-style:solid;
     border-color:blue;
@@ -102,6 +95,7 @@
 .MZ-700 .data-recorder .cmt-message {
     font-weight: bold;
 }
+
 /**
  * アセンブルリスト
  */
@@ -241,4 +235,18 @@
 {
     background-color: blue;
     color: white;
+}
+.MZ-700 button.imaged {
+    width:30px;
+    height:30px;
+    padding:0;
+    border-width: 0;
+    vertical-align: bottom;
+}
+.MZ-700 button.imaged img {
+    width:30px;
+    height:30px;
+    padding:0;
+    margin:0;
+    border-width: 0;
 }

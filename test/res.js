@@ -13,12 +13,12 @@ var tests = [
                 var init = 0xff;
                 var expect = 0xff & ~(1 << b);
 
-                cpu.reg[r] = init;
+                cpu.reg["set" + r]( init );
                 tester.runMnemonics(cpu, [mnemonic]);
                 UnitTest.report(
                         "" + mnemonic + ": to " + init.HEX(2) + "H must be " + expect.HEX(2) + "H",
-                        cpu.reg[r] == expect,
-                        cpu.reg[r].HEX(2) + "H");
+                        cpu.reg["get" + r]() == expect,
+                        cpu.reg["get" + r]().HEX(2) + "H");
             }
         });
     },

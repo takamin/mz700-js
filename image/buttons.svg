@@ -1,0 +1,1056 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="160"
+   height="160"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.48.4 r9939"
+   sodipodi:docname="buttons.svg">
+  <defs
+     id="defs4" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="3.959798"
+     inkscape:cx="75.107271"
+     inkscape:cy="130.95571"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="true"
+     inkscape:window-width="1366"
+     inkscape:window-height="705"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1">
+    <inkscape:grid
+       type="xygrid"
+       id="grid3899"
+       empspacing="5"
+       visible="true"
+       enabled="true"
+       snapvisiblegridlinesonly="true" />
+  </sodipodi:namedview>
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="レイヤー 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-892.36218)">
+    <g
+       id="g3777" />
+    <g
+       id="g5003"
+       transform="translate(35,0)"
+       inkscape:export-filename="C:\Users\takami\Git\npm\mz700-js\image\btnRun-off.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90">
+      <rect
+         y="893.36218"
+         x="1"
+         height="28"
+         width="28"
+         id="rect2987"
+         style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none" />
+      <path
+         sodipodi:nodetypes="cccc"
+         inkscape:connector-curvature="0"
+         id="path3757"
+         d="m 5,897.36218 20,10 -20,10 z"
+         style="fill:#ffffff;fill-opacity:1;stroke:none" />
+      <path
+         inkscape:connector-curvature="0"
+         style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+         d="m 0,892.36218 0,30 1,0 28,0 1,0 0,-29 0,-1 -29,0 -1,0 z m 1,1 28,0 0,28 -28,0 0,-28 z"
+         id="rect3781" />
+    </g>
+    <g
+       id="g7390"
+       inkscape:export-filename="C:\Users\takami\Git\npm\mz700-js\image\btnReset-off.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90">
+      <rect
+         y="893.36218"
+         x="71"
+         height="28"
+         width="28"
+         id="rect2987-7"
+         style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none" />
+      <path
+         style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+         d="m 70,892.36218 0,30 1,0 28,0 1,0 0,-29 0,-1 -29,0 -1,0 z m 1,1 28,0 0,28 -28,0 0,-28 z"
+         id="rect3781-17"
+         inkscape:connector-curvature="0" />
+      <path
+         inkscape:connector-curvature="0"
+         id="path4817"
+         d="m 85.357143,897.71932 c -5.52285,0 -10,4.47715 -10,10 0,5.52285 4.47715,10 10,10 2.76143,0 5.252859,-1.12786 7.0625,-2.9375 l -3.53125,-3.53125 c -0.90482,0.90482 -2.15054,1.46875 -3.53125,1.46875 -2.76142,0 -5,-2.23858 -5,-5 0,-2.76143 2.23858,-5 5,-5 1.38071,0 2.62643,0.56393 3.53125,1.46875 l -3.53125,3.53125 5,0 5,0 0,-10 -2.9375,2.9375 c -1.809641,-1.80965 -4.30107,-2.9375 -7.0625,-2.9375 z"
+         style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none" />
+    </g>
+    <g
+       transform="translate(135,-30)"
+       id="g4995"
+       inkscape:export-filename="C:\Users\takami\Git\npm\mz700-js\image\btnStepIn-off.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90">
+      <rect
+         y="923.36218"
+         x="-29"
+         height="28"
+         width="28"
+         id="rect2987-7-8"
+         style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none" />
+      <path
+         style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+         d="m -30,922.36218 0,30 1,0 28,0 1,0 0,-29 0,-1 -29,0 -1,0 z m 1,1 28,0 0,28 -28,0 0,-28 z"
+         id="rect3781-17-5"
+         inkscape:connector-curvature="0" />
+      <g
+         transform="matrix(1.138896,0,0,1.4559653,2.2097087,-425.89638)"
+         id="g4990">
+        <path
+           sodipodi:type="arc"
+           style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="path4909"
+           sodipodi:cx="-22.5"
+           sodipodi:cy="47.5"
+           sodipodi:rx="2.5"
+           sodipodi:ry="2.5"
+           d="m -20,47.5 c 0,1.380712 -1.119288,2.5 -2.5,2.5 -1.380712,0 -2.5,-1.119288 -2.5,-2.5 0,-1.380712 1.119288,-2.5 2.5,-2.5 1.380712,0 2.5,1.119288 2.5,2.5 z"
+           transform="translate(0,892.36218)" />
+        <path
+           style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           d="m -16.548962,930.22085 c -3.28689,0.35459 -5.829072,2.79682 -6.503129,5.8563 l 2.931251,0.65815 c 0.398653,-1.84372 1.915417,-3.31834 3.893652,-3.53175 1.187161,-0.12808 2.299153,0.21101 3.175555,0.88324 l -1.469691,0.94433 6.2871599,2.33914 -0.64355,-5.96538 -1.5561949,1.01653 c -1.546775,-1.57213 -3.752602,-2.45542 -6.115053,-2.20056 z"
+           id="path4932"
+           inkscape:connector-curvature="0" />
+        <path
+           transform="translate(15,892.36218)"
+           sodipodi:type="arc"
+           style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="path4909-8"
+           sodipodi:cx="-22.5"
+           sodipodi:cy="47.5"
+           sodipodi:rx="2.5"
+           sodipodi:ry="2.5"
+           d="m -20,47.5 c 0,1.380712 -1.119288,2.5 -2.5,2.5 -1.380712,0 -2.5,-1.119288 -2.5,-2.5 0,-1.380712 1.119288,-2.5 2.5,-2.5 1.380712,0 2.5,1.119288 2.5,2.5 z" />
+      </g>
+    </g>
+    <g
+       id="g7400"
+       inkscape:export-filename="C:\Users\takami\Git\npm\mz700-js\image\btnStepIn-on.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90">
+      <rect
+         y="928.36218"
+         x="106"
+         height="28"
+         width="28"
+         id="rect2987-7-8-8"
+         style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none" />
+      <path
+         style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+         d="m 105,927.36218 0,30 1,0 28,0 1,0 0,-29 0,-1 -29,0 -1,0 z m 1,1 28,0 0,28 -28,0 0,-28 z"
+         id="rect3781-17-5-1"
+         inkscape:connector-curvature="0" />
+      <g
+         style="fill:#0000ff;fill-opacity:1"
+         transform="matrix(1.138896,0,0,1.4559653,137.20971,-420.89638)"
+         id="g4990-0">
+        <path
+           sodipodi:type="arc"
+           style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="path4909-9"
+           sodipodi:cx="-22.5"
+           sodipodi:cy="47.5"
+           sodipodi:rx="2.5"
+           sodipodi:ry="2.5"
+           d="m -20,47.5 c 0,1.380712 -1.119288,2.5 -2.5,2.5 -1.380712,0 -2.5,-1.119288 -2.5,-2.5 0,-1.380712 1.119288,-2.5 2.5,-2.5 1.380712,0 2.5,1.119288 2.5,2.5 z"
+           transform="translate(0,892.36218)" />
+        <path
+           style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           d="m -16.548962,930.22085 c -3.28689,0.35459 -5.829072,2.79682 -6.503129,5.8563 l 2.931251,0.65815 c 0.398653,-1.84372 1.915417,-3.31834 3.893652,-3.53175 1.187161,-0.12808 2.299153,0.21101 3.175555,0.88324 l -1.469691,0.94433 6.2871599,2.33914 -0.64355,-5.96538 -1.5561949,1.01653 c -1.546775,-1.57213 -3.752602,-2.45542 -6.115053,-2.20056 z"
+           id="path4932-2"
+           inkscape:connector-curvature="0" />
+        <path
+           transform="translate(15,892.36218)"
+           sodipodi:type="arc"
+           style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="path4909-8-4"
+           sodipodi:cx="-22.5"
+           sodipodi:cy="47.5"
+           sodipodi:rx="2.5"
+           sodipodi:ry="2.5"
+           d="m -20,47.5 c 0,1.380712 -1.119288,2.5 -2.5,2.5 -1.380712,0 -2.5,-1.119288 -2.5,-2.5 0,-1.380712 1.119288,-2.5 2.5,-2.5 1.380712,0 2.5,1.119288 2.5,2.5 z" />
+      </g>
+    </g>
+    <g
+       id="g7418"
+       inkscape:export-filename="C:\Users\takami\Git\npm\mz700-js\image\btnRun-on.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90">
+      <rect
+         y="928.36218"
+         x="36"
+         height="28"
+         width="28"
+         id="rect2987-77"
+         style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none" />
+      <path
+         sodipodi:nodetypes="cccc"
+         inkscape:connector-curvature="0"
+         id="path3757-0"
+         d="m 40,932.36218 20,10 -20,10 z"
+         style="fill:#0000ff;fill-opacity:1;stroke:none" />
+      <path
+         inkscape:connector-curvature="0"
+         style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+         d="m 35,927.36218 0,30 1,0 28,0 1,0 0,-29 0,-1 -29,0 -1,0 z m 1,1 28,0 0,28 -28,0 0,-28 z"
+         id="rect3781-2" />
+    </g>
+    <g
+       id="g7395"
+       inkscape:export-filename="C:\Users\takami\Git\npm\mz700-js\image\btnReset-on.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90">
+      <rect
+         y="928.36218"
+         x="71"
+         height="28"
+         width="28"
+         id="rect2987-7-4"
+         style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none" />
+      <path
+         style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+         d="m 70,927.36218 0,30 1,0 28,0 1,0 0,-29 0,-1 -29,0 -1,0 z m 1,1 28,0 0,28 -28,0 0,-28 z"
+         id="rect3781-17-1"
+         inkscape:connector-curvature="0" />
+      <path
+         inkscape:connector-curvature="0"
+         id="path4817-0"
+         d="m 85.357143,932.71932 c -5.52285,0 -10,4.47715 -10,10 0,5.52285 4.47715,10 10,10 2.76143,0 5.252859,-1.12786 7.0625,-2.9375 l -3.53125,-3.53125 c -0.90482,0.90482 -2.15054,1.46875 -3.53125,1.46875 -2.76142,0 -5,-2.23858 -5,-5 0,-2.76143 2.23858,-5 5,-5 1.38071,0 2.62643,0.56393 3.53125,1.46875 l -3.53125,3.53125 5,0 5,0 0,-10 -2.9375,2.9375 c -1.809641,-1.80965 -4.30107,-2.9375 -7.0625,-2.9375 z"
+         style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none" />
+    </g>
+    <g
+       transform="translate(-30,70)"
+       id="g3985"
+       inkscape:export-filename="C:\Users\takami\Git\npm\mz700-js\image\btnFullscreen-off.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90">
+      <rect
+         y="893.36218"
+         x="31"
+         height="27.999998"
+         width="28"
+         id="rect2987-1"
+         style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none" />
+      <path
+         inkscape:connector-curvature="0"
+         id="rect3781-48"
+         transform="translate(0,892.36218)"
+         d="m 30,0 0,30 1,0 28,0 1,0 0,-29 0,-1 -29,0 -1,0 z m 1,1 28,0 0,28 -28,0 0,-28 z"
+         style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none" />
+      <rect
+         transform="translate(0,892.36218)"
+         y="5"
+         x="35"
+         height="2.0000024"
+         width="6.9999852"
+         id="rect3903"
+         style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none" />
+      <rect
+         transform="translate(0,892.36218)"
+         y="7"
+         x="35"
+         height="5"
+         width="1.9999963"
+         id="rect3905"
+         style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none" />
+      <rect
+         transform="translate(0,892.36218)"
+         y="23"
+         x="35"
+         height="2"
+         width="7"
+         id="rect3907"
+         style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none" />
+      <rect
+         transform="translate(0,892.36218)"
+         y="18"
+         x="35"
+         height="5"
+         width="2"
+         id="rect3909"
+         style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none" />
+      <rect
+         transform="translate(0,892.36218)"
+         y="5"
+         x="48"
+         height="1.9999998"
+         width="7.0000033"
+         id="rect3911"
+         style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none" />
+      <rect
+         transform="translate(0,892.36218)"
+         y="7"
+         x="53"
+         height="5"
+         width="2"
+         id="rect3913"
+         style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none" />
+      <rect
+         transform="translate(0,892.36218)"
+         y="18"
+         x="53"
+         height="7"
+         width="2"
+         id="rect3915"
+         style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none" />
+      <rect
+         transform="translate(0,892.36218)"
+         y="23"
+         x="48"
+         height="2"
+         width="5"
+         id="rect3917"
+         style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none" />
+    </g>
+    <g
+       transform="translate(-25,70)"
+       id="g4528"
+       inkscape:export-filename="C:\Users\takami\Git\npm\mz700-js\image\btnKeyboard-off.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90">
+      <rect
+         y="893.36218"
+         x="61"
+         height="27.999998"
+         width="28"
+         id="rect2987-1-1"
+         style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none" />
+      <path
+         id="rect3781-48-6"
+         d="m 60,892.36218 0,30 1,0 28,0 1,0 0,-29 0,-1 -29,0 -1,0 z m 1,1 28,0 0,28 -28,0 0,-28 z"
+         style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+         inkscape:connector-curvature="0" />
+      <g
+         style="fill:#ffffff;fill-opacity:1"
+         transform="translate(0,1.9958528)"
+         id="g4493">
+        <rect
+           style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4016"
+           width="26"
+           height="0.99999738"
+           x="62"
+           y="896.36218" />
+        <rect
+           style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4018"
+           width="26"
+           height="1"
+           x="62"
+           y="21"
+           transform="translate(0,892.36218)" />
+        <rect
+           style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4020"
+           width="0.99999237"
+           height="16.000004"
+           x="87"
+           y="5"
+           transform="translate(0,892.36218)" />
+        <rect
+           style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4022"
+           width="1.000033"
+           height="16.000004"
+           x="62"
+           y="5"
+           transform="translate(0,892.36218)" />
+        <rect
+           style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4036"
+           width="14.000008"
+           height="2.000001"
+           x="68"
+           y="18"
+           transform="translate(0,892.36218)" />
+        <rect
+           style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4038"
+           width="5.0000257"
+           height="2.000001"
+           x="64"
+           y="15"
+           transform="translate(0,892.36218)" />
+        <rect
+           style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4040"
+           width="4"
+           height="2"
+           x="82"
+           y="15"
+           transform="translate(0,892.36218)" />
+        <rect
+           style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4042"
+           width="1.9999543"
+           height="2.0000033"
+           x="70"
+           y="15"
+           transform="translate(0,892.36218)" />
+        <rect
+           style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6"
+           width="1.9999945"
+           height="2.0000026"
+           x="66"
+           y="898.36218" />
+        <rect
+           style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-1"
+           width="1.9999945"
+           height="2.0000026"
+           x="69"
+           y="898.36218" />
+        <rect
+           style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4042-8"
+           width="1.9999543"
+           height="2.0000033"
+           x="73"
+           y="907.36218" />
+        <rect
+           style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4042-9"
+           width="1.9999543"
+           height="2.0000033"
+           x="76"
+           y="907.36218" />
+        <rect
+           style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4042-2"
+           width="1.9999543"
+           height="2.0000033"
+           x="79"
+           y="907.36218" />
+        <rect
+           style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-1-7"
+           width="1.9999945"
+           height="2.0000026"
+           x="69"
+           y="904.36218" />
+        <rect
+           style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-1-9"
+           width="1.9999945"
+           height="2.0000026"
+           x="72"
+           y="904.36218" />
+        <rect
+           style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-1-5"
+           width="1.9999945"
+           height="2.0000026"
+           x="75"
+           y="904.36218" />
+        <rect
+           style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-1-4"
+           width="1.9999945"
+           height="2.0000026"
+           x="78"
+           y="904.36218" />
+        <rect
+           style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-3"
+           width="1.9999945"
+           height="2.0000026"
+           x="68"
+           y="901.36218" />
+        <rect
+           style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-4"
+           width="3.9999979"
+           height="1.9999435"
+           x="64"
+           y="904.36218" />
+        <rect
+           style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-34"
+           width="1.9999945"
+           height="2.0000026"
+           x="71"
+           y="901.36218" />
+        <rect
+           style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-38"
+           width="1.9999945"
+           height="2.0000026"
+           x="74"
+           y="901.36218" />
+        <rect
+           style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-7"
+           width="1.9999945"
+           height="2.0000026"
+           x="77"
+           y="901.36218" />
+        <rect
+           style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-1-2"
+           width="1.9999945"
+           height="2.0000026"
+           x="72"
+           y="898.36218" />
+        <rect
+           style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-1-77"
+           width="1.9999945"
+           height="2.0000026"
+           x="75"
+           y="898.36218" />
+        <rect
+           style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-1-93"
+           width="1.9999945"
+           height="2.0000026"
+           x="78"
+           y="898.36218" />
+        <rect
+           style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-1-1"
+           width="1.9999945"
+           height="2.0000026"
+           x="81"
+           y="898.36218" />
+        <rect
+           style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-1-98"
+           width="1.9999945"
+           height="2.0000026"
+           x="84"
+           y="898.36218" />
+        <rect
+           style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-1-3"
+           width="1.9999743"
+           height="5.000031"
+           x="84"
+           y="901.36218" />
+        <rect
+           style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-7-5"
+           width="1.9999945"
+           height="2.0000026"
+           x="80"
+           y="901.36218" />
+        <rect
+           style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-7-0"
+           width="1.9999945"
+           height="2.0000026"
+           x="81"
+           y="904.36218" />
+        <rect
+           style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-3-2"
+           width="3"
+           height="1.9999974"
+           x="64"
+           y="901.36218" />
+        <rect
+           style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-8"
+           width="1"
+           height="1.9999974"
+           x="64"
+           y="898.36218" />
+        <rect
+           style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-1-98-6"
+           width="2"
+           height="2.9999974"
+           x="83"
+           y="901.36218" />
+      </g>
+    </g>
+    <g
+       transform="translate(-30,75)"
+       id="g3997"
+       inkscape:export-filename="C:\Users\takami\Git\npm\mz700-js\image\btnFullscreen-on.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90">
+      <rect
+         y="923.36218"
+         x="31"
+         height="27.999998"
+         width="28"
+         id="rect2987-1-5"
+         style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none" />
+      <path
+         id="rect3781-48-2"
+         d="m 30,922.36218 0,30 1,0 28,0 1,0 0,-29 0,-1 -29,0 -1,0 z m 1,1 28,0 0,28 -28,0 0,-28 z"
+         style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+         inkscape:connector-curvature="0" />
+      <rect
+         y="927.36218"
+         x="35"
+         height="2.0000024"
+         width="6.9999852"
+         id="rect3903-7"
+         style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none" />
+      <rect
+         y="929.36218"
+         x="35"
+         height="5"
+         width="1.9999963"
+         id="rect3905-6"
+         style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none" />
+      <rect
+         y="945.36218"
+         x="35"
+         height="2"
+         width="7"
+         id="rect3907-1"
+         style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none" />
+      <rect
+         y="940.36218"
+         x="35"
+         height="5"
+         width="2"
+         id="rect3909-4"
+         style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none" />
+      <rect
+         y="927.36218"
+         x="48"
+         height="1.9999998"
+         width="7.0000033"
+         id="rect3911-2"
+         style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none" />
+      <rect
+         y="929.36218"
+         x="53"
+         height="5"
+         width="2"
+         id="rect3913-3"
+         style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none" />
+      <rect
+         y="940.36218"
+         x="53"
+         height="7"
+         width="2"
+         id="rect3915-2"
+         style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none" />
+      <rect
+         y="945.36218"
+         x="48"
+         height="2"
+         width="5"
+         id="rect3917-2"
+         style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none" />
+    </g>
+    <g
+       transform="translate(-25,75)"
+       id="g4728"
+       inkscape:export-filename="C:\Users\takami\Git\npm\mz700-js\image\btnKeyboard-on.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90">
+      <rect
+         y="923.36218"
+         x="61"
+         height="27.999998"
+         width="28"
+         id="rect2987-1-1-2"
+         style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none" />
+      <path
+         id="rect3781-48-6-4"
+         d="m 60,922.36218 0,30 1,0 28,0 1,0 0,-29 0,-1 -29,0 -1,0 z m 1,1 28,0 0,28 -28,0 0,-28 z"
+         style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+         inkscape:connector-curvature="0" />
+      <g
+         style="fill:#0000ff;fill-opacity:1"
+         transform="translate(0,31.995853)"
+         id="g4493-8">
+        <rect
+           style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4016-6"
+           width="26"
+           height="0.99999738"
+           x="62"
+           y="896.36218" />
+        <rect
+           style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4018-5"
+           width="26"
+           height="1"
+           x="62"
+           y="21"
+           transform="translate(0,892.36218)" />
+        <rect
+           style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4020-0"
+           width="0.99999237"
+           height="16.000004"
+           x="87"
+           y="5"
+           transform="translate(0,892.36218)" />
+        <rect
+           style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4022-9"
+           width="1.000033"
+           height="16.000004"
+           x="62"
+           y="5"
+           transform="translate(0,892.36218)" />
+        <rect
+           style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4036-0"
+           width="14.000008"
+           height="2.000001"
+           x="68"
+           y="18"
+           transform="translate(0,892.36218)" />
+        <rect
+           style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4038-0"
+           width="5.0000257"
+           height="2.000001"
+           x="64"
+           y="15"
+           transform="translate(0,892.36218)" />
+        <rect
+           style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4040-6"
+           width="4"
+           height="2"
+           x="82"
+           y="15"
+           transform="translate(0,892.36218)" />
+        <rect
+           style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4042-1"
+           width="1.9999543"
+           height="2.0000033"
+           x="70"
+           y="15"
+           transform="translate(0,892.36218)" />
+        <rect
+           style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-389"
+           width="1.9999945"
+           height="2.0000026"
+           x="66"
+           y="898.36218" />
+        <rect
+           style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-1-34"
+           width="1.9999945"
+           height="2.0000026"
+           x="69"
+           y="898.36218" />
+        <rect
+           style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4042-8-4"
+           width="1.9999543"
+           height="2.0000033"
+           x="73"
+           y="907.36218" />
+        <rect
+           style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4042-9-6"
+           width="1.9999543"
+           height="2.0000033"
+           x="76"
+           y="907.36218" />
+        <rect
+           style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4042-2-0"
+           width="1.9999543"
+           height="2.0000033"
+           x="79"
+           y="907.36218" />
+        <rect
+           style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-1-7-6"
+           width="1.9999945"
+           height="2.0000026"
+           x="69"
+           y="904.36218" />
+        <rect
+           style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-1-9-6"
+           width="1.9999945"
+           height="2.0000026"
+           x="72"
+           y="904.36218" />
+        <rect
+           style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-1-5-1"
+           width="1.9999945"
+           height="2.0000026"
+           x="75"
+           y="904.36218" />
+        <rect
+           style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-1-4-8"
+           width="1.9999945"
+           height="2.0000026"
+           x="78"
+           y="904.36218" />
+        <rect
+           style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-3-4"
+           width="1.9999945"
+           height="2.0000026"
+           x="68"
+           y="901.36218" />
+        <rect
+           style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-4-9"
+           width="3.9999979"
+           height="1.9999435"
+           x="64"
+           y="904.36218" />
+        <rect
+           style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-34-6"
+           width="1.9999945"
+           height="2.0000026"
+           x="71"
+           y="901.36218" />
+        <rect
+           style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-38-3"
+           width="1.9999945"
+           height="2.0000026"
+           x="74"
+           y="901.36218" />
+        <rect
+           style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-7-7"
+           width="1.9999945"
+           height="2.0000026"
+           x="77"
+           y="901.36218" />
+        <rect
+           style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-1-2-8"
+           width="1.9999945"
+           height="2.0000026"
+           x="72"
+           y="898.36218" />
+        <rect
+           style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-1-77-8"
+           width="1.9999945"
+           height="2.0000026"
+           x="75"
+           y="898.36218" />
+        <rect
+           style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-1-93-2"
+           width="1.9999945"
+           height="2.0000026"
+           x="78"
+           y="898.36218" />
+        <rect
+           style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-1-1-9"
+           width="1.9999945"
+           height="2.0000026"
+           x="81"
+           y="898.36218" />
+        <rect
+           style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-1-98-1"
+           width="1.9999945"
+           height="2.0000026"
+           x="84"
+           y="898.36218" />
+        <rect
+           style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-1-3-3"
+           width="1.9999743"
+           height="5.000031"
+           x="84"
+           y="901.36218" />
+        <rect
+           style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-7-5-5"
+           width="1.9999945"
+           height="2.0000026"
+           x="80"
+           y="901.36218" />
+        <rect
+           style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-7-0-9"
+           width="1.9999945"
+           height="2.0000026"
+           x="81"
+           y="904.36218" />
+        <rect
+           style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-3-2-8"
+           width="3"
+           height="1.9999974"
+           x="64"
+           y="901.36218" />
+        <rect
+           style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-8-4"
+           width="1"
+           height="1.9999974"
+           x="64"
+           y="898.36218" />
+        <rect
+           style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect4024-6-1-98-6-0"
+           width="2"
+           height="2.9999974"
+           x="83"
+           y="901.36218" />
+      </g>
+    </g>
+    <g
+       id="g7465"
+       inkscape:export-filename="C:\Users\takami\Git\npm\mz700-js\image\btnStepIn-disabled.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90">
+      <rect
+         y="963.36218"
+         x="106"
+         height="28"
+         width="28"
+         id="rect2987-7-8-8-5"
+         style="fill:#505050;fill-opacity:1;fill-rule:nonzero;stroke:none" />
+      <path
+         style="fill:#505050;fill-opacity:1;fill-rule:nonzero;stroke:none"
+         d="m 105,962.36218 0,30 1,0 28,0 1,0 0,-29 0,-1 -29,0 -1,0 z m 1,1 28,0 0,28 -28,0 0,-28 z"
+         id="rect3781-17-5-1-9"
+         inkscape:connector-curvature="0" />
+      <g
+         style="fill:#a0a0a0;fill-opacity:1"
+         transform="matrix(1.138896,0,0,1.4559653,137.20971,-385.89638)"
+         id="g4990-0-7">
+        <path
+           sodipodi:type="arc"
+           style="fill:#a0a0a0;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="path4909-9-2"
+           sodipodi:cx="-22.5"
+           sodipodi:cy="47.5"
+           sodipodi:rx="2.5"
+           sodipodi:ry="2.5"
+           d="m -20,47.5 c 0,1.380712 -1.119288,2.5 -2.5,2.5 -1.380712,0 -2.5,-1.119288 -2.5,-2.5 0,-1.380712 1.119288,-2.5 2.5,-2.5 1.380712,0 2.5,1.119288 2.5,2.5 z"
+           transform="translate(0,892.36218)" />
+        <path
+           style="fill:#a0a0a0;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           d="m -16.548962,930.22085 c -3.28689,0.35459 -5.829072,2.79682 -6.503129,5.8563 l 2.931251,0.65815 c 0.398653,-1.84372 1.915417,-3.31834 3.893652,-3.53175 1.187161,-0.12808 2.299153,0.21101 3.175555,0.88324 l -1.469691,0.94433 6.2871599,2.33914 -0.64355,-5.96538 -1.5561949,1.01653 c -1.546775,-1.57213 -3.752602,-2.45542 -6.115053,-2.20056 z"
+           id="path4932-2-0"
+           inkscape:connector-curvature="0" />
+        <path
+           transform="translate(15,892.36218)"
+           sodipodi:type="arc"
+           style="fill:#a0a0a0;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="path4909-8-4-2"
+           sodipodi:cx="-22.5"
+           sodipodi:cy="47.5"
+           sodipodi:rx="2.5"
+           sodipodi:ry="2.5"
+           d="m -20,47.5 c 0,1.380712 -1.119288,2.5 -2.5,2.5 -1.380712,0 -2.5,-1.119288 -2.5,-2.5 0,-1.380712 1.119288,-2.5 2.5,-2.5 1.380712,0 2.5,1.119288 2.5,2.5 z" />
+      </g>
+    </g>
+    <g
+       id="g7494"
+       inkscape:export-filename="C:\Users\takami\Git\npm\mz700-js\image\btnStop-off.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90">
+      <rect
+         y="893.36218"
+         x="1"
+         height="28"
+         width="28"
+         id="rect2987-3"
+         style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none" />
+      <path
+         inkscape:connector-curvature="0"
+         style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+         d="m 0,892.36218 0,30 1,0 28,0 1,0 0,-29 0,-1 -29,0 -1,0 z m 1,1 28,0 0,28 -28,0 0,-28 z"
+         id="rect3781-1" />
+      <rect
+         y="899.88782"
+         x="7.4746213"
+         height="15.00014"
+         width="5.0000019"
+         id="rect6970"
+         style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none" />
+      <rect
+         y="899.88782"
+         x="17.474613"
+         height="15.00014"
+         width="5.0000019"
+         id="rect6970-8"
+         style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none" />
+    </g>
+    <g
+       id="g7529"
+       inkscape:export-filename="C:\Users\takami\Git\npm\mz700-js\image\btnStop-on.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90">
+      <rect
+         y="928.36218"
+         x="1"
+         height="28"
+         width="28"
+         id="rect2987-3-3"
+         style="fill:#ffffff;fill-opacity:1;fill-rule:nonzero;stroke:none" />
+      <path
+         inkscape:connector-curvature="0"
+         style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+         d="m 0,927.36218 0,30 1,0 28,0 1,0 0,-29 0,-1 -29,0 -1,0 z m 1,1 28,0 0,28 -28,0 0,-28 z"
+         id="rect3781-1-7" />
+      <g
+         transform="translate(2.5253812,2.5253812)"
+         id="g7525">
+        <rect
+           style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect6970-3"
+           width="5"
+           height="14.999997"
+           x="5"
+           y="932.36218" />
+        <rect
+           style="fill:#0000ff;fill-opacity:1;fill-rule:nonzero;stroke:none"
+           id="rect6970-3-6"
+           width="5"
+           height="14.999997"
+           x="15"
+           y="932.36218" />
+      </g>
+    </g>
+  </g>
+</svg>
