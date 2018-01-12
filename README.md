@@ -145,8 +145,11 @@ Available Browsers
 CHANGES
 -------
 
-* v0.8.\* - Improving UI experiences. Some emulation codes are now written as Asm.js.  
-Add buttons to load a MZT file. The file is a JavaScript source and is loaded by JSONP.
+* v0.8.\*
+    * Improving UI experiences.
+    * Some emulation codes are now written as Asm.js.
+    * Add buttons to load a MZT file. The file is a JavaScript source and is loaded by JSONP.
+    * Fix potential security vulnerabilities in package-lock.json.
 * v0.7.0 - Change the layout by device type.(But the module was not compiled.)
     * v0.7.1 - Change the layout by device type.
     * v0.7.2 - Fix the bug on v0.7.1: The emulator could not accept key-inputs from
