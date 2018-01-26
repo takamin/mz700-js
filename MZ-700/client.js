@@ -202,7 +202,6 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
     document.addEventListener("fullscreenchange", onFullscreenChange);
     onFullscreenChange();
 
-    mz700js.reset();
     screen.find("canvas").css("height", "calc(100% - 1px)");
     dock_n_liquid.init(function() { mz700js.resizeScreen(); });
     dock_n_liquid.select($(".MZ-700").get(0)).layout();
@@ -222,10 +221,14 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
         var name = request.parameters.mzt;
         requestJsonp("https://takamin.github.io/MZ-700/mzt/" + name + ".js");
         window.loadMZT = function(tape_data) {
-            mz700js.setMztData(tape_data, function(mztape_array) {
-                mz700js.start(mztape_array[0].header.addr_exec);
+            mz700js.mz700comworker.reset(function() {
+                mz700js.setMztData(tape_data, function(mztape_array) {
+                    mz700js.start(mztape_array[0].header.addr_exec);
+                });
             });
         };
+    } else {
+        mz700js.reset();
     }
 
     //
