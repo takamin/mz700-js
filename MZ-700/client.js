@@ -87,19 +87,21 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
             .css("width", innerSize._w + "px")
             .css("height", innerSize._h + "px");
 
-        var phifBBox = new BBox(phif.get(0));
-        var phifSize = phifBBox.getSize();
-        var phifMargin = new BBox.Size(
-                (containerSize._w - phifSize._w) / 2,
-                innerSize._h - phifSize._h);
-        if(phifMargin._w < 0) {
-            phifMargin._w = 0;
+        if(phif.is(":visible")) {
+            var phifBBox = new BBox(phif.get(0));
+            var phifSize = phifBBox.getSize();
+            var phifMargin = new BBox.Size(
+                    (containerSize._w - phifSize._w) / 2,
+                    innerSize._h - phifSize._h);
+            if(phifMargin._w < 0) {
+                phifMargin._w = 0;
+            }
+            if(phifMargin._h < 0) {
+                phifMargin._h = 0;
+            }
+            phif.css("margin-left", phifMargin._w + "px")
+                .css("margin-top", phifMargin._h + "px");
         }
-        if(phifMargin._h < 0) {
-            phifMargin._h = 0;
-        }
-        phif.css("margin-left", phifMargin._w + "px")
-            .css("margin-top", phifMargin._h + "px");
     };
 
     var liquidRootElement = $("#liquid-panel-MZ-700").get(0);
