@@ -87,19 +87,21 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
             .css("width", innerSize._w + "px")
             .css("height", innerSize._h + "px");
 
-        var phifBBox = new BBox(phif.get(0));
-        var phifSize = phifBBox.getSize();
-        var phifMargin = new BBox.Size(
-                (containerSize._w - phifSize._w) / 2,
-                innerSize._h - phifSize._h);
-        if(phifMargin._w < 0) {
-            phifMargin._w = 0;
+        if(phif.is(":visible")) {
+            var phifBBox = new BBox(phif.get(0));
+            var phifSize = phifBBox.getSize();
+            var phifMargin = new BBox.Size(
+                    (containerSize._w - phifSize._w) / 2,
+                    innerSize._h - phifSize._h);
+            if(phifMargin._w < 0) {
+                phifMargin._w = 0;
+            }
+            if(phifMargin._h < 0) {
+                phifMargin._h = 0;
+            }
+            phif.css("margin-left", phifMargin._w + "px")
+                .css("margin-top", phifMargin._h + "px");
         }
-        if(phifMargin._h < 0) {
-            phifMargin._h = 0;
-        }
-        phif.css("margin-left", phifMargin._w + "px")
-            .css("margin-top", phifMargin._h + "px");
     };
 
     var liquidRootElement = $("#liquid-panel-MZ-700").get(0);
@@ -200,7 +202,6 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
     document.addEventListener("fullscreenchange", onFullscreenChange);
     onFullscreenChange();
 
-    mz700js.reset();
     screen.find("canvas").css("height", "calc(100% - 1px)");
     dock_n_liquid.init(function() { mz700js.resizeScreen(); });
     dock_n_liquid.select($(".MZ-700").get(0)).layout();
@@ -220,10 +221,14 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
         var name = request.parameters.mzt;
         requestJsonp("https://takamin.github.io/MZ-700/mzt/" + name + ".js");
         window.loadMZT = function(tape_data) {
-            mz700js.setMztData(tape_data, function(mztape_array) {
-                mz700js.start(mztape_array[0].header.addr_exec);
+            mz700js.mz700comworker.reset(function() {
+                mz700js.setMztData(tape_data, function(mztape_array) {
+                    mz700js.start(mztape_array[0].header.addr_exec);
+                });
             });
         };
+    } else {
+        mz700js.reset();
     }
 
     //
