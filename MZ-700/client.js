@@ -153,6 +153,8 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
         .mouseleave(function() {
             mz700js.acceptKey(false);
         });
+    } else {
+        mz700js.showScreenKeyboard();
     }
 
     var fullscreenButton = $("<button/>")
