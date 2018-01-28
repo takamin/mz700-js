@@ -265,7 +265,7 @@
                     },
                     'onPortRead': function(/*param*/) { },
                     'onPortWrite': function(/*param*/) { },
-                    'startSound': function(freq) { sound.startSound(freq); },
+                    'startSound': function(freq) { sound.startSound(freq[0]); },
                     'stopSound': function() { sound.stopSound(); },
                     "onStartDataRecorder": function(){
                         this.btnCmtRec.prop("disabled", true);
