@@ -454,11 +454,13 @@
     };
     MZ700Js.prototype.btnStart_click = function() {
         if(this.isRunning) {
-            this.stop();
-            this.btnStart_toRun();
+            this.stop(function() {
+                this.btnStart_toRun();
+            }.bind(this));
         } else {
-            this.start();
-            this.btnStart_toStop();
+            this.start(null, function() {
+                this.btnStart_toStop();
+            }.bind(this));
         }
     };
     MZ700Js.prototype.btnStart_hover = function() {
@@ -549,10 +551,7 @@
             this.mz700comworker.reset(function() {
                 this.mz700comworker.getCassetteTape(function(bytes) {
                     this.createCmtDownloadLink(bytes);
-                    if(callback) {
-                        callback();
-                    }
-                    this.start();
+                    this.start(null, callback);
                 }.bind(this));
             }.bind(this));
         }.bind(this));
@@ -560,17 +559,17 @@
 
     MZ700Js.EXEC_TIMER_INTERVAL = 100;
     MZ700Js.NUM_OF_EXEC_OPCODE = 20000;
-    MZ700Js.prototype.start = function(addr) {
+    MZ700Js.prototype.start = function(addr, callback) {
         if(addr == null) {
-            this.mz700comworker.start(function() {});
+            this.mz700comworker.start(callback || function() {});
         } else {
             this.mz700comworker.setPC(addr, function() {
-                this.mz700comworker.start(function() {});
+                this.mz700comworker.start(callback || function() {});
             }.bind(this));
         }
     };
-    MZ700Js.prototype.stop = function() {
-        this.mz700comworker.stop(function() {});
+    MZ700Js.prototype.stop = function(callback) {
+        this.mz700comworker.stop(callback || function() {});
     };
     MZ700Js.prototype.stepIn = function() {
         this.clearCurrentExecLine();
