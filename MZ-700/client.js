@@ -214,27 +214,34 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
     mz700js.resizeScreen();
 
     //
-    // Load MZT specified by parameter 'mzt'.
+    // Parse the request URI to get parameters
     //
     var parseRequest = require("../lib/parse-request");
-    var requestJsonp = require("../lib/jsonp");
     var request = parseRequest();
-    if("mzt" in request.parameters) {
-        var name = request.parameters.mzt;
-        requestJsonp("https://takamin.github.io/MZ-700/mzt/" + name + ".js");
-        window.loadMZT = function(tape_data) {
-            mz700js.mz700comworker.reset(function() {
-                mz700js.setMztData(tape_data, function(mztape_array) {
-                    mz700js.start(mztape_array[0].header.addr_exec);
-                });
-            });
-        };
-    } else {
-        mz700js.reset();
-    }
 
     //
-    // Setup buttons to load MZT
+    // About to load some informations by JSONP
+    //
+    var requestJsonp = require("../lib/jsonp");
+
+    //
+    // Reset MZ-700 and auto load the MZT file, if specified at QUERY_STRING
+    //
+    mz700js.reset(function() {
+        if("mzt" in request.parameters) {
+            window.loadMZT = function(tape_data) {
+                mz700js.stop(function() {
+                    mz700js.setMztData(tape_data, function(mztape_array) {
+                        mz700js.start(mztape_array[0].header.addr_exec);
+                    });
+                });
+            };
+            requestJsonp("https://takamin.github.io/MZ-700/mzt/" + request.parameters.mzt + ".js");
+        }
+    });
+
+    //
+    // Setup buttons to load other MZT
     //
     requestJsonp("https://takamin.github.io/MZ-700/mzt/mzt-list.js");
     window.mztList = function(files) {
