@@ -75,6 +75,7 @@
   "homepage": "http://bicycle.life.coocan.jp/takamints/index.php/MZ-700",
   "eslintConfig": {
     "env": {
+      "es6": true,
       "browser": true,
       "node": true,
       "mocha": true
