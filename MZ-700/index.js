@@ -11,7 +11,6 @@
     var MMIO = require("../MZ-700/mmio");
     require("../lib/jquery.tabview.js");
     require("../lib/jquery.asmlist.js");
-    require("../lib/jquery.ddpanel.js");
     require("../lib/jquery.soundctrl.js");
     require("../lib/jquery.Z80-mem.js");
     require("../lib/jquery.Z80-reg.js");
@@ -328,8 +327,7 @@
                                 $(this).parent().find("button").prop("disabled", false);
                             }
                         }))
-                        .append($("<span>Auto Update</span>")))
-                .DropDownPanel("create", { "caption" : "Register" });
+                        .append($("<span>Auto Update</span>")));
 
             //
             // Memory hexa dump list
@@ -348,16 +346,13 @@
                     }).dumplist("setReadMemoryHandler",
                         function(addr, callback) {
                             this.readMemory(addr, callback);
-                        }.bind(this.mz700comworker)))
-                .DropDownPanel("create", { "caption" : "Memory" });
+                        }.bind(this.mz700comworker)));
 
             //
             // Assemble list
             //
 
             $(".source-list").tabview("create");
-            $(".source-list").DropDownPanel(
-                    "create", { "caption" : "Assembly source" });
 
             var asmView = this.addAsmListTab("PCG-700 sample");
             asmView.asmlist("text",
@@ -400,8 +395,7 @@
                                 runImm(src);
                             }
                         }))
-                .append($("<br/>"))
-                .DropDownPanel("create", { "caption" : "Execute Z80 Instruction" });
+                .append($("<br/>"));
         }
 
         this._timerInterval = MZ700.DEFAULT_TIMER_INTERVAL;
