@@ -16,6 +16,7 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
 (function($) {
     require("jquery-ui");
     require("fullscrn");
+    require("../lib/jquery.ddpanel.js");
     var MZ700JsBase = require("./index.js");
     var MZ700Js = function() {
         MZ700JsBase.call(this);
@@ -34,7 +35,8 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
                 this.btnToggleScreenKeyboard_click();
             }.bind(this));
         $(".MZ-700 .ctrl-panel")
-            .append(this.btnToggleScreenKeyboard)
+            .append(this.btnToggleScreenKeyboard);
+        $(".dropdownpanel").DropDownPanel("create");
     };
     MZ700Js.prototype.btnToggleScreenKeyboard_click = function() {
         if(this.btnToggleScreenKeyboard.hasClass("on")) {
