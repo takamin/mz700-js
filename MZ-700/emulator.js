@@ -86,67 +86,32 @@ var MZ700 = function(opt) {
     // to UI thread by transworker
     //
     this.opt = {
-        onExecutionParameterUpdate: function(param) {
-            try {
-                THIS._transworker.postNotify(
-                    "onExecutionParameterUpdate", param);
-            } catch(ex) {
-                console.error(ex);
-            }
-        },
-        started: function() { THIS._transworker.postNotify("start"); },
-        stopped: function() { THIS._transworker.postNotify("stop"); },
-        notifyClockFreq: function(clockCount) {
-            THIS._transworker.postNotify(
-                    "onNotifyClockFreq", [ clockCount ]);
-        },
-        onBreak: function() {
-            THIS._transworker.postNotify("onBreak");
-        },
-        onUpdateScreen: function() {
-            THIS._transworker.postNotify(
-                "onUpdateScreen", THIS._screenUpdateData);
-        },
+        onExecutionParameterUpdate : function() { },
+        started: function() { },
+        stopped: function() { },
+        notifyClockFreq: function() { },
+        onBreak : function() { },
+        onUpdateScreen: function(/*updateData*/) { },
         onVramUpdate: function(index, dispcode, attr){
             THIS._screenUpdateData[index] = {
                 dispcode: dispcode, attr: attr
             };
             if(THIS._vramTxTid == null) {
                 THIS._vramTxTid = setTimeout(function() {
-                    THIS.opt.onUpdateScreen();
+                    THIS.opt.onUpdateScreen(THIS._screenUpdateData);
                     THIS._screenUpdateData = {};
                     THIS._vramTxTid = null;
                 }, 100);
             }
         },
-        onMmioRead: function(address, value){
-            THIS._transworker.postNotify(
-                    "onMmioRead", { address: address, value: value });
-        },
-        onMmioWrite: function(address, value){
-            THIS._transworker.postNotify(
-                    "onMmioWrite", { address: address, value: value });
-        },
-        onPortRead: function(port, value){
-            THIS._transworker.postNotify(
-                    "onPortRead", { port: port, value: value });
-        },
-        onPortWrite: function(port, value){
-            THIS._transworker.postNotify(
-                    "onPortWrite", { port: port, value: value });
-        },
-        startSound: function(freq){
-            THIS._transworker.postNotify("startSound",[ freq ]);
-        },
-        stopSound: function(){
-            THIS._transworker.postNotify("stopSound");
-        },
-        onStartDataRecorder: function(){
-            THIS._transworker.postNotify("onStartDataRecorder");
-        },
-        onStopDataRecorder: function(){
-            THIS._transworker.postNotify("onStopDataRecorder");
-        }
+        onMmioRead: function(/*address, value*/) { },
+        onMmioWrite: function(/*address, value*/) { },
+        onPortRead: function(/*port, value*/){ },
+        onPortWrite: function(/*port, value*/){ },
+        startSound: function(/*freq*/) { },
+        stopSound: function() { },
+        onStartDataRecorder: function(){ },
+        onStopDataRecorder: function(){ }
     };
 
     //

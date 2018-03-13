@@ -69,7 +69,9 @@
         "onExecutionParameterUpdate" : function() { },
         "started": function() { },
         "stopped": function() { },
+        "notifyClockFreq": function() { },
         "onBreak" : function() { },
+        "onUpdateScreen": function(updateData) { },
         "onVramUpdate": function(index, dispcode, attr){
             cliCommandVram.setAt(index, dispcode, attr);
         },
