@@ -353,7 +353,9 @@
 
             $(".source-list").asmview("create");
             var sampleSource = $($("textarea.default.source").get(0)).val();
-            $(".source-list").asmview("addTab", "PCG-700 sample", sampleSource, {
+            $(".source-list").asmview("addTab", {
+                index: "mzt", caption:"PCG-700 sample"
+            }, sampleSource, {
                 onAssemble: function(asmsrc) {
                     this.mz700comworker.assemble( asmsrc, function(assembled) {
                         this.mz700comworker.writeAsmCode( assembled, function() {
@@ -689,21 +691,22 @@
     //
     MZ700Js.prototype.scrollToShowPC = function() {
         this.mz700comworker.getRegister(function(reg) {
-            $(".source-list").asmview("setCurrentAddr", reg.PC);
+            $(".source-list").asmview("setCurrentAddr", "mzt", reg.PC);
         });
     };
 
     MZ700Js.prototype.clearCurrentExecLine = function() {
-        $(".source-list").asmview("clearCurrentAddr");
+        $(".source-list").asmview("clearCurrentAddr", "mzt");
     };
 
     MZ700Js.prototype.disassemble = function(mztape_array) {
         var running = this.isRunning;
+        var name = MZ_TapeHeader.get1stFilename(mztape_array) || "(empty)";
         this.mz700comworker.stop(function() {
             var result = MZ700.disassemble(mztape_array);
             if($(".source-list").length > 0) {
                 $(".source-list").asmview(
-                    "setSource", result.outbuf, name, false);
+                    "setSource", "mzt", result.outbuf, name, false);
                 this.createAssembleList(result.asmlist);
             }
             if(running) {
@@ -714,7 +717,7 @@
 
     MZ700Js.prototype.createAssembleList = function(asm_list) {
         this.mz700comworker.getBreakPoints(function(breakpoints) {
-            $(".source-list").asmview("setAsmList", asm_list, breakpoints);
+            $(".source-list").asmview("setAsmList", "mzt", asm_list, breakpoints);
         }.bind(this));
     };
 
