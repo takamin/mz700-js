@@ -42,6 +42,21 @@ var MZ_TapeHeader = function(buf, offset) {
     this.buffer = header_buffer;
 };
 
+/**
+ * Get first filename in MZT tape images.
+ *
+ * @param {array} mzt_array
+ * the tape images. The each element has MZT header.
+ *
+ * @returns {string|null} The filename in the first MZT header.
+ */
+MZ_TapeHeader.get1stFilename = function(mzt_array) {
+    if(mzt_array && Array.isArray(mzt_array) && mzt_array.length > 0) {
+        return mzt_array[0].header.filename;
+    }
+    return null;
+};
+
 MZ_TapeHeader.createNew = function() {
     var buf = new Array(128);
     for(var i = 0; i < 128; i++) {
@@ -106,4 +121,5 @@ MZ_TapeHeader.prototype.getHeadline = function() {
         ";======================================================"
         ].join("\n");
 };
+
 module.exports = MZ_TapeHeader;

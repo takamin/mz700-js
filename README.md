@@ -145,6 +145,8 @@ Available Browsers
 CHANGES
 -------
 
+* v0.9.\*
+    * Using CodeMirror for Z80 assemble source editor.
 * v0.8.\*
     * Improving UI experiences.
     * Some emulation codes are now written as Asm.js.
