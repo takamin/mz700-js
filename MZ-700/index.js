@@ -308,11 +308,21 @@
             );
 
             this.PCG700 = require("../lib/PCG-700").create();
-            this.PCG700.setScreen(this.mz700scrn);
             this.PCG700.writeMMIO(0xE010, 0x00);
             this.PCG700.writeMMIO(0xE011, 0x00);
             this.PCG700.writeMMIO(0xE012, 0x18);
             this.mmioMapPeripheral(this.PCG700, [], [0xE010, 0xE011, 0xE012]);
+            window.addEventListener("enablePCG700", function() {
+                this.mz700scrn.changeCG(this.PCG700._cg);
+                this.mz700scrn.redraw();
+            }.bind(this));
+            window.addEventListener("disablePCG700", function() {
+                this.mz700scrn.restoreCG();
+                this.mz700scrn.redraw();
+            }.bind(this));
+            window.addEventListener("updatePCG700", function(e) {
+                this.mz700scrn.redrawChar(e.detail.atb, e.detail.dispCode);
+            }.bind(this));
 
             //
             // Register viewers
