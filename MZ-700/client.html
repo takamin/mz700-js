@@ -100,6 +100,16 @@ PCGSMPL:ENT
         LD      HL,CGPAT    ;TOP ADDRESS OF PATTERN DATA
         CALL    SETPCG      ;WRITE PATTERN
         RST     00H         ;RESET
+        NOP
+        NOP
+        ;===========================================
+        ;
+        ; RESTORE BUILT-IN CURSOR PATTERN
+        ;
+        ;===========================================
+RSTRPCG:ENT
+        CALL    DIPCG       ;ENABLE PCG-700
+        RST     00H         ;RESET
         ;
         ;
         ;
