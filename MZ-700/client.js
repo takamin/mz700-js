@@ -253,18 +253,19 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
                 $("<button/>").attr("type", "button")
                 .css("padding", 0).css("height", "24px")
                 .css("border", "solid 0px transparent")
-                .append(
-                    $("<span/>").addClass("mz700scrn")
-                    .css("padding", 0).css("margin", 0)
-                    .attr("charSize", "8").attr("padding", "1")
-                    .attr("color", mzt.mz700_buttonStyle.color)
-                    .attr("bgColor", mzt.mz700_buttonStyle.bgColor)
-                    .html(mzt.name))
+                .css("padding", 0).css("margin", "4px 2px")
+                .attr("charSize", "8").attr("padding", "1")
+                .attr("color", mzt.mz700_buttonStyle.color)
+                .attr("bgColor", mzt.mz700_buttonStyle.bgColor)
+                .html(mzt.name)
                 .click(function() {
                     window.location.href = request.path + "?mzt=" + mzt.path;
                 }));
         });
         $("#physical-interface").append(mztButtons);
+        mztButtons.find("button").each(function() {
+            window.mz700scrn.convert(this);
+        });
         liquidRoot.layout();
         mz700js.resizeScreen();
     };

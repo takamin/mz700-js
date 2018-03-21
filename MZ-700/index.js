@@ -9,14 +9,30 @@
     var MZ700 = require("../MZ-700/emulator.js");
     var MZ700_Sound = require("../MZ-700/sound.js");
     var MMIO = require("../MZ-700/mmio");
+    var mz700cg = require("../lib/mz700cg.js");
     require("../lib/jquery.asmview.js");
     require("../lib/jquery.soundctrl.js");
     require("../lib/jquery.Z80-mem.js");
     require("../lib/jquery.Z80-reg.js");
-    require("../lib/jquery.MZ-700-vram");
+    require("../lib/jquery.mz700scrn");
     require("../lib/jquery.MZ-700-kb.js");
 
     var cookies = require("../lib/cookies");
+
+    /*
+     * Convert the innerText of all the elements "span.mz700scrn"
+     */
+    $(function() {
+        $("span.mz700scrn").each(function() {
+            $(this).hide();
+        });
+        setTimeout(function() {
+            $("span.mz700scrn").each(function() {
+                window.mz700scrn.convert(this);
+                $(this).show();
+            });
+        }, 1);
+    });
 
     var MZ700Js = function() {
         this.opt = {
@@ -39,6 +55,8 @@
             }
         }, this);
 
+        this._cgrom = new mz700cg();
+
         //
         // Communicate with MZ-700 Worker Thread
         //
@@ -47,7 +65,9 @@
             // MZ-700 Screen
             //
             this.mz700scrn = null;
-            var screen = $(".MZ-700 .screen").mz700scrn("create", {});
+            var screen = $(".MZ-700 .screen").mz700scrn("create", {
+                CG: this._cgrom
+            });
             if(screen.length > 0) {
                 this.mz700scrn = screen.get(0)["mz700scrn"];
             }
@@ -254,7 +274,13 @@
                     },
                     'onBreak': function() { this.stop(); },
                     'onUpdateScreen': (this.mz700scrn == null) ? function() {} :
-                        function(updateData) { this.mz700scrn.write(updateData); }.bind(this),
+                        function(updateData) {
+                            Object.keys(updateData).forEach(function(addr) {
+                                var chr = updateData[addr];
+                                this.mz700scrn.writeVram(
+                                        addr, chr.attr, chr.dispcode);
+                            }, this);
+                        }.bind(this),
                     'onMmioRead': function(param) {
                         this.MMIO.read(param.address, param.value);
                     },
@@ -282,11 +308,21 @@
             );
 
             this.PCG700 = require("../lib/PCG-700").create();
-            this.PCG700.setScreen(this.mz700scrn);
             this.PCG700.writeMMIO(0xE010, 0x00);
             this.PCG700.writeMMIO(0xE011, 0x00);
             this.PCG700.writeMMIO(0xE012, 0x18);
             this.mmioMapPeripheral(this.PCG700, [], [0xE010, 0xE011, 0xE012]);
+            window.addEventListener("enablePCG700", function() {
+                this.mz700scrn.changeCG(this.PCG700._cg);
+                this.mz700scrn.redraw();
+            }.bind(this));
+            window.addEventListener("disablePCG700", function() {
+                this.mz700scrn.restoreCG();
+                this.mz700scrn.redraw();
+            }.bind(this));
+            window.addEventListener("updatePCG700", function(e) {
+                this.mz700scrn.redrawChar(e.detail.atb, e.detail.dispCode);
+            }.bind(this));
 
             //
             // Register viewers
