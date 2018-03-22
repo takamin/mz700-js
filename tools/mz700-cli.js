@@ -36,7 +36,6 @@
     console.log(description);
 
     var readline = require("linebyline")(process.stdin);
-    var fnut = require("../lib/fnuts.js");
     require("../lib/context.js");
     require("../lib/ex_number.js");
     var MZ700 = require("../MZ-700/emulator.js");
@@ -71,7 +70,7 @@
         "stopped": function() { },
         "notifyClockFreq": function() { },
         "onBreak" : function() { },
-        "onUpdateScreen": function(updateData) { },
+        "onUpdateScreen": function(/*updateData*/) { },
         "onVramUpdate": function(index, dispcode, attr){
             cliCommandVram.setAt(index, dispcode, attr);
         },
@@ -83,13 +82,13 @@
             //console.log("MMIO write addr", address.HEX(4) + "H", value.HEX(2) + "H");
             MMIO.write(address, value);
         },
-        "onPortRead": function(port, value){
+        "onPortRead": function(/*port, value*/){
             //console.log("IN ", port.HEX(2) + "H", value.HEX(2) + "H");
         },
         "onPortWrite": function(port, value){
             console.log("OUT ", port.HEX(2) + "H", value.HEX(2) + "H");
         },
-        'startSound': function(freq) {
+        'startSound': function(/*freq*/) {
             //console.log("bz:", freq, "Hz");
         },
         'stopSound': function() {
@@ -133,6 +132,8 @@
                 cliCommandCmt, mz700, ["set", filename]
             ).then(function(){
                 resolv();
+            }).catch(function(err){
+                reject(err);
             });
         } else {
             resolv();

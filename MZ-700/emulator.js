@@ -14,8 +14,6 @@ var Z80LineAssembler = require("../Z80/z80-line-assembler");
 var MZ700 = function(opt) {
     "use strict";
 
-    var THIS = this;
-
     // Screen update buffer
     this._screenUpdateData = {};
 
@@ -30,43 +28,43 @@ var MZ700 = function(opt) {
     this.intel8253 = new Intel8253();
     this.intel8253.counter[1].counter = 15700;
     this.intel8253.counter[1].value = 15700;
-    this.intel8253.counter[1].addEventListener("timeup", function() {
+    this.intel8253.counter[1].addEventListener("timeup", () => {
         this.intel8253.counter[2].count(1);
-    }.bind(this));
+    });
     this.intel8253.counter[2].counter = 43200;
     this.intel8253.counter[2].value = 43200;
-    this.intel8253.counter[2].addEventListener("timeup", function() {
+    this.intel8253.counter[2].addEventListener("timeup", () => {
         if(this.INTMSK) {
             this.z80.interrupt();
         }
-    }.bind(this));
+    });
 
     //HBLNK F/F in 15.7 kHz
     this.hblank = new FlipFlopCounter(15700);
-    this.hblank.addEventListener("change", function() {
+    this.hblank.addEventListener("change", () => {
         this.intel8253.counter[1].count(1 * 4);
-    }.bind(this));
+    });
 
     //VBLNK F/F in 50 Hz
     this.vblank = new FlipFlopCounter(50);
     this.VBLK = false;
-    this.vblank.addEventListener("change", function() {
+    this.vblank.addEventListener("change", () => {
         this.VBLK = !this.VBLK;
-    }.bind(this));
+    });
 
     // create IC 556 to create HBLNK(cursor blink) by 3 Hz?
     this.ic556 = new IC556(3);
     this.ic556_OUT = false;
-    this.ic556.addEventListener("change", function() {
+    this.ic556.addEventListener("change", () => {
         this.ic556_OUT = !this.ic556_OUT;
-    }.bind(this));
+    });
 
     this.INTMSK = false;
 
     this.MLDST = false;
 
     var motorOffDelayTid = null;
-    this.dataRecorder = new MZ_DataRecorder(function(motorState){
+    this.dataRecorder = new MZ_DataRecorder(motorState => {
         if(motorState) {
             if(motorOffDelayTid != null) {
                 clearTimeout(motorOffDelayTid);
@@ -74,55 +72,55 @@ var MZ700 = function(opt) {
             }
             this.opt.onStartDataRecorder();
         } else {
-            motorOffDelayTid = setTimeout(function() {
+            motorOffDelayTid = setTimeout(() => {
                 motorOffDelayTid = null;
                 this.opt.onStopDataRecorder();
-            }.bind(this), 100);
+            }, 100);
         }
-    }.bind(this));
+    });
 
     //
     // Default option settings to notify from WebWorker
     // to UI thread by transworker
     //
     this.opt = {
-        onExecutionParameterUpdate : function() { },
-        started: function() { },
-        stopped: function() { },
-        notifyClockFreq: function() { },
-        onBreak : function() { },
-        onUpdateScreen: function(/*updateData*/) { },
-        onVramUpdate: function(index, dispcode, attr){
-            THIS._screenUpdateData[index] = {
+        onExecutionParameterUpdate : () => {},
+        started: () => {},
+        stopped: () => {},
+        notifyClockFreq: () => {},
+        onBreak : () => {},
+        onUpdateScreen: (/*updateData*/) => { },
+        onVramUpdate: (index, dispcode, attr) => {
+            this._screenUpdateData[index] = {
                 dispcode: dispcode, attr: attr
             };
-            if(THIS._vramTxTid == null) {
-                THIS._vramTxTid = setTimeout(function() {
-                    THIS.opt.onUpdateScreen(THIS._screenUpdateData);
-                    THIS._screenUpdateData = {};
-                    THIS._vramTxTid = null;
+            if(this._vramTxTid == null) {
+                this._vramTxTid = setTimeout(() => {
+                    this.opt.onUpdateScreen(this._screenUpdateData);
+                    this._screenUpdateData = {};
+                    this._vramTxTid = null;
                 }, 100);
             }
         },
-        onMmioRead: function(/*address, value*/) { },
-        onMmioWrite: function(/*address, value*/) { },
-        onPortRead: function(/*port, value*/){ },
-        onPortWrite: function(/*port, value*/){ },
-        startSound: function(/*freq*/) { },
-        stopSound: function() { },
-        onStartDataRecorder: function(){ },
-        onStopDataRecorder: function(){ }
+        onMmioRead: (/*address, value*/) => { },
+        onMmioWrite: (/*address, value*/) => { },
+        onPortRead: (/*port, value*/) => { },
+        onPortWrite: (/*port, value*/) => { },
+        startSound: (/*freq*/) => { },
+        stopSound: () => {},
+        onStartDataRecorder: () => {},
+        onStopDataRecorder: () => {}
     };
 
     //
     // Override option to receive notifications with callbacks.
     //
     opt = opt || {};
-    Object.keys(this.opt).forEach(function (key) {
+    Object.keys(this.opt).forEach(key => {
         if(key in opt) {
             this.opt[key] = opt[key];
         }
-    }, this);
+    });
 
     this.tid = null;
     this.timerInterval = MZ700.DEFAULT_TIMER_INTERVAL;
@@ -134,12 +132,12 @@ var MZ700 = function(opt) {
     }
 
     this.memory = new MZ700_Memory({
-        onVramUpdate: THIS.opt.onVramUpdate,
-        onMappedIoRead: function(address, value) {
+        onVramUpdate: this.opt.onVramUpdate,
+        onMappedIoRead: (address, value) => {
 
             //MMIO: Input from memory mapped peripherals
-            if(THIS.mmioIsMappedToRead(address)) {
-                THIS.opt.onMmioRead(address, value);
+            if(this.mmioIsMappedToRead(address)) {
+                this.opt.onMmioRead(address, value);
             }
 
             switch(address) {
@@ -160,21 +158,21 @@ var MZ700 = function(opt) {
                     value = value & 0x0f; // 入力上位4ビットをオフ
 
                     // PC4 - MOTOR : The motor driving state (high active)
-                    if(THIS.dataRecorder.motor()) {
+                    if(this.dataRecorder.motor()) {
                         value = value | 0x10;
                     } else {
                         value = value & 0xef;
                     }
 
                     // PC5 - RDATA : A bit data to read
-                    if(THIS.dataRecorder_readBit()) {
+                    if(this.dataRecorder_readBit()) {
                         value = value | 0x20;
                     } else {
                         value = value & 0xdf;
                     }
 
                     // PC6 - 556_OUT : A signal to blink cursor on the screen
-                    if(THIS.ic556_OUT) {
+                    if(this.ic556_OUT) {
                         value = value | 0x40;
                     } else {
                         value = value & 0xbf;
@@ -182,27 +180,27 @@ var MZ700 = function(opt) {
 
                     // PC7 - VBLK : A virtical blanking signal
                     // set V-BLANK bit
-                    if(THIS.VBLK) {
+                    if(this.VBLK) {
                         value = value | 0x80;
                     } else {
                         value = value & 0x7f;
                     }
                     break;
                 case 0xE004:
-                    value = THIS.intel8253.counter[0].read();
+                    value = this.intel8253.counter[0].read();
                     break;
                 case 0xE005:
-                    value = THIS.intel8253.counter[1].read();
+                    value = this.intel8253.counter[1].read();
                     break;
                 case 0xE006:
-                    value = THIS.intel8253.counter[2].read();
+                    value = this.intel8253.counter[2].read();
                     break;
                 case 0xE007:
                     break;
                 case 0xE008:
                     value = value & 0xfe; // MSBをオフ
                     // set H-BLANK bit
-                    if(THIS.hblank.readOutput()) {
+                    if(this.hblank.readOutput()) {
                         value = value | 0x01;
                     } else {
                         value = value & 0xfe;
@@ -211,17 +209,17 @@ var MZ700 = function(opt) {
             }
             return value;
         },
-        onMappedIoUpdate: function(address, value) {
+        onMappedIoUpdate: (address, value) => {
 
             //MMIO: Output to memory mapped peripherals
-            if(THIS.mmioIsMappedToWrite(address)) {
-                THIS.opt.onMmioWrite(address, value);
+            if(this.mmioIsMappedToWrite(address)) {
+                this.opt.onMmioWrite(address, value);
             }
 
             switch(address) {
                 case 0xE000:
-                    this.poke(0xE001, THIS.keymatrix.getKeyData(value));
-                    THIS.ic556.loadReset(value & 0x80);
+                    this.memory.poke(0xE001, this.keymatrix.getKeyData(value));
+                    this.ic556.loadReset(value & 0x80);
                     break;
                 case 0xE002:
                     //上位4ビットは読み取り専用。
@@ -263,30 +261,30 @@ var MZ700 = function(opt) {
                             case 0://SOUNDMSK
                                 break;
                             case 1://WDATA
-                                THIS.dataRecorder_writeBit(bit);
+                                this.dataRecorder_writeBit(bit);
                                 break;
                             case 2://INTMSK
-                                THIS.INTMSK = bit;//trueで割り込み許可
+                                this.INTMSK = bit;//trueで割り込み許可
                                 break;
                             case 3://M-ON
-                                THIS.dataRecorder_motorOn(bit);
+                                this.dataRecorder_motorOn(bit);
                                 break;
                         }
                     }
                     break;
                 case 0xE004:
-                    if(THIS.intel8253.counter[0].load(value) && THIS.MLDST) {
-                        THIS.opt.startSound(895000 / THIS.intel8253.counter[0].value);
+                    if(this.intel8253.counter[0].load(value) && this.MLDST) {
+                        this.opt.startSound(895000 / this.intel8253.counter[0].value);
                     }
                     break;
-                case 0xE005: THIS.intel8253.counter[1].load(value); break;
-                case 0xE006: THIS.intel8253.counter[2].load(value); break;
-                case 0xE007: THIS.intel8253.setCtrlWord(value); break;
+                case 0xE005: this.intel8253.counter[1].load(value); break;
+                case 0xE006: this.intel8253.counter[2].load(value); break;
+                case 0xE007: this.intel8253.setCtrlWord(value); break;
                 case 0xE008:
-                    if((THIS.MLDST = ((value & 0x01) != 0)) == true) {
-                        THIS.opt.startSound(895000 / THIS.intel8253.counter[0].value);
+                    if((this.MLDST = ((value & 0x01) != 0)) == true) {
+                        this.opt.startSound(895000 / this.intel8253.counter[0].value);
                     } else {
-                        THIS.opt.stopSound();
+                        this.opt.stopSound();
                     }
                     break;
             }
@@ -296,11 +294,11 @@ var MZ700 = function(opt) {
     });
 
     this.z80 = new Z80({
-        memory: THIS.memory,
-        onReadIoPort: function(port, value) {
-            THIS.opt.onPortRead(port, value);
+        memory: this.memory,
+        onReadIoPort: (port, value) => {
+            this.opt.onPortRead(port, value);
         },
-        onWriteIoPort: function(port, value) {
+        onWriteIoPort: (port, value) => {
             switch(port) {
                 case 0xe0: this.memory.changeBlock0_DRAM(); break;
                 case 0xe1: this.memory.changeBlock1_DRAM(); break;
@@ -312,7 +310,7 @@ var MZ700 = function(opt) {
                 case 0xe5: this.memory.disableBlock1(); break;
                 case 0xe6: this.memory.enableBlock1(); break;
             }
-            THIS.opt.onPortWrite(port, value);
+            this.opt.onPortWrite(port, value);
         }
     });
 };
@@ -518,10 +516,10 @@ MZ700.prototype.start = function() {
     this.opt.started();
 
     var t_cycle_0 = 0;
-    this.tidMeasClock = setInterval(function() {
+    this.tidMeasClock = setInterval(() => {
         this.opt.notifyClockFreq(this.z80.tick - t_cycle_0);
         t_cycle_0 = this.z80.tick;
-    }.bind(this), 1000);
+    }, 1000);
 
     return true;
 };
