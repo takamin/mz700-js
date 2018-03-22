@@ -68,9 +68,10 @@ fs.readFile(input_filename, function(err, data) {
     var outbuf = [];
     var buf = new Buffer(data);
     var dasmlist = [];
+    var i;
     if(input_mzt) {
         var mzts = MZ700.parseMZT(buf); 
-        for(var i = 0; i < mzts.length; i++) {
+        for(i = 0; i < mzts.length; i++) {
             var mzt = mzts[i];
             outbuf.push(mzt.header.getHeadline());
             dasmlist = Z80.dasm(
@@ -90,7 +91,7 @@ fs.readFile(input_filename, function(err, data) {
         dasmlist = Z80.dasm(buf, 0, buf.length, addr_load);
     }
     var dasmlines = Z80.dasmlines(dasmlist);
-    for(var i = 0; i < dasmlines.length; i++) {
+    for(i = 0; i < dasmlines.length; i++) {
         outbuf.push(dasmlines[i]);
     }
     if(cli.options['to-console']) {

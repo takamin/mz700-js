@@ -31,9 +31,9 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
             .append($("<img/>")
                 .attr("src", "../image/btnKeyboard-off.png")
                 .attr("title", "Keyboard").attr("alt", "Keyboard"))
-            .click(function() {
+            .click(() => {
                 this.btnToggleScreenKeyboard_click();
-            }.bind(this));
+            });
         $(".MZ-700 .ctrl-panel")
             .append(this.btnToggleScreenKeyboard);
         $(".dropdownpanel").DropDownPanel("create");
