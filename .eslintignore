@@ -1,0 +1,9 @@
+/bower_components
+/build
+/docs
+/MZ-700/bundle-*.js
+/node_modules
+/routes
+/sample
+/test
+/views
