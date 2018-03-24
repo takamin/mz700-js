@@ -72,7 +72,8 @@ $ mz700-js
 When the git repository was cloned, Go to its directory, and then use `npm start`
 
 ```
-$ npm start
+$ npm install   # Build an application.
+$ npm start     # Start local web server and run the app.
 
 > mz700-js@0.0.0 start <absolute/path/to/this/module>
 > node ./bin/www
