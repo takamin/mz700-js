@@ -385,9 +385,8 @@
 
             $(".source-list").asmview("create");
             var sampleSource = $($("textarea.default.source").get(0)).val();
-            $(".source-list").asmview("addTab", {
-                index: "mzt", caption:"PCG-700 sample"
-            }).on("assemble", (e, asmsrc) => {
+            $(".source-list").asmview("addTab", "mzt", "PCG-700 sample")
+            .on("assemble", (e, asmsrc) => {
                 this.mz700comworker.assemble( asmsrc, assembled => {
                     this.mz700comworker.writeAsmCode( assembled, () => {
                         this.createAssembleList(assembled.list);
@@ -399,7 +398,8 @@
                 } else {
                     this.mz700comworker.removeBreak(addr, size, null);
                 }
-            }).asmview("setSource", "mzt", sampleSource, "PCG-700 sample", true);
+            }).asmview("setSource", "mzt", sampleSource, true)
+            .asmview("name", "mzt", "PCG-700 sample");
 
             //
             //直接実行ボタン
@@ -732,8 +732,9 @@
         this.mz700comworker.stop(() => {
             var result = MZ700.disassemble(mztape_array);
             if($(".source-list").length > 0) {
-                $(".source-list").asmview(
-                    "setSource", "mzt", result.outbuf, name, false);
+                $(".source-list")
+                    .asmview("setSource", "mzt", result.outbuf, false)
+                    .asmview("name", "mzt", name);
                 this.createAssembleList(result.asmlist);
             }
             if(running) {
