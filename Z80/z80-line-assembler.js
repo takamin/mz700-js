@@ -217,7 +217,7 @@ Z80LineAssembler.tokenize = function(line) {
                     } else if(/[0-9]/.test(ch)) {
                         currstat = LEX_NUMBER;
                     }
-                    else if(/[A-Z_\?\.\*#!\$]/.test(ch)) {
+                    else if(/[A-Z_?.*#!$]/.test(ch)) {
                         tok += ch;
                         i++;
                         currstat = LEX_IDENT;
@@ -261,7 +261,7 @@ Z80LineAssembler.tokenize = function(line) {
                 }
                 break;
             case LEX_IDENT:
-                if(/[A-Z_0-9\?\.\*#!\$']/.test(ch)) {
+                if(/[A-Z_0-9?.*#!$']/.test(ch)) {
                     tok += ch;
                     i++;
                 } else {
@@ -1166,18 +1166,18 @@ Z80LineAssembler.derefer = function(label, dictionary) {
 };
 
 Z80LineAssembler._parseNumLiteral = function(tok) {
-    if(/^[\+\-]?[0-9]+$/.test(tok) || /^[\+\-]?[0-9A-F]+H$/i.test(tok)) {
+    if(/^[+-]?[0-9]+$/.test(tok) || /^[+-]?[0-9A-F]+H$/i.test(tok)) {
         var matches;
         var n = 0;
-        var s = (/^\-/.test(tok) ? -1:1);
+        var s = (/^-/.test(tok) ? -1:1);
         if(/[hH]$/.test(tok)) {
-            matches = tok.match(/^[\+\-]?([0-9a-fA-F]+)[hH]$/);
+            matches = tok.match(/^[+-]?([0-9a-fA-F]+)[hH]$/);
             n = parseInt(matches[1], 16);
-        } else if(/^[\+\-]?0/.test(tok)) {
-            matches = tok.match(/^[\+\-]?([0-7]+)$/);
+        } else if(/^[+-]?0/.test(tok)) {
+            matches = tok.match(/^[+-]?([0-7]+)$/);
             n = parseInt(matches[1], 8);
         } else {
-            matches = tok.match(/^[\+\-]?([0-9]+)$/);
+            matches = tok.match(/^[+-]?([0-9]+)$/);
             n = parseInt(matches[1], 10);
         }
         return s * n;

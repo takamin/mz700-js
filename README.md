@@ -72,7 +72,8 @@ $ mz700-js
 When the git repository was cloned, Go to its directory, and then use `npm start`
 
 ```
-$ npm start
+$ npm install   # Build an application.
+$ npm start     # Start local web server and run the app.
 
 > mz700-js@0.0.0 start <absolute/path/to/this/module>
 > node ./bin/www
@@ -146,7 +147,9 @@ CHANGES
 -------
 
 * v0.9.\*
-    * Using CodeMirror for Z80 assemble source editor.
+    * Use CodeMirror for Z80 assemble source editor.
+    * Improve disassembling speed.
+    * Updating debugger UI ( Use mouse wheel to scroll ).
 * v0.8.\*
     * Improving UI experiences.
     * Some emulation codes are now written as Asm.js.

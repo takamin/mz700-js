@@ -385,24 +385,21 @@
 
             $(".source-list").asmview("create");
             var sampleSource = $($("textarea.default.source").get(0)).val();
-            $(".source-list").asmview("addTab", {
-                index: "mzt", caption:"PCG-700 sample"
-            }, sampleSource, {
-                onAssemble: asmsrc => {
-                    this.mz700comworker.assemble( asmsrc, assembled => {
-                        this.mz700comworker.writeAsmCode( assembled, () => {
-                            this.createAssembleList(assembled.list);
-                        });
+            $(".source-list").asmview("addTab", "mzt", "PCG-700 sample")
+            .on("assemble", (e, asmsrc) => {
+                this.mz700comworker.assemble( asmsrc, assembled => {
+                    this.mz700comworker.writeAsmCode( assembled, () => {
+                        this.createAssembleList(assembled.list);
                     });
-                },
-                onSetBreakPoint: (addr, size, state) => {
-                    if(state) {
-                        this.mz700comworker.addBreak(addr, size, null);
-                    } else {
-                        this.mz700comworker.removeBreak(addr, size, null);
-                    }
-                },
-            });
+                });
+            }).on("setbreak", (e, addr, size, state) => {
+                if(state) {
+                    this.mz700comworker.addBreak(addr, size, null);
+                } else {
+                    this.mz700comworker.removeBreak(addr, size, null);
+                }
+            }).asmview("setSource", "mzt", sampleSource, true)
+            .asmview("name", "mzt", "PCG-700 sample");
 
             //
             //直接実行ボタン
@@ -735,8 +732,9 @@
         this.mz700comworker.stop(() => {
             var result = MZ700.disassemble(mztape_array);
             if($(".source-list").length > 0) {
-                $(".source-list").asmview(
-                    "setSource", "mzt", result.outbuf, name, false);
+                $(".source-list")
+                    .asmview("setSource", "mzt", result.outbuf, false)
+                    .asmview("name", "mzt", name);
                 this.createAssembleList(result.asmlist);
             }
             if(running) {
