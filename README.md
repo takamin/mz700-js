@@ -147,7 +147,9 @@ CHANGES
 -------
 
 * v0.9.\*
-    * Using CodeMirror for Z80 assemble source editor.
+    * Use CodeMirror for Z80 assemble source editor.
+    * Improve disassembling speed.
+    * Updating debugger UI ( Use mouse wheel to scroll ).
 * v0.8.\*
     * Improving UI experiences.
     * Some emulation codes are now written as Asm.js.
