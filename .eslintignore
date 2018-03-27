@@ -1,6 +1,7 @@
 /bower_components
 /build
 /docs
+/jsdoc
 /MZ-700/bundle-*.js
 /node_modules
 /routes
