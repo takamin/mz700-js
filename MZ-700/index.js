@@ -491,13 +491,9 @@
     };
     MZ700Js.prototype.btnStart_click = function() {
         if(this.isRunning) {
-            this.stop(() => {
-                this.btnStart_toRun();
-            });
+            this.stop();
         } else {
-            this.start(null, () => {
-                this.btnStart_toStop();
-            });
+            this.start();
         }
     };
     MZ700Js.prototype.btnStart_hover = function() {
@@ -597,16 +593,27 @@
     MZ700Js.EXEC_TIMER_INTERVAL = 100;
     MZ700Js.NUM_OF_EXEC_OPCODE = 20000;
     MZ700Js.prototype.start = function(addr, callback) {
+        callback = callback || (()=>{});
         if(addr == null) {
-            this.mz700comworker.start(callback || (()=>{}));
+            this.mz700comworker.start(() => {
+                this.btnStart_toStop();
+                callback();
+            });
         } else {
             this.mz700comworker.setPC(addr, ()=>{
-                this.mz700comworker.start(callback || (()=>{}));
+                this.mz700comworker.start(() => {
+                    this.btnStart_toStop();
+                    callback();
+                });
             });
         }
     };
     MZ700Js.prototype.stop = function(callback) {
-        this.mz700comworker.stop(callback || (()=>{}));
+        callback = callback || (()=>{});
+        this.mz700comworker.stop(() => {
+            this.btnStart_toRun();
+            callback();
+        });
     };
     MZ700Js.prototype.stepIn = function() {
         this.clearCurrentExecLine();
