@@ -140,6 +140,7 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
                 mouseMoveTimeoutId = null;
             }, timeLimit);
         };
+        showCtrlPanelFor(5000);
         screen.mousemove(function() {
             showCtrlPanelFor(5000);
         });
