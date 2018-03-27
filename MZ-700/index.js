@@ -40,7 +40,7 @@
         };
         this.isRunning = false;
         this.mz700scrn = null;
-        this.keyAcceptanceState = true;
+        this.keyAcceptanceState = false;
         this.keystates = {};
     };
     MZ700Js.create = function(opt) {
