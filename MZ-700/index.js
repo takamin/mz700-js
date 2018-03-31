@@ -261,11 +261,13 @@
                         this.isRunning = true;
                         this.clearCurrentExecLine();
                         this.updateUI();
+                        this.updateCyclicTimer();
                     },
                     "stop": () => {
                         this.isRunning = false;
                         this.scrollToShowPC();
                         this.updateUI();
+                        this.updateCyclicTimer();
                     },
                     "onNotifyClockFreq": clockCount => {
                         $(".speed-control-slider").attr("title",
@@ -327,41 +329,11 @@
             // Register viewers
             //
             this.regview = $("<div/>").Z80RegView("init");
-            var setRegisterUpdateInterval = duration => {
-                if(duration <= 0) {
-                    if(this.reg_upd_tid) {
-                        clearInterval(this.reg_upd_tid);
-                        this.reg_upd_tid = null;
-                    }
-                } else {
-                    if(!this.reg_upd_tid) {
-                        this.reg_upd_tid = setInterval(()=>{
-                            this.updateRegister();
-                        }, duration);
-                    }
-                }
-            };
             $(".register-monitor")
                 .append($("<div/>").css("display", "inline-block")
                         .append(this.regview))
-                .append($("<div/>").css("display", "inline-block")
-                        .css("text-align", "center")
-                        .append($("<button type='button'>Update</button>")
-                            .click(() => {
-                                this.updateRegister();
-                            })
-                        )
-                        .append($("<br/>"))
-                        .append($("<input type='checkbox'/>").change(function() {
-                            if($(this).prop("checked")) {
-                                setRegisterUpdateInterval(50);
-                                $(this).parent().find("button").prop("disabled", true);
-                            } else {
-                                setRegisterUpdateInterval(0);
-                                $(this).parent().find("button").prop("disabled", false);
-                            }
-                        }))
-                        .append($("<span>Auto Update</span>")));
+                .bind("open",  () => { this.updateCyclicTimer(); })
+                .bind("close", () => { this.updateCyclicTimer(); });
 
             //
             // Memory hexa dump list
@@ -646,6 +618,23 @@
         } else {
             $(".MZ-700").addClass("running");
             this.btnStep_disable();
+        }
+    };
+
+    MZ700Js.prototype.updateCyclicTimer = function() {
+        let regviewOpen = $(".register-monitor").DropDownPanel("isOpen");
+        if(this.isRunning && regviewOpen) {
+            if(!this.reg_upd_tid) {
+                this.reg_upd_tid = setInterval(()=>{
+                    this.updateRegister();
+                }, 50);
+            }
+        } else {
+            if(this.reg_upd_tid) {
+                clearInterval(this.reg_upd_tid);
+                this.reg_upd_tid = null;
+                this.updateRegister();
+            }
         }
     };
 
