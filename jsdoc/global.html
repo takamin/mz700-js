@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>lib/jquery.asmeditor.js - Documentation</title>
+    <title>Global - Documentation</title>
 
     <script src="scripts/prettify/prettify.js"></script>
     <script src="scripts/prettify/lang-css.js"></script>
@@ -29,92 +29,364 @@
 
 <div id="main">
     
-    <h1 class="page-title">lib/jquery.asmeditor.js</h1>
+    <h1 class="page-title">Global</h1>
     
 
     
 
 
 
+
+<section>
+
+<header>
     
-    <section>
-        <article>
-            <pre class="prettyprint source linenums"><code>"use strict";
+        <h2>
+        
+        </h2>
+        
+    
+</header>
 
-const $ = require("jquery");
-const jquery_plugin_class = require("../lib/jquery_plugin_class");
-const CodeMirror = require("codemirror");
+<article>
+    <div class="container-overview">
+    
+        
 
-require("../node_modules/codemirror/mode/z80/z80");
+        
 
-jquery_plugin_class("asmeditor");
 
-/**
- * A Z80 Assembler editor using CodeMirror.
- *
- * Events:
- *  change: text changed
- *
- * @constructor
- *
- * @param {HTMLElement} element
- * A root element for jquery plug-in.
- *
- * @see [CodeMirror: User Manual](http://codemirror.net/doc/manual.html)
- */
-function asmeditor(element) {
-    this._root = $(element);
-    this._editor = null;    // editor object of codemirror
-}
+<dl class="details">
 
-// Exports
-window.asmeditor = asmeditor;
-module.exports = asmeditor;
+    
 
-/**
- * Create editor.
- *
- * @returns {undefined}
- */
-asmeditor.prototype.create = function() {
-    var $textarea = $("&lt;textarea type='text'/>");
-    this._root.append($textarea);
-    this._editor = CodeMirror.fromTextArea(
-            $textarea.get(0), { mode: "z80" });
-    this._editor.on("change", (/*editor, changeObj*/) => {
-        this._root.trigger("change");
-    });
-};
+    
 
-/**
- * Refresh the editor view.
- * @returns {undefined}
- */
-asmeditor.prototype.refresh = function() {
-    this._editor.refresh();
-    this._editor.focus();
-};
+    
 
-/**
- * Set or get source as text.
- *
- * @param {string|undefined} text
- * source file to be set.
- *
- * @returns {undefined|string}
- * returns source text, if text parameter was not provided.
- */
-asmeditor.prototype.text = function(text) {
-    if(text == null) {
-        return this._editor.getValue();
-    } else {
-        this._editor.setValue(text);
-        this._editor.markClean();
-    }
-};
-</code></pre>
-        </article>
-    </section>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+
+     
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+<div class="section-method">
+
+    
+
+    <h4 class="name" id="easing"><span class="type-signature"></span>easing<span class="signature">(sValue, eValue, duration, onValueChange, onStop)</span><span class="type-signature"> &rarr; {object}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Easing a value smooth and notify the handler.</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="lib_easing.js.html">lib/easing.js</a>, <a href="lib_easing.js.html#line13">line 13</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>sValue</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>number</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <p>starting value</p>
+                
+            </td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>eValue</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>number</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <p>ending value</p>
+                
+            </td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>duration</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>number</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <p>execution duration</p>
+                
+            </td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>onValueChange</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>function</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <p>handler called on value change.</p>
+                
+            </td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>onStop</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>function</code></span>
+|
+
+<span class="param-type"><code>undefined</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <p>handler on complete</p>
+                
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="section-returns">
+<h5>Returns:</h5>
+
+        
+
+<dl class="param-type">
+    <dt>
+        Type:
+    </dt>
+    <dd>
+        
+<span class="param-type"><code>object</code></span>
+
+
+    </dd>
+</dl>
+
+
+<div class="param-desc">
+    <p>A handle object to cancel this process.</p>
+</div>
+
+    
+</div>
+
+
+
+</div>
+        
+    
+
+    
+
+    
+</article>
+
+</section>
 
 
 

@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>lib/jquery.asmeditor.js - Documentation</title>
+    <title>lib/easing.js - Documentation</title>
 
     <script src="scripts/prettify/prettify.js"></script>
     <script src="scripts/prettify/lang-css.js"></script>
@@ -29,7 +29,7 @@
 
 <div id="main">
     
-    <h1 class="page-title">lib/jquery.asmeditor.js</h1>
+    <h1 class="page-title">lib/easing.js</h1>
     
 
     
@@ -41,77 +41,64 @@
         <article>
             <pre class="prettyprint source linenums"><code>"use strict";
 
-const $ = require("jquery");
-const jquery_plugin_class = require("../lib/jquery_plugin_class");
-const CodeMirror = require("codemirror");
-
-require("../node_modules/codemirror/mode/z80/z80");
-
-jquery_plugin_class("asmeditor");
-
 /**
- * A Z80 Assembler editor using CodeMirror.
+ * Easing a value smooth and notify the handler.
  *
- * Events:
- *  change: text changed
- *
- * @constructor
- *
- * @param {HTMLElement} element
- * A root element for jquery plug-in.
- *
- * @see [CodeMirror: User Manual](http://codemirror.net/doc/manual.html)
+ * @param {number} sValue starting value
+ * @param {number} eValue ending value
+ * @param {number} duration execution duration
+ * @param {function} onValueChange handler called on value change.
+ * @param {function|undefined} onStop handler on complete
+ * @returns {object} A handle object to cancel this process.
  */
-function asmeditor(element) {
-    this._root = $(element);
-    this._editor = null;    // editor object of codemirror
+function easing(sValue, eValue, duration, onValueChange, onStop) {
+    onStop = onStop || onValueChange;
+    let t0 = (new Date()).getTime();
+    window.setTimeout( ()=>{ onValueChange.call(null, sValue); }, 0);
+    let tid = window.setInterval(function() {
+        let t = Date.now() - t0;
+        if(t >= duration) {
+            window.clearInterval(tid);
+            onStop.call(null, eValue);
+        } else {
+            let value = (eValue - sValue) * t / duration + sValue;
+            onValueChange.call(null, value);
+        }
+    }, 1);
+    let cancelHandle = {
+        tid: tid,
+        onStop: onStop,
+        sValue: sValue,
+        eValue: eValue,
+    };
+    return cancelHandle
 }
 
-// Exports
-window.asmeditor = asmeditor;
-module.exports = asmeditor;
-
 /**
- * Create editor.
- *
+ * Cancel the easing.
+ * The starting value is notified to onStop handler.
+ * @param {object} cancelHandle A handle that easing returns.
  * @returns {undefined}
  */
-asmeditor.prototype.create = function() {
-    var $textarea = $("&lt;textarea type='text'/>");
-    this._root.append($textarea);
-    this._editor = CodeMirror.fromTextArea(
-            $textarea.get(0), { mode: "z80" });
-    this._editor.on("change", (/*editor, changeObj*/) => {
-        this._root.trigger("change");
-    });
+easing.cancel = function(cancelHandle) {
+    window.clearInterval(cancelHandle.tid);
+    cancelHandle.tid = null;
+    cancelHandle.onStop.call(null, cancelHandle.sValue);
 };
 
 /**
- * Refresh the editor view.
+ * Complete the easing.
+ * The ending value is notified to onStop handler.
+ * @param {object} cancelHandle A handle that easing returns.
  * @returns {undefined}
  */
-asmeditor.prototype.refresh = function() {
-    this._editor.refresh();
-    this._editor.focus();
+easing.complete = function(cancelHandle) {
+    window.clearInterval(cancelHandle.tid);
+    cancelHandle.tid = null;
+    cancelHandle.onStop.call(null, cancelHandle.eValue);
 };
 
-/**
- * Set or get source as text.
- *
- * @param {string|undefined} text
- * source file to be set.
- *
- * @returns {undefined|string}
- * returns source text, if text parameter was not provided.
- */
-asmeditor.prototype.text = function(text) {
-    if(text == null) {
-        return this._editor.getValue();
-    } else {
-        this._editor.setValue(text);
-        this._editor.markClean();
-    }
-};
+module.exports = easing;
 </code></pre>
         </article>
     </section>
