@@ -331,7 +331,8 @@
             this.regview = $("<div/>").Z80RegView("init");
             $(".register-monitor")
                 .append($("<div/>").css("display", "inline-block")
-                        .append(this.regview))
+                        .append(this.regview));
+            $(".monitor")
                 .bind("open",  () => { this.updateCyclicTimer(); })
                 .bind("close", () => { this.updateCyclicTimer(); });
 
@@ -389,12 +390,21 @@
                     });
                 });
             };
-            $(".imm-exec")
-                .append($("<label/>").html("Address"))
+            $(".source-list").tabview("add", "exec-inst",
+                $("<div/>").addClass("imm-exec").css("height", "306px")
+                .css("padding","15px 5px")
+                .append($("<label/>")
+                    .css("display","inline-block").css("width", "80px")
+                    .css("text-align", "right").css("padding-right", "10px")
+                    .html("Address"))
                 .append($("<input/>")
                         .attr("type", "text").attr("value", "CF00h")
                         .addClass("address"))
-                .append($("<label/>").html("mnemonic"))
+                .append($("<br/>"))
+                .append($("<label/>")
+                    .css("display","inline-block").css("width", "80px")
+                    .css("text-align", "right").css("padding-right", "10px")
+                    .html("Mnemonic"))
                 .append($("<input/>")
                         .attr("type", "text").attr("value", "NOP")
                         .addClass("mnemonic"))
@@ -410,7 +420,8 @@
                                 runImm(src);
                             }
                         }))
-                .append($("<br/>"));
+                .append($("<br/>"))
+            ).tabview("caption", "exec-inst", "Immediate Exec.");
         }
 
         this._timerInterval = MZ700.DEFAULT_TIMER_INTERVAL;
@@ -622,7 +633,7 @@
     };
 
     MZ700Js.prototype.updateCyclicTimer = function() {
-        let regviewOpen = $(".register-monitor").DropDownPanel("isOpen");
+        let regviewOpen = $(".monitor").DropDownPanel("isOpen");
         if(this.isRunning && regviewOpen) {
             if(!this.reg_upd_tid) {
                 this.reg_upd_tid = setInterval(()=>{
