@@ -268,6 +268,7 @@
                         this.scrollToShowPC();
                         this.updateUI();
                         this.updateCyclicTimer();
+                        this.updateRegister();
                     },
                     "onNotifyClockFreq": clockCount => {
                         $(".speed-control-slider").attr("title",
@@ -384,7 +385,9 @@
                     this.mz700comworker.writeAsmCode(bin, execAddr => {
                         this.mz700comworker.setPC(execAddr, () => {
                             this.mz700comworker.exec(1, () => {
-                                this.mz700comworker.setPC(savedPC, ()=>{});
+                                this.mz700comworker.setPC(savedPC, ()=>{
+                                    this.updateRegister();
+                                });
                             });
                         });
                     });
@@ -602,6 +605,7 @@
         this.clearCurrentExecLine();
         this.mz700comworker.exec(1, ()=>{
             this.scrollToShowPC();
+            this.updateRegister();
         });
     };
     MZ700Js.prototype.stepOver = function() {
