@@ -1,0 +1,35 @@
+.dumplist {
+    font-family: inherit;
+    font-size: 8pt;
+    border-bottom: solid 1px gray;
+    width: 570px;
+}
+.dumplist > .row {
+    height: 16px;
+    line-height:16px;
+}
+.dumplist > .row.header {
+    border-bottom: solid 1px gray;
+}
+.dumplist > .row.header > .char-selector > label,
+.dumplist > .row.header > .char-selector > span
+{
+    vertical-align: top;
+}
+.dumplist > .row > .cell {
+    display: inline-block;
+    width: 20px;
+    text-align: center;
+    vertical-align: top;
+}
+.dumplist > .row > .cell.header {
+    display: inline-block;
+    width: 40px;
+    text-align: center;
+    vertical-align: top;
+}
+.dumplist > .row > .mz700chars {
+    margin-left: 10px;
+    padding-top: 1px;
+    display: inline-block;
+}

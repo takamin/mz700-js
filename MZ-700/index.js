@@ -341,9 +341,7 @@
             // Memory hexa dump list
             //
             $(".MZ-700 .memory").append($("<div/>").dumplist("init", {
-                readMemory: null,
-                rows:16, fontFamily: 'inherit', fontSize: '8pt',
-                rowHeight:'16px', colWidth:'20px', headerWidth: '40px',
+                readMemory: null, rows:16,
                 getReg : (regName, callback) => {
                     this.mz700comworker.getRegister(reg => {
                         callback(reg[regName]);
