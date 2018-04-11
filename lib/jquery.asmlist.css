@@ -3,6 +3,7 @@
     font-family:monospace;
     font-size:10pt;
     height:280px;
+    overflow: auto;
 }
 
 .assemble_list .row > span {
