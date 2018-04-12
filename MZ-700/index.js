@@ -570,7 +570,7 @@
 
     MZ700Js.prototype.mmioMapPeripheral = function(peripheral, mapToRead, mapToWrite) {
         this.MMIO.entry(peripheral, mapToRead, mapToWrite);
-        this.mz700comworker.mmioMapToWrite(mapToRead, function(){});
+        this.mz700comworker.mmioMapToRead(mapToRead, function(){});
         this.mz700comworker.mmioMapToWrite(mapToWrite, function(){});
     };
 
