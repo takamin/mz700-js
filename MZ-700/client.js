@@ -124,6 +124,16 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
     if(deviceType != "mobile") {
         mz700js.hideScreenKeyboard();
         var mouseMoveTimeoutId = null;
+        let hideCtrlPanel = () => {
+            phif.removeClass("hover");
+            phif.hide();
+        };
+        let cancelCtrlPanelTimeout = () => {
+            if(mouseMoveTimeoutId) {
+                clearTimeout(mouseMoveTimeoutId);
+                mouseMoveTimeoutId = null;
+            }
+        };
         var showCtrlPanelFor = function(timeLimit) {
             if(mouseMoveTimeoutId) {
                 clearTimeout(mouseMoveTimeoutId);
@@ -135,26 +145,32 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
                 });
             }
             mouseMoveTimeoutId = setTimeout(function() {
-                phif.removeClass("hover");
-                phif.hide();
+                hideCtrlPanel();
                 mouseMoveTimeoutId = null;
             }, timeLimit);
         };
-        showCtrlPanelFor(5000);
-        screen.mousemove(function() {
-            showCtrlPanelFor(5000);
+        let TMO_CTRL = 1000;
+        let TMO_KB = 5000;
+        showCtrlPanelFor(TMO_CTRL);
+        screen.mousemove(function(event) {
+            event.stopPropagation();
+            showCtrlPanelFor(TMO_CTRL);
         });
-        keyboard.mousemove(function() {
-            showCtrlPanelFor(5000);
+        keyboard.mousemove(function(event) {
+            event.stopPropagation();
+            showCtrlPanelFor(TMO_KB);
         });
-        phif.mousemove(function() {
-            showCtrlPanelFor(5000);
+        phif.mousemove(function(event) {
+            event.stopPropagation();
+            showCtrlPanelFor(TMO_CTRL);
         });
         container.mouseenter(function() {
             mz700js.acceptKey(true);
         })
         .mouseleave(function() {
             mz700js.acceptKey(false);
+            hideCtrlPanel();
+            cancelCtrlPanelTimeout();
         });
     } else {
         mz700js.showScreenKeyboard();
