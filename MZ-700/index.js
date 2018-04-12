@@ -338,18 +338,29 @@
                 .bind("close", () => { this.updateCyclicTimer(); });
 
             //
-            // Memory hexa dump list
+            // Dumplist Address specifier
             //
-            $(".MZ-700 .memory").append($("<div/>").dumplist("init", {
-                readMemory: null, rows:16,
-                getReg : (regName, callback) => {
+            let $buttons = $("<div/>")
+                .Z80AddressSpecifier("create")
+                .on("queryregister", (event, regName, callback) => {
                     this.mz700comworker.getRegister(reg => {
                         callback(reg[regName]);
                     });
-                }
-            }).dumplist("setReadMemoryHandler", (addr, callback) => {
-                this.mz700comworker.readMemory(addr, callback);
-            }));
+                })
+                .on("notifyaddress", (event, address) => {
+                    $dumplist.dumplist("topAddr", address);
+                });
+            $(".MZ-700 .memory").append($buttons);
+
+            //
+            // Memory hexa dump list
+            //
+            let $dumplist = $("<div/>")
+                .dumplist("init", { readMemory: null, rows:16, })
+                .on("querymemory", (event, addr, callback) => {
+                    this.mz700comworker.readMemory(addr, callback);
+                });
+            $(".MZ-700 .memory").append($dumplist);
 
             //
             // Assemble list
