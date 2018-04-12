@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>mz700cg - Documentation</title>
+    <title>Z80AddressSpecifier - Documentation</title>
 
     <script src="scripts/prettify/prettify.js"></script>
     <script src="scripts/prettify/lang-css.js"></script>
@@ -29,7 +29,7 @@
 
 <div id="main">
     
-    <h1 class="page-title">mz700cg</h1>
+    <h1 class="page-title">Z80AddressSpecifier</h1>
     
 
     
@@ -42,7 +42,7 @@
 <header>
     
         <h2>
-        mz700cg
+        Z80AddressSpecifier
         </h2>
         
     
@@ -56,14 +56,14 @@
 
     
 
-    <h4 class="name" id="mz700cg"><span class="type-signature"></span>new mz700cg<span class="signature">(patternBuffer, width, height)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="Z80AddressSpecifier"><span class="type-signature"></span>new Z80AddressSpecifier<span class="signature">(element, opt)</span><span class="type-signature"></span></h4>
 
     
 
 
 
 <div class="description">
-    <p>MZ-700 Character Generator.</p>
+    <p>Z80 address specification controll panel(jquery plugin)</p>
 </div>
 
 
@@ -99,7 +99,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="lib_mz700cg.js.html">lib/mz700cg.js</a>, <a href="lib_mz700cg.js.html#line17">line 17</a>
+        <a href="lib_jquery.Z80-addr-spec.js.html">lib/jquery.Z80-addr-spec.js</a>, <a href="lib_jquery.Z80-addr-spec.js.html#line17">line 17</a>
     </li></ul></dd>
     
 
@@ -143,13 +143,13 @@
 
         <tr>
             
-                <td class="name"><code>patternBuffer</code></td>
+                <td class="name"><code>element</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type"><code>Array.&lt;number></code></span>
+<span class="param-type"><code>HTMLElement</code></span>
 
 
             
@@ -160,7 +160,7 @@
             
 
             <td class="description last">
-                <p>character pattern memory.</p>
+                <p>The DOM element to create widget.</p>
                 
             </td>
         </tr>
@@ -169,13 +169,16 @@
 
         <tr>
             
-                <td class="name"><code>width</code></td>
+                <td class="name"><code>opt</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type"><code>number</code></span>
+<span class="param-type"><code>object</code></span>
+|
+
+<span class="param-type"><code>undefined</code></span>
 
 
             
@@ -186,33 +189,7 @@
             
 
             <td class="description last">
-                <p>Pixel width of a character.</p>
-                
-            </td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>height</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>number</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>Pixel height of a character.</p>
+                <p>An option for this widget.</p>
                 
             </td>
         </tr>
@@ -245,13 +222,6 @@
     
 
     
-        <h3 class="subsection-title">Classes</h3>
-
-        <dl>
-            <dt><a href="mz700cg.FontImage.html">FontImage</a></dt>
-            <dd></dd>
-        </dl>
-    
 
      
 
@@ -268,14 +238,14 @@
 
     
 
-    <h4 class="name" id=".tableIndex"><span class="type-signature">(static) </span>tableIndex<span class="signature">(attr, dispCode)</span><span class="type-signature"> &rarr; {number}</span></h4>
+    <h4 class="name" id="create"><span class="type-signature"></span>create<span class="signature">(opt)</span><span class="type-signature"> &rarr; {undefined}</span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Get a index of the font table by attribute and display code</p>
+    <p>Create this widget.</p>
 </div>
 
 
@@ -311,7 +281,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="lib_mz700cg.js.html">lib/mz700cg.js</a>, <a href="lib_mz700cg.js.html#line103">line 103</a>
+        <a href="lib_jquery.Z80-addr-spec.js.html">lib/jquery.Z80-addr-spec.js</a>, <a href="lib_jquery.Z80-addr-spec.js.html#line36">line 36</a>
     </li></ul></dd>
     
 
@@ -355,306 +325,18 @@
 
         <tr>
             
-                <td class="name"><code>attr</code></td>
+                <td class="name"><code>opt</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type"><code>number</code></span>
+<span class="param-type"><code>object</code></span>
+|
 
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>An attribute 8 bits value including atb and fore and background color.
-[ atb:1 bit ][ fg color index:3 bits ][ bg color index: 3 bits ]</p>
-                
-            </td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>dispCode</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>number</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>A display code.</p>
-                
-            </td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
-<span class="param-type"><code>number</code></span>
-
-
-    </dd>
-</dl>
-
-
-<div class="param-desc">
-    <p>an index of the font table.</p>
-</div>
-
-    
-</div>
-
-
-
-</div>
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="createFontTable"><span class="type-signature"></span>createFontTable<span class="signature">()</span><span class="type-signature"> &rarr; {undefined}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Create font table.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="lib_mz700cg.js.html">lib/mz700cg.js</a>, <a href="lib_mz700cg.js.html#line36">line 36</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
 <span class="param-type"><code>undefined</code></span>
 
 
-    </dd>
-</dl>
-
-
-    
-</div>
-
-
-
-</div>
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="get"><span class="type-signature"></span>get<span class="signature">(attr, dispCode)</span><span class="type-signature"> &rarr; {<a href="mz700cg.FontImage.html">mz700cg.FontImage</a>}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Get a font image instance.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="lib_mz700cg.js.html">lib/mz700cg.js</a>, <a href="lib_mz700cg.js.html#line119">line 119</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>attr</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>number</code></span>
-
-
             
             </td>
 
@@ -663,450 +345,7 @@
             
 
             <td class="description last">
-                <p>An attribute 8 bits value including atb and fore and background color.
-[ atb:1 bit ][ fg color index:3 bits ][ bg color index: 3 bits ]</p>
-                
-            </td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>dispCode</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>number</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>A display code.</p>
-                
-            </td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
-<span class="param-type"><code><a href="mz700cg.FontImage.html">mz700cg.FontImage</a></code></span>
-
-
-    </dd>
-</dl>
-
-
-<div class="param-desc">
-    <p>A font image.</p>
-</div>
-
-    
-</div>
-
-
-
-</div>
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="initFont"><span class="type-signature"></span>initFont<span class="signature">(atb, dispCode)</span><span class="type-signature"> &rarr; {undefined}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Initialize specific font in the table.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="lib_mz700cg.js.html">lib/mz700cg.js</a>, <a href="lib_mz700cg.js.html#line57">line 57</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>atb</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>number</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>An attribute bit which select charactoer bank by zero or one.</p>
-                
-            </td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>dispCode</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>number</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>A display code.</p>
-                
-            </td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
-<span class="param-type"><code>undefined</code></span>
-
-
-    </dd>
-</dl>
-
-
-    
-</div>
-
-
-
-</div>
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="setPattern"><span class="type-signature"></span>setPattern<span class="signature">(atb, dispCode, row, pattern)</span><span class="type-signature"> &rarr; {undefined}</span></h4>
-
-    
-
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="lib_mz700cg.js.html">lib/mz700cg.js</a>, <a href="lib_mz700cg.js.html#line85">line 85</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>atb</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>number</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>An attribute bit which select charactoer bank by zero or one.</p>
-                
-            </td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>dispCode</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>number</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>A display code.</p>
-                
-            </td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>row</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>number</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>Index of row to be set the pattern.</p>
-                
-            </td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>pattern</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>number</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>Bit pattern to be set at the row.</p>
+                <p>An option for this widget.</p>
                 
             </td>
         </tr>
