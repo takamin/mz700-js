@@ -381,8 +381,14 @@
                 } else {
                     this.mz700comworker.removeBreak(addr, size, null);
                 }
-            }).asmview("setSource", "mzt", sampleSource, true)
+            }).asmview("setSource", "mzt", sampleSource)
             .asmview("name", "mzt", "PCG-700 sample");
+
+            this.mz700comworker.assemble( sampleSource, assembled => {
+                this.mz700comworker.writeAsmCode( assembled, () => {
+                    this.createAssembleList(assembled.list);
+                });
+            });
 
             //
             //直接実行ボタン
@@ -753,7 +759,7 @@
             var result = MZ700.disassemble(mztape_array);
             if($(".source-list").length > 0) {
                 $(".source-list")
-                    .asmview("setSource", "mzt", result.outbuf, false)
+                    .asmview("setSource", "mzt", result.outbuf)
                     .asmview("name", "mzt", name);
                 this.createAssembleList(result.asmlist);
             }
