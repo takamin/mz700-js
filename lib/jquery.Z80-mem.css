@@ -2,9 +2,17 @@
     font-family: inherit;
     font-size: 8pt;
     border-bottom: solid 1px gray;
-    width: 560px;
+    width: 100%;
 }
-.dumplist > .row {
+.dumplist .vscrlist {
+    height: 280px;
+    width: 100%;
+}
+.dumplist .row {
+    min-width:550px;
+}
+
+.dumplist .row {
     height: 16px;
     line-height:16px;
 }
@@ -16,19 +24,19 @@
 {
     vertical-align: top;
 }
-.dumplist > .row > .cell {
+.dumplist .row > .cell {
     display: inline-block;
     width: 20px;
     text-align: center;
     vertical-align: top;
 }
-.dumplist > .row > .cell.header {
+.dumplist .row > .cell.header {
     display: inline-block;
     width: 40px;
     text-align: center;
     vertical-align: top;
 }
-.dumplist > .row > .mz700chars {
+.dumplist .row > .mz700chars {
     margin-left: 10px;
     padding-top: 1px;
     display: inline-block;
