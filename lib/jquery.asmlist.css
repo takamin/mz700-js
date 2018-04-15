@@ -29,9 +29,11 @@
 .assemble_list .row.current .colRowAttr { color:red; }
 .assemble_list .row.current .colRowAttr::after { content:"⇒"; }
 
-.assemble_list {
-    overflow-x: auto;
-    width:635px;
+.assemble_list.vscrlist .scroll {
+    min-width:635px;
+}
+.assemble_list .row {
+    width:100%;
 }
 .assemble_list .row:hover {
     background-color: #00dddd;
