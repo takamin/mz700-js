@@ -355,8 +355,7 @@
             //
             // Memory hexa dump list
             //
-            let $dumplist = $("<div/>")
-                .dumplist("init", { readMemory: null, rows:16, })
+            let $dumplist = $("<div/>").dumplist("init")
                 .on("querymemory", (event, addr, callback) => {
                     this.mz700comworker.readMemory(addr, callback);
                 });
