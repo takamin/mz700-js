@@ -3,6 +3,7 @@
     font-size: 8pt;
     border-bottom: solid 1px gray;
     width: 100%;
+    height: 275px;
 }
 .dumplist .vscrlist {
     height: 293px;
@@ -16,11 +17,11 @@
     height: 16px;
     line-height:16px;
 }
-.dumplist > .row.header {
+.dumplist .row.header {
     border-bottom: solid 1px gray;
 }
-.dumplist > .row.header > .char-selector > label,
-.dumplist > .row.header > .char-selector > span
+.dumplist .row.header > .char-selector > label,
+.dumplist .row.header > .char-selector > span
 {
     vertical-align: top;
 }
