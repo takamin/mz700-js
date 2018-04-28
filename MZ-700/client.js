@@ -39,6 +39,7 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
         $(".dropdownpanel").DropDownPanel("create");
     };
     MZ700Js.prototype.btnToggleScreenKeyboard_click = function() {
+        event.stopPropagation();
         if(this.btnToggleScreenKeyboard.hasClass("on")) {
             this.hideScreenKeyboard();
         } else {
@@ -68,7 +69,6 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
     var container = $(".MZ-700-body");
     var screen = container.find(".screen");
     var phif = $("#physical-interface");
-    var keyboard = $(".keyboard");
 
     MZ700Js.prototype.resizeScreen = function() {
         var bboxContainer = new BBox(container.get(0));
@@ -149,29 +149,52 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
                 mouseMoveTimeoutId = null;
             }, timeLimit);
         };
-        let TMO_CTRL = 1000;
-        let TMO_KB = 5000;
-        showCtrlPanelFor(TMO_CTRL);
-        screen.mousemove(function(event) {
-            event.stopPropagation();
+        let TMO_CTRL = (deviceType !== "pc" ? 5000 : 1000);
+        if(deviceType !== "pc") {
+            let toggle = () => {
+                if(phif.css("display") !== "none") {
+                    phif.hide(0, function() {
+                        mz700js.resizeScreen();
+                        mz700js.resizeScreen();
+                    });
+                } else {
+                    phif.show(0, function() {
+                        mz700js.resizeScreen();
+                        mz700js.resizeScreen();
+                    });
+                }
+            };
+            screen.click(function(event) {
+                event.stopPropagation();
+                toggle();
+            });
+            phif.click( event => {
+                event.stopPropagation();
+                toggle();
+            });
+        } else {
             showCtrlPanelFor(TMO_CTRL);
-        });
-        keyboard.mousemove(function(event) {
-            event.stopPropagation();
-            showCtrlPanelFor(TMO_KB);
-        });
-        phif.mousemove(function(event) {
-            event.stopPropagation();
-            showCtrlPanelFor(TMO_CTRL);
-        });
-        container.mouseenter(function() {
-            mz700js.acceptKey(true);
-        })
-        .mouseleave(function() {
-            mz700js.acceptKey(false);
-            hideCtrlPanel();
-            cancelCtrlPanelTimeout();
-        });
+            screen.mousemove(function(event) {
+                event.stopPropagation();
+                showCtrlPanelFor(TMO_CTRL);
+            });
+            phif.mouseenter( event => {
+                event.stopPropagation();
+                cancelCtrlPanelTimeout();
+                phif.show(0, function() {
+                    mz700js.resizeScreen();
+                    mz700js.resizeScreen();
+                });
+            });
+            container.mouseenter(function() {
+                mz700js.acceptKey(true);
+            })
+            .mouseleave(function() {
+                mz700js.acceptKey(false);
+                hideCtrlPanel();
+                cancelCtrlPanelTimeout();
+            });
+        }
     } else {
         mz700js.showScreenKeyboard();
     }
@@ -184,6 +207,7 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
             .attr("alt", "Fullscreen"));
     var fullscreenElement = document.body;
     var onFullscreenButtonClick = function() {
+        event.stopPropagation();
         if(document.fullscreenElement === fullscreenElement) {
             document.exitFullscreen().then(function() {
                 liquidRoot.layout();
