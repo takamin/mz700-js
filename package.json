@@ -1,6 +1,6 @@
 {
   "name": "mz700-js",
-  "version": "0.9.19",
+  "version": "0.9.20",
   "description": "MZ-700 Full JavaScript Emulator",
   "private": false,
   "scripts": {
@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "ansi-escape-sequences": "^3.0.0",
-    "b-box": "^0.1.1",
+    "b-box": "^0.1.2",
     "body-parser": "~1.17.1",
     "codemirror": "^5.35.0",
     "cookie-parser": "~1.4.3",
