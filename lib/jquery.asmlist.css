@@ -35,6 +35,12 @@
 .assemble_list .row {
     width:100%;
 }
+.assemble_list.listen-key {
+    border-width: 1px 1px 1px 5px;
+    border-style: solid;
+    border-color: blue;
+    margin: -1px -1px -1px -5px;
+}
 .assemble_list .row:hover {
     background-color: #00dddd;
 }
