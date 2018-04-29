@@ -20,6 +20,16 @@
 .dumplist .row.header {
     border-bottom: solid 1px gray;
 }
+.dumplist .listen-key {
+    border-width: 1px 1px 1px 5px;
+    border-style: solid;
+    border-color: blue;
+    margin: -1px -1px -1px -5px;
+}
+.dumplist .listen-key .row.header {
+    background-color: blue;
+    color: white;
+}
 .dumplist .row.header > .char-selector > label,
 .dumplist .row.header > .char-selector > span
 {
