@@ -92,6 +92,7 @@ Z80LineAssembler.joinOperand = function(src_operand) {
 /**
  * Convert the operand of the DEFB pseudo mnemonic to bytecodes.
  * @param {string[]} operand The operand.
+ * @param {object} dictionary The label definition.
  * @returns {number[]} converted.
  */
 Z80LineAssembler.getBytecodesFromOperandOfDEFB = function(operand, dictionary) {
