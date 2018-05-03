@@ -1,5 +1,6 @@
 "use strict";
-var oct = require("../lib/oct");
+const oct = require("../lib/oct");
+const mz700charcode = require("../lib/mz700charcode.js");
 
 /**
  * Z80 assembled line class.
@@ -61,6 +62,168 @@ var Z80LineAssembler = function() {
     this.referenced_count = 0;
 
 }
+
+/**
+ * Use a space as a delimiter for operands when the delimiter does not exist.
+ *
+ * @param {string[]} src_operand
+ * The array of operand or delimitor.
+ *
+ * @returns {string} The representation of the operand as string.
+ */
+Z80LineAssembler.joinOperand = function(src_operand) {
+    let dst_operand = [];
+    let delimiterPushed = true;
+    src_operand.forEach(element => {
+        if(element === ",") {
+            dst_operand.push(element);
+            delimiterPushed = true;
+        } else {
+            if(!delimiterPushed) {
+                dst_operand.push(" ");
+            }
+            dst_operand.push(element);
+            delimiterPushed = false;
+        }
+    });
+    return dst_operand.join("");
+}
+
+/**
+ * Convert the operand of the DEFB pseudo mnemonic to bytecodes.
+ * @param {string[]} operand The operand.
+ * @returns {number[]} converted.
+ */
+Z80LineAssembler.getBytecodesFromOperandOfDEFB = function(operand, dictionary) {
+    let code = [];
+    operand.forEach(element => {
+        if(element !== ",") {
+            if(element.match(/^[0-9]/) || element.match(/^[1-9A-F][0-9A-F]*H$/i)) {
+                code.push(Z80LineAssembler.parseNumLiteral(element));
+            } else {
+                let strcode = null;
+                switch(element.charAt(0)) {
+                    case "'": case "\"":
+                        strcode = Z80LineAssembler.convertToAsciiCode(
+                            element.substring(1, element.length - 1), true);
+                        break;
+                    case "`":
+                        strcode = Z80LineAssembler.convertToAsciiCode(
+                            element.substring(1, element.length - 1), false);
+                        break;
+                    default:
+                        if(element in dictionary) {
+                            let deref = dictionary[element];
+                            if(deref >= 256) {
+                                throw new Error(
+                                    "The character code exceeds the maximum",
+                                    "value of 8 bit with the label", element,
+                                    "(", "0x" + deref.HEX(4) , ")");
+                            }
+                            strcode = [deref];
+                        } else {
+                            throw new Error(
+                                "Fatal: Unrecognized operand for DEFB.", element);
+                        }
+                }
+                Array.prototype.push.apply(code, strcode);
+            }
+        }
+    });
+    return code;
+};
+
+/**
+ * Convert string token to character code for MZ-700.
+ *
+ * @param {string} str
+ * The source string representation.
+ *
+ * @param {boolean} ascii
+ * Optional flag to get ASCII code(default: true).
+ * If false is specified, This function returns MZ-700's display code. 
+ *
+ * @returns {number[]}
+ * An array of a character code converted.
+ */
+Z80LineAssembler.convertToAsciiCode = function(str, ascii) {
+    let asciicodes = [];
+    let i = 0;
+    for(;i < str.length;) {
+        let c = str.charAt(i++);
+        if(c === "\\") {
+            c = str.charAt(i++);
+            switch(c) {
+                case "0": case "1": case "2": case "3":
+                case "4": case "5": case "6": case "7":
+                    {
+                        let octstr = c + str.substr(i, 2);
+                        if(octstr.length < 3) {
+                            throw new Error(
+                                "Unexpected termination at a octal",
+                                "character code sequence",
+                                "at column", (i - 1), "in", str);
+                        } else if(!octstr.match(/^[0-7]+$/)) {
+                            throw new Error(
+                                "No octal character exists at column",
+                                (i - 1), "in", str);
+                        } else {
+                            let code = oct(octstr);
+                            if(code >= 256) {
+                                throw new Error(
+                                    "The character code exceeds the maximum",
+                                    "value of 8 bit at", i, "in", str);
+                            }
+                            i += 2;
+                            asciicodes.push(code);
+                        }
+                    }
+                    break;
+                case "x":
+                    {
+                        let hexstr = str.substr(i).replace(/^([0-9a-fA-F]*).*$/, "$1");
+                        if(hexstr.length === 0) {
+                            throw new Error(
+                                "Unexpected termination at a hex",
+                                "character code sequence",
+                                "at column", (i - 1), "in", str);
+                        }
+                        let code = parseInt(hexstr, 16);
+                        if(code >= 256) {
+                            throw new Error(
+                                "The character code exeed 8 bit",
+                                "length at", i, "in", str);
+                        }
+                        i += hexstr.length;
+                        asciicodes.push(code);
+                    }
+                    break;
+                default:
+                    if(ascii) {
+                        switch(c) {
+                            case "r":   //[CR]
+                                asciicodes.push("\r".charCodeAt(0));
+                                break;
+                            default:
+                                asciicodes.push(c.charCodeAt(0));
+                                break;
+                        }
+                    } else {
+                        asciicodes.push(
+                            mz700charcode.ascii2dispcode[c.charCodeAt(0)]);
+                    }
+                    break;
+            }
+        } else {
+            if(ascii) {
+                asciicodes.push(c.charCodeAt(0));
+            } else {
+                asciicodes.push(mz700charcode.ascii2dispcode[c.charCodeAt(0)]);
+            }
+        }
+    }
+    return asciicodes;
+};
 
 /**
  * Set address.
@@ -149,7 +312,7 @@ Z80LineAssembler.assemble = function(source, address, dictionary) {
     }
     if(tokens.length > 0) {
         asmline.mnemonic = tokens[0];
-        asmline.operand = tokens.slice(1).join('');
+        asmline.operand = Z80LineAssembler.joinOperand(tokens.slice(1));
     }
     if(tokens.length > 0) {
         try {
@@ -202,7 +365,6 @@ Z80LineAssembler.tokenize = function(line) {
     var i = 0;
     var toks = [];
     var tok = '';
-    line = line.toUpperCase();
     while(i < L) {
         var ch = line.charAt(i);
         switch(currstat) {
@@ -217,12 +379,12 @@ Z80LineAssembler.tokenize = function(line) {
                     } else if(/[0-9]/.test(ch)) {
                         currstat = LEX_NUMBER;
                     }
-                    else if(/[A-Z_?.*#!$]/.test(ch)) {
+                    else if(/[A-Z_?.*#!$]/i.test(ch)) {
                         tok += ch;
                         i++;
                         currstat = LEX_IDENT;
                     }
-                    else if(ch == "'") {
+                    else if(ch === "'" || ch === "\"" || ch === "`") {
                         tok += ch;
                         i++;
                         currstat = LEX_CHAR;
@@ -245,27 +407,27 @@ Z80LineAssembler.tokenize = function(line) {
                 }
                 break;
             case LEX_NUMBER:
-                if(/[0-9A-F]/.test(ch)) {
+                if(/[0-9A-F]/i.test(ch)) {
                     tok += ch;
                     i++;
-                } else if(ch == 'H') {
+                } else if(/H/i.test(ch)) {
                     tok += ch;
                     i++;
-                    toks.push(tok);
+                    toks.push(tok.toUpperCase());
                     tok = '';
                     currstat = LEX_IDLE;
                 } else {
-                    toks.push(tok);
+                    toks.push(tok.toUpperCase());
                     tok = '';
                     currstat = LEX_IDLE;
                 }
                 break;
             case LEX_IDENT:
-                if(/[A-Z_0-9?.*#!$']/.test(ch)) {
+                if(/[A-Z_0-9?.*#!$']/i.test(ch)) {
                     tok += ch;
                     i++;
                 } else {
-                    toks.push(tok);
+                    toks.push(tok.toUpperCase());
                     tok = '';
                     currstat = LEX_IDLE;
                 }
@@ -275,10 +437,10 @@ Z80LineAssembler.tokenize = function(line) {
                     ++i;
                     if(i < L) {
                         ch = line.charAt(i);
-                        tok += ch;
+                        tok += "\\" + ch;
                         i++;
                     }
-                } else if(ch != "'") {
+                } else if(ch != tok.charAt(0)) {
                     tok += ch;
                     i++;
                 } else {
@@ -294,7 +456,7 @@ Z80LineAssembler.tokenize = function(line) {
         } 
     }
     if(tok != '') {
-        toks.push(tok);
+        toks.push(tok.toUpperCase());
     }
     return toks;
 };
@@ -319,8 +481,9 @@ Z80LineAssembler.prototype.assembleMnemonic = function(toks, dictionary) {
         dictionary[label] = Z80LineAssembler._parseNumLiteral(toks[1]);
         return [];
     }
-    if(match_token(toks,['DEFB', null])) {
-        return [Z80LineAssembler.parseNumLiteral(toks[1])];
+    if(match_token(toks,['DEFB', null], true)) {
+        return Z80LineAssembler.getBytecodesFromOperandOfDEFB(
+            toks.slice(1), dictionary);
     }
     if(match_token(toks,['DEFW', null])) {
         return Z80LineAssembler.parseNumLiteralPair(toks[1]);
@@ -1083,9 +1246,32 @@ function get8bitRegId(name) {
     return r;
 }
 
-function match_token(toks, pattern) {
-    if(toks.length != pattern.length) {
-        return false;
+/**
+ * Check the syntax of the tokens with specific pattern declared by regular
+ * expressions.
+ *
+ * @param {string[]} toks
+ * The array of tokens to be checked.
+ *
+ * @param {string[]} pattern
+ * The syntax pattern declaration including concrete strings or objects of
+ * regular expression.
+ *
+ * @param {boolean} lastNullOfPatternMatchAll
+ * Optional flag to match all tokens to the last null in the pattern.
+ *
+ * @returns {boolean} true if the tokens follows the syntax. otherwise false.
+ */
+function match_token(toks, pattern, lastNullOfPatternMatchAll) {
+    lastNullOfPatternMatchAll = lastNullOfPatternMatchAll || false;
+    if(!lastNullOfPatternMatchAll) {
+        if(toks.length != pattern.length) {
+            return false;
+        }
+    } else {
+        if(toks.length < pattern.length) {
+            return false;
+        }
     }
     for (var i = 0; i < toks.length; i++) {
         if(pattern[i] != null) {
@@ -1099,6 +1285,10 @@ function match_token(toks, pattern) {
                         return false;
                     }
                 }
+            }
+        } else if(lastNullOfPatternMatchAll) {
+            if(i == pattern.length - 1) {
+                break;
             }
         }
     }
