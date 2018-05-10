@@ -78,7 +78,8 @@
                                 var f = files[0];
                                 var reader = new FileReader();
                                 reader.onload = () => {
-                                    this.setMztData(new Uint8Array(reader.result), mztape_array => {
+                                    let tape_data = new Uint8Array(reader.result);
+                                    this.setMztData(tape_data, mztape_array => {
                                         this.start(mztape_array[0].header.addr_exec);
                                     });
                                 };
@@ -718,6 +719,12 @@
                     this.cmtMessageArea.html("MZT: '" + mztape_array[0].header.filename + "' Loaded");
                     this.createCmtDownloadLink(tape_data);
                     callback(mztape_array);
+                    this.mz700comworker.getCassetteTape(tape_data => {
+                        if(tape_data != null) {
+                            var mztape_array = MZ700.parseMZT(tape_data);
+                            this.disassemble(mztape_array);
+                        }
+                    });
                 });
             }
         });
@@ -737,20 +744,14 @@
     };
 
     MZ700Js.prototype.disassemble = function(mztape_array) {
-        var running = this.isRunning;
         var name = MZ_TapeHeader.get1stFilename(mztape_array) || "(empty)";
-        this.mz700comworker.stop(() => {
-            var result = MZ700.disassemble(mztape_array);
-            if($(".source-list").length > 0) {
-                $(".source-list")
-                    .asmview("setSource", "mzt", result.outbuf)
-                    .asmview("name", "mzt", name);
-                this.createAssembleList(result.asmlist);
-            }
-            if(running) {
-                this.start();
-            }
-        });
+        var result = MZ700.disassemble(mztape_array);
+        if($(".source-list").length > 0) {
+            $(".source-list")
+                .asmview("setSource", "mzt", result.outbuf)
+                .asmview("name", "mzt", name);
+            this.createAssembleList(result.asmlist);
+        }
     };
 
     MZ700Js.prototype.createAssembleList = function(asm_list) {
@@ -827,15 +828,6 @@
                         (header.addr_load + header.file_size - 1).HEX(4) + ") EXEC:" +
                         header.addr_exec.HEX(4))
                 );
-        this.cmtMessageArea.append(
-            $("<a/>").html("Disassemble").click(() => {
-                this.mz700comworker.getCassetteTape(tape_data => {
-                    if(tape_data != null) {
-                        var mztape_array = MZ700.parseMZT(tape_data);
-                        this.disassemble(mztape_array);
-                    }
-                });
-            }));
     }
 
     module.exports = MZ700Js;
