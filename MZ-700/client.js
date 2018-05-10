@@ -271,11 +271,12 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
     //
     // Reset MZ-700 and auto load the MZT file, if specified at QUERY_STRING
     //
-    mz700js.reset(function() {
+    mz700js.reset( () => {
         if("mzt" in request.parameters) {
-            window.loadMZT = function(tape_data) {
-                mz700js.stop(function() {
-                    mz700js.setMztData(tape_data, function(mztape_array) {
+            // loadMZT will be invoked by pseudo JSONP.
+            window.loadMZT = tape_data => {
+                mz700js.stop( () => {
+                    mz700js.setMztData(tape_data, mztape_array => {
                         mz700js.start(mztape_array[0].header.addr_exec);
                     });
                 });
