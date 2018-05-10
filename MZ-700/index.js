@@ -19,21 +19,6 @@
 
     var cookies = require("../lib/cookies");
 
-    /*
-     * Convert the innerText of all the elements "span.mz700scrn"
-     */
-    $(function() {
-        $("span.mz700scrn").each(function() {
-            $(this).hide();
-        });
-        setTimeout(function() {
-            $("span.mz700scrn").each(function() {
-                window.mz700scrn.convert(this);
-                $(this).show();
-            });
-        }, 1);
-    });
-
     var MZ700Js = function() {
         this.opt = {
             "urlPrefix": "",

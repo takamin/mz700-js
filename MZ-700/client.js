@@ -1,3 +1,4 @@
+const packageJson = require("../package.json");
 window.jQuery = require("jquery");
 
 // identify user agent
@@ -304,9 +305,12 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
                 }));
         });
         $("#physical-interface").append(mztButtons);
+
+        /* Convert text to the MZ-700 style */
         mztButtons.find("button").each(function() {
             window.mz700scrn.convert(this);
         });
+
         liquidRoot.layout();
         mz700js.resizeScreen();
     };
@@ -315,6 +319,18 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
             var name = $(this).attr("name");
             window.location.href = request.path + "?mzt=" + name;
         });
+    });
+
+    /* Convert text to the MZ-700 style */
+    let title = [
+        packageJson.description,"(",
+        packageJson.name,
+        "@",packageJson.version,")"
+    ].join("");
+    $("title").html(title);
+    $("h1 .mz700scrn").html(title);
+    $("span.mz700scrn").each(function() {
+        window.mz700scrn.convert(this);
     });
 
 }(window.jQuery));
