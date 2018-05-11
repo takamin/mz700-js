@@ -14,7 +14,7 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
     deviceType = "pc";
 }
 
-(function($) {
+(async function($) {
     require("jquery-ui");
     require("fullscrn");
     require("../lib/jquery.ddpanel.js");
@@ -23,8 +23,8 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
         MZ700JsBase.call(this);
     };
     MZ700Js.prototype = new MZ700JsBase();
-    MZ700Js.prototype.create = function(opt) {
-        MZ700JsBase.prototype.create.call(this, opt);
+    MZ700Js.prototype.create = async function(opt) {
+        await MZ700JsBase.prototype.create.call(this, opt);
         this.btnToggleScreenKeyboard = $("<button/>")
             .attr("type", "button")
             .attr("class", "toggle imaged")
@@ -120,7 +120,7 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
     }
 
     var mz700js = new MZ700Js();
-    mz700js.create({ "urlPrefix" : "../" });
+    await mz700js.create({ "urlPrefix" : "../" });
 
     if(deviceType != "mobile") {
         mz700js.hideScreenKeyboard();
@@ -274,12 +274,8 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
     mz700js.reset( () => {
         if("mzt" in request.parameters) {
             // loadMZT will be invoked by pseudo JSONP.
-            window.loadMZT = tape_data => {
-                mz700js.stop( () => {
-                    mz700js.setMztData(tape_data, mztape_array => {
-                        mz700js.start(mztape_array[0].header.addr_exec);
-                    });
-                });
+            window.loadMZT = async tape_data => {
+                await mz700js.setMztData(tape_data);
             };
             requestJsonp("https://takamin.github.io/MZ-700/mzt/" + request.parameters.mzt + ".js");
         }
