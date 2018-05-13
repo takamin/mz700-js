@@ -120,7 +120,14 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
     }
 
     var mz700js = new MZ700Js();
-    await mz700js.create({ "urlPrefix" : "../" });
+    await mz700js.create({
+        urlPrefix : "../",
+        screenElement : document.querySelector(".MZ-700 .screen"),
+        mztDroppableElement: document.querySelector(".MZ-700 .cmt-slot"),
+        controlPanelElement: document.querySelector(".MZ-700 .ctrl-panel"),
+        dataRecorderElement: document.querySelector(".MZ-700 .data-recorder"),
+        keyboardElement: document.querySelector(".MZ-700 .keyboard"),
+    });
 
     if(deviceType != "mobile") {
         mz700js.hideScreenKeyboard();
@@ -177,10 +184,12 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
             showCtrlPanelFor(TMO_CTRL);
             screen.mousemove(function(event) {
                 event.stopPropagation();
+                mz700js.acceptKey(true);
                 showCtrlPanelFor(TMO_CTRL);
             });
             phif.mouseenter( event => {
                 event.stopPropagation();
+                mz700js.acceptKey(true);
                 cancelCtrlPanelTimeout();
                 phif.show(0, function() {
                     mz700js.resizeScreen();
@@ -271,15 +280,14 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
     //
     // Reset MZ-700 and auto load the MZT file, if specified at QUERY_STRING
     //
-    mz700js.reset( () => {
-        if("mzt" in request.parameters) {
-            // loadMZT will be invoked by pseudo JSONP.
-            window.loadMZT = async tape_data => {
-                await mz700js.setMztData(tape_data);
-            };
-            requestJsonp("https://takamin.github.io/MZ-700/mzt/" + request.parameters.mzt + ".js");
-        }
-    });
+    await mz700js.reset();
+    if("mzt" in request.parameters) {
+        // loadMZT will be invoked by pseudo JSONP.
+        window.loadMZT = async tape_data => {
+            await mz700js.setMztData(tape_data);
+        };
+        requestJsonp("https://takamin.github.io/MZ-700/mzt/" + request.parameters.mzt + ".js");
+    }
 
     //
     // Setup buttons to load other MZT

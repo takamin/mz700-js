@@ -1,14 +1,14 @@
 /* global Uint8Array */
-var $ = require("jquery");
+const $ = require("jquery");
 require("../lib/context.js");
 require("../lib/ex_number.js");
-var TransWorker = require('transworker');
-var Z80_assemble = require("../Z80/assembler.js");
-var MZ_TapeHeader = require('../MZ-700/mz-tape-header');
-var MZ700 = require("../MZ-700/emulator.js");
-var MZ700_Sound = require("../MZ-700/sound.js");
-var MMIO = require("../MZ-700/mmio");
-var mz700cg = require("../lib/mz700cg.js");
+const TransWorker = require('transworker');
+const Z80_assemble = require("../Z80/assembler.js");
+const MZ_TapeHeader = require('../MZ-700/mz-tape-header');
+const MZ700 = require("../MZ-700/emulator.js");
+const MZ700_Sound = require("../MZ-700/sound.js");
+const MMIO = require("../MZ-700/mmio");
+const mz700cg = require("../lib/mz700cg.js");
 require("../lib/jquery.asmview.js");
 require("../lib/jquery.soundctrl.js");
 require("../lib/jquery.Z80-mem.js");
@@ -16,19 +16,25 @@ require("../lib/jquery.Z80-reg.js");
 require("../lib/jquery.mz700scrn");
 require("../lib/jquery.MZ-700-kb.js");
 
-var cookies = require("../lib/cookies");
+const cookies = require("../lib/cookies");
 
-var MZ700Js = function() {
+const MZ700Js = function() {
     this.opt = {
-        "urlPrefix": "",
+        urlPrefix: "",
+        screenElement: null,
+        mztDroppableElement: null,
+        controlPanelElement: null,
+        dataRecorderElement: null,
+        keyboardElement: null,
     };
     this.isRunning = false;
-    this.mz700scrn = null;
+    this.scrn = null;
+    this.sound = null;
     this.keyAcceptanceState = false;
     this.keystates = {};
 };
 MZ700Js.create = function(opt) {
-    var obj = new MZ700Js();
+    let obj = new MZ700Js();
     obj.create(opt);
     return obj;
 };
@@ -39,193 +45,221 @@ MZ700Js.prototype.create = async function(opt) {
         }
     }, this);
 
-    this._cgrom = new mz700cg();
-
-    //
-    // Communicate with MZ-700 Worker Thread
-    //
-
-    //
-    // MZ-700 Screen
-    //
-    this.mz700scrn = null;
-    var screen = $(".MZ-700 .screen").mz700scrn("create", {
-        CG: this._cgrom
-    });
-    if(screen.length > 0) {
-        this.mz700scrn = screen.get(0)["mz700scrn"];
-    }
-
-    //
-    // Accept MZT file to drop to the MZ-700 screen, if the File API is supported.
-    //
-    var cmtSlot = $(".MZ-700 .cmt-slot");
-    if(cmtSlot.length > 0) {
-        if (window.File && window.FileReader && window.FileList && window.Blob) {
-            var dropZone1 = cmtSlot.get(0);
-            dropZone1.addEventListener('dragover', function(evt) {
-                evt.stopPropagation();
-                evt.preventDefault();
-                evt.dataTransfer.dropEffect = 'copy'; // Explicitly show this is a copy.
-            }, false);
-            dropZone1.addEventListener('drop', evt => {
-                evt.stopPropagation();
-                evt.preventDefault();
-                var files = evt.dataTransfer.files; // FileList object.
-                if(files.length > 0) {
-                    var f = files[0];
-                    var reader = new FileReader();
-                    reader.onload = async () => {
-                        let tape_data = new Uint8Array(reader.result);
-                        await this.setMztData(tape_data);
-                    };
-                    reader.readAsArrayBuffer(f);
-                }
-            }, false);
-        }
-    }
-
-    // MZ-700 Control buttons
-    this.keyEventReceiver = $("<span/>")
-        .addClass("key-switcher")
-        .html("Key-In");
-
-    //
-    // Emulation control buttons
-    //
-    this.btnReset = this.btnReset_create();
-    this.btnStart = this.btnStart_create();
-    this.btnStep = this.btnStep_create();
-    this.btnReset_notHover(); 
-    this.btnStart_toStop();
-    this.btnStep_disable();
-
-    //
-    // Slider for timerInterval
-    //
-    this.sliderExecParamTimerInterval = $("<input/>")
-        .attr("type", "range").attr("min", 0).attr("max", 1.0).attr("step", 0.01)
-        .val(7).bind("change", () => {
-            var sliderValue = this.sliderExecParamTimerInterval.val();
-            this._timerInterval = MZ700.DEFAULT_TIMER_INTERVAL / Math.pow(10, sliderValue);
-            this.updateExecutionParameter();
-            cookies.setItem("speedSliderValue", this._timerInterval, Infinity);
-        });
-
-
     // Monoral buzzer sound
-    var sound = new MZ700_Sound();
+    this.sound = new MZ700_Sound();
 
-    var mute = false;
-    if(cookies.hasItem("mute")) {
-        mute = (cookies.getItem("mute")=="true");
+    // MZ-700 Screen
+    if(this.opt.screenElement) {
+        $(this.opt.screenElement).mz700scrn("create", {
+            CG: new mz700cg(),
+        });
+        this.scrn = this.opt.screenElement["mz700scrn"];
     }
-    var volume = 10;
-    if(cookies.hasItem("volume")) {
-        volume = parseInt(cookies.getItem("volume"));
-    }
-    $(".MZ-700 .ctrl-panel")
-        .append(this.keyEventReceiver)
-        .append(
-            // Sound control
-            $("<span/>")
-            .soundctrl("create", {
-                "maxVolume": 10,
-                "initialVolume": volume,
-                "initialMute": mute,
-                "onChangeVolume": function(volume) {
-                    if(!this.mute) {
-                        cookies.setItem("volume", volume, Infinity);
-                    }
-                    sound.setGain(volume / 10);
-                },
-                "onChangeMute": function(mute) {
-                    cookies.setItem("mute", mute, Infinity);
-                },
-                "urlIconOn": this.opt.urlPrefix + "image/icon-sound-on.svg",
-                "urlIconOff": this.opt.urlPrefix + "image/icon-sound-off.svg",
-                "colOn": 'blue', "colOff":"silver"
-            })
-        )
-        .append(this.btnStart)
-        .append(this.btnReset)
-        .append(this.btnStep)
-        .append($("<span/>")
-                .addClass("speed-control-slider")
-                .html("Speed:")
-                .append(this.sliderExecParamTimerInterval));
 
-    //
-    // Data Recorder Control
-    //
-    var dataRecorder = $(".MZ-700 .data-recorder");
-    this.btnCmtRec = $("<button/>").attr("type", "button")
-        .html("<span style='color:red'>●</span> RECPLAY").click( () => {
-            this.cmtMessageArea.empty().html("Recording ...");
-            this.mz700comworker.dataRecorder_pushRec( () => { } );
-        });
-    this.btnCmtPlay = $("<button/>").attr("type", "button")
-        .html("<span class='cmtPlayImage'>▼</span> PLAY").click( () => {
-            this.mz700comworker.dataRecorder_pushPlay( () => { } );
-        });
-    this.btnCmtStop = $("<button/>").attr("type", "button")
-        .html("<span>■</span> STOP").click( () => {
-            this.mz700comworker.dataRecorder_pushStop( () => { } );
-        });
-    this.btnCmtEject = $("<button/>").attr("type", "button")
-        .html("<span>▲</span>EJECT").click( () => {
-            this.mz700comworker.dataRecorder_ejectCmt( bytes => {
-                this.createCmtDownloadLink(bytes);
-            });
-        });
-    if (window.File && window.FileReader && window.FileList && window.Blob) {
-        var dropZone2 = dataRecorder.get(0);
-        dropZone2.addEventListener('dragover', evt => {
-            evt.stopPropagation();
-            evt.preventDefault();
-            evt.dataTransfer.dropEffect = 'copy'; // Explicitly show this is a copy.
+    // Accept MZT file to drop to the MZ-700 screen
+    if(this.opt.mztDroppableElement &&
+        window.File && window.FileReader &&
+        window.FileList && window.Blob)
+    {
+        let el = this.opt.mztDroppableElement;
+        el.addEventListener('dragover', function(event) {
+            event.stopPropagation();
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'copy'; // Explicitly show this is a copy.
         }, false);
-        dropZone2.addEventListener('drop', evt => {
-            evt.stopPropagation();
-            evt.preventDefault();
-            var files = evt.dataTransfer.files; // FileList object.
+        el.addEventListener('drop', event => {
+            event.stopPropagation();
+            event.preventDefault();
+            let files = event.dataTransfer.files; // FileList object.
             if(files.length > 0) {
-                var f = files[0];
-                var reader = new FileReader();
+                let f = files[0];
+                let reader = new FileReader();
                 reader.onload = async () => {
-                    var tape_data = new Uint8Array(reader.result);
-                    await this.setCassetteTape(tape_data);
-                    this.createCmtDownloadLink(tape_data);
+                    let tape_data = new Uint8Array(reader.result);
+                    await this.setMztData(tape_data);
                 };
                 reader.readAsArrayBuffer(f);
             }
         }, false);
     }
-    this.cmtMessageArea = $("<span/>").addClass("cmt-message").html("(EMPTY)");
-    dataRecorder
-        .html("CMT: ")
-        .attr("title", "Drop MZT file here to load with 'L' command")
-        .append(this.cmtMessageArea)
-        .append(this.btnCmtRec)
-        .append(this.btnCmtPlay)
-        .append(this.btnCmtStop)
-        .append(this.btnCmtEject);
+
+    if(this.opt.controlPanelElement) {
+        // MZ-700 Control buttons
+        this.keyInAcceptionIndicator = $("<span/>")
+            .addClass("key-switcher")
+            .html("Key-In");
+
+        //
+        // Emulation control buttons
+        //
+        this.btnReset = this.btnReset_create();
+        this.btnStart = this.btnStart_create();
+        this.btnStep = this.btnStep_create();
+        this.btnReset_notHover(); 
+        this.btnStart_toStop();
+        this.btnStep_disable();
+
+        //
+        // Slider for timerInterval
+        //
+        this.sliderExecParamTimerInterval = $("<input/>")
+            .attr("type", "range").attr("min", 0).attr("max", 1.0).attr("step", 0.01)
+            .val(7).bind("change", () => {
+                let sliderValue = this.sliderExecParamTimerInterval.val();
+                this._timerInterval = MZ700.DEFAULT_TIMER_INTERVAL / Math.pow(10, sliderValue);
+                this.updateExecutionParameter();
+                cookies.setItem("speedSliderValue", this._timerInterval, Infinity);
+            });
+
+
+        // Sound control
+        let mute = false;
+        if(cookies.hasItem("mute")) {
+            mute = (cookies.getItem("mute")=="true");
+        }
+        let volume = 10;
+        if(cookies.hasItem("volume")) {
+            volume = parseInt(cookies.getItem("volume"));
+        }
+        this.soundctrl = $("<span/>").soundctrl("create", {
+            "maxVolume": 10,
+            "initialVolume": volume,
+            "initialMute": mute,
+            "onChangeVolume": volume => {
+                this.allowToPlaySound();
+                if(!this.soundctrl.mute) {
+                    cookies.setItem("volume", volume, Infinity);
+                }
+                this.sound.setGain(volume / 10);
+            },
+            "onChangeMute": mute => {
+                this.allowToPlaySound();
+                cookies.setItem("mute", mute, Infinity);
+            },
+            "urlIconOn": this.opt.urlPrefix + "image/icon-sound-on.svg",
+            "urlIconOff": this.opt.urlPrefix + "image/icon-sound-off.svg",
+            "colOn": 'blue', "colOff":"silver"
+        });
+
+        $(this.opt.controlPanelElement)
+            .append(this.keyInAcceptionIndicator)
+            .append(this.soundctrl)
+            .append(this.btnStart)
+            .append(this.btnReset)
+            .append(this.btnStep)
+            .append($("<span/>")
+                    .addClass("speed-control-slider")
+                    .html("Speed:")
+                    .append(this.sliderExecParamTimerInterval));
+    }
+
+    //
+    // Data Recorder Control
+    //
+    if(this.opt.dataRecorderElement) {
+        let dataRecorder = $(this.opt.dataRecorderElement);
+        this.btnCmtRec = $("<button/>").attr("type", "button")
+            .html("<span style='color:red'>●</span> RECPLAY").click( () => {
+                this.cmtMessageArea.empty().html("Recording ...");
+                this.mz700comworker.dataRecorder_pushRec( () => { } );
+            });
+        this.btnCmtPlay = $("<button/>").attr("type", "button")
+            .html("<span class='cmtPlayImage'>▼</span> PLAY").click( () => {
+                this.mz700comworker.dataRecorder_pushPlay( () => { } );
+            });
+        this.btnCmtStop = $("<button/>").attr("type", "button")
+            .html("<span>■</span> STOP").click( () => {
+                this.mz700comworker.dataRecorder_pushStop( () => { } );
+            });
+        this.btnCmtEject = $("<button/>").attr("type", "button")
+            .html("<span>▲</span>EJECT").click( () => {
+                this.mz700comworker.dataRecorder_ejectCmt( bytes => {
+                    this.createCmtDownloadLink(bytes);
+                });
+            });
+        if (window.File && window.FileReader && window.FileList && window.Blob) {
+            let el = dataRecorder.get(0);
+            el.addEventListener('dragover', event => {
+                event.stopPropagation();
+                event.preventDefault();
+                event.dataTransfer.dropEffect = 'copy'; // Explicitly show this is a copy.
+            }, false);
+            el.addEventListener('drop', event => {
+                event.stopPropagation();
+                event.preventDefault();
+                let files = event.dataTransfer.files; // FileList object.
+                if(files.length > 0) {
+                    let f = files[0];
+                    let reader = new FileReader();
+                    reader.onload = async () => {
+                        let tape_data = new Uint8Array(reader.result);
+                        await this.setCassetteTape(tape_data);
+                        this.createCmtDownloadLink(tape_data);
+                    };
+                    reader.readAsArrayBuffer(f);
+                }
+            }, false);
+        }
+        this.cmtMessageArea = $("<span/>").addClass("cmt-message").html("(EMPTY)");
+        dataRecorder
+            .html("CMT: ")
+            .attr("title", "Drop MZT file here to load with 'L' command")
+            .append(this.cmtMessageArea)
+            .append(this.btnCmtRec)
+            .append(this.btnCmtPlay)
+            .append(this.btnCmtStop)
+            .append(this.btnCmtEject);
+    }
 
     //
     // Keyboard
     //
-    this.kb = $(".MZ-700 .keyboard")
-    .mz700keyboard("create", {
-        onStateChange: (strobe, bit, state) => {
-            this.mz700comworker.setKeyState(strobe, bit, state, null);
-        }
-    });
-
-    //
-    // キー入力
-    //
-    window.onkeydown = MZ700Js.prototype.onkeydown.bind(this);
-    window.onkeyup = MZ700Js.prototype.onkeyup.bind(this);
+    if(this.opt.keyboardElement) {
+        let kb = $(this.opt.keyboardElement).mz700keyboard("create", {
+            onStateChange: (strobe, bit, state) => {
+                this.mz700comworker.setKeyState(strobe, bit, state, null);
+            }
+        });
+        let updateKeyStates = (event, state) => {
+            let code = event.keyCode;
+            if(!(code in this.keystates) || this.keystates[code] != state) {
+                this.keystates[code] = state;
+                let matrix = kb.mz700keyboard("getMatPos", code);
+                if(matrix != null) {
+                    kb.mz700keyboard("setState", matrix.strobe, matrix.bit, state);
+                    this.mz700comworker.setKeyState(matrix.strobe, matrix.bit, state, null);
+                }
+            }
+        };
+        window.addEventListener("keydown", event => {
+            if(this.keyAcceptanceState) {
+                event.stopPropagation();
+                updateKeyStates(event, true);
+                return false;
+            }
+        });
+        window.addEventListener("keyup", async event => {
+            switch(event.keyCode) {
+            case 119://F8 - RUN/STOP
+                event.stopPropagation();
+                if(this.isRunning) {
+                    await this.stop();
+                } else {
+                    await this.start();
+                }
+                return;
+            case 120://F9 - STEP OVER
+                event.stopPropagation();
+                this.stepOver();
+                return;
+            }
+            if(this.keyAcceptanceState) {
+                event.stopPropagation();
+                updateKeyStates(event, false);
+                return false;
+            }
+        });
+    }
 
     //
     // Create MZ-700 Worker
@@ -255,11 +289,11 @@ MZ700Js.prototype.create = async function(opt) {
                     "Clock: " + (Math.round(100.0 * clockCount / 1000000) / 100) + " MHz");
             },
             'onBreak': () => { this.stop(); },
-            'onUpdateScreen': (this.mz700scrn == null) ? () => {} :
+            'onUpdateScreen': (this.scrn == null) ? () => {} :
                 updateData => {
                     Object.keys(updateData).forEach(addr => {
-                        var chr = updateData[addr];
-                        this.mz700scrn.writeVram(
+                        let chr = updateData[addr];
+                        this.scrn.writeVram(
                                 addr, chr.attr, chr.dispcode);
                     });
                 },
@@ -271,8 +305,8 @@ MZ700Js.prototype.create = async function(opt) {
             },
             'onPortRead': ()=>{},
             'onPortWrite': ()=>{},
-            'startSound': freq => { sound.startSound(freq[0]); },
-            'stopSound': () => { sound.stopSound(); },
+            'startSound': freq => { this.sound.startSound(freq[0]); },
+            'stopSound': () => { this.sound.stopSound(); },
             "onStartDataRecorder": () => {
                 this.btnCmtRec.prop("disabled", true);
                 this.btnCmtEject.prop("disabled", true);
@@ -293,16 +327,16 @@ MZ700Js.prototype.create = async function(opt) {
     this.PCG700.writeMMIO(0xE011, 0x00);
     this.PCG700.writeMMIO(0xE012, 0x18);
     this.mmioMapPeripheral(this.PCG700, [], [0xE010, 0xE011, 0xE012]);
-    window.addEventListener("enablePCG700", ()=>{
-        this.mz700scrn.changeCG(this.PCG700._cg);
-        this.mz700scrn.redraw();
+    window.addEventListener("enablePCG700", this.scrn == null ? ()=>{} : () => {
+        this.scrn.changeCG(this.PCG700._cg);
+        this.scrn.redraw();
     });
-    window.addEventListener("disablePCG700", ()=>{
-        this.mz700scrn.restoreCG();
-        this.mz700scrn.redraw();
+    window.addEventListener("disablePCG700", this.scrn == null ? ()=>{} : () => {
+        this.scrn.restoreCG();
+        this.scrn.redraw();
     });
-    window.addEventListener("updatePCG700", e=>{
-        this.mz700scrn.redrawChar(e.detail.atb, e.detail.dispCode);
+    window.addEventListener("updatePCG700", this.scrn == null ? ()=>{} : event => {
+        this.scrn.redrawChar(event.detail.atb, event.detail.dispCode);
     });
 
     //
@@ -344,7 +378,7 @@ MZ700Js.prototype.create = async function(opt) {
     // Assemble list
     //
     $(".source-list").asmview("create");
-    var sampleSource = $($("textarea.default.source").get(0)).val();
+    let sampleSource = $($("textarea.default.source").get(0)).val();
     $(".source-list").asmview("addTab", "mzt", "PCG-700 sample")
     .on("assemble", async (e, asmsrc) => {
         await this.assemble( asmsrc );
@@ -362,10 +396,10 @@ MZ700Js.prototype.create = async function(opt) {
     //
     //直接実行ボタン
     //
-    var runImm = src => {
-        var bin = new Z80_assemble(src);
+    let runImm = src => {
+        let bin = new Z80_assemble(src);
         this.mz700comworker.getRegister(async reg => {
-            var savedPC = reg.PC;
+            let savedPC = reg.PC;
             let execAddr = await this.writeAsmCode( bin );
             await this.setPC(execAddr);
             await this.execute(1);
@@ -393,12 +427,12 @@ MZ700Js.prototype.create = async function(opt) {
                 .addClass("mnemonic"))
         .append($("<button/>").attr("type", "button").html("Execute")
                 .click(function() {
-                    var par = $(this).parent();
-                    var addrToken = par.find("input.address").val();
-                    var asm = new Z80_assemble();
-                    var addr = asm.parseAddress(addrToken);
+                    let par = $(this).parent();
+                    let addrToken = par.find("input.address").val();
+                    let asm = new Z80_assemble();
+                    let addr = asm.parseAddress(addrToken);
                     if(addr != null) {
-                        var src = 'ORG ' + addr.HEX(4) + "H\r\n";
+                        let src = 'ORG ' + addr.HEX(4) + "H\r\n";
                         src += par.find("input.mnemonic").val() + "\r\n";
                         runImm(src);
                     }
@@ -408,7 +442,7 @@ MZ700Js.prototype.create = async function(opt) {
 
     this._timerInterval = MZ700.DEFAULT_TIMER_INTERVAL;
     if(cookies.hasItem("speedSliderValue")) {
-        var param = parseFloat(cookies.getItem("speedSliderValue"));
+        let param = parseFloat(cookies.getItem("speedSliderValue"));
         this._timerInterval = param;
         this.updateExecutionParameter();
         this.onExecutionParameterUpdate(param);
@@ -430,7 +464,7 @@ MZ700Js.prototype.btnReset_create = function() {
     return $("<button/>").attr("type", "button")
     .addClass("imaged").append($("<img/>")
             .attr("title", "Reset").attr("alt", "Reset"))
-    .click(() => { this.reset(); })
+    .click(async () => { await this.reset(); })
     .hover(this.btnReset_hover.bind(this),
         this.btnReset_notHover.bind(this));
 };
@@ -545,14 +579,16 @@ MZ700Js.prototype.mmioMapPeripheral = function(peripheral, mapToRead, mapToWrite
     this.mz700comworker.mmioMapToWrite(mapToWrite, function(){});
 };
 
-MZ700Js.prototype.reset = async function(callback) {
+MZ700Js.prototype.reset = async function() {
     await this.stop();
-    this.mz700comworker.reset( async () => {
-        let bytes = await this.getCassetteTape();
-        this.createCmtDownloadLink(bytes);
-        await this.start(null);
-        callback();
+    await new Promise( resolve => {
+        this.mz700comworker.reset( () => {
+            resolve();
+        });
     });
+    let bytes = await this.getCassetteTape();
+    this.createCmtDownloadLink(bytes);
+    await this.start(null);
 };
 
 MZ700Js.EXEC_TIMER_INTERVAL = 100;
@@ -604,7 +640,7 @@ MZ700Js.prototype.updateExecutionParameter = function() {
 };
 MZ700Js.prototype.onExecutionParameterUpdate = function(param) {
     this._timerInterval = param;
-    var sliderValue = Math.log10(MZ700.DEFAULT_TIMER_INTERVAL / param);
+    let sliderValue = Math.log10(MZ700.DEFAULT_TIMER_INTERVAL / param);
     this.sliderExecParamTimerInterval.val(sliderValue);
 };
 
@@ -719,8 +755,8 @@ MZ700Js.prototype.clearCurrentExecLine = function() {
 };
 
 MZ700Js.prototype.disassemble = async function(mztape_array) {
-    var name = MZ_TapeHeader.get1stFilename(mztape_array) || "(empty)";
-    var result = MZ700.disassemble(mztape_array);
+    let name = MZ_TapeHeader.get1stFilename(mztape_array) || "(empty)";
+    let result = MZ700.disassemble(mztape_array);
     if($(".source-list").length > 0) {
         $(".source-list")
             .asmview("setSource", "mzt", result.outbuf)
@@ -747,58 +783,20 @@ MZ700Js.prototype.createAssembleList = function(asm_list) {
 MZ700Js.prototype.acceptKey = function(state) {
     this.keyAcceptanceState = state;
     if(this.keyAcceptanceState) {
-        this.keyEventReceiver.addClass("on");
+        this.keyInAcceptionIndicator.addClass("on");
     } else {
-        this.keyEventReceiver.removeClass("on");
+        this.keyInAcceptionIndicator.removeClass("on");
     }
 };
 
-MZ700Js.prototype.onkeydown = function(e) {
-    if(this.keyAcceptanceState) {
-        this.updateKeyStates(e, true);
-        return false;
-    }
-};
-
-MZ700Js.prototype.onkeyup = async function(e) {
-    switch(e.keyCode) {
-    case 119://F8 - RUN/STOP
-        if(this.isRunning) {
-            await this.stop();
-        } else {
-            await this.start();
-        }
-        return;
-    case 120://F9 - STEP OVER
-        this.stepOver();
-        return;
-    }
-    if(this.keyAcceptanceState) {
-        this.updateKeyStates(e, false);
-        return false;
-    }
-};
-
-//キーボードからの入力処理
-MZ700Js.prototype.updateKeyStates = function (e, state) {
-    var code = e.keyCode;
-    if(!(code in this.keystates) || this.keystates[code] != state) {
-        this.keystates[code] = state;
-        var matrix = this.kb.mz700keyboard("getMatPos", code);
-        if(matrix != null) {
-            this.kb.mz700keyboard("setState", matrix.strobe, matrix.bit, state);
-            this.mz700comworker.setKeyState(matrix.strobe, matrix.bit, state, null);
-        }
-    }
-};
 MZ700Js.prototype.createCmtDownloadLink = function(bytes) {
     if(bytes == null || bytes.length < 128) {
         this.cmtMessageArea.empty().append("(EMPTY)");
         return;
     }
-    var header = new MZ_TapeHeader(bytes, 0);
-    var byteArr = new Uint8Array(bytes);
-    var blob = new Blob([byteArr], {'type': "application/octet-stream"});
+    let header = new MZ_TapeHeader(bytes, 0);
+    let byteArr = new Uint8Array(bytes);
+    let blob = new Blob([byteArr], {'type': "application/octet-stream"});
     this.cmtMessageArea.empty().html(header.filename).append(
             $("<a/>").addClass("download-link")
                 .attr("download", header.filename + ".MZT")
