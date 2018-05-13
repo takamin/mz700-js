@@ -1,6 +1,6 @@
 {
   "name": "mz700-js",
-  "version": "0.9.25",
+  "version": "0.9.26",
   "description": "MZ-700 Full JavaScript Emulator",
   "private": false,
   "scripts": {
@@ -69,7 +69,13 @@
     "url": "https://github.com/takamin/mz700-js/issues"
   },
   "homepage": "http://bicycle.life.coocan.jp/takamints/index.php/MZ-700",
+  "engines": {
+    "node": ">=7.6"
+  },
   "eslintConfig": {
+    "parserOptions": {
+      "ecmaVersion": 2017
+    },
     "env": {
       "es6": true,
       "browser": true,
