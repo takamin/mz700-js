@@ -54,6 +54,23 @@ MZ700Js.prototype.create = async function(opt) {
             CG: new mz700cg(),
         });
         this.scrn = this.opt.screenElement["mz700scrn"];
+
+        // Resume the AudioContext if it is suspended.
+        let canvas = $(this.opt.screenElement).find("canvas");
+        canvas.click(()=>{ this.allowToPlaySound(); });
+        let title = canvas.attr("title");
+        let checkSound = () => {
+            if(!this.sound.resumed()) {
+                canvas.attr("title", "To enable the sound, click here.");
+            } else {
+                canvas.attr("title", title);
+            }
+        };
+        this.sound.audio.addEventListener("statechange", event=>{
+            event.stopPropagation();
+            checkSound();
+        });
+        checkSound();
     }
 
     // Accept MZT file to drop to the MZ-700 screen
@@ -860,6 +877,12 @@ MZ700Js.prototype.execute = function(steps) {
             resolve();
         });
     });
+};
+
+MZ700Js.prototype.allowToPlaySound = function() {
+    if(!this.sound.resumed()) {
+        this.sound.resume();
+    }
 };
 
 module.exports = MZ700Js;

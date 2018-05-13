@@ -32,6 +32,12 @@
 
         }
     };
+    MZ700_Sound.prototype.resumed = function() {
+        return this.audio.state === "running";
+    };
+    MZ700_Sound.prototype.resume = async function() {
+        await this.audio.resume();
+    };
     MZ700_Sound.prototype.setGain = function(gain) {
         if(gain < 0) {
             gain = 0;
