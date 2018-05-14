@@ -119,7 +119,6 @@
     };
 
     var PCG700 = require("../lib/PCG-700").create();
-    PCG700.setScreen();
     PCG700.writeMMIO(0xE010, 0x00);
     PCG700.writeMMIO(0xE011, 0x00);
     PCG700.writeMMIO(0xE012, 0x18);
