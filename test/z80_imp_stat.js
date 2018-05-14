@@ -103,7 +103,7 @@ var check_asm_dasm = function (codes) {
         //
         // ASSEMBLE
         //
-        asm_result = new Z80_assemble(asm);
+        asm_result = Z80_assemble.assemble([asm]).obj[0];
         codes_result = asm_result.list[0].bytecode;
         var match = true;
         for(var i = 0; i < codes_result.length; i++) {
