@@ -9,6 +9,7 @@ const MZ700 = require("../MZ-700/emulator.js");
 const MZ700_Sound = require("../MZ-700/sound.js");
 const MMIO = require("../MZ-700/mmio");
 const mz700cg = require("../lib/mz700cg.js");
+const parseAddress = require("../lib/parse-addr.js");
 require("../lib/jquery.asmview.js");
 require("../lib/jquery.soundctrl.js");
 require("../lib/jquery.Z80-mem.js");
@@ -398,7 +399,7 @@ MZ700Js.prototype.create = async function(opt) {
     let sampleSource = $($("textarea.default.source").get(0)).val();
     $(".source-list").asmview("addTab", "mzt", "PCG-700 sample")
     .on("assemble", async (e, asmsrc) => {
-        await this.assemble( asmsrc );
+        await this.setAssembleSource( asmsrc );
     }).on("setbreak", (e, addr, size, state) => {
         if(state) {
             this.mz700comworker.addBreak(addr, size, null);
@@ -408,13 +409,13 @@ MZ700Js.prototype.create = async function(opt) {
     }).asmview("setSource", "mzt", sampleSource)
     .asmview("name", "mzt", "PCG-700 sample");
 
-    await this.assemble( sampleSource );
+    await this.setAssembleSource( sampleSource );
 
     //
     //直接実行ボタン
     //
     let runImm = src => {
-        let bin = new Z80_assemble(src);
+        let bin = Z80_assemble.assemble([src]).obj[0];
         this.mz700comworker.getRegister(async reg => {
             let savedPC = reg.PC;
             let execAddr = await this.writeAsmCode( bin );
@@ -446,8 +447,7 @@ MZ700Js.prototype.create = async function(opt) {
                 .click(function() {
                     let par = $(this).parent();
                     let addrToken = par.find("input.address").val();
-                    let asm = new Z80_assemble();
-                    let addr = asm.parseAddress(addrToken);
+                    let addr = parseAddress(addrToken);
                     if(addr != null) {
                         let src = 'ORG ' + addr.HEX(4) + "H\r\n";
                         src += par.find("input.mnemonic").val() + "\r\n";
@@ -829,14 +829,25 @@ MZ700Js.prototype.createCmtDownloadLink = function(bytes) {
             );
 }
 
-MZ700Js.prototype.assemble = function( asmsrc ) {
-    return new Promise(resolve => {
-        this.mz700comworker.assemble( asmsrc, async assembled => {
-            await this.writeAsmCode( assembled );
-            await this.createAssembleList(assembled.list);
-            resolve(assembled);
-        });
-    });
+/**
+ * Assemble and display the list.
+ * @async
+ * @param {string} asmsrc
+ * The source to be assemble with Z80 assembler.
+ * @returns {Promise<object>} as a result of assemble.
+ */
+MZ700Js.prototype.setAssembleSource = async function( asmsrc ) {
+    let shouldBeResumed = this.isRunning;
+    if(shouldBeResumed) {
+        await this.stop();
+    }
+    let assembled = Z80_assemble.assemble([asmsrc]).obj[0];
+    await this.writeAsmCode( assembled );
+    await this.createAssembleList(assembled.list);
+    if(shouldBeResumed) {
+        await this.start();
+    }
+    return assembled;
 };
 MZ700Js.prototype.writeAsmCode = function(assembled) {
     return new Promise(resolve => {

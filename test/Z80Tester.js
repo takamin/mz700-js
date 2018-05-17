@@ -5,7 +5,7 @@ function Z80Tester() {  }
 Z80Tester.prototype.runMnemonics = function(Z80cpu, mnemonics) {
     var stadr = null;
     mnemonics.forEach(function(mnemonic) {
-        var asm = new Z80_assemble(mnemonic);
+        var asm = Z80_assemble.assemble([mnemonic]).obj[0];
         asm.list.forEach(function(line) {
             if("bytecode" in line && line.bytecode.length > 0) {
                 var addr = line.address;

@@ -21,7 +21,7 @@ var getopt = new Getopt([
 var cli = getopt.parseSystem();
 var description = "A simple Z80 assembler -- " + npmInfo.name + "@" + npmInfo.version;
 getopt.setHelp(
-        "Usage: mzasm [OPTION] filename\n" +
+        "Usage: mzasm [OPTION] filename [filename ...]\n" +
         description + "\n" +
         "\n" +
         "[[OPTIONS]]\n" +
@@ -39,12 +39,13 @@ if(cli.options.version) {
     process.exit(0);
 }
 
-var args = require("hash-arg").get(["input_filename"], cli.argv);
+var args = require("hash-arg").get(["input_filenames:string[]"], cli.argv);
 if(cli.argv.length < 1) {
     console.error('error: no input file');
     process.exit(-1);
 }
-var input_filename = args.input_filename;
+
+// Determine the output filename
 var output_filename = null;
 if('output-file' in cli.options) {
     output_filename = cli.options['output-file'];
@@ -57,6 +58,7 @@ if('output-file' in cli.options) {
     } else {
         ext = ".bin";
     }
+    let input_filename = args.input_filenames[0];
     output_filename = fnut.exchangeExtension(
             input_filename, ext);
 }
@@ -67,7 +69,7 @@ if('map' in cli.options) {
     fnMap = cli.options['map'];
 } else {
     fnMap = fnut.exchangeExtension(
-            input_filename, ".map");
+            output_filename, ".map");
 }
 
 //
@@ -101,16 +103,25 @@ if('reuse-mzt-header' in cli.options) {
     mzt_header.setAddrLoad(load_addr);
     mzt_header.setAddrExec(exec_addr);
 }
-
-fs.readFile(input_filename, 'utf-8', function(err, data) {
-    if(err) {
-        throw err;
-    }
+(async function() {
+    let sources = [];
+    await Promise.all(args.input_filenames.map( input_filename => {
+        return new Promise( (resolve, reject) => {
+            fs.readFile(input_filename, 'utf-8', function(err, data) {
+                if(err) {
+                    reject(err);
+                } else {
+                    sources.push(data);
+                    resolve(data);
+                }
+            });
+        });
+    }));
 
     //
     // Assemble
     //
-    var asm = new Z80_assemble(data);
+    let asm = Z80_assemble.assemble(sources);
 
     //
     // Set binary size to MZT Header
@@ -137,10 +148,10 @@ fs.readFile(input_filename, 'utf-8', function(err, data) {
     //
     // Output address map
     //
-    var map = asm.getMap().map(function(item) {
+    let map = Z80_assemble.hashMapArray(asm.label2value).map(function(item) {
         return [item.label, ":\t", item.address.HEX(4), "H"].join('');
     }).join("\n");
     if(map.length > 0) {
         fs.writeFileSync(fnMap, map);
     }
-});
+}());
