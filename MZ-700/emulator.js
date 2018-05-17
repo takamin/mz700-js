@@ -9,7 +9,6 @@ var IC556           = require('../lib/ic556');
 var MZ700KeyMatrix  = require('./mz700-key-matrix');
 var MZ700_Memory    = require("./memory.js");
 var Z80             = require('../Z80/emulator');
-var Z80_assemble    = require("../Z80/assembler.js");
 var Z80LineAssembler = require("../Z80/z80-line-assembler");
 var MZ700 = function(opt) {
     "use strict";
@@ -546,13 +545,6 @@ MZ700.prototype.run = function() {
         this.stop();
         this.opt.onBreak();
     }
-};
-
-//
-// Assemble
-//
-MZ700.prototype.assemble = function(text_asm) {
-    return new Z80_assemble(text_asm);
 };
 
 //
