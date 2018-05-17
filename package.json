@@ -1,6 +1,6 @@
 {
   "name": "mz700-js",
-  "version": "0.9.27",
+  "version": "0.9.28",
   "description": "MZ-700 Full JavaScript Emulator",
   "private": false,
   "scripts": {
@@ -68,7 +68,7 @@
   "bugs": {
     "url": "https://github.com/takamin/mz700-js/issues"
   },
-  "homepage": "http://bicycle.life.coocan.jp/takamints/index.php/MZ-700",
+  "homepage": "https://takamin.github.io/mz700-js/MZ-700/client",
   "engines": {
     "node": ">=7.6"
   },
