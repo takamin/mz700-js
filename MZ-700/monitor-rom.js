@@ -8,18 +8,20 @@ MZ700_MonitorRom.prototype.create = function() {
 
     for(var i = 0; i < this.size; i++) {
         var address = this.startAddr + i;
-        MemoryBlock.prototype.pokeByte.call(this, address, NEWMON7[address]);
+        MemoryBlock.prototype.pokeByte.call(this,
+            address, MZ700_MonitorRom.NEWMON7[address]);
     }
 };
 
 MZ700_MonitorRom.prototype.pokeByte = function(address/*, value*/) {
-    MemoryBlock.prototype.pokeByte.call(this, address, NEWMON7[address]);
+    MemoryBlock.prototype.pokeByte.call(this,
+        address, MZ700_MonitorRom.NEWMON7[address]);
 };
 
 module.exports = MZ700_MonitorRom;
 
 /* eslint no-unused-vars: "off" */
-var NEWMON7 = [
+MZ700_MonitorRom.NEWMON7 = [
     0xc3,0x4a,0x00,0xc3,0xe6,0x07,0xc3,0x0e,0x09,0xc3,0x18,0x09,0xc3,0x20,0x09,0xc3,
     0x7f,0x00,0xc3,0x35,0x09,0xc3,0x81,0x09,0xc3,0x99,0x09,0xc3,0xbd,0x08,0xc3,0x32,
     0x0a,0xc3,0x36,0x04,0xc3,0x75,0x04,0xc3,0xd8,0x04,0xc3,0xf8,0x04,0xc3,0x88,0x05,
