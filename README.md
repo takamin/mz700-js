@@ -14,8 +14,7 @@ It works on the modern HTML5 web browser.
 I would strongly recommend Google Chrome,
 because of the emulation speed and its stability.
 
-In order to check that works on your browser before install to your PC,
-You can visit this [project-page](https://takamin.github.io/mz700-js/MZ-700/client.html).
+You can visit this [GitHub-page](https://takamin.github.io/mz700-js/MZ-700/client.html) to run on your web browser.
 
 The MZ-700 is produced by SHARP in Nov.15,1982.
 It equipped a Z80A CPU 3.58MHz,
