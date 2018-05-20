@@ -550,37 +550,31 @@ MZ700.prototype.run = function() {
 //
 // Disassemble
 //
-MZ700.prototype.disassemble = function(mztape_array) {
-    var outbuf = "";
-    var dasmlist = [];
-    var asmHeaderLines = null;
-    mztape_array.forEach(function(mzt) {
+MZ700.disassemble = function(mztape_array) {
+    let dasmlist = [];
+    mztape_array.forEach( mzt => {
         console.assert(
             mzt.header.constructor === MZ_TapeHeader,
             "No MZT-header");
-        var mztHeaderLines = mzt.header.getHeadline();
-        outbuf += mztHeaderLines + "\n";
-        dasmlist = Z80.dasm(
-            mzt.body.buffer, 0,
-            mzt.header.file_size,
-            mzt.header.addr_load);
-        asmHeaderLines = mztHeaderLines.split("\n").map(function(line) {
+        let mzthead = mzt.header.getHeadline().split("\n");
+        Array.prototype.push.apply(dasmlist, mzthead.map(line => {
             var asmline = new Z80LineAssembler();
             asmline.setComment(line);
             return asmline;
-        });
+        }));
+        Array.prototype.push.apply(dasmlist, Z80.dasm(
+            mzt.body.buffer, 0,
+            mzt.header.file_size,
+            mzt.header.addr_load));
     });
-    var dasmlines = Z80.dasmlines(dasmlist);
-    outbuf += dasmlines.join("\n") + "\n";
-    Array.prototype.splice.apply(dasmlist,
-            [0,0].concat(asmHeaderLines));
+
+    let dasmlines = Z80.dasmlines(dasmlist);
     return {
-        outbuf: outbuf,
+        outbuf: dasmlines.join("\n") + "\n",
         dasmlines: dasmlines,
         asmlist: dasmlist
     };
 };
-MZ700.disassemble = MZ700.prototype.disassemble;
 
 MZ700.prototype.dataRecorder_setCmt = function(bytes) {
     var cmt = null;

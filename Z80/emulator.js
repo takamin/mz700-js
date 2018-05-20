@@ -268,21 +268,28 @@ Z80.dasmlines = function(dasmlist) {
         }
         addr += "   ";
 
-        var mne = dis.mnemonic;
-        if(mne && dis.operand) {
+        var mne = dis.mnemonic || "";
+        let operand = dis.operand || "";
+        if(mne && operand) {
             while(mne.length < 8) {
                 mne += " ";
             }
         }
-        var line = addr + '      ' + mne + dis.operand;
-        while(line.length < 40) {
-            line += ' ';
+        var line = addr + '      ' + mne + operand;
+        if(mne || operand) {
+            while(line.length < 40) {
+                line += ' ';
+            }
         }
         if(dis.comment != "") {
-            line += dis.comment;
+            if(dis.referenced_count == 0 && !mne && !operand) {
+                line = dis.comment;
+            } else {
+                line += dis.comment;
+            }
         }
 
-        return line;
+        return line.replace(/\s*$/, "");
     });
 };
 
