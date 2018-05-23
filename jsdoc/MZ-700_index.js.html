@@ -45,13 +45,17 @@ require("../lib/context.js");
 require("../lib/ex_number.js");
 const TransWorker = require('transworker');
 const Z80_assemble = require("../Z80/assembler.js");
+const Z80 = require("../Z80/emulator.js");
 const MZ_TapeHeader = require('../MZ-700/mz-tape-header');
 const MZ700 = require("../MZ-700/emulator.js");
 const MZ700_Sound = require("../MZ-700/sound.js");
+const MZ700_MonitorRom = require("../MZ-700/monitor-rom.js");
 const MMIO = require("../MZ-700/mmio");
 const mz700cg = require("../lib/mz700cg.js");
 const parseAddress = require("../lib/parse-addr.js");
 require("../lib/jquery.asmview.js");
+require("../lib/jquery.asmlist.js");
+require("../lib/jquery.tabview.js");
 require("../lib/jquery.soundctrl.js");
 require("../lib/jquery.Z80-mem.js");
 require("../lib/jquery.Z80-reg.js");
@@ -436,21 +440,42 @@ MZ700Js.prototype.create = async function(opt) {
     //
     // Assemble list
     //
-    $(".source-list").asmview("create");
-    let sampleSource = $($("textarea.default.source").get(0)).val();
-    $(".source-list").asmview("addTab", "mzt", "PCG-700 sample")
-    .on("assemble", async (e, asmsrc) => {
-        await this.setAssembleSource( asmsrc );
-    }).on("setbreak", (e, addr, size, state) => {
-        if(state) {
-            this.mz700comworker.addBreak(addr, size, null);
-        } else {
-            this.mz700comworker.removeBreak(addr, size, null);
-        }
-    }).asmview("setSource", "mzt", sampleSource)
-    .asmview("name", "mzt", "PCG-700 sample");
+    $(".source-list").asmview("create")
+        .on("setbreak", (e, addr, size, state) => {
+            if(state) {
+                this.mz700comworker.addBreak(addr, size, null);
+            } else {
+                this.mz700comworker.removeBreak(addr, size, null);
+            }
+        });
 
-    await this.setAssembleSource( sampleSource );
+    // Disassemble the monitor ROM
+    {
+        this._asmlistMonitorRom = $("&lt;div/>").asmlist("create").on("assemble",
+            async (e, asmsrc) => {
+                await this.assemble(asmsrc, this._asmlistMonitorRom);
+            });
+        $(".source-list").asmview("addAsmList",
+            "monitor-rom", "", this._asmlistMonitorRom);
+        let asmlist = Z80.dasm(MZ700_MonitorRom.NEWMON7,
+            0x0000, 0x1000, 0x0000);
+        let dasmlines = Z80.dasmlines(asmlist);
+        let outbuf = dasmlines.join("\n") + "\n";
+        $(".source-list").asmview("name", "monitor-rom", "NEWMON7");
+        this._asmlistMonitorRom.asmlist("text", outbuf);
+        await this.assemble( outbuf, this._asmlistMonitorRom );
+    }
+
+    // Show a sample assemble source
+    this._asmlistMzt = $("&lt;div/>").asmlist("create").on("assemble",
+        async (e, asmsrc) => {
+            await this.assemble(asmsrc, this._asmlistMzt);
+        });
+    $(".source-list").asmview("addAsmList",
+        "mzt", "PCG-700 sample", this._asmlistMzt);
+    let sampleSource = $($("textarea.default.source").get(0)).val();
+    this._asmlistMzt.asmlist("text", sampleSource);
+    await this.assemble( sampleSource, this._asmlistMzt );
 
     //
     //直接実行ボタン
@@ -804,36 +829,36 @@ MZ700Js.prototype.setMztData = async function(tape_data) {
 //
 MZ700Js.prototype.scrollToShowPC = function() {
     this.mz700comworker.getRegister(function(reg) {
-        $(".source-list").asmview("setCurrentAddr", "mzt", reg.PC);
+        if(reg.PC &lt;= 0x1000) {
+            $(".source-list").asmview("activate", "monitor-rom");
+            this._asmlistMonitorRom.asmlist("setCurrentAddr", reg.PC);
+        } else {
+            $(".source-list").asmview("activate", "mzt");
+            this._asmlistMzt.asmlist("setCurrentAddr", reg.PC);
+        }
     });
 };
 
 MZ700Js.prototype.clearCurrentExecLine = function() {
-    $(".source-list").asmview("clearCurrentAddr", "mzt");
+    this._asmlistMonitorRom.asmlist("clearCurrentAddr");
+    this._asmlistMzt.asmlist("clearCurrentAddr");
 };
 
 MZ700Js.prototype.disassemble = async function(mztape_array) {
     let name = MZ_TapeHeader.get1stFilename(mztape_array) || "(empty)";
     let result = MZ700.disassemble(mztape_array);
     if($(".source-list").length > 0) {
-        $(".source-list")
-            .asmview("setSource", "mzt", result.outbuf)
-            .asmview("name", "mzt", name);
-        await this.createAssembleList(result.asmlist);
+        $(".source-list").asmview("name", "mzt", name);
+        this._asmlistMzt.asmlist("text", result.outbuf);
+        this._asmlistMzt.asmlist("writeList",
+            result.asmlist, await this.getBreakPoints());
     }
 };
 
-MZ700Js.prototype.createAssembleList = function(asm_list) {
-    return new Promise((resolve, reject) => {
+MZ700Js.prototype.getBreakPoints = function() {
+    return new Promise(resolve => {
         this.mz700comworker.getBreakPoints( breakpoints => {
-            try {
-                $(".source-list").asmview(
-                    "setAsmList", "mzt",
-                    asm_list, breakpoints);
-                resolve();
-            } catch(err) {
-                reject(err);
-            }
+            resolve(breakpoints);
         });
     });
 };
@@ -875,16 +900,19 @@ MZ700Js.prototype.createCmtDownloadLink = function(bytes) {
  * @async
  * @param {string} asmsrc
  * The source to be assemble with Z80 assembler.
+ * @param {object} asmlist
+ * jquery.asmlist object
  * @returns {Promise&lt;object>} as a result of assemble.
  */
-MZ700Js.prototype.setAssembleSource = async function( asmsrc ) {
+MZ700Js.prototype.assemble = async function( asmsrc, asmlist ) {
     let shouldBeResumed = this.isRunning;
     if(shouldBeResumed) {
         await this.stop();
     }
     let assembled = Z80_assemble.assemble([asmsrc]).obj[0];
     await this.writeAsmCode( assembled );
-    await this.createAssembleList(assembled.list);
+    asmlist.asmlist("writeList",
+        assembled.list, await this.getBreakPoints());
     if(shouldBeResumed) {
         await this.start();
     }
@@ -950,7 +978,7 @@ module.exports = MZ700Js;
 <br class="clear">
 
 <footer>
-    Generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Sun May 20 2018 20:32:57 GMT+0900 (東京 (標準時)) using the Minami theme.
+    Generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Wed May 23 2018 20:21:27 GMT+0900 (東京 (標準時)) using the Minami theme.
 </footer>
 
 <script>prettyPrint();</script>
