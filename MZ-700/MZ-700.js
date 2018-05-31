@@ -7,8 +7,8 @@ var Intel8253       = require('../lib/intel-8253');
 var FlipFlopCounter = require('../lib/flip-flop-counter');
 var IC556           = require('../lib/ic556');
 var MZ700KeyMatrix  = require('./mz700-key-matrix');
-var MZ700_Memory    = require("./memory.js");
-var Z80             = require('../Z80/emulator');
+var MZ700_Memory    = require("./mz700-memory.js");
+var Z80             = require('../Z80/Z80.js');
 var Z80LineAssembler = require("../Z80/z80-line-assembler");
 var MZ700 = function(opt) {
     "use strict";
@@ -506,7 +506,7 @@ MZ700.parseMZT = function(buf) {
 MZ700.prototype.start = function() {
     if("tid" in this && this.tid != null) {
         console.warn(
-                "[emulator] MZ700.start(): already started, caller is ",
+                "MZ700.start(): already started, caller is ",
                 MZ700.prototype.start.caller);
         return false;
     }

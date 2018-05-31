@@ -4,12 +4,12 @@ require("../lib/context.js");
 require("../lib/ex_number.js");
 const TransWorker = require('transworker');
 const Z80_assemble = require("../Z80/assembler.js");
-const Z80 = require("../Z80/emulator.js");
+const Z80 = require("../Z80/Z80.js");
 const MZ_TapeHeader = require('../MZ-700/mz-tape-header');
-const MZ700 = require("../MZ-700/emulator.js");
-const MZ700_Sound = require("../MZ-700/sound.js");
-const MZ700_MonitorRom = require("../MZ-700/monitor-rom.js");
-const MMIO = require("../MZ-700/mmio");
+const MZ700 = require("../MZ-700/MZ-700.js");
+const MZBeep = require("../MZ-700/mz-beep.js");
+const MZ700_MonitorRom = require("../MZ-700/mz700-new-monitor.js");
+const MMIO = require("../MZ-700/mz-mmio.js");
 const mz700cg = require("../lib/mz700cg.js");
 const parseAddress = require("../lib/parse-addr.js");
 require("../lib/jquery.asmview.js");
@@ -51,7 +51,7 @@ MZ700Js.prototype.create = async function(opt) {
     }, this);
 
     // Monoral buzzer sound
-    this.sound = new MZ700_Sound();
+    this.sound = new MZBeep();
 
     // MZ-700 Screen
     if(this.opt.screenElement) {
@@ -287,7 +287,7 @@ MZ700Js.prototype.create = async function(opt) {
     // Create MZ-700 Worker
     //
 
-    this.MMIO = MMIO.create();
+    this._mmio = MMIO.create();
     this.mz700comworker = TransWorker.create(
         this.opt.urlPrefix + "MZ-700/bundle-worker.js", MZ700, this, {
             'onExecutionParameterUpdate': param => {
@@ -320,10 +320,10 @@ MZ700Js.prototype.create = async function(opt) {
                     });
                 },
             'onMmioRead': param => {
-                this.MMIO.read(param.address, param.value);
+                this._mmio.read(param.address, param.value);
             },
             'onMmioWrite': param => {
-                this.MMIO.write(param.address, param.value);
+                this._mmio.write(param.address, param.value);
             },
             'onPortRead': ()=>{},
             'onPortWrite': ()=>{},
@@ -416,12 +416,18 @@ MZ700Js.prototype.create = async function(opt) {
             });
         $(".source-list").asmview("addAsmList",
             "monitor-rom", "", this._asmlistMonitorRom);
-        let asmlist = Z80.dasm(MZ700_MonitorRom.NEWMON7,
+        let asmlist = Z80.dasm(MZ700_MonitorRom.Binary,
             0x0000, 0x1000, 0x0000);
         let dasmlines = Z80.dasmlines(asmlist);
         let outbuf = dasmlines.join("\n") + "\n";
-        $(".source-list").asmview("name", "monitor-rom", "NEWMON7");
-        this._asmlistMonitorRom.asmlist("text", outbuf);
+        $(".source-list").asmview("name", "monitor-rom", "MZ-700 NEW MONITOR");
+        this._asmlistMonitorRom.asmlist("text", [
+            ";;;",
+            ";;; This is a disassembled list of the MZ-NEW MONITOR",
+            ";;; provided from the Marukun's website 'MZ-Memories'",
+            ";;; ( http://retropc.net/mz-memories/mz700/ ).",
+            ";;; ",
+        ].join("\n") + "\n" + outbuf);
         await this.assemble( outbuf, this._asmlistMonitorRom );
     }
 
@@ -616,7 +622,7 @@ MZ700Js.prototype.btnStep_notHover = function() {
 };
 
 MZ700Js.prototype.mmioMapPeripheral = function(peripheral, mapToRead, mapToWrite) {
-    this.MMIO.entry(peripheral, mapToRead, mapToWrite);
+    this._mmio.entry(peripheral, mapToRead, mapToWrite);
     this.mz700comworker.mmioMapToRead(mapToRead, function(){});
     this.mz700comworker.mmioMapToWrite(mapToWrite, function(){});
 };

@@ -1,27 +1,27 @@
 var MemoryBlock = require("../Z80/memory-block.js");
-function MZ700_MonitorRom() {
+function MZ700_NewMonitor() {
     this.create();
 }
-MZ700_MonitorRom.prototype = new MemoryBlock();
-MZ700_MonitorRom.prototype.create = function() {
+MZ700_NewMonitor.prototype = new MemoryBlock();
+MZ700_NewMonitor.prototype.create = function() {
     MemoryBlock.prototype.create.call(this, { startAddr: 0x0000, size: 0x1000});
 
     for(var i = 0; i < this.size; i++) {
         var address = this.startAddr + i;
         MemoryBlock.prototype.pokeByte.call(this,
-            address, MZ700_MonitorRom.NEWMON7[address]);
+            address, MZ700_NewMonitor.Binary[address]);
     }
 };
 
-MZ700_MonitorRom.prototype.pokeByte = function(address/*, value*/) {
+MZ700_NewMonitor.prototype.pokeByte = function(address/*, value*/) {
     MemoryBlock.prototype.pokeByte.call(this,
-        address, MZ700_MonitorRom.NEWMON7[address]);
+        address, MZ700_NewMonitor.Binary[address]);
 };
 
-module.exports = MZ700_MonitorRom;
+module.exports = MZ700_NewMonitor;
 
 /* eslint no-unused-vars: "off" */
-MZ700_MonitorRom.NEWMON7 = [
+MZ700_NewMonitor.Binary = [
     0xc3,0x4a,0x00,0xc3,0xe6,0x07,0xc3,0x0e,0x09,0xc3,0x18,0x09,0xc3,0x20,0x09,0xc3,
     0x7f,0x00,0xc3,0x35,0x09,0xc3,0x81,0x09,0xc3,0x99,0x09,0xc3,0xbd,0x08,0xc3,0x32,
     0x0a,0xc3,0x36,0x04,0xc3,0x75,0x04,0xc3,0xd8,0x04,0xc3,0xf8,0x04,0xc3,0x88,0x05,

@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 require("../lib/context.js");
 require('../lib/ex_number.js');
-var Z80 = require("../Z80/emulator.js");
+var Z80 = require("../Z80/Z80.js");
 var Z80BinUtil = require("../Z80/bin-util.js");
 const parseAddress = require("../lib/parse-addr.js");
-var MZ700 = require('../MZ-700/emulator.js');
+var MZ700 = require('../MZ-700/MZ-700.js');
 var fnut = require("../lib/fnuts.js");
 var fs = require('fs');
 var getPackageJson = require("../lib/get-package-json");

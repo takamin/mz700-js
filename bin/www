@@ -90,5 +90,5 @@ function onListening() {
 
   /* Open the page */
   const opn = require('opn');
-  opn('http://localhost:3000/MZ-700/client.html');
+  opn('http://localhost:3000/emu.html');
 }
