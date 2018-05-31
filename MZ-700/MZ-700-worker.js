@@ -9,7 +9,7 @@
         throw new Error("This script must run on WebWorker context.");
     }
     var TransWorker = require('transworker');
-    var MZ700 = require('./emulator');
+    var MZ700 = require('./MZ-700.js');
 
     var transworker = new TransWorker();
     transworker.create(new MZ700({

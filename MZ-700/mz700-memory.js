@@ -1,4 +1,4 @@
-var MZ700_MonitorRom = require("./monitor-rom.js");
+var MZ700_MonitorRom = require("./mz700-new-monitor.js");
 var MemoryBlock = require("../Z80/memory-block.js");
 var MemoryBank = require('../Z80/memory-bank.js');
 

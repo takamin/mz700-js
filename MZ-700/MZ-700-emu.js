@@ -18,13 +18,13 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
     require("jquery-ui");
     require("fullscrn");
     require("../lib/jquery.ddpanel.js");
-    var MZ700JsBase = require("./index.js");
+    var MZ700EmuBase = require("./MZ-700-emu-base.js");
     var MZ700Js = function() {
-        MZ700JsBase.call(this);
+        MZ700EmuBase.call(this);
     };
-    MZ700Js.prototype = new MZ700JsBase();
+    MZ700Js.prototype = new MZ700EmuBase();
     MZ700Js.prototype.create = async function(opt) {
-        await MZ700JsBase.prototype.create.call(this, opt);
+        await MZ700EmuBase.prototype.create.call(this, opt);
         this.btnToggleScreenKeyboard = $("<button/>")
             .attr("type", "button")
             .attr("class", "toggle imaged")

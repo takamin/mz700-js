@@ -38,7 +38,7 @@
     var readline = require("linebyline")(process.stdin);
     require("../lib/context.js");
     require("../lib/ex_number.js");
-    var MZ700 = require("../MZ-700/emulator.js");
+    var MZ700 = require("../MZ-700/MZ-700.js");
     var mztReadFile = require("../lib/mzt-read-file");
 
     var CliCommand = require("../lib/cli-command.js");
@@ -76,11 +76,11 @@
         },
         'onMmioRead': function(address, value) {
             //console.log("MMIO read addr", address.HEX(4) + "H", value.HEX(2) + "H");
-            MMIO.read(address, value);
+            mmio.read(address, value);
         },
         'onMmioWrite': function(address, value) {
             //console.log("MMIO write addr", address.HEX(4) + "H", value.HEX(2) + "H");
-            MMIO.write(address, value);
+            mmio.write(address, value);
         },
         "onPortRead": function(/*port, value*/){
             //console.log("IN ", port.HEX(2) + "H", value.HEX(2) + "H");
@@ -111,9 +111,9 @@
         }
     };
 
-    var MMIO = require("../MZ-700/mmio").create();
+    var mmio = require("../MZ-700/mz-mmio.js").create();
     var mmioMapPeripheral = function(peripheral, mapToRead, mapToWrite) {
-        MMIO.entry(peripheral, mapToRead, mapToWrite);
+        mmio.entry(peripheral, mapToRead, mapToWrite);
         mz700.mmioMapToRead(mapToRead);
         mz700.mmioMapToWrite(mapToWrite);
     };
