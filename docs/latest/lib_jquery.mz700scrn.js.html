@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>lib/jquery.mz700scrn.js - Documentation</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav>
+    <li class="nav-link nav-home-link"><a href="index.html">Home</a></li><li class="nav-heading">Classes</li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="asmeditor.html">asmeditor</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmeditor.html#create">create</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmeditor.html#refresh">refresh</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmeditor.html#text">text</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="asmlist.html">asmlist</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmlist.html#clearCurrentAddr">clearCurrentAddr</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmlist.html#create">create</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmlist.html#indexOfAddr">indexOfAddr</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmlist.html#lastLineIndexOfAddr">lastLineIndexOfAddr</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmlist.html#setCurrentAddr">setCurrentAddr</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmlist.html#text">text</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmlist.html#writeList">writeList</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="AsmRow.html">AsmRow</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="AsmRow.html#.selectorByAddress">selectorByAddress</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="dumplist.html">dumplist</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="dumplist.html#init">init</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="dumplist.html#redraw">redraw</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="dumplist.html#topAddr">topAddr</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="mz700cg.html">mz700cg</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="mz700cg.html#.tableIndex">tableIndex</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="mz700cg.html#createFontTable">createFontTable</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="mz700cg.html#get">get</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="mz700cg.html#initFont">initFont</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="mz700cg.html#setPattern">setPattern</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="mz700cg.FontImage.html">FontImage</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="MZ_MMIO.html">MZ_MMIO</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="MZ_MMIO.html#entry">entry</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="MZ_MmioPeripheral.html">MZ_MmioPeripheral</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="MZ_MmioPeripheral.html#readMMIO">readMMIO</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="MZ_MmioPeripheral.html#writeMMIO">writeMMIO</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="MZBeep.html">MZBeep</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="MZBeep.html#resume">resume</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="MZBeep.html#resumed">resumed</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="MZBeep.html#setGain">setGain</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="MZBeep.html#startSound">startSound</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="MZBeep.html#stopSound">stopSound</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="tabview.html">tabview</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="tabview.html#.tabId">tabId</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="tabview.html#add">add</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="tabview.html#caption">caption</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="tabview.html#create">create</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="tabview.html#currentPage">currentPage</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="tabview.html#data">data</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="tabview.html#index">index</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="tabview.html#page">page</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="tabview.html#show">show</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="vscrlist.html">vscrlist</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#_listTopIndex">_listTopIndex</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#countKeyRepeat">countKeyRepeat</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#create">create</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#createList">createList</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#empty">empty</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#flashBufferedKeys">flashBufferedKeys</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#isEmpty">isEmpty</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#items">items</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#listTopIndex">listTopIndex</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#reportKbEvent">reportKbEvent</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#scroll">scroll</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#scrollByKeyCode">scrollByKeyCode</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#setupKeyEventListener">setupKeyEventListener</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#syncScrollTop">syncScrollTop</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#visibleRows">visibleRows</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="Z80.html">Z80</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80.html#disassemble">disassemble</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80.html#.dasm">dasm</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80.html#.processAddressReference">processAddressReference</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="Z80_assemble.html">Z80_assemble</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80_assemble.html#.assemble">assemble</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80_assemble.html#.createMachineCode">createMachineCode</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80_assemble.html#.hasExplicitAddress">hasExplicitAddress</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80_assemble.html#.hashMapArray">hashMapArray</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80_assemble.html#.measureCodeSize">measureCodeSize</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80_assemble.html#.resolveAddress">resolveAddress</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80_assemble.html#closeAssembling">closeAssembling</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80_assemble.html#getMap">getMap</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80_assemble.html#isAddressExplicit">isAddressExplicit</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80_assemble.html#parseAddress">parseAddress</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="Z80AddressSpecifier.html">Z80AddressSpecifier</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80AddressSpecifier.html#create">create</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="Z80LineAssembler.html">Z80LineAssembler</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80LineAssembler.html#.convertToAsciiCode">convertToAsciiCode</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80LineAssembler.html#.create">create</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80LineAssembler.html#.getBytecodesFromOperandOfDEFB">getBytecodesFromOperandOfDEFB</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80LineAssembler.html#.joinOperand">joinOperand</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80LineAssembler.html#getLastAddress">getLastAddress</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80LineAssembler.html#getNextAddress">getNextAddress</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80LineAssembler.html#resolveAddress">resolveAddress</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80LineAssembler.html#setAddress">setAddress</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80LineAssembler.html#setComment">setComment</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80LineAssembler.html#setLabel">setLabel</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80LineAssembler.html#setRefAddrTo">setRefAddrTo</a></span></li><li class="nav-heading"><a href="global.html">Globals</a></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="global.html#doLater">doLater</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="global.html#easing">easing</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="global.html#getEventCode">getEventCode</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="global.html#match_token">match_token</a></span></li>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">lib/jquery.mz700scrn.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/*
+ * jquery.mz700scrn.js - MZ-700 Screen
+ *
+ * The MZ-700 is an 8-bit personal computer released by Sharp in Nov 15 1982,
+ * belong in the company's MZ series.
+ *
+ * Copyright (c) 2016 Koji Takami
+ * Released under the MIT license
+ */
+
+/*
+The MIT License (MIT)
+
+Copyright (c) 2016 Koji Takami
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+*/
+(function() {
+    "use strict";
+
+    var $ = require("jquery");
+    var jquery_plugin_class = require("../lib/jquery_plugin_class");
+    var mz700cg = require("../lib/mz700cg.js");
+
+    jquery_plugin_class("mz700scrn");
+    var mz700scrn = function(container) {
+
+        //A Container container
+        this._container = container;
+
+        //A canvas context to draw
+        this._ctx = null;
+    };
+    window.mz700scrn = mz700scrn;
+
+    mz700scrn.colors = {
+        "black":0,
+        "blue":1,
+        "red":2,
+        "magenta":3,
+        "green":4,
+        "cyan":5,
+        "yellow":6,
+        "white":7,
+    };
+
+    //
+    // default screen size by character
+    //
+    mz700scrn.size = {"cols":40, "rows":25};
+
+    //
+    // Dot size of a character
+    //
+    mz700scrn.charSize = {"dotWidth":8, "dotHeight":8};
+
+    //
+    // Create screen
+    //
+    mz700scrn.prototype.create = function(opt) {
+
+        this.opt = {
+            cols: mz700scrn.size.cols,
+            rows: mz700scrn.size.rows,
+            CG: null,
+            color : mz700scrn.colors.white,
+            backgroundColor : mz700scrn.colors.blue,
+            width: '100%',
+            alt: null, title: "MZ-700 FULL JAVASCRIPT EMULATOR"
+        };
+        opt = opt || {};
+        Object.keys(this.opt).forEach(function(key) {
+            if(key in opt) {
+                this.opt[key] = opt[key];
+            }
+        }, this);
+
+        if(this.opt.CG == null) {
+            this.opt.CG = new mz700cg();
+        }
+        this._font = this.opt.CG;
+
+        // Create text/attr vram
+        this.vramText = [];
+        this.vramAttr = [];
+        for(var i = 0; i &lt; this.opt.cols * this.opt.rows; i++) {
+            this.vramText.push(0x00);
+            this.vramAttr.push(0x71);
+        }
+
+        //Create canvas object
+        var canvas = document.createElement("CANVAS");
+        canvas.setAttribute("width", mz700scrn.charSize.dotWidth * this.opt.cols + "px");
+        canvas.setAttribute("height", mz700scrn.charSize.dotHeight * this.opt.rows + "px");
+        canvas.setAttribute("style", "width:100%;height:auto");
+        $(canvas).css("width", this.opt.width);
+        if(this.opt.alt != null) {
+            canvas.setAttribute("alt", this.opt.alt);
+        }
+        if(this.opt.title != null) {
+            canvas.setAttribute("title", this.opt.title);
+        }
+
+        //Append to the container
+        this._container.appendChild(canvas);
+
+        //Save canvas context
+        this._ctx = canvas.getContext('2d');
+
+        //
+        // A translation table to convert an address index on the VRAM
+        // to the X-Y pixel position where a character shown.
+        //
+        this.idxloc = (function(idxloc, cols, rows) {
+            for(var y = 0; y &lt; rows; y++) {
+                for(var x = 0; x &lt; cols; x++) {
+                    idxloc.push({
+                        x: mz700scrn.charSize.dotWidth * x,
+                        y: mz700scrn.charSize.dotHeight * y
+                    });
+                }
+            }
+            return idxloc;
+        }([], this.opt.cols, this.opt.rows));
+
+    };
+
+    /**
+     * Redraw specified characters on the screen.
+     * @param {number} atb attribute bit to select CG page.
+     * @param {number} dispCode The display code to redraw.
+     * @returns {undefined}
+     */
+    mz700scrn.prototype.redrawChar = function(atb, dispCode) {
+        var abit = atb &lt;&lt; 7;
+        var n = this.opt.cols * this.opt.rows;
+        for(var i = 0; i &lt; n; i++) {
+            var attr = this.vramAttr[i];
+            if(this.vramText[i] == dispCode &amp;&amp; (attr &amp; 0x80) == abit) {
+                this.writeVram(i, attr, dispCode);
+            }
+        }
+    };
+
+    /**
+     * Write a character to relative address with attribute.
+     * @param {number} addr     A relative address index from the top left of screen to put.
+     * @param {number} attr     An attribute value for MZ-700.
+     * @param {number} dispcode A display code of character to put.
+     * @returns {undefined}
+     */
+    mz700scrn.prototype.writeVram = function(addr, attr, dispcode) {
+        this._writeVram(addr, attr, dispcode);
+        this.vramText[addr] = dispcode;
+        this.vramAttr[addr] = attr;
+    };
+    mz700scrn.prototype._writeVram = function(addr, attr, dispcode) {
+        var loc = this.idxloc[addr];
+        this._ctx.putImageData(
+            this._font.get(attr, dispcode).getImageData(),
+            loc.x, loc.y);
+    };
+
+    // Redraw VRAM
+    mz700scrn.prototype.redraw = function() {
+        var n = this.opt.cols * this.opt.rows;
+        for(var i = 0; i &lt; n; i++) {
+            this._writeVram(i, this.vramAttr[i], this.vramText[i]);
+        }
+    };
+
+    // Change Character Generator
+    mz700scrn.prototype.changeCG = function(cgData) {
+        this._font = cgData;
+    };
+
+    // Restore Character Generator
+    mz700scrn.prototype.restoreCG = function() {
+        this._font = this.opt.CG;
+    };
+
+    /**
+     * Clear the screen
+     * @returns {undefined}
+     */
+    mz700scrn.prototype.clear = function () {
+        var limit = this.opt.rows * this.opt.cols;
+        var chars = str2chars(' ');
+        for(var relAddr = 0; relAddr &lt; limit; relAddr++) {
+            this.putChars(chars, relAddr, 0);
+        }
+    };
+
+    /**
+     * Put string
+     * @param {string} s strings to put
+     * @param {number} x horizontal starting position
+     * @param {number} y vertical starting position
+     * @returns {undefined}
+     */
+    mz700scrn.prototype.puts = function (s, x, y) {
+        var chars = str2chars(s);
+        return this.putChars(chars, x, y);
+    };
+
+    /**
+     * Convert the inner text of the HTML element to MZ-700 VRAM
+     * @param {HTMLElement} element the element to convert
+     * @return {undefined}
+     */
+    mz700scrn.convert = function(element) {
+        var charSize = parseInt($(element).attr("charSize")) || 8;
+        var padding = parseInt($(element).attr("padding")) || 0;
+        var fg = (7 &amp; parseInt($(element).attr("color") || "7"));
+        var bg = (7 &amp; parseInt($(element).attr("bgColor") || "1"));
+        var text = element.innerText;
+        var chars = str2chars(text);
+        $(element).empty().mz700scrn("create", {
+            cols: chars.length + padding * 2,
+            rows: 1 + padding * 2,
+            width: charSize * (chars.length + padding * 2) + "px",
+            color: fg, backgroundColor: bg,
+            alt: text, title: text
+        }).mz700scrn("clear").mz700scrn("putChars", chars, padding, padding);
+        $(element).find("canvas").css("display", "inherit");
+    };
+
+    var TableDispCode2Char = [
+        [
+            [" ","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O"],
+            ["P","Q","R","S","T","U","V","W","X","Y","Z","┼","└","┘","├","┴"],
+            ["0","1","2","3","4","5","6","7","8","9","-","=",";","/",".",","],
+            ["","","","","","","","","","","","","","","",""],
+
+            ["→","SPADE","","","DIA","←","CLUB","●","○","?","●反転","","","","","",":"],
+            ["↑","&lt;","[","HEART","]","@","",">","","BACKSLASH","HATCH","","","","",""],
+            ["π","!", '"', "#", "$", "%", "AMP", "'", "(", ")","+","*","","","",""],
+            ["","","","","","","","","","","","","","","",""],
+            
+            ["↓", "チ","コ","ソ","シ","イ","ハ","キ","ク","ニ","マ","ノ","リ","モ","ミ","ラ"],
+            ["セ","タ","ス","ト","カ","ナ","ヒ","テ","サ","ン","ツ","ロ","ケ","「","ァ","ャ"],
+            ["ワ","ヌ","フ","ア","ウ","エ","オ","ヤ","ユ","ヨ","ホ","ヘ","レ","メ","ル","ネ"],
+            ["ム","」","ィ","ュ","ヲ","、","ゥ","ョ","゜","・","ェ","ッ","゛","。","ォ","ー"],
+            
+            ["PUSHDOWN","~DOWN","~UP","~RIGHT","~LEFT","~HOME","~CLEAR","UFO","CARRIGHT","CARUP","HUMAN","LHUMAN","RHUMAN","DHUMAN","FILLEDFACE","FACE"],
+            ["日","月","火","水","木","金","土","生","年","時","分","秒","円","￥","￡","蛇"],
+            [" ","","","","","","","","","","","","","","",""],
+            [" ","","","","","","","","","","","","","","",""]
+        ],
+        [
+            [" ","a","b","c","d","e","f","g","h","i","j","k","l","m","n","o"],
+            ["p","q","r","s","t","u","v","w","x","y","z","", "", "", "", "", ],
+            ["","","","","","","","","","","","","","","",""],
+            ["","","","","","","","","","","","","","","",""],
+
+            ["","","","","","","","","","","","","","","",""],
+            ["","","","","","","","","","","","","","","",""],
+            ["","","","","","","","","","","","","","","",""],
+            ["","","","","","","","","","","","","","","",""],
+            
+            ["",  "ち","こ","そ","し","い","は","き","く","に","ま","の","り","も","み","ら"],
+            ["せ","た","す","と","か","な","ひ","て","さ","ん","つ","ろ","け","",  "ぁ","ゃ"],
+            ["わ","ぬ","ふ","あ","う","え","お","や","ゆ","よ","ほ","へ","れ","め","る","ね"],
+            ["む","",  "ぃ","ゅ","を","",  "ぅ","ょ","",  "",  "ぇ","っ","",  "",  "ぉ",""],
+            
+            ["","","","","","","","","","","","","","","",""],
+            ["","","","","","","","","","","","","","","",""],
+            ["","","","","","","","","","","","","","","",""],
+            ["","","","","","","","","","","","","","","",""],
+        ]
+    ];
+
+    /*
+     * Create a dictionary to retrieve the display code of MZ-700
+     * by one normal character or string of entity reference.
+     */
+    var MapChar2DispCode = (function(map) {
+        TableDispCode2Char.forEach(function(table, attr) {
+            table.forEach(function(line, upper) {
+                line.forEach(function(c, lower) {
+                    if(!(c in map)) {
+                        map[c] = {
+                            "attr": attr,
+                            "dispcode" : upper &lt;&lt; 4 | lower
+                        };
+                    }
+                });
+            });
+        });
+        return map;
+    }({}));
+
+    function char2dispcode(c) {
+        var charData = MapChar2DispCode[c];
+        if(!charData) {
+            charData = {attr:0, dispcode : 0xef };
+        }
+        return charData;
+    }
+
+    function str2chars(s) {
+        var chars = s.split('');
+        var entityRef = false;
+        var entities = [];
+        var entity = "";
+        chars.forEach(function(c) {
+            if(!entityRef) {
+                if(c == '&amp;') {
+                    entity = '';
+                    entityRef = true;
+                } else {
+                    entities.push(c);
+                }
+            } else {
+                if(c == ';') {
+                    entities.push(entity.toUpperCase());
+                    entityRef = false;
+                    entity = '';
+                } else {
+                    entity += c;
+                }
+            }
+        });
+        return entities;
+    }
+
+    mz700scrn.prototype.putChars = function(chars, x, y) {
+        var limit = this.opt.rows * this.opt.cols;
+        var n = 0;
+        var relAddr = y * this.opt.cols + x;
+        var colorSpec = this.opt.color &lt;&lt; 4 | this.opt.backgroundColor;
+        chars.forEach(function(c) {
+            if(relAddr &lt; limit) {
+                var data = char2dispcode(c);
+                this.writeVram(
+                        relAddr,
+                        (data.attr &lt;&lt; 7) | colorSpec,
+                        data.dispcode);
+                relAddr++;
+                n++;
+            }
+        }, this);
+        return n;
+    };
+
+}());
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<br class="clear">
+
+<footer>
+    Generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Sat Jun 23 2018 20:19:44 GMT+0900 (東京 (標準時)) using the Minami theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+</body>
+</html>

@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>MZ-700/MZ-700-emu-base.js - Documentation</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav>
+    <li class="nav-link nav-home-link"><a href="index.html">Home</a></li><li class="nav-heading">Classes</li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="asmeditor.html">asmeditor</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmeditor.html#create">create</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmeditor.html#refresh">refresh</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmeditor.html#text">text</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="asmlist.html">asmlist</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmlist.html#clearCurrentAddr">clearCurrentAddr</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmlist.html#create">create</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmlist.html#indexOfAddr">indexOfAddr</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmlist.html#lastLineIndexOfAddr">lastLineIndexOfAddr</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmlist.html#setCurrentAddr">setCurrentAddr</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmlist.html#text">text</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmlist.html#writeList">writeList</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="AsmRow.html">AsmRow</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="AsmRow.html#.selectorByAddress">selectorByAddress</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="dumplist.html">dumplist</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="dumplist.html#init">init</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="dumplist.html#redraw">redraw</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="dumplist.html#topAddr">topAddr</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="mz700cg.html">mz700cg</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="mz700cg.html#.tableIndex">tableIndex</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="mz700cg.html#createFontTable">createFontTable</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="mz700cg.html#get">get</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="mz700cg.html#initFont">initFont</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="mz700cg.html#setPattern">setPattern</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="mz700cg.FontImage.html">FontImage</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="MZ_MMIO.html">MZ_MMIO</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="MZ_MMIO.html#entry">entry</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="MZ_MmioPeripheral.html">MZ_MmioPeripheral</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="MZ_MmioPeripheral.html#readMMIO">readMMIO</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="MZ_MmioPeripheral.html#writeMMIO">writeMMIO</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="MZBeep.html">MZBeep</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="MZBeep.html#resume">resume</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="MZBeep.html#resumed">resumed</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="MZBeep.html#setGain">setGain</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="MZBeep.html#startSound">startSound</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="MZBeep.html#stopSound">stopSound</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="tabview.html">tabview</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="tabview.html#.tabId">tabId</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="tabview.html#add">add</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="tabview.html#caption">caption</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="tabview.html#create">create</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="tabview.html#currentPage">currentPage</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="tabview.html#data">data</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="tabview.html#index">index</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="tabview.html#page">page</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="tabview.html#show">show</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="vscrlist.html">vscrlist</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#_listTopIndex">_listTopIndex</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#countKeyRepeat">countKeyRepeat</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#create">create</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#createList">createList</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#empty">empty</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#flashBufferedKeys">flashBufferedKeys</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#isEmpty">isEmpty</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#items">items</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#listTopIndex">listTopIndex</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#reportKbEvent">reportKbEvent</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#scroll">scroll</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#scrollByKeyCode">scrollByKeyCode</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#setupKeyEventListener">setupKeyEventListener</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#syncScrollTop">syncScrollTop</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#visibleRows">visibleRows</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="Z80.html">Z80</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80.html#disassemble">disassemble</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80.html#.dasm">dasm</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80.html#.processAddressReference">processAddressReference</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="Z80_assemble.html">Z80_assemble</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80_assemble.html#.assemble">assemble</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80_assemble.html#.createMachineCode">createMachineCode</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80_assemble.html#.hasExplicitAddress">hasExplicitAddress</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80_assemble.html#.hashMapArray">hashMapArray</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80_assemble.html#.measureCodeSize">measureCodeSize</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80_assemble.html#.resolveAddress">resolveAddress</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80_assemble.html#closeAssembling">closeAssembling</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80_assemble.html#getMap">getMap</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80_assemble.html#isAddressExplicit">isAddressExplicit</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80_assemble.html#parseAddress">parseAddress</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="Z80AddressSpecifier.html">Z80AddressSpecifier</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80AddressSpecifier.html#create">create</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="Z80LineAssembler.html">Z80LineAssembler</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80LineAssembler.html#.convertToAsciiCode">convertToAsciiCode</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80LineAssembler.html#.create">create</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80LineAssembler.html#.getBytecodesFromOperandOfDEFB">getBytecodesFromOperandOfDEFB</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80LineAssembler.html#.joinOperand">joinOperand</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80LineAssembler.html#getLastAddress">getLastAddress</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80LineAssembler.html#getNextAddress">getNextAddress</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80LineAssembler.html#resolveAddress">resolveAddress</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80LineAssembler.html#setAddress">setAddress</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80LineAssembler.html#setComment">setComment</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80LineAssembler.html#setLabel">setLabel</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80LineAssembler.html#setRefAddrTo">setRefAddrTo</a></span></li><li class="nav-heading"><a href="global.html">Globals</a></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="global.html#doLater">doLater</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="global.html#easing">easing</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="global.html#getEventCode">getEventCode</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="global.html#match_token">match_token</a></span></li>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">MZ-700/MZ-700-emu-base.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/* global Uint8Array */
+const $ = require("jquery");
+require("../lib/context.js");
+require("../lib/ex_number.js");
+const TransWorker = require('transworker');
+const Z80_assemble = require("../Z80/assembler.js");
+const Z80 = require("../Z80/Z80.js");
+const MZ_TapeHeader = require('../MZ-700/mz-tape-header');
+const MZ700 = require("../MZ-700/MZ-700.js");
+const MZBeep = require("../MZ-700/mz-beep.js");
+const MZ700_MonitorRom = require("../MZ-700/mz700-new-monitor.js");
+const MMIO = require("../MZ-700/mz-mmio.js");
+const mz700cg = require("../lib/mz700cg.js");
+const parseAddress = require("../lib/parse-addr.js");
+require("../lib/jquery.asmview.js");
+require("../lib/jquery.asmlist.js");
+require("../lib/jquery.tabview.js");
+require("../lib/jquery.soundctrl.js");
+require("../lib/jquery.Z80-mem.js");
+require("../lib/jquery.Z80-reg.js");
+require("../lib/jquery.mz700scrn");
+require("../lib/jquery.MZ-700-kb.js");
+
+const cookies = require("../lib/cookies");
+
+const MZ700Js = function() {
+    this.opt = {
+        urlPrefix: "",
+        screenElement: null,
+        mztDroppableElement: null,
+        controlPanelElement: null,
+        dataRecorderElement: null,
+        keyboardElement: null,
+    };
+    this.isRunning = false;
+    this.scrn = null;
+    this.sound = null;
+    this.keyAcceptanceState = false;
+    this.keystates = {};
+};
+MZ700Js.create = function(opt) {
+    let obj = new MZ700Js();
+    obj.create(opt);
+    return obj;
+};
+MZ700Js.prototype.create = async function(opt) {
+    Object.keys(this.opt).forEach(function(key) {
+        if(key in opt) {
+            this.opt[key] = opt[key];
+        }
+    }, this);
+
+    // Monoral buzzer sound
+    this.sound = new MZBeep();
+
+    // MZ-700 Screen
+    if(this.opt.screenElement) {
+        $(this.opt.screenElement).mz700scrn("create", {
+            CG: new mz700cg(),
+        });
+        this.scrn = this.opt.screenElement["mz700scrn"];
+
+        // Resume the AudioContext if it is suspended.
+        let canvas = $(this.opt.screenElement).find("canvas");
+        canvas.click(()=>{ this.allowToPlaySound(); });
+        let title = canvas.attr("title");
+        let checkSound = () => {
+            if(!this.sound.resumed()) {
+                canvas.attr("title", "To enable the sound, click here.");
+            } else {
+                canvas.attr("title", title);
+            }
+        };
+        this.sound.audio.addEventListener("statechange", event=>{
+            event.stopPropagation();
+            checkSound();
+        });
+        checkSound();
+    }
+
+    // Accept MZT file to drop to the MZ-700 screen
+    if(this.opt.mztDroppableElement &amp;&amp;
+        window.File &amp;&amp; window.FileReader &amp;&amp;
+        window.FileList &amp;&amp; window.Blob)
+    {
+        let el = this.opt.mztDroppableElement;
+        el.addEventListener('dragover', function(event) {
+            event.stopPropagation();
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'copy'; // Explicitly show this is a copy.
+        }, false);
+        el.addEventListener('drop', event => {
+            event.stopPropagation();
+            event.preventDefault();
+            let files = event.dataTransfer.files; // FileList object.
+            if(files.length > 0) {
+                let f = files[0];
+                let reader = new FileReader();
+                reader.onload = async () => {
+                    let tape_data = new Uint8Array(reader.result);
+                    await this.setMztData(tape_data);
+                };
+                reader.readAsArrayBuffer(f);
+            }
+        }, false);
+    }
+
+    if(this.opt.controlPanelElement) {
+        // MZ-700 Control buttons
+        this.keyInAcceptionIndicator = $("&lt;span/>")
+            .addClass("key-switcher")
+            .html("Key-In");
+
+        //
+        // Emulation control buttons
+        //
+        this.btnReset = this.btnReset_create();
+        this.btnStart = this.btnStart_create();
+        this.btnStep = this.btnStep_create();
+        this.btnReset_notHover(); 
+        this.btnStart_toStop();
+        this.btnStep_disable();
+
+        //
+        // Slider for timerInterval
+        //
+        this.sliderExecParamTimerInterval = $("&lt;input/>")
+            .attr("type", "range").attr("min", 0).attr("max", 1.0).attr("step", 0.01)
+            .val(7).bind("change", () => {
+                let sliderValue = this.sliderExecParamTimerInterval.val();
+                this._timerInterval = MZ700.DEFAULT_TIMER_INTERVAL / Math.pow(10, sliderValue);
+                this.updateExecutionParameter();
+                cookies.setItem("speedSliderValue", this._timerInterval, Infinity);
+            });
+
+
+        // Sound control
+        let mute = false;
+        if(cookies.hasItem("mute")) {
+            mute = (cookies.getItem("mute")=="true");
+        }
+        let volume = 10;
+        if(cookies.hasItem("volume")) {
+            volume = parseInt(cookies.getItem("volume"));
+        }
+        this.soundctrl = $("&lt;span/>").soundctrl("create", {
+            "maxVolume": 10,
+            "initialVolume": volume,
+            "initialMute": mute,
+            "onChangeVolume": volume => {
+                this.allowToPlaySound();
+                if(!this.soundctrl.mute) {
+                    cookies.setItem("volume", volume, Infinity);
+                }
+                this.sound.setGain(volume / 10);
+            },
+            "onChangeMute": mute => {
+                this.allowToPlaySound();
+                cookies.setItem("mute", mute, Infinity);
+            },
+            "urlIconOn": this.opt.urlPrefix + "image/icon-sound-on.svg",
+            "urlIconOff": this.opt.urlPrefix + "image/icon-sound-off.svg",
+            "colOn": 'blue', "colOff":"silver"
+        });
+
+        $(this.opt.controlPanelElement)
+            .append(this.keyInAcceptionIndicator)
+            .append(this.soundctrl)
+            .append(this.btnStart)
+            .append(this.btnReset)
+            .append(this.btnStep)
+            .append($("&lt;span/>")
+                    .addClass("speed-control-slider")
+                    .html("Speed:")
+                    .append(this.sliderExecParamTimerInterval));
+    }
+
+    //
+    // Data Recorder Control
+    //
+    if(this.opt.dataRecorderElement) {
+        let dataRecorder = $(this.opt.dataRecorderElement);
+        this.btnCmtRec = $("&lt;button/>").attr("type", "button")
+            .html("&lt;span style='color:red'>●&lt;/span> RECPLAY").click( () => {
+                this.cmtMessageArea.empty().html("Recording ...");
+                this.mz700comworker.dataRecorder_pushRec( () => { } );
+            });
+        this.btnCmtPlay = $("&lt;button/>").attr("type", "button")
+            .html("&lt;span class='cmtPlayImage'>▼&lt;/span> PLAY").click( () => {
+                this.mz700comworker.dataRecorder_pushPlay( () => { } );
+            });
+        this.btnCmtStop = $("&lt;button/>").attr("type", "button")
+            .html("&lt;span>■&lt;/span> STOP").click( () => {
+                this.mz700comworker.dataRecorder_pushStop( () => { } );
+            });
+        this.btnCmtEject = $("&lt;button/>").attr("type", "button")
+            .html("&lt;span>▲&lt;/span>EJECT").click( () => {
+                this.mz700comworker.dataRecorder_ejectCmt( bytes => {
+                    this.createCmtDownloadLink(bytes);
+                });
+            });
+        if (window.File &amp;&amp; window.FileReader &amp;&amp; window.FileList &amp;&amp; window.Blob) {
+            let el = dataRecorder.get(0);
+            el.addEventListener('dragover', event => {
+                event.stopPropagation();
+                event.preventDefault();
+                event.dataTransfer.dropEffect = 'copy'; // Explicitly show this is a copy.
+            }, false);
+            el.addEventListener('drop', event => {
+                event.stopPropagation();
+                event.preventDefault();
+                let files = event.dataTransfer.files; // FileList object.
+                if(files.length > 0) {
+                    let f = files[0];
+                    let reader = new FileReader();
+                    reader.onload = async () => {
+                        let tape_data = new Uint8Array(reader.result);
+                        await this.setCassetteTape(tape_data);
+                        this.createCmtDownloadLink(tape_data);
+                    };
+                    reader.readAsArrayBuffer(f);
+                }
+            }, false);
+        }
+        this.cmtMessageArea = $("&lt;span/>").addClass("cmt-message").html("(EMPTY)");
+        dataRecorder
+            .html("CMT: ")
+            .attr("title", "Drop MZT file here to load with 'L' command")
+            .append(this.cmtMessageArea)
+            .append(this.btnCmtRec)
+            .append(this.btnCmtPlay)
+            .append(this.btnCmtStop)
+            .append(this.btnCmtEject);
+    }
+
+    //
+    // Keyboard
+    //
+    if(this.opt.keyboardElement) {
+        let kb = $(this.opt.keyboardElement).mz700keyboard("create", {
+            onStateChange: (strobe, bit, state) => {
+                this.mz700comworker.setKeyState(strobe, bit, state, null);
+            }
+        });
+        let updateKeyStates = (event, state) => {
+            let code = event.keyCode;
+            if(!(code in this.keystates) || this.keystates[code] != state) {
+                this.keystates[code] = state;
+                let matrix = kb.mz700keyboard("getMatPos", code);
+                if(matrix != null) {
+                    kb.mz700keyboard("setState", matrix.strobe, matrix.bit, state);
+                    this.mz700comworker.setKeyState(matrix.strobe, matrix.bit, state, null);
+                }
+            }
+        };
+        window.addEventListener("keydown", event => {
+            if(this.keyAcceptanceState) {
+                event.stopPropagation();
+                updateKeyStates(event, true);
+                return false;
+            }
+        });
+        window.addEventListener("keyup", async event => {
+            switch(event.keyCode) {
+            case 119://F8 - RUN/STOP
+                event.stopPropagation();
+                if(this.isRunning) {
+                    await this.stop();
+                } else {
+                    await this.start();
+                }
+                return;
+            case 120://F9 - STEP OVER
+                event.stopPropagation();
+                this.stepOver();
+                return;
+            }
+            if(this.keyAcceptanceState) {
+                event.stopPropagation();
+                updateKeyStates(event, false);
+                return false;
+            }
+        });
+    }
+
+    //
+    // Create MZ-700 Worker
+    //
+
+    this._mmio = MMIO.create();
+    this.mz700comworker = TransWorker.create(
+        this.opt.urlPrefix + "MZ-700/bundle-worker.js", MZ700, this, {
+            'onExecutionParameterUpdate': param => {
+                this.onExecutionParameterUpdate(param);
+            },
+            "start": () => {
+                this.isRunning = true;
+                this.clearCurrentExecLine();
+                this.updateUI();
+                this.updateCyclicTimer();
+            },
+            "stop": () => {
+                this.isRunning = false;
+                this.scrollToShowPC();
+                this.updateUI();
+                this.updateCyclicTimer();
+                this.updateRegister();
+            },
+            "onNotifyClockFreq": clockCount => {
+                $(".speed-control-slider").attr("title",
+                    "Clock: " + (Math.round(100.0 * clockCount / 1000000) / 100) + " MHz");
+            },
+            'onBreak': () => { this.stop(); },
+            'onUpdateScreen': (this.scrn == null) ? () => {} :
+                updateData => {
+                    Object.keys(updateData).forEach(addr => {
+                        let chr = updateData[addr];
+                        this.scrn.writeVram(
+                                addr, chr.attr, chr.dispcode);
+                    });
+                },
+            'onMmioRead': param => {
+                this._mmio.read(param.address, param.value);
+            },
+            'onMmioWrite': param => {
+                this._mmio.write(param.address, param.value);
+            },
+            'onPortRead': ()=>{},
+            'onPortWrite': ()=>{},
+            'startSound': freq => { this.sound.startSound(freq[0]); },
+            'stopSound': () => { this.sound.stopSound(); },
+            "onStartDataRecorder": () => {
+                this.btnCmtRec.prop("disabled", true);
+                this.btnCmtEject.prop("disabled", true);
+                this.btnCmtStop.prop("disabled", false);
+            },
+            "onStopDataRecorder": async ()=>{
+                let bytes = this.getCassetteTape();
+                this.createCmtDownloadLink(bytes);
+                this.btnCmtRec.prop("disabled", false);
+                this.btnCmtEject.prop("disabled", false);
+                this.btnCmtStop.prop("disabled", true);
+            }
+        }
+    );
+
+    this.PCG700 = require("../lib/PCG-700").create();
+    this.PCG700.writeMMIO(0xE010, 0x00);
+    this.PCG700.writeMMIO(0xE011, 0x00);
+    this.PCG700.writeMMIO(0xE012, 0x18);
+    this.mmioMapPeripheral(this.PCG700, [], [0xE010, 0xE011, 0xE012]);
+    window.addEventListener("enablePCG700", this.scrn == null ? ()=>{} : () => {
+        this.scrn.changeCG(this.PCG700._cg);
+        this.scrn.redraw();
+    });
+    window.addEventListener("disablePCG700", this.scrn == null ? ()=>{} : () => {
+        this.scrn.restoreCG();
+        this.scrn.redraw();
+    });
+    window.addEventListener("updatePCG700", this.scrn == null ? ()=>{} : event => {
+        this.scrn.redrawChar(event.detail.atb, event.detail.dispCode);
+    });
+
+    //
+    // Register viewers
+    //
+    this.regview = $("&lt;div/>").Z80RegView("init");
+    $(".register-monitor")
+        .append($("&lt;div/>").css("display", "inline-block")
+                .append(this.regview));
+    $(".monitor")
+        .bind("open",  () => { this.updateCyclicTimer(); })
+        .bind("close", () => { this.updateCyclicTimer(); });
+
+    //
+    // Dumplist Address specifier
+    //
+    let $buttons = $("&lt;div/>")
+        .Z80AddressSpecifier("create")
+        .on("queryregister", (event, regName, callback) => {
+            this.mz700comworker.getRegister(reg => {
+                callback(reg[regName]);
+            });
+        })
+        .on("notifyaddress", (event, address) => {
+            $dumplist.dumplist("topAddr", address);
+        });
+    $(".MZ-700 .memory").append($buttons);
+
+    //
+    // Memory hexa dump list
+    //
+    let $dumplist = $("&lt;div/>").dumplist("init")
+        .on("querymemory", (event, addr, callback) => {
+            this.mz700comworker.readMemory(addr, callback);
+        });
+    $(".MZ-700 .memory").append($dumplist);
+
+    //
+    // Assemble list
+    //
+    $(".source-list").asmview("create")
+        .on("setbreak", (e, addr, size, state) => {
+            if(state) {
+                this.mz700comworker.addBreak(addr, size, null);
+            } else {
+                this.mz700comworker.removeBreak(addr, size, null);
+            }
+        });
+
+    // Disassemble the monitor ROM
+    {
+        this._asmlistMonitorRom = $("&lt;div/>").asmlist("create").on("assemble",
+            async (e, asmsrc) => {
+                await this.assemble(asmsrc, this._asmlistMonitorRom);
+            });
+        $(".source-list").asmview("addAsmList",
+            "monitor-rom", "", this._asmlistMonitorRom);
+        let asmlist = Z80.dasm(MZ700_MonitorRom.Binary,
+            0x0000, 0x1000, 0x0000);
+        let dasmlines = Z80.dasmlines(asmlist);
+        let outbuf = dasmlines.join("\n") + "\n";
+        $(".source-list").asmview("name", "monitor-rom", "MZ-700 NEW MONITOR");
+        this._asmlistMonitorRom.asmlist("text", [
+            ";;;",
+            ";;; This is a disassembled list of the MZ-NEW MONITOR",
+            ";;; provided from the Marukun's website 'MZ-Memories'",
+            ";;; ( http://retropc.net/mz-memories/mz700/ ).",
+            ";;; ",
+        ].join("\n") + "\n" + outbuf);
+        await this.assemble( outbuf, this._asmlistMonitorRom );
+    }
+
+    // Show a sample assemble source
+    this._asmlistMzt = $("&lt;div/>").asmlist("create").on("assemble",
+        async (e, asmsrc) => {
+            await this.assemble(asmsrc, this._asmlistMzt);
+        });
+    $(".source-list").asmview("addAsmList",
+        "mzt", "PCG-700 sample", this._asmlistMzt);
+    let sampleSource = $($("textarea.default.source").get(0)).val();
+    this._asmlistMzt.asmlist("text", sampleSource);
+    await this.assemble( sampleSource, this._asmlistMzt );
+
+    //
+    //直接実行ボタン
+    //
+    let runImm = src => {
+        let bin = Z80_assemble.assemble([src]).obj[0];
+        this.mz700comworker.getRegister(async reg => {
+            let savedPC = reg.PC;
+            let execAddr = await this.writeAsmCode( bin );
+            await this.setPC(execAddr);
+            await this.execute(1);
+            await this.setPC(savedPC);
+            this.updateRegister();
+        });
+    };
+    $(".source-list").tabview("add", "exec-inst",
+        $("&lt;div/>").addClass("imm-exec").css("height", "306px")
+        .css("padding","15px 5px")
+        .append($("&lt;label/>")
+            .css("display","inline-block").css("width", "80px")
+            .css("text-align", "right").css("padding-right", "10px")
+            .html("Address"))
+        .append($("&lt;input/>")
+                .attr("type", "text").attr("value", "CF00h")
+                .addClass("address"))
+        .append($("&lt;br/>"))
+        .append($("&lt;label/>")
+            .css("display","inline-block").css("width", "80px")
+            .css("text-align", "right").css("padding-right", "10px")
+            .html("Mnemonic"))
+        .append($("&lt;input/>")
+                .attr("type", "text").attr("value", "NOP")
+                .addClass("mnemonic"))
+        .append($("&lt;button/>").attr("type", "button").html("Execute")
+                .click(function() {
+                    let par = $(this).parent();
+                    let addrToken = par.find("input.address").val();
+                    let addr = parseAddress(addrToken);
+                    if(addr != null) {
+                        let src = 'ORG ' + addr.HEX(4) + "H\r\n";
+                        src += par.find("input.mnemonic").val() + "\r\n";
+                        runImm(src);
+                    }
+                }))
+        .append($("&lt;br/>"))
+    ).tabview("caption", "exec-inst", "Immediate Exec.");
+
+    this._timerInterval = MZ700.DEFAULT_TIMER_INTERVAL;
+    if(cookies.hasItem("speedSliderValue")) {
+        let param = parseFloat(cookies.getItem("speedSliderValue"));
+        this._timerInterval = param;
+        this.updateExecutionParameter();
+        this.onExecutionParameterUpdate(param);
+    } else {
+        this.mz700comworker.getExecutionParameter(param => {
+            this._timerInterval = param;
+            this.updateExecutionParameter();
+            this.onExecutionParameterUpdate(param);
+            cookies.setItem("speedSliderValue", this._timerInterval, Infinity);
+        });
+    }
+
+};
+
+//
+// Reset Button
+//
+MZ700Js.prototype.btnReset_create = function() {
+    return $("&lt;button/>").attr("type", "button")
+    .addClass("imaged").append($("&lt;img/>")
+            .attr("title", "Reset").attr("alt", "Reset"))
+    .click(async () => { await this.reset(); })
+    .hover(this.btnReset_hover.bind(this),
+        this.btnReset_notHover.bind(this));
+};
+MZ700Js.prototype.btnReset_hover = function() {
+    this.btnReset.find("img")
+        .attr("src", `${this.opt.urlPrefix}image/btnReset-on.png`);
+};
+MZ700Js.prototype.btnReset_notHover = function() {
+    this.btnReset.find("img")
+        .attr("src", `${this.opt.urlPrefix}image/btnReset-off.png`);
+};
+
+//
+// Run/Stop Button
+//
+MZ700Js.prototype.btnStart_create = function() {
+    return $("&lt;button/>").attr("type", "button")
+        .attr("title", "[F8]")
+        .addClass("imaged").append($("&lt;img/>"))
+        .click(this.btnStart_click.bind(this))
+        .hover(this.btnStart_hover.bind(this),
+            this.btnStart_notHover.bind(this));
+};
+MZ700Js.prototype.btnStart_click = async function() {
+    if(this.isRunning) {
+        await this.stop();
+    } else {
+        await this.start();
+    }
+};
+MZ700Js.prototype.btnStart_hover = function() {
+    if(this.isRunning) {
+        this.btnStart_hoverOnRunning();
+    } else {
+        this.btnStart_hoverOnStopping();
+    }
+};
+MZ700Js.prototype.btnStart_notHover = function() {
+    if(this.isRunning) {
+        this.btnStart_notHoverOnRunning();
+    } else {
+        this.btnStart_notHoverOnStopping();
+    }
+};
+MZ700Js.prototype.btnStart_toRun = function() {
+    this.btnStart.find("img")
+        .attr("src", `${this.opt.urlPrefix}image/btnRun-off.png`)
+        .attr("title", "Run").attr("alt", "Run");
+};
+MZ700Js.prototype.btnStart_toStop = function() {
+    this.btnStart.find("img")
+        .attr("src", `${this.opt.urlPrefix}image/btnStop-off.png`)
+        .attr("title", "Stop").attr("alt", "Stop");
+};
+MZ700Js.prototype.btnStart_hoverOnRunning = function() {
+    this.btnStart.find("img").attr("src", `${this.opt.urlPrefix}image/btnStop-on.png`);
+};
+MZ700Js.prototype.btnStart_hoverOnStopping = function() {
+    this.btnStart.find("img").attr("src", `${this.opt.urlPrefix}image/btnRun-on.png`);
+};
+MZ700Js.prototype.btnStart_notHoverOnRunning = function() {
+    this.btnStart.find("img").attr("src", `${this.opt.urlPrefix}image/btnStop-off.png`);
+};
+MZ700Js.prototype.btnStart_notHoverOnStopping = function() {
+    this.btnStart.find("img").attr("src", `${this.opt.urlPrefix}image/btnRun-off.png`);
+};
+
+//
+// Step-In Button
+//
+MZ700Js.prototype.btnStep_create = function() {
+    return $("&lt;button/>").attr("type", "button")
+        .attr("title", "[F9]").addClass("imaged")
+        .append($("&lt;img/>").attr("title", "Step-In").attr("alt", "Step-In"))
+        .click(async () => {
+            await this.stepIn();
+        }).hover(this.btnStep_hover.bind(this),
+            this.btnStep_notHover.bind(this));
+};
+MZ700Js.prototype.btnStep_enable = function(state) {
+    this.btnStep.prop('disabled', '');
+    if(state) {
+        this.btnStep
+            .find("img")
+            .attr("src", `${this.opt.urlPrefix}image/btnStepIn-on.png`);
+    } else {
+        this.btnStep
+            .find("img")
+            .attr("src", `${this.opt.urlPrefix}image/btnStepIn-off.png`);
+    }
+};
+MZ700Js.prototype.btnStep_disable = function() {
+    this.btnStep
+        .prop('disabled', 'disabled')
+        .find("img")
+        .attr("src", `${this.opt.urlPrefix}image/btnStepIn-disabled.png`);
+};
+MZ700Js.prototype.btnStep_hover = function() {
+    if(!this.isRunning) {
+        this.btnStep_enable(true);
+    }
+};
+MZ700Js.prototype.btnStep_notHover = function() {
+    if(!this.isRunning) {
+        this.btnStep_enable();
+    }
+};
+
+MZ700Js.prototype.mmioMapPeripheral = function(peripheral, mapToRead, mapToWrite) {
+    this._mmio.entry(peripheral, mapToRead, mapToWrite);
+    this.mz700comworker.mmioMapToRead(mapToRead, function(){});
+    this.mz700comworker.mmioMapToWrite(mapToWrite, function(){});
+};
+
+MZ700Js.prototype.reset = async function() {
+    await this.stop();
+    await new Promise( resolve => {
+        this.mz700comworker.reset( () => {
+            resolve();
+        });
+    });
+    let bytes = await this.getCassetteTape();
+    this.createCmtDownloadLink(bytes);
+    await this.start(null);
+};
+
+MZ700Js.EXEC_TIMER_INTERVAL = 100;
+MZ700Js.NUM_OF_EXEC_OPCODE = 20000;
+MZ700Js.prototype.start = function(addr) {
+    return new Promise( async (resolve, reject) => {
+        try {
+            if(addr == null) {
+                this.mz700comworker.start(() => {
+                    this.btnStart_toStop();
+                    resolve();
+                });
+            } else {
+                await this.setPC(addr);
+                this.mz700comworker.start(() => {
+                    this.btnStart_toStop();
+                    resolve();
+                });
+            }
+        } catch(err) {
+            reject(err);
+        }
+    });
+};
+MZ700Js.prototype.stop = function() {
+    return new Promise( (resolve, reject) => {
+        this.mz700comworker.stop(() => {
+            try {
+                this.btnStart_toRun();
+                resolve();
+            } catch(err) {
+                reject(err);
+            }
+        });
+    });
+};
+MZ700Js.prototype.stepIn = async function() {
+    this.clearCurrentExecLine();
+    await this.execute(1);
+    this.scrollToShowPC();
+    this.updateRegister();
+};
+MZ700Js.prototype.stepOver = async function() {
+    await this.stepIn();
+};
+
+MZ700Js.prototype.updateExecutionParameter = function() {
+    this.mz700comworker.setExecutionParameter(this._timerInterval, ()=>{});
+};
+MZ700Js.prototype.onExecutionParameterUpdate = function(param) {
+    this._timerInterval = param;
+    let sliderValue = Math.log10(MZ700.DEFAULT_TIMER_INTERVAL / param);
+    this.sliderExecParamTimerInterval.val(sliderValue);
+};
+
+
+/**
+ * Update UI object's appearance by the running status of emulation.
+ * @returns {undefined}
+ */
+MZ700Js.prototype.updateUI = function() {
+    if(!this.isRunning) {
+        $(".MZ-700").removeClass("running");
+        this.btnStep_enable();
+    } else {
+        $(".MZ-700").addClass("running");
+        this.btnStep_disable();
+    }
+};
+
+MZ700Js.prototype.updateCyclicTimer = function() {
+    let regviewOpen = $(".monitor").DropDownPanel("isOpen");
+    if(this.isRunning &amp;&amp; regviewOpen) {
+        if(!this.reg_upd_tid) {
+            this.reg_upd_tid = setInterval(()=>{
+                this.updateRegister();
+            }, 50);
+        }
+    } else {
+        if(this.reg_upd_tid) {
+            clearInterval(this.reg_upd_tid);
+            this.reg_upd_tid = null;
+            this.updateRegister();
+        }
+    }
+};
+
+MZ700Js.prototype.updateRegister = function () {
+    this.mz700comworker.getRegister(reg => {
+        this.regview.Z80RegView("update", reg);
+    });
+    this.mz700comworker.getRegisterB(regB => {
+        this.regview.Z80RegView("update_", regB);
+    });
+    this.mz700comworker.getIFF1( iff => {
+        this.regview.Z80RegView("IFF1", iff);
+    });
+    this.mz700comworker.getIFF2( iff => {
+        this.regview.Z80RegView("IFF2", iff);
+    });
+    this.mz700comworker.getIM( im => {
+        this.regview.Z80RegView("IM", im);
+    });
+    this.mz700comworker.getHALT( halt => {
+        this.regview.Z80RegView("HALT", halt);
+    });
+};
+
+/**
+ *
+ * Download and Run a MZT file that is placed on server.
+ *
+ * 1. Download MZT file from server as byte array.
+ * 2. Load to the memory.
+ * 3. Run.
+ *
+ * This is ASYNC function.
+ *
+ * @param {string} name MZT file's body name on the server
+ * @returns {undefined}
+ */
+MZ700Js.prototype.runServerMZT = async function (name) {
+    await this.stop();
+    $.getJSON("mzt/" + name + ".json", async tape_data => {
+        await this.setMztData(tape_data);
+    });
+};
+
+/**
+ *
+ * Load a MZT to the memory, and prepare to run.
+ *
+ * 1. Parse MZT's header area.
+ * 2. Disassemble the MZT' body binary to assemble list.
+ * 3. Assemble it back to the memory located by its header area.
+ * 4. A program counter will be set to its execution address.
+ *
+ * @param {object} tape_data MZT tape data as byte array
+ * @returns {undefined}
+ */
+MZ700Js.prototype.setMztData = async function(tape_data) {
+    await this.stop();
+    await this.setCassetteTape(tape_data);
+    if(tape_data != null) {
+        let mztape_array = MZ700.parseMZT(tape_data);
+        await this.loadCassetteTape();
+        this.createCmtDownloadLink(tape_data);
+        await this.disassemble(mztape_array);
+        await this.start(mztape_array[0].header.addr_exec);
+    }
+};
+
+//
+// Show the next exec line in a window
+//
+MZ700Js.prototype.scrollToShowPC = function() {
+    this.mz700comworker.getRegister(function(reg) {
+        if(reg.PC &lt;= 0x1000) {
+            $(".source-list").asmview("activate", "monitor-rom");
+            this._asmlistMonitorRom.asmlist("setCurrentAddr", reg.PC);
+        } else {
+            $(".source-list").asmview("activate", "mzt");
+            this._asmlistMzt.asmlist("setCurrentAddr", reg.PC);
+        }
+    });
+};
+
+MZ700Js.prototype.clearCurrentExecLine = function() {
+    this._asmlistMonitorRom.asmlist("clearCurrentAddr");
+    this._asmlistMzt.asmlist("clearCurrentAddr");
+};
+
+MZ700Js.prototype.disassemble = async function(mztape_array) {
+    let name = MZ_TapeHeader.get1stFilename(mztape_array) || "(empty)";
+    let result = MZ700.disassemble(mztape_array);
+    if($(".source-list").length > 0) {
+        $(".source-list").asmview("name", "mzt", name);
+        this._asmlistMzt.asmlist("text", result.outbuf);
+        this._asmlistMzt.asmlist("writeList",
+            result.asmlist, await this.getBreakPoints());
+    }
+};
+
+MZ700Js.prototype.getBreakPoints = function() {
+    return new Promise(resolve => {
+        this.mz700comworker.getBreakPoints( breakpoints => {
+            resolve(breakpoints);
+        });
+    });
+};
+
+MZ700Js.prototype.acceptKey = function(state) {
+    this.keyAcceptanceState = state;
+    if(this.keyAcceptanceState) {
+        this.keyInAcceptionIndicator.addClass("on");
+    } else {
+        this.keyInAcceptionIndicator.removeClass("on");
+    }
+};
+
+MZ700Js.prototype.createCmtDownloadLink = function(bytes) {
+    if(bytes == null || bytes.length &lt; 128) {
+        this.cmtMessageArea.empty().append("(EMPTY)");
+        return;
+    }
+    let header = new MZ_TapeHeader(bytes, 0);
+    let byteArr = new Uint8Array(bytes);
+    let blob = new Blob([byteArr], {'type': "application/octet-stream"});
+    this.cmtMessageArea.empty().html(header.filename).append(
+            $("&lt;a/>").addClass("download-link")
+                .attr("download", header.filename + ".MZT")
+                .attr("type", "application/octet-stream")
+                .attr("href", URL.createObjectURL(blob))
+                .html("")
+                .attr("title",
+                    "Download " + header.filename + ".MZT" +
+                    " (" + header.file_size + " bytes) " +
+                    " ADDR:(" + header.addr_load.HEX(4) + " - " +
+                    (header.addr_load + header.file_size - 1).HEX(4) + ") EXEC:" +
+                    header.addr_exec.HEX(4))
+            );
+}
+
+/**
+ * Assemble and display the list.
+ * @async
+ * @param {string} asmsrc
+ * The source to be assemble with Z80 assembler.
+ * @param {object} asmlist
+ * jquery.asmlist object
+ * @returns {Promise&lt;object>} as a result of assemble.
+ */
+MZ700Js.prototype.assemble = async function( asmsrc, asmlist ) {
+    let shouldBeResumed = this.isRunning;
+    if(shouldBeResumed) {
+        await this.stop();
+    }
+    let assembled = Z80_assemble.assemble([asmsrc]).obj[0];
+    await this.writeAsmCode( assembled );
+    asmlist.asmlist("writeList",
+        assembled.list, await this.getBreakPoints());
+    if(shouldBeResumed) {
+        await this.start();
+    }
+    return assembled;
+};
+MZ700Js.prototype.writeAsmCode = function(assembled) {
+    return new Promise(resolve => {
+        this.mz700comworker.writeAsmCode( assembled, execAddr => {
+            resolve(execAddr);
+        });
+    });
+};
+MZ700Js.prototype.setCassetteTape = function(tape_data) {
+    return new Promise( resolve => {
+        this.mz700comworker.setCassetteTape(tape_data, mztape_array => {
+            resolve( mztape_array );
+        });
+    });
+};
+MZ700Js.prototype.loadCassetteTape = function() {
+    return new Promise( resolve => {
+        this.mz700comworker.loadCassetteTape( () => { resolve(); });
+    });
+};
+MZ700Js.prototype.getCassetteTape = function() {
+    return new Promise( resolve => {
+        this.mz700comworker.getCassetteTape(bytes => {
+            resolve(bytes);
+        });
+    });
+};
+MZ700Js.prototype.setPC = function(addr) {
+    return new Promise(resolve => {
+        this.mz700comworker.setPC(addr, ()=>{
+            resolve();
+        });
+    });
+};
+MZ700Js.prototype.execute = function(steps) {
+    return new Promise(resolve => {
+        this.mz700comworker.exec(steps, ()=>{
+            resolve();
+        });
+    });
+};
+
+MZ700Js.prototype.allowToPlaySound = function() {
+    if(!this.sound.resumed()) {
+        this.sound.resume();
+    }
+};
+
+module.exports = MZ700Js;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<br class="clear">
+
+<footer>
+    Generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Sat Jun 23 2018 20:19:45 GMT+0900 (東京 (標準時)) using the Minami theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+</body>
+</html>
