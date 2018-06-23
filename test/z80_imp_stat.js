@@ -1,6 +1,6 @@
 require("../lib/context.js");
 require('../lib/ex_number.js');
-var Z80 = require('../Z80/emulator.js');
+var Z80 = require('../Z80/Z80.js');
 var Z80_assemble = require('../Z80/assembler');
 var z80 = new Z80();
 function get_hex_code(codes) {
