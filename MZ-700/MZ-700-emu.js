@@ -30,7 +30,7 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
             .attr("class", "toggle imaged")
             .attr("id", "btnToggleScreenKeyboard")
             .append($("<img/>")
-                .attr("src", "../image/btnKeyboard-off.png")
+                .attr("src", `${this.opt.urlPrefix}image/btnKeyboard-off.png`)
                 .attr("title", "Keyboard").attr("alt", "Keyboard"))
             .click(() => {
                 this.btnToggleScreenKeyboard_click();
@@ -51,7 +51,7 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
         this.btnToggleScreenKeyboard.addClass("on");
         this.btnToggleScreenKeyboard.removeClass("off");
         this.btnToggleScreenKeyboard.find("img")
-            .attr("src", "../image/btnKeyboard-on.png");
+            .attr("src", `${this.opt.urlPrefix}image/btnKeyboard-on.png`);
         $(".keyboard").show();
         this.resizeScreen();
     };
@@ -59,7 +59,7 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
         this.btnToggleScreenKeyboard.removeClass("on");
         this.btnToggleScreenKeyboard.addClass("off");
         this.btnToggleScreenKeyboard.find("img")
-            .attr("src", "../image/btnKeyboard-off.png");
+            .attr("src", `${this.opt.urlPrefix}image/btnKeyboard-off.png`);
         $(".keyboard").hide();
         this.resizeScreen();
     };
@@ -121,7 +121,7 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
 
     var mz700js = new MZ700Js();
     await mz700js.create({
-        urlPrefix : "../",
+        urlPrefix : "./",
         screenElement : document.querySelector(".MZ-700 .screen"),
         mztDroppableElement: document.querySelector(".MZ-700 .cmt-slot"),
         controlPanelElement: document.querySelector(".MZ-700 .ctrl-panel"),
@@ -212,7 +212,7 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
     var fullscreenButton = $("<button/>")
         .attr("id","fullscreenButton").addClass("toggle imaged off")
         .append($("<img/>")
-            .attr("src", "../image/btnFullscreen-off.png")
+            .attr("src", `${mz700js.opt.urlPrefix}image/btnFullscreen-off.png`)
             .attr("title", "Fullscreen")
             .attr("alt", "Fullscreen"));
     var fullscreenElement = document.body;
@@ -237,7 +237,7 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
             dockPanelRight.show();
             fullscreenButton.removeClass("on").addClass("off")
                 .find("img")
-                    .attr("src", "../image/btnFullscreen-off.png")
+                    .attr("src", `${mz700js.opt.urlPrefix}image/btnFullscreen-off.png`)
                     .attr("title", "Fullscreen")
                     .attr("alt", "Fullscreen");
         } else {
@@ -245,7 +245,7 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
             dockPanelRight.hide();
             fullscreenButton.removeClass("off").addClass("on")
                 .find("img")
-                    .attr("src", "../image/btnFullscreen-on.png")
+                    .attr("src", `${mz700js.opt.urlPrefix}image/btnFullscreen-on.png`)
                     .attr("title", "Exit Fullscreen")
                     .attr("alt", "Exit Fullscreen");
         }

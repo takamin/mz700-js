@@ -518,11 +518,11 @@ MZ700Js.prototype.btnReset_create = function() {
 };
 MZ700Js.prototype.btnReset_hover = function() {
     this.btnReset.find("img")
-        .attr("src", "../image/btnReset-on.png");
+        .attr("src", `${this.opt.urlPrefix}image/btnReset-on.png`);
 };
 MZ700Js.prototype.btnReset_notHover = function() {
     this.btnReset.find("img")
-        .attr("src", "../image/btnReset-off.png");
+        .attr("src", `${this.opt.urlPrefix}image/btnReset-off.png`);
 };
 
 //
@@ -559,25 +559,25 @@ MZ700Js.prototype.btnStart_notHover = function() {
 };
 MZ700Js.prototype.btnStart_toRun = function() {
     this.btnStart.find("img")
-        .attr("src", "../image/btnRun-off.png")
+        .attr("src", `${this.opt.urlPrefix}image/btnRun-off.png`)
         .attr("title", "Run").attr("alt", "Run");
 };
 MZ700Js.prototype.btnStart_toStop = function() {
     this.btnStart.find("img")
-        .attr("src", "../image/btnStop-off.png")
+        .attr("src", `${this.opt.urlPrefix}image/btnStop-off.png`)
         .attr("title", "Stop").attr("alt", "Stop");
 };
 MZ700Js.prototype.btnStart_hoverOnRunning = function() {
-    this.btnStart.find("img").attr("src", "../image/btnStop-on.png");
+    this.btnStart.find("img").attr("src", `${this.opt.urlPrefix}image/btnStop-on.png`);
 };
 MZ700Js.prototype.btnStart_hoverOnStopping = function() {
-    this.btnStart.find("img").attr("src", "../image/btnRun-on.png");
+    this.btnStart.find("img").attr("src", `${this.opt.urlPrefix}image/btnRun-on.png`);
 };
 MZ700Js.prototype.btnStart_notHoverOnRunning = function() {
-    this.btnStart.find("img").attr("src", "../image/btnStop-off.png");
+    this.btnStart.find("img").attr("src", `${this.opt.urlPrefix}image/btnStop-off.png`);
 };
 MZ700Js.prototype.btnStart_notHoverOnStopping = function() {
-    this.btnStart.find("img").attr("src", "../image/btnRun-off.png");
+    this.btnStart.find("img").attr("src", `${this.opt.urlPrefix}image/btnRun-off.png`);
 };
 
 //
@@ -597,18 +597,18 @@ MZ700Js.prototype.btnStep_enable = function(state) {
     if(state) {
         this.btnStep
             .find("img")
-            .attr("src", "../image/btnStepIn-on.png");
+            .attr("src", `${this.opt.urlPrefix}image/btnStepIn-on.png`);
     } else {
         this.btnStep
             .find("img")
-            .attr("src", "../image/btnStepIn-off.png");
+            .attr("src", `${this.opt.urlPrefix}image/btnStepIn-off.png`);
     }
 };
 MZ700Js.prototype.btnStep_disable = function() {
     this.btnStep
         .prop('disabled', 'disabled')
         .find("img")
-        .attr("src", "../image/btnStepIn-disabled.png");
+        .attr("src", `${this.opt.urlPrefix}image/btnStepIn-disabled.png`);
 };
 MZ700Js.prototype.btnStep_hover = function() {
     if(!this.isRunning) {
