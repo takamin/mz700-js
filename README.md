@@ -1,7 +1,7 @@
 MZ-700 Full JavaScript Emulator
 ===============================
 
-<a href="https://takamin.github.io/mz700-js/MZ-700/client.html"
+<a href="https://takamin.github.io/mz700-js/emu.html"
 target="_blank" title="Click to run this emulator on the Github page">
 <img src="https://github.com/takamin/mz700-js/blob/gh-pages/image/title.png?raw=true"
 width="100%" style="max-width:900px"/>
@@ -14,7 +14,7 @@ It works on the modern HTML5 web browser.
 I would strongly recommend Google Chrome,
 because of the emulation speed and its stability.
 
-You can visit this [GitHub-page](https://takamin.github.io/mz700-js/MZ-700/client.html) to run on your web browser.
+You can visit this [GitHub-page](https://takamin.github.io/mz700-js/emu.html) to run on your web browser.
 
 The MZ-700 is produced by SHARP in Nov.15,1982.
 It equipped a Z80A CPU 3.58MHz,
@@ -59,29 +59,15 @@ Or, You can clone from [GitHub](https://github.com/takamin/mz700-js) or download
 RUN A CLIENT SIDE EMULATION ON THE BROWSER
 ------------------------------------------
 
-If you installed by npm global, you can use `mz700-js` command on your shell,
+If you install this to global, run `mz700-js` command.
+If you clone the git repository, install and start this module like this:
 
 ```
-$ mz700-js
-
-> mz700-js@0.0.0 start <absolute/path/to/this/module>
-> node ./bin/www
-```
-
-When the git repository was cloned, Go to its directory, and then use `npm start`
-
-```
-$ npm install   # Build an application.
+$ npm install   # Build
 $ npm start     # Start local web server and run the app.
-
-> mz700-js@0.0.0 start <absolute/path/to/this/module>
-> node ./bin/www
 ```
 
-Then, the client emulation page is being served as an URL
-[http://localhost:3000/MZ-700/client.html](http://localhost:3000/MZ-700/client.html).
-The page will be opened in automatically with your main browser.
-Of course, you can use another one instead in manually.
+The page will be opened with your browser.
 
 Available Browsers
 ------------------
