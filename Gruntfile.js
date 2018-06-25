@@ -4,30 +4,30 @@ module.exports = function(grunt) {
         browserify: {
             build: {
                 files: {
-                    "./build/bundle-emu.js": ["MZ-700/MZ-700-emu.js"],
-                    "./build/bundle-worker.js": ["MZ-700/MZ-700-worker.js"]
+                    "./build/bundle-mz700-emu.js": ["MZ-700/mz700-emu.js"],
+                    "./build/bundle-mz700-worker.js": ["MZ-700/mz700-worker.js"]
                 }
             }
         },
         uglify: {
             build: {
                 files: {
-                    "./build/bundle-emu.min.js": ["./build/bundle-emu.js"],
-                    "./build/bundle-worker.min.js": ["./build/bundle-worker.js"]
+                    "./build/bundle-mz700-emu.min.js": ["./build/bundle-mz700-emu.js"],
+                    "./build/bundle-mz700-worker.min.js": ["./build/bundle-mz700-worker.js"]
                 }
             }
         },
         copy: {
             "debug": {
                 files: {
-                    "./MZ-700/bundle-emu.js": ["./build/bundle-emu.js"],
-                    "./MZ-700/bundle-worker.js": ["./build/bundle-worker.js"]
+                    "./js/bundle-mz700-emu.js": ["./build/bundle-mz700-emu.js"],
+                    "./js/bundle-mz700-worker.js": ["./build/bundle-mz700-worker.js"]
                 }
             },
             "release": {
                 files: {
-                    "./MZ-700/bundle-emu.js": ["./build/bundle-emu.min.js"],
-                    "./MZ-700/bundle-worker.js": ["./build/bundle-worker.min.js"]
+                    "./js/bundle-mz700-emu.js": ["./build/bundle-emu.min.js"],
+                    "./js/bundle-mz700-worker.js": ["./build/bundle-worker.min.js"]
                 }
             }
         },
