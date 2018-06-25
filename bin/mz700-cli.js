@@ -38,7 +38,7 @@
     var readline = require("linebyline")(process.stdin);
     require("../lib/context.js");
     require("../lib/ex_number.js");
-    var MZ700 = require("../MZ-700/MZ-700.js");
+    var MZ700 = require("../MZ-700/mz700.js");
     var mztReadFile = require("../lib/mzt-read-file");
 
     var CliCommand = require("../lib/cli/command.js");

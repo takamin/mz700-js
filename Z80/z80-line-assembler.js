@@ -1,6 +1,6 @@
 "use strict";
 const oct = require("../lib/oct");
-const mz700charcode = require("../lib/mz700charcode.js");
+const mz700charcode = require("../lib/mz700-charcode.js");
 const parseAddress = require("../lib/parse-addr.js");
 
 /**
