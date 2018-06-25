@@ -18,7 +18,7 @@ if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
     require("jquery-ui");
     require("fullscrn");
     require("../lib/jquery.ddpanel.js");
-    var MZ700EmuBase = require("./MZ-700-emu-base.js");
+    var MZ700EmuBase = require("./mz700-emu-base.js");
     var MZ700Js = function() {
         MZ700EmuBase.call(this);
     };

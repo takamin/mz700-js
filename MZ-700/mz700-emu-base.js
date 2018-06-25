@@ -5,12 +5,12 @@ require("../lib/ex_number.js");
 const TransWorker = require('transworker');
 const Z80_assemble = require("../Z80/assembler.js");
 const Z80 = require("../Z80/Z80.js");
-const MZ_TapeHeader = require('../MZ-700/mz-tape-header');
-const MZ700 = require("../MZ-700/MZ-700.js");
+const MZ_TapeHeader = require('../MZ-700/mz-tape-header.js');
+const MZ700 = require("../MZ-700/mz700.js");
 const MZBeep = require("../MZ-700/mz-beep.js");
 const MZ700_MonitorRom = require("../MZ-700/mz700-new-monitor.js");
 const MMIO = require("../MZ-700/mz-mmio.js");
-const mz700cg = require("../lib/mz700cg.js");
+const mz700cg = require("../lib/mz700-cg.js");
 const parseAddress = require("../lib/parse-addr.js");
 require("../lib/jquery.asmview.js");
 require("../lib/jquery.asmlist.js");
@@ -18,8 +18,8 @@ require("../lib/jquery.tabview.js");
 require("../lib/jquery.soundctrl.js");
 require("../lib/jquery.Z80-mem.js");
 require("../lib/jquery.Z80-reg.js");
-require("../lib/jquery.mz700scrn");
-require("../lib/jquery.MZ-700-kb.js");
+require("../lib/jquery.mz700-scrn.js");
+require("../lib/jquery.mz700-kb.js");
 
 const cookies = require("../lib/cookies");
 
@@ -289,7 +289,7 @@ MZ700Js.prototype.create = async function(opt) {
 
     this._mmio = MMIO.create();
     this.mz700comworker = TransWorker.create(
-        this.opt.urlPrefix + "MZ-700/bundle-worker.js", MZ700, this, {
+        this.opt.urlPrefix + "js/bundle-mz700-worker.js", MZ700, this, {
             'onExecutionParameterUpdate': param => {
                 this.onExecutionParameterUpdate(param);
             },
