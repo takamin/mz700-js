@@ -29,7 +29,7 @@
     color: silver;
 }
 
-#physical-interface
+#human-interface
 {
     overflow: auto;
     background-color: white;
@@ -43,7 +43,7 @@
     transform:rotate(-90deg);
 }
 
-#physical-interface,
+#human-interface,
 {
     position:fixed;
     opacity:0.0;
@@ -52,14 +52,14 @@
     .screen {
         position:relative;
     }
-    #physical-interface
+    #human-interface
     {
         position:relative;
         opacity:1;
     }
 }
 @media screen and (orientation: landscape) {
-    #physical-interface
+    #human-interface
     {
         opacity:0.8;
     }
