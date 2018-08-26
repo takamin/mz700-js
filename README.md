@@ -131,6 +131,8 @@ Available Browsers
 CHANGES
 -------
 
+* v1.0.\*
+    * An UI-logic was isolated. The emulation is stable for a year.
 * v0.9.\*
     * Use CodeMirror for Z80 assemble source editor.
     * Improve disassembling speed.
