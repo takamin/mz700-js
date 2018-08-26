@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>MZ-700/mz-mmio.js - Documentation</title>
+    <title>MZ700Js - Documentation</title>
 
     <script src="scripts/prettify/prettify.js"></script>
     <script src="scripts/prettify/lang-css.js"></script>
@@ -29,83 +29,1193 @@
 
 <div id="main">
     
-    <h1 class="page-title">MZ-700/mz-mmio.js</h1>
+    <h1 class="page-title">MZ700Js</h1>
     
 
     
 
 
 
+
+<section>
+
+<header>
     
-    <section>
-        <article>
-            <pre class="prettyprint source linenums"><code>"use strict";
+        <h2>
+        MZ700Js
+        </h2>
+        
+    
+</header>
 
-/**
- * Memory Mapped I/O
- * @constructor
- */
-function MZ_MMIO() {
-    this._map = [ ];
-    for(var addr = 0xE000; addr &lt; 0xE800; addr++) {
-        this._map.push({ "r":[],"w":[] });
-    }
-}
+<article>
+    <div class="container-overview">
+    
+        
+<div class="section-method">
 
-/**
- * Map a peripheral to adresses
- * @param {MZ_MmioPeripheral} peripheral 周辺機器オブジェクト
- * @param {Array&lt;number>} inputs Input addresses
- * @param {Array&lt;number>} outputs Output addresses
- * @returns {undefined}
- */
-MZ_MMIO.prototype.entry = function (peripheral, inputs, outputs)
-{
-    inputs.forEach(function(address) {
-        if(!("readMMIO" in peripheral) ||
-                typeof(peripheral.readMMIO) != "function" )
-        {
-            console.error(
-                    "The periferal does not have a method 'readMMIO' "
-                    + "for memory mapped I/O at", address.HEX(4) + "h");
-        } else {
-            this._map[address - 0xE000].r.push(peripheral);
-        }
-    }, this);
-    outputs.forEach(function(address) {
-        if(!("writeMMIO" in peripheral) ||
-                typeof(peripheral.readMMIO) != "function" )
-        {
-            console.error(
-                    "The periferal does not have a method 'writeMMIO' "
-                    + "for memory mapped I/O at", address.HEX(4) + "h");
-        } else {
-            this._map[address - 0xE000].w.push(peripheral);
-        }
-    }, this);
-};
+    
 
-// Read MMIO
-MZ_MMIO.prototype.read = function(address, value) {
-    this._map[address - 0xE000].r.forEach(function(peripheral) {
-        value = peripheral.readMMIO(address, value);
-    });
-    return undefined;
-};
+    <h4 class="name" id="MZ700Js"><span class="type-signature"></span>new MZ700Js<span class="signature">()</span><span class="type-signature"></span></h4>
 
-// Write MMIO
-MZ_MMIO.prototype.write = function(address, value) {
-    this._map[address - 0xE000].w.forEach(function(peripheral) {
-        value = peripheral.writeMMIO(address, value);
-    });
-};
+    
 
-module.exports = {
-    "create": function() { return new MZ_MMIO(); }
-};
-</code></pre>
-        </article>
-    </section>
+
+
+<div class="description">
+    <p>class MZ700Js</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="MZ-700_mz700-emu.js.html">MZ-700/mz700-emu.js</a>, <a href="MZ-700_mz700-emu.js.html#line26">line 26</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+    
+    </div>
+
+    
+
+    
+
+    
+
+     
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+<div class="section-method">
+
+    
+
+    <h4 class="name" id="cancelCtrlPanelTimeout"><span class="type-signature"></span>cancelCtrlPanelTimeout<span class="signature">()</span><span class="type-signature"> &rarr; {undefined}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Cancel the timeout timer of control panel showing.</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="MZ-700_mz700-emu.js.html">MZ-700/mz700-emu.js</a>, <a href="MZ-700_mz700-emu.js.html#line848">line 848</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="section-returns">
+<h5>Returns:</h5>
+
+        
+
+<dl class="param-type">
+    <dt>
+        Type:
+    </dt>
+    <dd>
+        
+<span class="param-type"><code>undefined</code></span>
+
+
+    </dd>
+</dl>
+
+
+    
+</div>
+
+
+
+</div>
+        
+            
+<div class="section-method">
+
+    
+
+    <h4 class="name" id="create"><span class="type-signature">(async) </span>create<span class="signature">()</span><span class="type-signature"> &rarr; {Promise.&lt;undefined>}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Create emulator on the Web.</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="MZ-700_mz700-emu.js.html">MZ-700/mz700-emu.js</a>, <a href="MZ-700_mz700-emu.js.html#line68">line 68</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="section-returns">
+<h5>Returns:</h5>
+
+        
+
+<dl class="param-type">
+    <dt>
+        Type:
+    </dt>
+    <dd>
+        
+<span class="param-type"><code>Promise.&lt;undefined></code></span>
+
+
+    </dd>
+</dl>
+
+
+<div class="param-desc">
+    <p>to sync.</p>
+</div>
+
+    
+</div>
+
+
+
+</div>
+        
+            
+<div class="section-method">
+
+    
+
+    <h4 class="name" id="createFullscreenButton"><span class="type-signature"></span>createFullscreenButton<span class="signature">()</span><span class="type-signature"> &rarr; {<a href="ToggleButton.html">ToggleButton</a>}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Create Full screen button.</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="MZ-700_mz700-emu.js.html">MZ-700/mz700-emu.js</a>, <a href="MZ-700_mz700-emu.js.html#line549">line 549</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="section-returns">
+<h5>Returns:</h5>
+
+        
+
+<dl class="param-type">
+    <dt>
+        Type:
+    </dt>
+    <dd>
+        
+<span class="param-type"><code><a href="ToggleButton.html">ToggleButton</a></code></span>
+
+
+    </dd>
+</dl>
+
+
+<div class="param-desc">
+    <p>The ToggleButton widget.</p>
+</div>
+
+    
+</div>
+
+
+
+</div>
+        
+            
+<div class="section-method">
+
+    
+
+    <h4 class="name" id="createPublicMztLoadingButtons"><span class="type-signature">(async) </span>createPublicMztLoadingButtons<span class="signature">()</span><span class="type-signature"> &rarr; {Promise.&lt;undefined>}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Create the buttons to download and run the public MZT binary.</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="MZ-700_mz700-emu.js.html">MZ-700/mz700-emu.js</a>, <a href="MZ-700_mz700-emu.js.html#line746">line 746</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="section-returns">
+<h5>Returns:</h5>
+
+        
+
+<dl class="param-type">
+    <dt>
+        Type:
+    </dt>
+    <dd>
+        
+<span class="param-type"><code>Promise.&lt;undefined></code></span>
+
+
+    </dd>
+</dl>
+
+
+<div class="param-desc">
+    <p>The promise to synchronize</p>
+</div>
+
+    
+</div>
+
+
+
+</div>
+        
+            
+<div class="section-method">
+
+    
+
+    <h4 class="name" id="createScreenKeyboardButton"><span class="type-signature"></span>createScreenKeyboardButton<span class="signature">()</span><span class="type-signature"> &rarr; {<a href="ToggleButton.html">ToggleButton</a>}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Create Screen keyboard button.</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="MZ-700_mz700-emu.js.html">MZ-700/mz700-emu.js</a>, <a href="MZ-700_mz700-emu.js.html#line511">line 511</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="section-returns">
+<h5>Returns:</h5>
+
+        
+
+<dl class="param-type">
+    <dt>
+        Type:
+    </dt>
+    <dd>
+        
+<span class="param-type"><code><a href="ToggleButton.html">ToggleButton</a></code></span>
+
+
+    </dd>
+</dl>
+
+
+<div class="param-desc">
+    <p>The ToggleButton widget.</p>
+</div>
+
+    
+</div>
+
+
+
+</div>
+        
+            
+<div class="section-method">
+
+    
+
+    <h4 class="name" id="hideCtrlPanel"><span class="type-signature"></span>hideCtrlPanel<span class="signature">()</span><span class="type-signature"> &rarr; {undefined}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Hide the panel to operate MZ-700.</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="MZ-700_mz700-emu.js.html">MZ-700/mz700-emu.js</a>, <a href="MZ-700_mz700-emu.js.html#line839">line 839</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="section-returns">
+<h5>Returns:</h5>
+
+        
+
+<dl class="param-type">
+    <dt>
+        Type:
+    </dt>
+    <dd>
+        
+<span class="param-type"><code>undefined</code></span>
+
+
+    </dd>
+</dl>
+
+
+    
+</div>
+
+
+
+</div>
+        
+            
+<div class="section-method">
+
+    
+
+    <h4 class="name" id="resizeScreen"><span class="type-signature"></span>resizeScreen<span class="signature">()</span><span class="type-signature"> &rarr; {undefined}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Resize the MZ-700 Screen.</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="MZ-700_mz700-emu.js.html">MZ-700/mz700-emu.js</a>, <a href="MZ-700_mz700-emu.js.html#line877">line 877</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="section-returns">
+<h5>Returns:</h5>
+
+        
+
+<dl class="param-type">
+    <dt>
+        Type:
+    </dt>
+    <dd>
+        
+<span class="param-type"><code>undefined</code></span>
+
+
+    </dd>
+</dl>
+
+
+    
+</div>
+
+
+
+</div>
+        
+            
+<div class="section-method">
+
+    
+
+    <h4 class="name" id="setupControlPanel"><span class="type-signature"></span>setupControlPanel<span class="signature">()</span><span class="type-signature"> &rarr; {undefined}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Setup screen apearance and behavior by each device type.</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="MZ-700_mz700-emu.js.html">MZ-700/mz700-emu.js</a>, <a href="MZ-700_mz700-emu.js.html#line775">line 775</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="section-returns">
+<h5>Returns:</h5>
+
+        
+
+<dl class="param-type">
+    <dt>
+        Type:
+    </dt>
+    <dd>
+        
+<span class="param-type"><code>undefined</code></span>
+
+
+    </dd>
+</dl>
+
+
+    
+</div>
+
+
+
+</div>
+        
+            
+<div class="section-method">
+
+    
+
+    <h4 class="name" id="showCtrlPanel"><span class="type-signature"></span>showCtrlPanel<span class="signature">()</span><span class="type-signature"> &rarr; {undefined}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Show the panel to operate MZ-700.</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="MZ-700_mz700-emu.js.html">MZ-700/mz700-emu.js</a>, <a href="MZ-700_mz700-emu.js.html#line819">line 819</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="section-returns">
+<h5>Returns:</h5>
+
+        
+
+<dl class="param-type">
+    <dt>
+        Type:
+    </dt>
+    <dd>
+        
+<span class="param-type"><code>undefined</code></span>
+
+
+    </dd>
+</dl>
+
+
+    
+</div>
+
+
+
+</div>
+        
+            
+<div class="section-method">
+
+    
+
+    <h4 class="name" id="toggleCtrlPanel"><span class="type-signature"></span>toggleCtrlPanel<span class="signature">()</span><span class="type-signature"> &rarr; {undefined}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Toggle the control panel visibility.</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="MZ-700_mz700-emu.js.html">MZ-700/mz700-emu.js</a>, <a href="MZ-700_mz700-emu.js.html#line859">line 859</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="section-returns">
+<h5>Returns:</h5>
+
+        
+
+<dl class="param-type">
+    <dt>
+        Type:
+    </dt>
+    <dd>
+        
+<span class="param-type"><code>undefined</code></span>
+
+
+    </dd>
+</dl>
+
+
+    
+</div>
+
+
+
+</div>
+        
+    
+
+    
+
+    
+</article>
+
+</section>
 
 
 
@@ -115,7 +1225,7 @@ module.exports = {
 <br class="clear">
 
 <footer>
-    Generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Sun Aug 26 2018 19:45:25 GMT+0900 (東京 (標準時)) using the Minami theme.
+    Generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Sun Aug 26 2018 19:45:26 GMT+0900 (東京 (標準時)) using the Minami theme.
 </footer>
 
 <script>prettyPrint();</script>
