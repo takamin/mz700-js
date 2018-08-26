@@ -63,15 +63,13 @@
                 </div>
             </div>
             <div id="dock-panel-right" class="dock right resizable" style="width:590px;">
-                <div class="dock top" style="height: 40px;">
-                    <button id="btnToggleRegisterPanel">REGISTER</button>
-                    <button id="btnToggleMemoryPanel">MEMORY</button>
-                    <button id="btnToggleMemoryAssemblePanel">ASSEMBLE LIST</button>
+                <div id="toolwndTaskbar" class="dock top" style="height: 40px;">
                 </div>
                 <div class="dock">
-                    <div class="register-monitor" title="REGISTER"></div>
-                    <div class="memory" title="MEMORY"></div>
-                    <div class="source-list" title="ASSEMBLE LIST"></div>
+                    <div id="wndRegView" class="toolwnd register-monitor open" title="REGISTER"></div>
+                    <div id="wndDumpList" class="toolwnd memory open" title="MEMORY"></div>
+                    <div id="wndAsmList" class="toolwnd source-list open" title="Z80 ASM"></div>
+                    <div id="wndImmExec" class="toolwnd" title="IMM.EXEC."></div>
                 </div>
             </div>
         </div>

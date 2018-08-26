@@ -82,22 +82,9 @@ MZ700Js.prototype.create = async function() {
         dataRecorderElement: document.querySelector(".MZ-700 .data-recorder"),
     });
 
-    this.createSoftwareKeyboard();
-    this.createDataRecorderControl();
-    this.createControlPanel();
-    this.createRegView();
-    this.createDumpList();
-    await this.createDebuggingPanel();
-    await this.createPublicMztLoadingButtons();
-
     if(this.deviceType !== "pc") {
         this.dockPanelRight.remove();
     }
-    this.setupControlPanel();
-
-    $("span.mz700scrn").each(function() {
-        window.mz700scrn.convert(this);
-    });
 
     dock_n_liquid.init(() => this.resizeScreen() );
     dock_n_liquid.select($(".MZ-700").get(0)).layout();
@@ -105,6 +92,86 @@ MZ700Js.prototype.create = async function() {
         this.liquidRoot.layout();
         this.resizeScreen();
     });
+
+    this.createSoftwareKeyboard();
+    this.createDataRecorderControl();
+    this.createControlPanel();
+    this.createWndRegView();
+    this.createWndDumpList();
+    await this.createWndAsmList();
+    this.createWndImmExec();
+
+    let taskbar = $("#toolwndTaskbar");
+    let wndBase = $(".toolwnd:first").parent();
+    let updateWndButton = () => {
+        wndBase.find(".toolwnd .move-up-button").prop("disabled", false);
+        wndBase.find(".toolwnd .move-down-button").prop("disabled", false);
+        wndBase.find(".toolwnd:visible:first .move-up-button")
+            .prop("disabled", true);
+        wndBase.find(".toolwnd:visible:last .move-down-button")
+            .prop("disabled", true);
+    };
+    $(".toolwnd").each(function() {
+        let wnd = $(this);
+        let wndSw = $("<button/>").html(wnd.attr("title"))
+            .addClass(wnd.hasClass("open")?"on":"off")
+            .ToggleButton("create", {
+                "on": () => {
+                    wnd.show();
+                    updateWndButton();
+                },
+                "off": () => {
+                    wnd.hide();
+                    updateWndButton();
+                }
+            });
+        let title = $("<div/>").addClass("titlebar")
+            .append($("<span/>").addClass("title").html(wnd.attr("title")))
+            .append($("<span/>").addClass("buttons")
+                .append($("<button/>").attr("type","button")
+                    .html("▼").attr("title", "Down").addClass("move-down-button")
+                    .click(()=>{
+                        wnd.next().after(wnd);
+                        wndSw.next().after(wndSw);
+                        updateWndButton();
+                    })
+                ).append($("<button/>").attr("type","button")
+                    .html("▲").attr("title", "Up").addClass("move-up-button")
+                    .click(()=>{
+                        wnd.prev().before(wnd);
+                        wndSw.prev().before(wndSw);
+                        updateWndButton();
+                    })
+                ).append($("<button/>").attr("type","button")
+                    .html("■").attr("title", "Expand")
+                    .click(()=>{
+                        taskbar.find("button").ToggleButton("off");
+                        wndSw.ToggleButton("on");
+                        wndBase.find(".toolwnd:first-child").before(wnd);
+                        taskbar.find("button:first-child").before(wndSw);
+                        updateWndButton();
+                    })
+                ).append($("<button/>").attr("type","button")
+                    .html("×").attr("title", "Close")
+                    .click(()=>{
+                        wndSw.ToggleButton("off");
+                    })
+                )
+            );
+        let content = $("<div/>").addClass("content").append(wnd.children());
+        wnd.append(title).append(content);
+
+        taskbar.append(wndSw);
+    });
+    updateWndButton();
+
+    await this.createPublicMztLoadingButtons();
+    this.setupControlPanel();
+
+    $("span.mz700scrn").each(function() {
+        window.mz700scrn.convert(this);
+    });
+
     this.liquidRoot.layout();
     this.resizeScreen();
 
@@ -526,11 +593,11 @@ MZ700Js.prototype.createFullscreenButton = function() {
     return fullscreenButton;
 };
 
-MZ700Js.prototype.createRegView = function() {
+MZ700Js.prototype.createWndRegView = function() {
     this.regview = $("<div/>").Z80RegView("init");
-    $(".register-monitor")
-        .append($("<div/>").css("display", "inline-block")
-                .append(this.regview));
+    $("#wndRegView").append(
+        $("<div/>").css("display", "inline-block")
+        .append(this.regview));
     window.addEventListener("mz700started", () => {
         if(!this.reg_upd_tid) {
             this.reg_upd_tid = setInterval(()=>{
@@ -548,8 +615,13 @@ MZ700Js.prototype.createRegView = function() {
     });
 };
 
-MZ700Js.prototype.createDumpList = function() {
-    let $buttons = $("<div/>")
+MZ700Js.prototype.createWndDumpList = function() {
+    let $dumplist = $("<div/>").dumplist("init")
+        .on("querymemory", (event, addr, callback) => {
+            this.mz700comworker.readMemory(addr, callback);
+        });
+    $("#wndDumpList").append(
+        $("<div/>")
         .Z80AddressSpecifier("create")
         .on("queryregister", async (event, regName, callback) => {
             let reg = await this.getRegister();
@@ -557,21 +629,12 @@ MZ700Js.prototype.createDumpList = function() {
         })
         .on("notifyaddress", (event, address) => {
             $dumplist.dumplist("topAddr", address);
-        });
-    $(".MZ-700 .memory").append($buttons);
-
-    //
-    // Memory hexa dump list
-    //
-    let $dumplist = $("<div/>").dumplist("init")
-        .on("querymemory", (event, addr, callback) => {
-            this.mz700comworker.readMemory(addr, callback);
-        });
-    $(".MZ-700 .memory").append($dumplist);
+        })
+    ).append($dumplist);
 };
 
-MZ700Js.prototype.createDebuggingPanel = async function() {
-    $(".source-list").asmview("create")
+MZ700Js.prototype.createWndAsmList = async function() {
+    $("#wndAsmList").asmview("create")
         .on("setbreak", (e, addr, size, state) => {
             if(state) {
                 this.mz700comworker.addBreak(addr, size, null);
@@ -589,7 +652,6 @@ MZ700Js.prototype.createDebuggingPanel = async function() {
     // Debugging panel
     await this.addMonitorRomTabPage();
     await this.addSampleAsmTabPage();
-    this.addRunImmediateTabPage();
 };
 
 MZ700Js.prototype.addMonitorRomTabPage = async function() {
@@ -597,13 +659,13 @@ MZ700Js.prototype.addMonitorRomTabPage = async function() {
         async (e, asmsrc) => {
             await this.assemble(asmsrc, this._asmlistMonitorRom);
         });
-    $(".source-list").asmview("addAsmList",
+    $("#wndAsmList").asmview("addAsmList",
         "monitor-rom", "", this._asmlistMonitorRom);
     let asmlist = Z80.dasm(MZ700_MonitorRom.Binary,
         0x0000, 0x1000, 0x0000);
     let dasmlines = Z80.dasmlines(asmlist);
     let outbuf = dasmlines.join("\n") + "\n";
-    $(".source-list").asmview("name", "monitor-rom", "MZ-700 NEW MONITOR");
+    $("#wndAsmList").asmview("name", "monitor-rom", "MZ-700 NEW MONITOR");
     this._asmlistMonitorRom.asmlist("text", [
         ";;;",
         ";;; This is a disassembled list of the MZ-NEW MONITOR",
@@ -620,14 +682,14 @@ MZ700Js.prototype.addSampleAsmTabPage = async function() {
         async (e, asmsrc) => {
             await this.assemble(asmsrc, this._asmlistMzt);
         });
-    $(".source-list").asmview("addAsmList",
+    $("#wndAsmList").asmview("addAsmList",
         "mzt", "PCG-700 sample", this._asmlistMzt);
     let sampleSource = $($("textarea.default.source").get(0)).val();
     this._asmlistMzt.asmlist("text", sampleSource);
     await this.assemble( sampleSource, this._asmlistMzt );
 };
 
-MZ700Js.prototype.addRunImmediateTabPage = function() {
+MZ700Js.prototype.createWndImmExec = function() {
     //
     //直接実行ボタン
     //
@@ -643,7 +705,7 @@ MZ700Js.prototype.addRunImmediateTabPage = function() {
         });
     };
 
-    $(".source-list").tabview("add", "exec-inst",
+    $("#wndImmExec").append(
         $("<div/>").addClass("imm-exec").css("height", "306px")
         .css("padding","15px 5px")
         .append($("<label/>")
@@ -673,7 +735,7 @@ MZ700Js.prototype.addRunImmediateTabPage = function() {
                     }
                 }))
         .append($("<br/>"))
-    ).tabview("caption", "exec-inst", "Immediate Exec.");
+    );
 };
 
 /**
@@ -854,10 +916,10 @@ MZ700Js.prototype.resizeScreen = function() {
 MZ700Js.prototype.scrollToShowPC = function() {
     this.mz700comworker.getRegister(function(reg) {
         if(reg.PC <= 0x1000) {
-            $(".source-list").asmview("activate", "monitor-rom");
+            $("#wndAsmList").asmview("activate", "monitor-rom");
             this._asmlistMonitorRom.asmlist("setCurrentAddr", reg.PC);
         } else {
-            $(".source-list").asmview("activate", "mzt");
+            $("#wndAsmList").asmview("activate", "mzt");
             this._asmlistMzt.asmlist("setCurrentAddr", reg.PC);
         }
     });
