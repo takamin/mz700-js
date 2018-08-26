@@ -29,7 +29,7 @@
     color: silver;
 }
 
-#physical-interface
+#human-interface
 {
     overflow: auto;
     background-color: white;
@@ -43,7 +43,7 @@
     transform:rotate(-90deg);
 }
 
-#physical-interface,
+#human-interface,
 {
     position:fixed;
     opacity:0.0;
@@ -52,14 +52,14 @@
     .screen {
         position:relative;
     }
-    #physical-interface
+    #human-interface
     {
         position:relative;
         opacity:1;
     }
 }
 @media screen and (orientation: landscape) {
-    #physical-interface
+    #human-interface
     {
         opacity:0.8;
     }
@@ -200,4 +200,46 @@
     padding:0;
     margin:0;
     border-width: 0;
+}
+.toolwnd {
+    border: solid 1px blue;
+}
+.toolwnd > .titlebar {
+    overflow: hidden;
+    height: 30px;
+    line-height: 30px;
+    font-size: 11pt;
+    border-style: solid;
+    border-color: blue;
+    border-width: 0 0 1px 0;
+    background-color: blue;
+    color: white;
+    font-weight:bold;
+}
+.toolwnd > .titlebar > .title {
+    display: inline-block;
+    width: calc(100% - 120px);
+    padding-left:2px;
+}
+.toolwnd > .titlebar > .buttons {
+    display: inline-block;
+    width: 116px;
+    padding: 0 1px;
+}
+.toolwnd > .titlebar > .buttons > button {
+    display: inline-block;
+    width: 28px;
+    height: 28px;
+    margin: 1px 1px 1px 0;
+    font-size: 11pt;
+    border: solid 1px #44f;
+}
+.toolwnd > .titlebar > .buttons > button:hover {
+    background-color: white;
+    border: solid 1px white;
+}
+.toolwnd > .titlebar > .buttons > button:disabled {
+    background-color: blue;
+    color: #44f;
+    border: solid 1px #44f;
 }

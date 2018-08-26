@@ -47,28 +47,30 @@
     </head>
     <body>
         <div id="liquid-panel-MZ-700" class="dock MZ-700">
-            <div id="dock-panel-header" class="dock top" style="height:55px">
-                <h1 style="height:50px; line-height:50px; margin:0; font-size:12pt;"
-                    ><span class="mz700scrn" charSize="16" padding="1" color="0" bgColor="7"
+            <div id="dock-panel-header" class="dock top" style="height:25px">
+                <h1 style="height:25px; line-height:25px; margin:0; padding: 0; font-size:0pt;"
+                    ><span class="mz700scrn" charSize="8" padding="1" color="0" bgColor="7"
                         >MZ-700 FULL JAVASCRIPT EMULATOR</span></h1>
             </div>
             <div class="dock">
                 <div class="dock MZ-700-body">
                     <div class="screen cmt-slot key-switcher"></div>
-                    <div id="physical-interface">
+                    <div id="human-interface">
                         <div class="keyboard"></div>
                         <div class="ctrl-panel"></div>
                         <div class="data-recorder"></div>
                     </div>
                 </div>
             </div>
-            <div id="dock-panel-right" class="dock right resizable" style="width:630px;">
-                <div class="monitor dropdownpanel open" caption="Register/Memory" style="height:410px;">
-                    <div class="register-monitor"></div>
-                    <div class="memory"></div>
+            <div id="dock-panel-right" class="dock right resizable" style="width:590px;">
+                <div id="toolwndTaskbar" class="dock top" style="height: 40px;">
                 </div>
-                <div class="source-list dropdownpanel open"
-                    caption="Z80 Assembly Code"></div>
+                <div class="dock">
+                    <div id="wndRegView" class="toolwnd register-monitor open" title="REGISTER"></div>
+                    <div id="wndDumpList" class="toolwnd memory open" title="MEMORY"></div>
+                    <div id="wndAsmList" class="toolwnd source-list open" title="Z80 ASM"></div>
+                    <div id="wndImmExec" class="toolwnd" title="IMM.EXEC."></div>
+                </div>
             </div>
         </div>
         <textarea class="default source" style="display:none;">
