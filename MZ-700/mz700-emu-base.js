@@ -1,7 +1,6 @@
 /* global Uint8Array */
 require("../lib/context.js");
 require("../lib/ex_number.js");
-const              $ = require("jquery");
 const    TransWorker = require('transworker');
 const   Z80_assemble = require("../Z80/assembler.js");
 const  MZ_TapeHeader = require('./mz-tape-header.js');
