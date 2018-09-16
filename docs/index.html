@@ -53,13 +53,12 @@ target="_blank" title="Click to run this emulator on the Github page">
 <img src="https://github.com/takamin/mz700-js/blob/gh-pages/image/title.png?raw=true"
 width="100%" style="max-width:900px"/>
 </a></p>
-<p>This is an emulator of &quot;MZ-700&quot;, a Japanese historical 8-bit micro computer.</p>
+<h2>Description</h2><p>This is an emulator of &quot;MZ-700&quot;, a Japanese historical 8-bit micro computer.</p>
 <p>This emulator is written in JavaScript.
 It works on the modern HTML5 web browser.
 I would strongly recommend Google Chrome,
 because of the emulation speed and its stability.</p>
-<p>You can visit this <a href="https://takamin.github.io/mz700-js/emu.html">GitHub-page</a> to run on your web browser.</p>
-<p>The MZ-700 is produced by SHARP in Nov.15,1982.
+<h2>MZ-700</h2><p>The MZ-700 is produced by SHARP in Nov.15,1982.
 It equipped a Z80A CPU 3.58MHz,
 and represents various characters in eight colors
 and a monoral beep sound, but no graphics.</p>
@@ -71,198 +70,30 @@ and a monoral beep sound, but no graphics.</p>
 </ul>
 <p>Many people were saying,</p>
 <p><strong>&quot;MZ-700 Has No LIMIT&quot;</strong></p>
-<p><a href="http://bicycle.life.coocan.jp/takamints/index.php/MZ-700"
+<p><a href="https://takamin.github.io/MZ-700/"
 target="_blank" title="Click to play some free 8 bit game">
-<img src="http://bicycle.life.coocan.jp/takamints/modules/MZ-700/image/MZ-700.png"
+<img src="https://takamin.github.io/MZ-700/image/MZ-700.png"
 width="100%" style="max-width:900px"/>
 </a></p>
-<p>In this emulator:</p>
-<ul>
-<li>Initially and on reset, The MZ-NEW-MONITOR in the BOOT ROM will run.</li>
-<li>You can drop a MZT-file to the screen to run it.</li>
+<h2>PREREQUISITES and FEATURES</h2><ul>
+<li>Node.js 8.10 or later is requied.</li>
+<li>This emulator bundles <a href="http://retropc.net/mz-memories/mz700/">MZ-NEW MONITOR</a> to boot.</li>
+<li>You can drop a MZT-file to the screen to run.</li>
+<li>Z80 assembler and disassembler is available on the Web and also CLI command.</li>
+<li>And, It's a somewhat a crazy feature, the emulator running on the CLI with Node.js is also available.</li>
 </ul>
-<p>And, this module bundle a tiny assembler and disassember for the Z80.
-And more, somewhat a craizy feature, the emulator on the CLI by Node.js is available.</p>
-<h2>INSTALLATION</h2><p>If you just want to run the emulator, you would use -g option for npm.</p>
-<pre class="prettyprint source"><code>$ npm install -g mz700-js</code></pre><p>Or, You can clone from <a href="https://github.com/takamin/mz700-js">GitHub</a> or download a zip.</p>
-<h2>RUN A CLIENT SIDE EMULATION ON THE BROWSER</h2><p>If you install this to global, run <code>mz700-js</code> command.
-If you clone the git repository, install and start this module like this:</p>
+<h2>INSTALLATION</h2><p>To install on your local PC,
+<a href="https://github.com/takamin/mz700-js">clone the repository or get the zip from GitHub</a>.</p>
+<p>And, </p>
 <pre class="prettyprint source"><code>$ npm install   # Build
-$ npm start     # Start local web server and run the app.</code></pre><p>The page will be opened with your browser.</p>
+$ npm start     # Start local web server and run the app.</code></pre><p>Access http://localhost:3000/mz700-js/emu.html with your browser.</p>
+<p>Or if you would'nt install or the installation fails,
+<a href="https://takamin.github.io/mz700-js/emu.html">the emulation page</a> is available.</p>
 <h2>Available Browsers</h2><ul>
 <li>Google Chrome</li>
 <li>Mozzilla Firefox</li>
 <li>Microsoft Internet explorer 11 (but no sound and slow)</li>
 <li>Microsoft Edge (but slow)</li>
-</ul>
-<h2><code>mz700-cli</code> - RUN THE CLI EMULATOR with Node.js</h2><h3>COMMAND LINE</h3><pre class="prettyprint source"><code>> mz700-cli [-c &lt;mzt-filename>] [&lt;mzt-filename>]</code></pre><h3>OPTIONS</h3><ul>
-<li>c - Set a MZT file to the data recorder as CMT.</li>
-</ul>
-<h3>PARAMETERS</h3><ul>
-<li><code>&lt;mzt-filename&gt;</code> - A MZT-filename to be loaded to the memory immedietely.</li>
-</ul>
-<h3>COMMANDS</h3><ul>
-<li><strong><code>exit</code></strong> - Exit from the emulator.</li>
-<li><strong><code>run</code></strong> - Run MZ-700 emulation.</li>
-<li><strong><code>stop</code></strong> - Stop emulation.</li>
-<li><strong><code>step</code></strong> <em><code>[&lt;num&gt;]</code></em> - Execute N instructions and stop. num default is 1.</li>
-<li><strong><code>vram</code></strong> - Print VRAM to console.</li>
-<li><strong><code>reg</code></strong> - Print register.</li>
-<li><strong><code>key</code></strong> <em><code>&lt;input-strings&gt;</code></em> - Convert the string to MZ-700's Key-Matrix, Then push those stroke.</li>
-<li><strong><code>jp</code></strong> <em><code>&lt;addr&gt;</code></em> - Set the PC of Z80 CPU.</li>
-<li><strong><code>mem set</code></strong> <em><code>&lt;addr&gt; &lt;data&gt; [ &lt;data&gt; ...]</code></em> - Write data to the memory</li>
-<li><strong><code>mem dump</code></strong> <em><code>&lt;addr&gt;</code></em> - Print the contents of the memory.</li>
-<li><strong><code>cmt set</code></strong> <em><code>&lt;mzt-filename&gt;</code></em> - Set CMT to the data recorder.</li>
-<li><strong><code>cmt eject</code></strong> - Eject CMT.</li>
-<li><strong><code>cmt play</code></strong> - Push the PLAY button of the data recorder.</li>
-<li><strong><code>cmt rec</code></strong> - Push the REC button of the data recorder.</li>
-<li><strong><code>cmt stop</code></strong> - Push the STOP button of the data recorder.</li>
-<li><strong><code>bp set</code></strong> <em><code>&lt;addr&gt;</code></em> - Set break points at the address.</li>
-<li><strong><code>bp rm</code></strong> <em><code>&lt;addr&gt;</code></em> - Remove the break points set at the address.</li>
-<li><strong><code>bp clear</code></strong> - Clear all break points.</li>
-<li><strong><code>conf key duration make &lt;num&gt;</code></strong> - Set key making duration by millisec.</li>
-<li><strong><code>conf key duration release &lt;num&gt;</code></strong> - Set key releasing duration by millisec.</li>
-<li><strong><code>conf key duration make</code></strong> - Print key making duration.</li>
-<li><strong><code>conf key duration release</code></strong> - Print key releasing duration.</li>
-</ul>
-<h4>Parameters for the commands</h4><ul>
-<li><em><code>&lt;num&gt;</code></em> : Number.</li>
-<li><em><code>&lt;addr&gt;</code></em>, <em><code>&lt;data&gt;</code></em> : Specify the address like <code>0123h</code> as hexadecimal or <code>1024</code> as decimal</li>
-<li><em><code>&lt;input-string&gt;</code></em> : String structured by the keys of the MZ-700 Key-Matrix.</li>
-</ul>
-<h2>CHANGES</h2><ul>
-<li>v1.0.*<ul>
-<li>An UI-logic was isolated. The emulation is stable for a year.</li>
-</ul>
-</li>
-<li>v0.9.*<ul>
-<li>Use CodeMirror for Z80 assemble source editor.</li>
-<li>Improve disassembling speed.</li>
-<li>Updating debugger UI ( Use mouse wheel to scroll ).</li>
-<li>Allow the multi file assembling on the web and CLI assembler.</li>
-</ul>
-</li>
-<li>v0.8.*<ul>
-<li>Improving UI experiences.</li>
-<li>Some emulation codes are now written as Asm.js.</li>
-<li>Add buttons to load a MZT file. The file is a JavaScript source and is loaded by JSONP.</li>
-<li>Fix potential security vulnerabilities in package-lock.json.</li>
-</ul>
-</li>
-<li>v0.7.0 - Change the layout by device type.(But the module was not compiled.)<ul>
-<li>v0.7.1 - Change the layout by device type.</li>
-<li>v0.7.2 - Fix the bug on v0.7.1: The emulator could not accept key-inputs from
-a physical keyboard when the software keyboard is removed on PC.</li>
-<li>v0.7.3 - Simplified the sliders that control the emulation speed.</li>
-<li>v0.7.4 - Improve the UI.</li>
-<li>v0.7.5 - Optimize the features of MZT loading, assembling and disassembling.</li>
-<li>v0.7.6 - Tweak UI</li>
-<li>v0.7.7 - Fixed a bug in the 'mz700-cli' command on speed control parameters.</li>
-<li>v0.7.8 - Improve the screen keyboard for the mobile and tablet.<ul>
-<li>It might be able to scroll horizontally.</li>
-<li>It will be opened at startup.</li>
-</ul>
-</li>
-<li>v0.7.9 - Do not fold the rows in the right side panels.</li>
-<li>v0.7.10 - Fix a bug that could not parse an address on memory-dump widget.</li>
-<li>v0.7.11 - Improves the usability.<ul>
-<li>The screen keyboard and any control buttons are available in fullscreen mode.</li>
-<li>Tweak the layout styles.</li>
-</ul>
-</li>
-<li>v0.7.12 - Clear the assemble result when the source is chaged, and It will reassemble.</li>
-<li>v0.7.13 - Refactors the disassembler. It generates assembling informations to display.
-  And an improvement of the development environment such as jsdoc and ctags was done.</li>
-<li>v0.7.14 - Currently Implementing the feature of the assemble source editor that
-  could edit multiple file with tabbed page. This work is not completed.</li>
-<li>v0.7.15 - When the MZT is dropped to the screen or CMT panel,
-  a disassemble button is shown in the filename area.
-  And the MZT is not disassembled in automatic.
-  To disassemble it, you need to push that disassemble button.
-  And, the tab page styles were applied to the assemble source view.</li>
-<li>v0.7.16 - Fix a CLI emulation bug that could not start to run.</li>
-<li><strong>v0.7.17</strong> - Fix following Z80 core emulation bugs about the stack pointer.
-  And this version seems to be able to run the <strong>&quot;Tiny XEVIOUS for MZ-700&quot;</strong> (but incompletely).<ul>
-<li>The instruction <code>LD SP,(nn)</code> had been loading <code>nn</code> to SP.</li>
-<li>Three instructions of <code>ADD HL,SP</code>, <code>ADC HL,SP</code> and <code>SBC HL,SP</code> had been invoking
-undefined method and stopping with an error.</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>v0.6.0 - Some panels are resizable. And truely fullscreen mode is available.<ul>
-<li>v0.6.1 - On fullscreen mode, The input from keyboard is enabled.</li>
-<li>v0.6.2 - Improve the beep sound and decrease the pop noise.</li>
-</ul>
-</li>
-<li>v0.5.0 - Add fullscreen feature.</li>
-<li>v0.4.0 - Change and update the development environment. And for mz700scrn plugin, some features are added.</li>
-<li>v0.3.0 - Update web-emulator's screen by the command <code>mz700-js</code> or <code>npm start</code><ul>
-<li>v0.3.1 - The grunt task <code>lint</code> is available. To run the check, type <code>grunt lint</code> on console.</li>
-</ul>
-</li>
-<li>v0.2.0 (1) The CMT-loading process is available on both web and cli emulators,
-but it seems not perfect. (2) The CLI-tools print actual module version with <code>-v</code> option.
-(3) <code>npm test</code> is available.  To run the test, <code>npm mocha</code> and <code>bash</code> required. On Windows,
-Please use MSYS or Git bash of GitHub for Windows. (4) The dependency <code>--saved</code> modules in
-<code>package.json</code> are upgraded.<ul>
-<li>v0.2.6 - Browserifies and uglifies the worker script, and Changes and fixies the version of npm debug to suppress warning on install the packages.</li>
-<li>v0.2.5 - Manages package. npm jade is changed to pug, the scripts are minified by uglify-js, and a favicon.ico is added.</li>
-<li>v0.2.4 - Remove the script submodule <code>transworker</code>. Use fractional-timer for emulation.</li>
-<li>v0.2.3 - Publish the script <code>transworker.js</code> as a <a href="https://www.npmjs.com/package/transworker">node module</a>.</li>
-<li>v0.2.2 - Fix the emulation of the Intel 8253 and IC556, and the process for <code>EI</code> instruction.</li>
-<li>v0.2.1 - Fix some bugs on CLI. MZT-loading process and the 'push down' character
-(down arrow and under line) to normal one.</li>
-</ul>
-</li>
-<li>v0.1.0 - The key-in events are accepted by window object.<ul>
-<li>v0.1.1 - It can run on the Microsoft Edge.</li>
-<li>v0.1.4 - Edit this README</li>
-<li>v0.1.6 - Update screen layouts.</li>
-<li>v0.1.7 - Some scripts are changed to a node module.
-And on development environment, the packages of grunt, bower and browserify
-are installed.</li>
-<li>v0.1.8 - Add PCG-700 emulation.
-It is mapped to the addresses where from E010H to E012H in memory mapped I/O area.
-Details of the I/O is described at
-<a href="http://www.maroon.dti.ne.jp/youkan/mz700/mziomap.html">MZ-700 I/O</a>(Japanese)
-or <a href="http://www.sharpmz.org/mz-700/pcg700_03.htm">PCG700 operation</a>.
-But I cannot do the tests enough.
-Because I don't have a binary that use this feature.</li>
-<li>v0.1.9 - 'S' command is available on monitor.
-Type <code>*S1200,1260,1200,PCG-CURSOR-MZ[CR]</code> and click <code>RECPLAY</code> button, and
-you can download a MZT file named <code>PCG-CURSOR-MZ.MZT</code>.</li>
-<li>v0.1.10 - cycles and disassembling-features are added completely.</li>
-<li>v0.1.11 - The assembling and disassembling commands named
-<code>mzasm</code> and <code>mzdas</code> is available.</li>
-<li>v0.1.12 - Update grunt's bundles.</li>
-<li>v0.1.13 -
-(1) Some undefined instructions of Z80 (not all, only what the 'XEVIOUS for 700'
-might be using) are available to execute, assemble and dis-assemble.
-(2) The bug that the emulator stops after each 'OUT' instruction executed was fixed.
-(3) The binary named <code>bin2mzt</code> is added. This will insert the MZ-Tape-Header to the raw binary file.
-(4) For disassembler <code>mzdas</code>, the option to offset the address is available.</li>
-<li>v0.1.14 - (1) Fix installing problem. (2) On reset, the screen will be cleared.</li>
-<li>v0.1.15 - (1) On reset, CPU will run automatically.
-(2) On the Chrome, the emulation speed can be controlled with three sliders.
-But this feature might not work on the other browser.
-(3) Run, Stop and Step can be controlled from keys.<ul>
-<li>[Ctrl]+[F8]: run/continue</li>
-<li>[Ctrl]+[F9]: stop/break</li>
-<li>[Ctrl]+[F11]: step</li>
-</ul>
-</li>
-<li>v0.1.16 - Add CLI emulator and debugger <code>mz700-cli</code>.</li>
-<li>v0.1.17 - Changed initial keystroke durations of CLI emulator and allow those values to be changed by added <code>conf</code> command .</li>
-</ul>
-</li>
-</ul>
-<h2>TODO</h2><ul>
-<li>Visualize the memory banks to show which is selected.</li>
-<li>Disassemble around the break point or the program counter.</li>
-<li>With disassembling, create a list of addresses that are distinations of jumping instruction.</li>
-<li>Emulate plotter printer of MZ-731.</li>
-<li>Emulate MZ-1500. PSG and PCG.</li>
 </ul>
 <h2>LICENCE</h2><p>MIT</p></article>
     </section>
@@ -370,7 +201,7 @@ But this feature might not work on the other browser.
 <br class="clear">
 
 <footer>
-    Generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Sun Aug 26 2018 19:45:26 GMT+0900 (東京 (標準時)) using the Minami theme.
+    Generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Sun Sep 16 2018 22:26:09 GMT+0900 (東京 (標準時)) using the Minami theme.
 </footer>
 
 <script>prettyPrint();</script>

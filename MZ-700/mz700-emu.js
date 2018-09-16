@@ -1,6 +1,3 @@
-window.jQuery = require("jquery");
-const $ = window.jQuery;
-require("jquery-ui");
 require("fullscrn");
 const      packageJson = require("../package.json");
 const    dock_n_liquid = require("dock-n-liquid");
