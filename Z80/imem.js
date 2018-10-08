@@ -1,68 +1,106 @@
-(function() {
-    var Z80BinUtil = require("./bin-util.js");
+"use strict";
+const Z80BinUtil = require("./bin-util.js");
 
-    //
-    // IMem
-    //
-    var IMem = function() {};
+/**
+ * IMem - Z80 emulator's memory interface
+ * @constructor
+ */
+function IMem() {
+}
 
-    IMem.prototype.create = function(opt) {
-        opt = opt || {};
-        this.onPeek = opt.onPeek || function(/*address, value*/) {};
-        this.onPoke = opt.onPoke || function(/*address, value*/) {};
-        this.size = opt.size || 0x10000;
-        this.startAddr = opt.startAddr || 0;
-    };
+/**
+ * Create
+ * @param {object} opt the options.
+ * @returns {undefined}
+ */
+IMem.prototype.create = function(opt) {
+    opt = opt || {};
+    this.onPeek = opt.onPeek || ((/*address, value*/) => {});
+    this.onPoke = opt.onPoke || ((/*address, value*/) => {});
+    this.size = opt.size || 0x10000;
+    this.startAddr = opt.startAddr || 0;
+    if(this.startAddr < 0 || this.startAddr > 0xffff) {
+        throw new Error("Invalid start address of memory");
+    }
+    if(this.size < 0) {
+        throw new Error("Invalid memory size");
+    }
+    if(this.startAddr + this.size > 0x10000) {
+        throw new Error("Invalid combination of start address and memory size.");
+    }
+};
 
-    //
-    // This peekByte is an abstruct called from `peek`.
-    //
-    // address: address to write value
-    //
-    IMem.prototype.peekByte = function(/* address, value */) {
-        var msg = "Error: peekByte was not overrided and supported in class of this:"
-            + JSON.stringify(this, null, "    ");
-        console.error(msg);
-        throw new Error(msg);
-    };
+/**
+ * Read a byte data.
+ * This peekByte is an abstruct called from `peek`.
+ * @param {number} address an address.
+ * @returns {number} the value in the memory.
+ */
+IMem.prototype.peekByte = function(/* address */) {
+    const msg = "Error: abstruct pokeByte was invoked." +
+        `This method must be overrided by the class ${this.constructor.name}`;
+    console.error(msg);
+    throw new Error(msg);
+};
 
-    //
-    // This pokeByte is an abstruct called from `poke`.
-    //
-    // address: address to write value
-    // value: value to write
-    //
-    IMem.prototype.pokeByte = function(/* address, value */) {
-        var msg = "Error: pokeByte was not overrided and supported in class of this:" + JSON.stringify(this, null, "    ");
-        console.error(msg);
-        throw new Error(msg);
-    };
+/**
+ * Write a byte data.
+ * This pokeByte is an abstruct called from `poke`.
+ * @param {number} address an address.
+ * @param {number} value a data.
+ * @returns {undefined}
+ */
+IMem.prototype.pokeByte = function(/* address, value */) {
+    const msg = "Error: abstruct pokeByte was invoked." +
+        `This method must be overrided by the class ${this.constructor.name}`;
+    console.error(msg);
+    throw new Error(msg);
+};
 
-    IMem.prototype.clear = function() {
-        for(var i = 0; i < this.size; i++) {
-            this.pokeByte(0);
-        }
-    };
+/**
+ * Clear memory by zero.
+ * @returns {undefined}
+ */
+IMem.prototype.clear = function() {
+    for(var i = 0; i < this.size; i++) {
+        this.pokeByte(0);
+    }
+};
 
-    IMem.prototype.peek = function(address) {
-        var value = this.peekByte(address);
-        var override = this.onPeek.call(this, address, value);
-        if(override != null && override != undefined) {
-            value = override;
-        }
-        return value;
-    };
+/**
+ * Read a byte data.
+ * @param {number} address an address.
+ * @returns {number} the value in the memory.
+ */
+IMem.prototype.peek = function(address) {
+    const value = this.peekByte(address);
+    const override = this.onPeek(address, value);
+    if(override != null && override != undefined) {
+        return override;
+    }
+    return value;
+};
 
-    IMem.prototype.poke = function(address, value) {
-        this.pokeByte(address, value);
-        this.onPoke.call(this, address, this.peekByte(address));
-    };
+/**
+ * Write a byte data.
+ * @param {number} address an address.
+ * @param {number} value a data.
+ * @returns {undefined}
+ */
+IMem.prototype.poke = function(address, value) {
+    this.pokeByte(address, value);
+    this.onPoke(address, this.peekByte(address));
+};
 
-    IMem.prototype.peekPair = function(address) {
-        var H = this.peek(address + 1);
-        var L = this.peek(address + 0);
-        return Z80BinUtil.pair(H,L);
-    };
+/**
+ * Read a 16bit data.
+ * @param {number} address an address.
+ * @returns {number} the value in the memory.
+ */
+IMem.prototype.peekPair = function(address) {
+    return Z80BinUtil.pair(
+        this.peek(address + 1),
+        this.peek(address + 0));
+};
 
-    module.exports = IMem;
-}());
+module.exports = IMem;
