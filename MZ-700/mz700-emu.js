@@ -328,7 +328,9 @@ MZ700Js.prototype.KeyInState_create = function() {
 
 MZ700Js.prototype.SoundCtrl_create = function() {
     let mute = false;
-    if(cookies.hasItem("mute")) {
+    if(!this.sound.resumed()) {
+        mute = true;
+    } else if(cookies.hasItem("mute")) {
         mute = (cookies.getItem("mute")=="true");
     }
     let volume = 10;
