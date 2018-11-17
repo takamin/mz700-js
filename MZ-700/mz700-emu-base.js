@@ -53,7 +53,9 @@ MZ700EmuBase.prototype.create = async function(opt) {
         let title = canvas.attr("title");
         let checkSound = () => {
             if(!this.sound.resumed()) {
-                canvas.attr("title", "To enable the sound, click here.");
+                canvas.attr("title",
+                    "The Audio API is suspended by autoplay policy. " +
+                    "To resume the sound, click here or volume controls.");
             } else {
                 canvas.attr("title", title);
             }
