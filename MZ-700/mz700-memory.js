@@ -77,7 +77,7 @@ MZ700_Memory.prototype.create = function(opt) {
             startAddr: 0xE800, size: 0x10000 - 0xE800
         }),
         DRAM: new MemoryBlock({
-            startAddr: 0xD800, size: 0x3000
+            startAddr: 0xD000, size: 0x3000
         })
     };
 
