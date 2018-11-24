@@ -319,15 +319,15 @@ MZ700.Z80_CLOCK = 3.579545 * 1000000;// 3.58 MHz
 MZ700.DEFAULT_TIMER_INTERVAL = MZ700.AVG_CYCLE * (1000 / MZ700.Z80_CLOCK)
 
 MZ700.prototype.mmioMapToRead = function(address) {
-    address.forEach(function(a) {
+    for(const a of address) {
         this.mmioMap[a - 0xE000].r = true;
-    }, this);
+    }
 };
 
 MZ700.prototype.mmioMapToWrite = function(address) {
-    address.forEach(function(a) {
+    for(const a of address) {
         this.mmioMap[a - 0xE000].w = true;
-    }, this);
+    }
 };
 
 MZ700.prototype.mmioIsMappedToRead = function(address) {
