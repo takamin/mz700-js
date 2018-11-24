@@ -156,11 +156,11 @@ MZ700EmuBase.prototype.create = async function(opt) {
             },
             'onUpdateScreen': (this.scrn == null) ? () => {} :
                 updateData => {
-                    Object.keys(updateData).forEach(addr => {
-                        let chr = updateData[addr];
+                    for(const addr of Object.keys(updateData)) {
+                        const chr = updateData[addr];
                         this.scrn.writeVram(
                                 parseInt(addr), chr.attr, chr.dispcode);
-                    });
+                    }
                 },
             'onMmioRead': param => {
                 this._mmio.read(param.address, param.value);
