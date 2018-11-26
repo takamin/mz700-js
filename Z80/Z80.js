@@ -30,19 +30,37 @@ const Z80 = function(opt) {
     this.onReadIoPort = opt.onReadIoPort || ((/*port, value*/) => {});
     this.onWriteIoPort = opt.onWriteIoPort || ((/*port, value*/) => {});
     this.bpmap = new Array(0x10000);
-    this.tick = 0;
+    this.consumedTCycle = 0;
 	this.createOpecodeTable();
 };
+
+/**
+ * Read a value fron I/O port.
+ * @param {number} port A port number(0 to 255).
+ * @returns {number} A 8-bit value that was read.
+ */
 Z80.prototype.readIoPort = function(port) {
     const value = this.ioPort[port];
     this.reg.onReadIoPort(value);
     this.onReadIoPort(port, value);
     return value;
 };
+
+/**
+ * Write I/O port.
+ * @param {number} port A port number(0 to 255).
+ * @param {number} value A 8-bit value to be written.
+ * @returns {undefined}
+ */
 Z80.prototype.writeIoPort = function(port, value) {
     this.ioPort[port] = value;
     this.onWriteIoPort(port, value);
 };
+
+/**
+ * Reset.
+ * @returns {undefined}
+ */
 Z80.prototype.reset = function() {
     this.IFF1 = 0;
     this.IFF2 = 0;
@@ -51,25 +69,39 @@ Z80.prototype.reset = function() {
     this.reg.clear();
     this.regB.clear();
     this.exec = Z80.prototype.exec;
-    this.tick = 0;
+    this.consumedTCycle = 0;
 };
+
+/**
+ * Interrupt.
+ * @returns {undefined}
+ */
 Z80.prototype.interrupt = function() {
     if(this.IFF1) {
         this.pushPair(this.reg.PC);
         this.reg.PC = 0x0038;
     }
 };
+
+/**
+ * Execute the instruction at current program counter.
+ * @returns {undefined}
+ */
 Z80.prototype.exec = function() {
     this.reg.R = (this.reg.R + 1) & 255;
     const instruction = this.opecodeTable[this.fetch()];
     const cycle = instruction.proc() || instruction.cycle || 4;
-    this.tick += cycle;
+    this.consumedTCycle += cycle;
     if(this.bpmap[this.reg.PC] != null) {
         console.log("*** BREAK AT $" + this.reg.PC.HEX(4));
         throw "break";
     }
 };
 
+/**
+ * Clear the break points.
+ * @returns {undefined}
+ */
 Z80.prototype.clearBreakPoints = function() {
     this.bpmap = new Array(0x10000);
     for(let i = 0; i < 0x10000; i++) {
@@ -77,48 +109,98 @@ Z80.prototype.clearBreakPoints = function() {
     }
 };
 
+/**
+ * Get the break points.
+ * @returns {Array<boolean>} The array that the index is
+ *      an address and the element is a status whether it
+ *      is a break point.
+ */
 Z80.prototype.getBreakPoints = function() {
     return this.bpmap;
 };
 
+/**
+ * Remove the break points.
+ * @param {number} address The staring address. 
+ * @param {number} size The area size.
+ * @returns {undefined}
+ */
 Z80.prototype.removeBreak = function(address, size) {
     for(let i = 0; i < size; i++) {
         this.bpmap[address + i] = null; 
     }
 };
 
+/**
+ * Remove the break points.
+ * @param {number} address The staring address. 
+ * @param {number} size The area size.
+ * @returns {undefined}
+ */
 Z80.prototype.setBreak = function(address, size) {
     for(let i = 0; i < size; i++) {
         this.bpmap[address + i] = true; 
     }
 };
 
+/**
+ * Get a 8-bit value from memory pointed by PC.
+ * And the PC goes forward with 1 byte.
+ * @returns {number} A 8-bit value.
+ */
 Z80.prototype.fetch = function() {
     const PC = this.reg.PC;
     this.reg.PC = (PC + 1) & 0xffff;
     return this.memory.peek(PC);
 };
 
+/**
+ * Get a 16-bit value from memory pointed by PC.
+ * And the PC goes forward with 2 bytes.
+ * @returns {number} A 16-bit value.
+ */
 Z80.prototype.fetchPair = function() {
     const PC = this.reg.PC;
     this.reg.PC = (PC + 2) & 0xffff;
     return this.memory.peekPair(PC);
 };
 
+/**
+ * Push 16-bit value to stack pointer(SP).
+ * And SP goes back with 2 bytes.
+ * @param {number} nn 16 bit integer.
+ * @returns {undefined}
+ */
 Z80.prototype.pushPair = function(nn) {
     this.memory.poke(--this.reg.SP, Z80BinUtil.hibyte(nn));
     this.memory.poke(--this.reg.SP, Z80BinUtil.lobyte(nn));
 };
 
+/**
+ * Pop 16-bit value from stack pointer(SP).
+ * And SP goes forward with 2 bytes.
+ * @returns {number} 16 bit integer that was read.
+ */
 Z80.prototype.popPair = function() {
     const lo = this.memory.peek(this.reg.SP++);
     const hi = this.memory.peek(this.reg.SP++);
     return Z80BinUtil.pair(hi, lo);
 };
 
+/**
+ * Increment the specific address value.
+ * @param {number} addr A address to increment.
+ * @returns {undefined}
+ */
 Z80.prototype.incrementAt = function(addr) {
     this.memory.poke(addr, this.reg.getINCValue(this.memory.peek(addr)));
 };
+
+/**
+ * Decrement the specific address value.
+ * @param {number} addr A address to increment.
+ * @returns {undefined}
+ */
 Z80.prototype.decrementAt = function(addr) {
     this.memory.poke(addr, this.reg.getDECValue(this.memory.peek(addr)));
 };
