@@ -23,9 +23,9 @@
         },
         started: function() { transworker.postNotify("start"); },
         stopped: function() { transworker.postNotify("stop"); },
-        notifyClockFreq: function(clockCount) {
+        notifyClockFreq: function(tCyclePerSec) {
             transworker.postNotify(
-                    "onNotifyClockFreq", [ clockCount ]);
+                    "onNotifyClockFreq", [ tCyclePerSec ]);
         },
         onBreak: function() {
             transworker.postNotify("onBreak");

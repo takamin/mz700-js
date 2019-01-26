@@ -4,8 +4,8 @@ describe("MZ_Tape", function() {
     var should = chai.should;
     var assert = chai.assert;
     require("../lib/context");
-    var MZ_Tape = require("../MZ-700/mz-tape");
-    var MZ_TapeHeader = require("../MZ-700/mz-tape-header");
+    var MZ_Tape = require("../lib/mz-tape");
+    var MZ_TapeHeader = require("../lib/mz-tape-header");
     describe("#isThereSignal", function() {
         describe("searching signal true", function() {
             it("returns true", function() {

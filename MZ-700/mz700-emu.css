@@ -29,7 +29,7 @@
     color: silver;
 }
 
-#human-interface
+#control-panel
 {
     overflow: auto;
     background-color: white;
@@ -43,7 +43,7 @@
     transform:rotate(-90deg);
 }
 
-#human-interface,
+#control-panel,
 {
     position:fixed;
     opacity:0.0;
@@ -52,26 +52,26 @@
     .screen {
         position:relative;
     }
-    #human-interface
+    #control-panel
     {
         position:relative;
         opacity:1;
     }
 }
 @media screen and (orientation: landscape) {
-    #human-interface
+    #control-panel
     {
         opacity:0.8;
     }
 }
-.MZ-700 .ctrl-panel {
+.MZ-700 .emulation-panel {
     background-color: white;
     min-width:690px;
 }
-.MZ-700 .ctrl-panel input[type='range'] {
+.MZ-700 .emulation-panel input[type='range'] {
     width:100px;
 }
-.MZ-700 .ctrl-panel > span.key-switcher {
+.MZ-700 .emulation-panel > span.key-switcher {
     margin:0px;
     padding:5px;
     border-style:solid;
@@ -82,12 +82,12 @@
     font-family: Arial;
     font-weight: bold;
 }
-.MZ-700 .ctrl-panel > span.key-switcher:hover {
+.MZ-700 .emulation-panel > span.key-switcher:hover {
     background-color: white;
     color: blue;
 }
-.MZ-700 .ctrl-panel > span.key-switcher.on,
-.MZ-700 .ctrl-panel > span.key-switcher.on:hover {
+.MZ-700 .emulation-panel > span.key-switcher.on,
+.MZ-700 .emulation-panel > span.key-switcher.on:hover {
     background-color: white;
     color: blue;
 }

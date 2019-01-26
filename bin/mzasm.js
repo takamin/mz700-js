@@ -2,7 +2,7 @@
 require("../lib/context.js");
 require("../lib/ex_number.js");
 var Z80_assemble = require('../Z80/assembler');
-var MZ_TapeHeader = require('../MZ-700/mz-tape-header');
+var MZ_TapeHeader = require('../lib/mz-tape-header');
 var fnut = require('../lib/fnuts.js');
 var fs = require('fs');
 var getPackageJson = require("../lib/get-package-json");
