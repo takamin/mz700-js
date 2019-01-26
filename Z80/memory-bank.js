@@ -1,50 +1,74 @@
-var IMem = require("./imem");
+"use strict";
+const IMem = require("./imem.js");
 
-//
-// MemoryBank
-//
-// TODO: change the type of field `memblk` to `Array` instead of `object`
-// to improve the speed to access.
-//
-var MemoryBank = function(opt) {
+/**
+ * MemoryBank
+ * @constructor
+ * @param {object} opt the options.
+ */
+function MemoryBank(opt) {
     this.create(opt);
-};
+}
+
 MemoryBank.prototype = new IMem();
 
+/**
+ * Create
+ * @param {object} opt the options.
+ * @returns {undefined}
+ */
 MemoryBank.prototype.create = function(opt) {
     IMem.prototype.create.call(this, opt);
     this.mem = new Array(this.size);
     this.memblk = {};
 };
 
+/**
+ * Set named memory block.
+ * @param {string} name A name of a memory bank.
+ * @param {IMem} memblk A memory block.
+ * @returns {undefined}
+ */
 MemoryBank.prototype.setMemoryBlock = function(name, memblk) {
-    var size;
-    var startAddr;
-    var j;
     if(memblk == null) {
         if(name in this.memblk) {
-            size = this.memblk[name].size;
-            startAddr = this.memblk[name].startAddr;
-            for(j = 0; j < size; j++) {
-                this.mem[startAddr + j] = null;
+            const size = this.memblk[name].size;
+            const startAddr = this.memblk[name].startAddr;
+            const endAddr = startAddr + size;
+            const nullMem = { peek:()=>0, poke: ()=>{} };
+            for(let j = startAddr; j < endAddr; j++) {
+                this.mem[j] = nullMem;
             }
             delete this.memblk[name];
         }
     } else {
         this.memblk[name] = memblk;
-        size = this.memblk[name].size;
-        startAddr = this.memblk[name].startAddr;
-        for(j = 0; j < size; j++) {
-            this.mem[startAddr + j] = memblk;
+        const size = this.memblk[name].size;
+        const startAddr = this.memblk[name].startAddr;
+        const endAddr = startAddr + size;
+        for(let j = startAddr; j < endAddr; j++) {
+            this.mem[j] = memblk;
         }
     }
 };
 
+/**
+ * Read a byte data.
+ * @param {number} address an address.
+ * @returns {number} the value in the memory.
+ */
 MemoryBank.prototype.peekByte = function(address) {
-    return (this.mem[(address - this.startAddr) & 0xffff]).peek(address) & 0xff;
+    return (this.mem[address - this.startAddr]).peek(address);
 };
 
+/**
+ * Write a byte data.
+ * @param {number} address an address.
+ * @param {number} value a data.
+ * @returns {undefined}
+ */
 MemoryBank.prototype.pokeByte = function(address, value) {
-    (this.mem[(address - this.startAddr) & 0xffff]).poke(address, value & 0xff);
+    (this.mem[address - this.startAddr]).poke(address, value);
 };
+
 module.exports = MemoryBank;

@@ -1,8 +1,8 @@
 require("../lib/ex_number.js");
 var FractionalTimer = require("fractional-timer");
-var MZ_TapeHeader   = require('./mz-tape-header');
-var MZ_Tape         = require('./mz-tape');
-var MZ_DataRecorder = require('./mz-data-recorder');
+var MZ_TapeHeader   = require('../lib/mz-tape-header');
+var MZ_Tape         = require('../lib/mz-tape');
+var MZ_DataRecorder = require('../lib/mz-data-recorder');
 var Intel8253       = require('../lib/intel-8253');
 var FlipFlopCounter = require('../lib/flip-flop-counter');
 var IC556           = require('../lib/ic556');
@@ -127,7 +127,7 @@ var MZ700 = function(opt) {
 
     this.mmioMap = [];
     for(var address = 0xE000; address < 0xE800; address++) {
-        this.mmioMap.push({ "r": false, "w": false });
+        this.mmioMap.push({ "r": (()=>{}), "w": (()=>{}) });
     }
 
     this.memory = new MZ700_Memory({
@@ -135,9 +135,7 @@ var MZ700 = function(opt) {
         onMappedIoRead: (address, value) => {
 
             //MMIO: Input from memory mapped peripherals
-            if(this.mmioIsMappedToRead(address)) {
-                this.opt.onMmioRead(address, value);
-            }
+            this.mmioMap[address - 0xE000].r(address, value);
 
             switch(address) {
                 case 0xE001:
@@ -211,9 +209,7 @@ var MZ700 = function(opt) {
         onMappedIoUpdate: (address, value) => {
 
             //MMIO: Output to memory mapped peripherals
-            if(this.mmioIsMappedToWrite(address)) {
-                this.opt.onMmioWrite(address, value);
-            }
+            this.mmioMap[address - 0xE000].w(address, value);
 
             switch(address) {
                 case 0xE000:
@@ -319,23 +315,15 @@ MZ700.Z80_CLOCK = 3.579545 * 1000000;// 3.58 MHz
 MZ700.DEFAULT_TIMER_INTERVAL = MZ700.AVG_CYCLE * (1000 / MZ700.Z80_CLOCK)
 
 MZ700.prototype.mmioMapToRead = function(address) {
-    address.forEach(function(a) {
-        this.mmioMap[a - 0xE000].r = true;
-    }, this);
+    for(const a of address) {
+        this.mmioMap[a - 0xE000].r = this.opt.onMmioRead;
+    }
 };
 
 MZ700.prototype.mmioMapToWrite = function(address) {
-    address.forEach(function(a) {
-        this.mmioMap[a - 0xE000].w = true;
-    }, this);
-};
-
-MZ700.prototype.mmioIsMappedToRead = function(address) {
-    return this.mmioMap[address - 0xE000].r;
-};
-
-MZ700.prototype.mmioIsMappedToWrite = function(address) {
-    return this.mmioMap[address - 0xE000].w;
+    for(const a of address) {
+        this.mmioMap[a - 0xE000].w = this.opt.onMmioWrite;
+    }
 };
 
 MZ700.prototype.writeAsmCode = function(assembled) {
@@ -422,19 +410,25 @@ MZ700.prototype.reset = function() {
         this.memory.poke(0xd000 + i, 0x00);
         this.memory.poke(0xd800 + i, 0x71);
     }
-    return this.z80.reset();
+    this.z80.reset();
 };
 
 MZ700.prototype.getRegister = function() {
-    return this.z80.reg.cloneRaw();
-};
-
-MZ700.prototype.getRegisterB = function() {
-    return this.z80.regB.cloneRaw();
+    const reg = this.z80.reg.cloneRaw();
+    reg._ = this.z80.regB.cloneRaw();
+    reg.IFF1 = this.z80.IFF1;
+    reg.IFF2 = this.z80.IFF2;
+    reg.IM = this.z80.IM;
+    reg.HALT = this.z80.HALT;
+    return reg;
 };
 
 MZ700.prototype.setPC = function(addr) {
     this.z80.reg.PC = addr;
+};
+
+MZ700.prototype.getRegisterB = function() {
+    return this.z80.regB.cloneRaw();
 };
 
 MZ700.prototype.getIFF1 = function() {
@@ -510,28 +504,17 @@ MZ700.prototype.start = function() {
                 MZ700.prototype.start.caller);
         return false;
     }
-    this.tid = FractionalTimer.setInterval(
-        this.run.bind(this), this.timerInterval);
+    this.startEmulation();
     this.opt.started();
-
-    var t_cycle_0 = 0;
-    this.tidMeasClock = setInterval(() => {
-        this.opt.notifyClockFreq(this.z80.tick - t_cycle_0);
-        t_cycle_0 = this.z80.tick;
-    }, 1000);
 
     return true;
 };
 
 MZ700.prototype.stop = function() {
-    if(this.tid != null) {
-        FractionalTimer.clearInterval(this.tid);
-        this.tid = null;
+    const running = (this.tid != null);
+    this.stopEmulation();
+    if(running) {
         this.opt.stopped();
-    }
-    if(this.tidMeasClock != null) {
-        clearInterval(this.tidMeasClock);
-        this.tidMeasClock = null;
     }
 };
 
@@ -618,11 +601,11 @@ MZ700.prototype.dataRecorder_motorOn = function(state) {
 };
 
 MZ700.prototype.dataRecorder_readBit = function() {
-    return this.dataRecorder.rdata(this.z80.tick);
+    return this.dataRecorder.rdata(this.z80.consumedTCycle);
 };
 
 MZ700.prototype.dataRecorder_writeBit = function(state) {
-    this.dataRecorder.wdata(state, this.z80.tick);
+    this.dataRecorder.wdata(state, this.z80.consumedTCycle);
 };
 
 // VALUE            SLOW ... FAST
@@ -636,14 +619,34 @@ MZ700.prototype.getExecutionParameter = function() {
 };
 
 MZ700.prototype.setExecutionParameter = function(param) {
-    var running = (this.tid != null);
+    const running = (this.tid != null);
     if(running) {
-        this.stop();
+        this.stopEmulation();
     }
     this.timerInterval = param;
     this.opt.onExecutionParameterUpdate(param);
     if(running) {
-        this.start();
+        this.startEmulation();
+    }
+};
+MZ700.prototype.startEmulation = function() {
+    this.tid = FractionalTimer.setInterval(
+        this.run.bind(this), this.timerInterval);
+    let t_cycle_0 = 0;
+    this.tidMeasClock = setInterval(() => {
+        this.opt.notifyClockFreq(this.z80.consumedTCycle - t_cycle_0);
+        t_cycle_0 = this.z80.consumedTCycle;
+    }, 1000);
+
+};
+MZ700.prototype.stopEmulation = function() {
+    if(this.tid != null) {
+        FractionalTimer.clearInterval(this.tid);
+        this.tid = null;
+    }
+    if(this.tidMeasClock != null) {
+        clearInterval(this.tidMeasClock);
+        this.tidMeasClock = null;
     }
 };
 module.exports = MZ700;
