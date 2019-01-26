@@ -1,6 +1,6 @@
 {
   "name": "mz700-js",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "MZ-700 Full JavaScript Emulator",
   "private": false,
   "scripts": {
@@ -8,6 +8,8 @@
     "test": "grunt lint && mocha && cd test && sh ./test.sh && cd ..",
     "postinstall": "grunt release",
     "grunt": "grunt",
+    "build": "grunt",
+    "release": "grunt release",
     "generate-docs": "jsdoc --configure jsdoc.json --verbose"
   },
   "bin": {
