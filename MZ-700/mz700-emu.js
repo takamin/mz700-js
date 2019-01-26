@@ -507,4 +507,13 @@ const requestJsonp = require("../lib/jsonp");
         }
     }
 
+    //<!-- Go to www.addthis.com/dashboard to customize your tools -->
+    const addThisBox = $("<div/>").css("height", "48px").css("line-height","48px")
+        .append($("<div/>").css("box-sizing", "border-box").css("text-align", "right")
+            .addClass("addthis_inline_share_toolbox"));
+    const addThisScript = $("<script/>").attr("type", "text/javascript")
+        .attr("src", "//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-596c4b9e47c8c585");
+    addThisBox.insertBefore($(".emulation-panel"));
+    $(document.body).append(addThisScript);
+
 })());

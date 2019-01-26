@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Z80 - Documentation</title>
+    <title>MemoryBank - Documentation</title>
 
     <script src="scripts/prettify/prettify.js"></script>
     <script src="scripts/prettify/lang-css.js"></script>
@@ -29,7 +29,7 @@
 
 <div id="main">
     
-    <h1 class="page-title">Z80</h1>
+    <h1 class="page-title">MemoryBank</h1>
     
 
     
@@ -42,7 +42,7 @@
 <header>
     
         <h2>
-        Z80
+        MemoryBank
         </h2>
         
     
@@ -56,14 +56,14 @@
 
     
 
-    <h4 class="name" id="Z80"><span class="type-signature"></span>new Z80<span class="signature">(opt)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id="MemoryBank"><span class="type-signature"></span>new MemoryBank<span class="signature">(opt)</span><span class="type-signature"></span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Z80 emulator class.</p>
+    <p>MemoryBank</p>
 </div>
 
 
@@ -99,7 +99,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="Z80_Z80.js.html">Z80/Z80.js</a>, <a href="Z80_Z80.js.html#line14">line 14</a>
+        <a href="Z80_memory-bank.js.html">Z80/memory-bank.js</a>, <a href="Z80_memory-bank.js.html#line9">line 9</a>
     </li></ul></dd>
     
 
@@ -160,7 +160,7 @@
             
 
             <td class="description last">
-                <p>The options to create.</p>
+                <p>the options.</p>
                 
             </td>
         </tr>
@@ -209,14 +209,14 @@
 
     
 
-    <h4 class="name" id="clearBreakPoints"><span class="type-signature"></span>clearBreakPoints<span class="signature">()</span><span class="type-signature"> &rarr; {undefined}</span></h4>
+    <h4 class="name" id="create"><span class="type-signature"></span>create<span class="signature">(opt)</span><span class="type-signature"> &rarr; {undefined}</span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Clear the break points.</p>
+    <p>Create</p>
 </div>
 
 
@@ -252,111 +252,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="Z80_Z80.js.html">Z80/Z80.js</a>, <a href="Z80_Z80.js.html#line105">line 105</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
-<span class="param-type"><code>undefined</code></span>
-
-
-    </dd>
-</dl>
-
-
-    
-</div>
-
-
-
-</div>
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="decrementAt"><span class="type-signature"></span>decrementAt<span class="signature">(addr)</span><span class="type-signature"> &rarr; {undefined}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Decrement the specific address value.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="Z80_Z80.js.html">Z80/Z80.js</a>, <a href="Z80_Z80.js.html#line204">line 204</a>
+        <a href="Z80_memory-bank.js.html">Z80/memory-bank.js</a>, <a href="Z80_memory-bank.js.html#line20">line 20</a>
     </li></ul></dd>
     
 
@@ -400,789 +296,15 @@
 
         <tr>
             
-                <td class="name"><code>addr</code></td>
+                <td class="name"><code>opt</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type"><code>number</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>A address to increment.</p>
-                
-            </td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
-<span class="param-type"><code>undefined</code></span>
-
-
-    </dd>
-</dl>
-
-
-    
-</div>
-
-
-
-</div>
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="disassemble"><span class="type-signature"></span>disassemble<span class="signature">(addr, last_addr)</span><span class="type-signature"> &rarr; {object}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Disassemble one operation code of Z80.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="Z80_Z80.js.html">Z80/Z80.js</a>, <a href="Z80_Z80.js.html#line272">line 272</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>addr</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>number</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>The starting address</p>
-                
-            </td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>last_addr</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>number</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>The last address to assemble.</p>
-                
-            </td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
 <span class="param-type"><code>object</code></span>
 
 
-    </dd>
-</dl>
-
-
-<div class="param-desc">
-    <p>A disassembled result.</p>
-</div>
-
-    
-</div>
-
-
-
-</div>
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="exec"><span class="type-signature"></span>exec<span class="signature">()</span><span class="type-signature"> &rarr; {undefined}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Execute the instruction at current program counter.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="Z80_Z80.js.html">Z80/Z80.js</a>, <a href="Z80_Z80.js.html#line90">line 90</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
-<span class="param-type"><code>undefined</code></span>
-
-
-    </dd>
-</dl>
-
-
-    
-</div>
-
-
-
-</div>
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="fetch"><span class="type-signature"></span>fetch<span class="signature">()</span><span class="type-signature"> &rarr; {number}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Get a 8-bit value from memory pointed by PC.
-And the PC goes forward with 1 byte.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="Z80_Z80.js.html">Z80/Z80.js</a>, <a href="Z80_Z80.js.html#line151">line 151</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
-<span class="param-type"><code>number</code></span>
-
-
-    </dd>
-</dl>
-
-
-<div class="param-desc">
-    <p>A 8-bit value.</p>
-</div>
-
-    
-</div>
-
-
-
-</div>
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="fetchPair"><span class="type-signature"></span>fetchPair<span class="signature">()</span><span class="type-signature"> &rarr; {number}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Get a 16-bit value from memory pointed by PC.
-And the PC goes forward with 2 bytes.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="Z80_Z80.js.html">Z80/Z80.js</a>, <a href="Z80_Z80.js.html#line162">line 162</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
-<span class="param-type"><code>number</code></span>
-
-
-    </dd>
-</dl>
-
-
-<div class="param-desc">
-    <p>A 16-bit value.</p>
-</div>
-
-    
-</div>
-
-
-
-</div>
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="getBreakPoints"><span class="type-signature"></span>getBreakPoints<span class="signature">()</span><span class="type-signature"> &rarr; {Array.&lt;boolean>}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Get the break points.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="Z80_Z80.js.html">Z80/Z80.js</a>, <a href="Z80_Z80.js.html#line118">line 118</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
-<span class="param-type"><code>Array.&lt;boolean></code></span>
-
-
-    </dd>
-</dl>
-
-
-<div class="param-desc">
-    <p>The array that the index is
-     an address and the element is a status whether it
-     is a break point.</p>
-</div>
-
-    
-</div>
-
-
-
-</div>
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="incrementAt"><span class="type-signature"></span>incrementAt<span class="signature">(addr)</span><span class="type-signature"> &rarr; {undefined}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Increment the specific address value.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="Z80_Z80.js.html">Z80/Z80.js</a>, <a href="Z80_Z80.js.html#line195">line 195</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>addr</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>number</code></span>
-
-
             
             </td>
 
@@ -1191,7 +313,7 @@ And the PC goes forward with 2 bytes.</p>
             
 
             <td class="description last">
-                <p>A address to increment.</p>
+                <p>the options.</p>
                 
             </td>
         </tr>
@@ -1243,14 +365,14 @@ And the PC goes forward with 2 bytes.</p>
 
     
 
-    <h4 class="name" id="interrupt"><span class="type-signature"></span>interrupt<span class="signature">()</span><span class="type-signature"> &rarr; {undefined}</span></h4>
+    <h4 class="name" id="peekByte"><span class="type-signature"></span>peekByte<span class="signature">(address)</span><span class="type-signature"> &rarr; {number}</span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Interrupt.</p>
+    <p>Read a byte data.</p>
 </div>
 
 
@@ -1286,537 +408,7 @@ And the PC goes forward with 2 bytes.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="Z80_Z80.js.html">Z80/Z80.js</a>, <a href="Z80_Z80.js.html#line79">line 79</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
-<span class="param-type"><code>undefined</code></span>
-
-
-    </dd>
-</dl>
-
-
-    
-</div>
-
-
-
-</div>
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="popPair"><span class="type-signature"></span>popPair<span class="signature">()</span><span class="type-signature"> &rarr; {number}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Pop 16-bit value from stack pointer(SP).
-And SP goes forward with 2 bytes.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="Z80_Z80.js.html">Z80/Z80.js</a>, <a href="Z80_Z80.js.html#line184">line 184</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
-<span class="param-type"><code>number</code></span>
-
-
-    </dd>
-</dl>
-
-
-<div class="param-desc">
-    <p>16 bit integer that was read.</p>
-</div>
-
-    
-</div>
-
-
-
-</div>
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="pushPair"><span class="type-signature"></span>pushPair<span class="signature">(nn)</span><span class="type-signature"> &rarr; {undefined}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Push 16-bit value to stack pointer(SP).
-And SP goes back with 2 bytes.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="Z80_Z80.js.html">Z80/Z80.js</a>, <a href="Z80_Z80.js.html#line174">line 174</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>nn</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>number</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>16 bit integer.</p>
-                
-            </td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
-<span class="param-type"><code>undefined</code></span>
-
-
-    </dd>
-</dl>
-
-
-    
-</div>
-
-
-
-</div>
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="readIoPort"><span class="type-signature"></span>readIoPort<span class="signature">(port)</span><span class="type-signature"> &rarr; {number}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Read a value fron I/O port.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="Z80_Z80.js.html">Z80/Z80.js</a>, <a href="Z80_Z80.js.html#line42">line 42</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>port</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>number</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>A port number(0 to 255).</p>
-                
-            </td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
-<span class="param-type"><code>number</code></span>
-
-
-    </dd>
-</dl>
-
-
-<div class="param-desc">
-    <p>A 8-bit value that was read.</p>
-</div>
-
-    
-</div>
-
-
-
-</div>
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="removeBreak"><span class="type-signature"></span>removeBreak<span class="signature">(address, size)</span><span class="type-signature"> &rarr; {undefined}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Remove the break points.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="Z80_Z80.js.html">Z80/Z80.js</a>, <a href="Z80_Z80.js.html#line128">line 128</a>
+        <a href="Z80_memory-bank.js.html">Z80/memory-bank.js</a>, <a href="Z80_memory-bank.js.html#line60">line 60</a>
     </li></ul></dd>
     
 
@@ -1877,33 +469,7 @@ And SP goes back with 2 bytes.</p>
             
 
             <td class="description last">
-                <p>The staring address.</p>
-                
-            </td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>size</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>number</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>The area size.</p>
+                <p>an address.</p>
                 
             </td>
         </tr>
@@ -1936,12 +502,16 @@ And SP goes back with 2 bytes.</p>
     </dt>
     <dd>
         
-<span class="param-type"><code>undefined</code></span>
+<span class="param-type"><code>number</code></span>
 
 
     </dd>
 </dl>
 
+
+<div class="param-desc">
+    <p>the value in the memory.</p>
+</div>
 
     
 </div>
@@ -1955,14 +525,14 @@ And SP goes back with 2 bytes.</p>
 
     
 
-    <h4 class="name" id="reset"><span class="type-signature"></span>reset<span class="signature">()</span><span class="type-signature"> &rarr; {undefined}</span></h4>
+    <h4 class="name" id="pokeByte"><span class="type-signature"></span>pokeByte<span class="signature">(address, value)</span><span class="type-signature"> &rarr; {undefined}</span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Reset.</p>
+    <p>Write a byte data.</p>
 </div>
 
 
@@ -1998,111 +568,7 @@ And SP goes back with 2 bytes.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="Z80_Z80.js.html">Z80/Z80.js</a>, <a href="Z80_Z80.js.html#line64">line 64</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
-<span class="param-type"><code>undefined</code></span>
-
-
-    </dd>
-</dl>
-
-
-    
-</div>
-
-
-
-</div>
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="setBreak"><span class="type-signature"></span>setBreak<span class="signature">(address, size)</span><span class="type-signature"> &rarr; {undefined}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Remove the break points.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="Z80_Z80.js.html">Z80/Z80.js</a>, <a href="Z80_Z80.js.html#line140">line 140</a>
+        <a href="Z80_memory-bank.js.html">Z80/memory-bank.js</a>, <a href="Z80_memory-bank.js.html#line70">line 70</a>
     </li></ul></dd>
     
 
@@ -2163,189 +629,7 @@ And SP goes back with 2 bytes.</p>
             
 
             <td class="description last">
-                <p>The staring address.</p>
-                
-            </td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>size</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>number</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>The area size.</p>
-                
-            </td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
-<span class="param-type"><code>undefined</code></span>
-
-
-    </dd>
-</dl>
-
-
-    
-</div>
-
-
-
-</div>
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="writeIoPort"><span class="type-signature"></span>writeIoPort<span class="signature">(port, value)</span><span class="type-signature"> &rarr; {undefined}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Write I/O port.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="Z80_Z80.js.html">Z80/Z80.js</a>, <a href="Z80_Z80.js.html#line55">line 55</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>port</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>number</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>A port number(0 to 255).</p>
+                <p>an address.</p>
                 
             </td>
         </tr>
@@ -2371,7 +655,7 @@ And SP goes back with 2 bytes.</p>
             
 
             <td class="description last">
-                <p>A 8-bit value to be written.</p>
+                <p>a data.</p>
                 
             </td>
         </tr>
@@ -2423,22 +707,14 @@ And SP goes back with 2 bytes.</p>
 
     
 
-    <h4 class="name" id=".dasm"><span class="type-signature">(static) </span>dasm<span class="signature">(buf, offset, size, addr)</span><span class="type-signature"> &rarr; {Array.&lt;object>}</span></h4>
+    <h4 class="name" id="setMemoryBlock"><span class="type-signature"></span>setMemoryBlock<span class="signature">(name, memblk)</span><span class="type-signature"> &rarr; {undefined}</span></h4>
 
     
 
 
 
 <div class="description">
-    <p>Disassemble</p>
-<p>fields of result element of array:</p>
-<ul>
-<li>addr                number</li>
-<li>referenced_count    number</li>
-<li>code                number[]</li>
-<li>mnemonic            string[]</li>
-<li>ref_addr_to         number</li>
-</ul>
+    <p>Set named memory block.</p>
 </div>
 
 
@@ -2474,7 +750,7 @@ And SP goes back with 2 bytes.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="Z80_Z80.js.html">Z80/Z80.js</a>, <a href="Z80_Z80.js.html#line226">line 226</a>
+        <a href="Z80_memory-bank.js.html">Z80/memory-bank.js</a>, <a href="Z80_memory-bank.js.html#line32">line 32</a>
     </li></ul></dd>
     
 
@@ -2518,13 +794,13 @@ And SP goes back with 2 bytes.</p>
 
         <tr>
             
-                <td class="name"><code>buf</code></td>
+                <td class="name"><code>name</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type"><code>Buffer</code></span>
+<span class="param-type"><code>string</code></span>
 
 
             
@@ -2535,7 +811,7 @@ And SP goes back with 2 bytes.</p>
             
 
             <td class="description last">
-                <p>machine code byte buffer</p>
+                <p>A name of a memory bank.</p>
                 
             </td>
         </tr>
@@ -2544,13 +820,13 @@ And SP goes back with 2 bytes.</p>
 
         <tr>
             
-                <td class="name"><code>offset</code></td>
+                <td class="name"><code>memblk</code></td>
             
 
             <td class="type">
             
                 
-<span class="param-type"><code>number</code></span>
+<span class="param-type"><code><a href="IMem.html">IMem</a></code></span>
 
 
             
@@ -2561,59 +837,7 @@ And SP goes back with 2 bytes.</p>
             
 
             <td class="description last">
-                <p>start index of the buffer</p>
-                
-            </td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>size</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>number</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>buffer size</p>
-                
-            </td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>addr</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>number</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>memory address of the offset</p>
+                <p>A memory block.</p>
                 
             </td>
         </tr>
@@ -2646,176 +870,12 @@ And SP goes back with 2 bytes.</p>
     </dt>
     <dd>
         
-<span class="param-type"><code>Array.&lt;object></code></span>
+<span class="param-type"><code>undefined</code></span>
 
 
     </dd>
 </dl>
 
-
-<div class="param-desc">
-    <p>assembled line data object</p>
-</div>
-
-    
-</div>
-
-
-
-</div>
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id=".processAddressReference"><span class="type-signature">(static) </span>processAddressReference<span class="signature">(dasmlist)</span><span class="type-signature"> &rarr; {Array.&lt;object>}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Create information of the referenced count.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="Z80_Z80.js.html">Z80/Z80.js</a>, <a href="Z80_Z80.js.html#line314">line 314</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>dasmlist</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>Array.&lt;object></code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>A result of disassembling.</p>
-                
-            </td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
-<span class="param-type"><code>Array.&lt;object></code></span>
-
-
-    </dd>
-</dl>
-
-
-<div class="param-desc">
-    <p>Same object to parameter.</p>
-</div>
 
     
 </div>
@@ -2841,7 +901,7 @@ And SP goes back with 2 bytes.</p>
 <br class="clear">
 
 <footer>
-    Generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Sun Jan 27 2019 08:29:14 GMT+0900 (GMT+09:00) using the Minami theme.
+    Generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Sun Jan 27 2019 08:29:13 GMT+0900 (GMT+09:00) using the Minami theme.
 </footer>
 
 <script>prettyPrint();</script>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>tabview - Documentation</title>
+    <title>lib/mz-beep.js - Documentation</title>
 
     <script src="scripts/prettify/prettify.js"></script>
     <script src="scripts/prettify/lang-css.js"></script>
@@ -29,1611 +29,179 @@
 
 <div id="main">
     
-    <h1 class="page-title">tabview</h1>
-    
-
-    
-
-
-
-
-<section>
-
-<header>
-    
-        <h2>
-        tabview
-        </h2>
-        
-    
-</header>
-
-<article>
-    <div class="container-overview">
-    
-        
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="tabview"><span class="type-signature"></span>new tabview<span class="signature">(element)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>jquery plug-in tabview.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="lib_jquery.tabview.js.html">lib/jquery.tabview.js</a>, <a href="lib_jquery.tabview.js.html#line10">line 10</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>element</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>Element</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>DOM element to be a tab control.</p>
-                
-            </td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-</div>
-    
-    </div>
-
-    
-
-    
-
-    
-
-     
-
-    
-
-    
-
-    
-        <h3 class="subsection-title">Methods</h3>
-
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id=".tabId"><span class="type-signature">(static) </span>tabId<span class="signature">(domId)</span><span class="type-signature"> &rarr; {string}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Convert the DOM id of source element to
-id to operate the tab page.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="lib_jquery.tabview.js.html">lib/jquery.tabview.js</a>, <a href="lib_jquery.tabview.js.html#line33">line 33</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>domId</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>string</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>The id attribute that set to source element of DOM.</p>
-                
-            </td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
-<span class="param-type"><code>string</code></span>
-
-
-    </dd>
-</dl>
-
-
-<div class="param-desc">
-    <p>Id to be set TabPage object.</p>
-</div>
-
-    
-</div>
-
-
-
-</div>
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="add"><span class="type-signature"></span>add<span class="signature">(id, page)</span><span class="type-signature"> &rarr; {undefined}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Add tab page.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="lib_jquery.tabview.js.html">lib/jquery.tabview.js</a>, <a href="lib_jquery.tabview.js.html#line59">line 59</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>id</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>string</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>A caption for the tab. Or object {id:{string}, caption:{string}}</p>
-                
-            </td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>page</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>jQueryElement</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>A tab-page content.</p>
-                
-            </td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
-<span class="param-type"><code>undefined</code></span>
-
-
-    </dd>
-</dl>
-
-
-    
-</div>
-
-
-
-</div>
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="caption"><span class="type-signature"></span>caption<span class="signature">(index, caption)</span><span class="type-signature"> &rarr; {undefined|string}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Set caption to the tab page.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="lib_jquery.tabview.js.html">lib/jquery.tabview.js</a>, <a href="lib_jquery.tabview.js.html#line163">line 163</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>index</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>string</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>The selector of jquery to a select tab page.</p>
-                
-            </td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>caption</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>string</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>(optional) New caption for the tab page.</p>
-                
-            </td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
-<span class="param-type"><code>undefined</code></span>
-|
-
-<span class="param-type"><code>string</code></span>
-
-
-    </dd>
-</dl>
-
-
-<div class="param-desc">
-    <p>Returns the caption if the captio parameter is not specified.</p>
-</div>
-
-    
-</div>
-
-
-
-</div>
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="create"><span class="type-signature"></span>create<span class="signature">()</span><span class="type-signature"> &rarr; {undefined}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>create tabview's DOM.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="lib_jquery.tabview.js.html">lib/jquery.tabview.js</a>, <a href="lib_jquery.tabview.js.html#line41">line 41</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
-<span class="param-type"><code>undefined</code></span>
-
-
-    </dd>
-</dl>
-
-
-    
-</div>
-
-
-
-</div>
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="currentPage"><span class="type-signature"></span>currentPage<span class="signature">()</span><span class="type-signature"> &rarr; {number|undefined}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Get the current page.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="lib_jquery.tabview.js.html">lib/jquery.tabview.js</a>, <a href="lib_jquery.tabview.js.html#line127">line 127</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
-<span class="param-type"><code>number</code></span>
-|
-
-<span class="param-type"><code>undefined</code></span>
-
-
-    </dd>
-</dl>
-
-
-<div class="param-desc">
-    <p>Current page index.</p>
-</div>
-
-    
-</div>
-
-
-
-</div>
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="data"><span class="type-signature"></span>data<span class="signature">(name, value)</span><span class="type-signature"> &rarr; {undefined|any}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Set or get the user data.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="lib_jquery.tabview.js.html">lib/jquery.tabview.js</a>, <a href="lib_jquery.tabview.js.html#line149">line 149</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>name</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>string</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>data name</p>
-                
-            </td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>value</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>any</code></span>
-|
-
-<span class="param-type"><code>null</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>user data</p>
-                
-            </td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
-<span class="param-type"><code>undefined</code></span>
-|
-
-<span class="param-type"><code>any</code></span>
-
-
-    </dd>
-</dl>
-
-
-<div class="param-desc">
-    <p>if the value is null, returns the user data.
-     Otherwise undefined.</p>
-</div>
-
-    
-</div>
-
-
-
-</div>
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="index"><span class="type-signature"></span>index<span class="signature">(index)</span><span class="type-signature"> &rarr; {number|undefined}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Set or get the current page index.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="lib_jquery.tabview.js.html">lib/jquery.tabview.js</a>, <a href="lib_jquery.tabview.js.html#line103">line 103</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>index</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>undefined</code></span>
-|
-
-<span class="param-type"><code>number</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>The page index to show.</p>
-                
-            </td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
-<span class="param-type"><code>number</code></span>
-|
-
-<span class="param-type"><code>undefined</code></span>
-
-
-    </dd>
-</dl>
-
-
-<div class="param-desc">
-    <p>Current page index.</p>
-</div>
-
-    
-</div>
-
-
-
-</div>
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="page"><span class="type-signature"></span>page<span class="signature">(index)</span><span class="type-signature"> &rarr; {jQueryObject}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Get tab page.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="lib_jquery.tabview.js.html">lib/jquery.tabview.js</a>, <a href="lib_jquery.tabview.js.html#line136">line 136</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>index</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>string</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>A page index</p>
-                
-            </td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
-<span class="param-type"><code>jQueryObject</code></span>
-
-
-    </dd>
-</dl>
-
-
-<div class="param-desc">
-    <p>returns page content.</p>
-</div>
-
-    
-</div>
-
-
-
-</div>
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="show"><span class="type-signature"></span>show<span class="signature">(id)</span><span class="type-signature"> &rarr; {undefined}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Show specified tab page.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="lib_jquery.tabview.js.html">lib/jquery.tabview.js</a>, <a href="lib_jquery.tabview.js.html#line88">line 88</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>id</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>string</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>the page index number or jquery selector for the page.</p>
-                
-            </td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
-<span class="param-type"><code>undefined</code></span>
-
-
-    </dd>
-</dl>
-
-
-    
-</div>
-
-
-
-</div>
-        
-    
-
-    
-
-    
-</article>
-
-</section>
+    <h1 class="page-title">lib/mz-beep.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>"use strict";
+
+/**
+ * The beep-sound emulator for Sharp MZ-Serias.
+ * @constructor
+ * @param {MZ700Js} mz700js MZ-700 emulator UI side instance
+ * @param {AudioContext} audioContext The audio context instance.
+ */
+function MZBeep(mz700js, audioContext) {
+
+    this.attackTime = 0.010;
+    this.decayTime = 0.010;
+    this.sustainLebel = 0.8;
+    this.releaseTime = 0.050;
+
+    this.audio = null;
+    this.totalGain = null;
+    this.gain = 0;
+    this.poly = 128;
+    this.indexOsc = 0;
+    this.oscNodes = new Array(this.poly);
+    this.oscGainNodes = new Array(this.poly);
+
+    if(audioContext) {
+        this.audio = audioContext;
+        this.totalGainNode = this.audio.createGain();
+        this.totalGainNode.gain.setValueAtTime(
+                this.gain, this.audio.currentTime);
+        this.totalGainNode.connect(this.audio.destination);
+    } else {
+
+        console.warn("NO AudioContext API supported by this browser.");
+        this.setGain = function(){};
+        this.startSound = function(){};
+        this.stopSound = function(){};
+
+    }
+
+    mz700js.subscribe("startSound", freq => this.startSound(freq[0]));
+    mz700js.subscribe("stopSound", () => this.stopSound());
+
+}
+
+/**
+ * Minimum frequency
+ * @type {number}
+ */
+MZBeep.FREQ_MIN = -24000;
+
+/**
+ * Maximum frequency
+ * @type {number}
+ */
+MZBeep.FREQ_MAX = 24000;
+
+MZBeep.prototype.allowToPlaySound = function() {
+    if(!this.resumed()) {
+        this.resume();
+    }
+};
+
+/**
+ * Check the audio API is resumed (available).
+ * @returns {boolean} true if the API is resumed and available,
+ * otherwise false.
+ */
+MZBeep.prototype.resumed = function() {
+    return this.audio.state === "running";
+};
+
+/**
+ * Resume the Audio API that was blocked by its platform.
+ * @async
+ * @returns {Promise&lt;undefined>} that will be resolved.
+ */
+MZBeep.prototype.resume = async function() {
+    await this.audio.resume();
+};
+
+/**
+ * Set beep gain.
+ * @param {number} gain The beep sound gain.
+ * @returns {undefined}
+ */
+MZBeep.prototype.setGain = function(gain) {
+    if(gain &lt; 0) {
+        gain = 0;
+    }
+    if(gain > 1.0) {
+        gain = 1.0;
+    }
+    this.gain = gain;
+    if(this.totalGainNode) {
+        this.totalGainNode.gain.setValueAtTime(
+                this.gain, this.audio.currentTime);
+    }
+};
+
+/**
+ * Start the oscillator beeping with the frequency.
+ * @param {number} freq The frequency.
+ * @returns {undefined}
+ */
+MZBeep.prototype.startSound = function(freq) {
+    var indexOsc = this.indexOsc;
+    var oscGainNode = this.oscGainNodes[indexOsc];
+    if(oscGainNode != null) {
+        oscGainNode.gain.linearRampToValueAtTime(
+                0.0, this.audio.currentTime + this.releaseTime);
+        oscGainNode.disconnect();
+    }
+    this.oscGainNodes[indexOsc] = this.audio.createGain();
+    oscGainNode = this.oscGainNodes[indexOsc];
+    oscGainNode.gain.setValueAtTime(0.0, this.audio.currentTime);
+    oscGainNode.gain.linearRampToValueAtTime(
+            1.0, this.audio.currentTime + this.attackTime);
+    oscGainNode.gain.linearRampToValueAtTime(
+            this.sustainLebel,
+            this.audio.currentTime + this.attackTime + this.decayTime);
+    oscGainNode.connect(this.totalGainNode);
+
+    var oscNode = this.oscNodes[indexOsc];
+    if(oscNode != null) {
+        oscNode.stop();
+        oscNode.disconnect();
+    }
+    this.oscNodes[indexOsc] = this.audio.createOscillator();
+    oscNode = this.oscNodes[indexOsc];
+    oscNode.type = "square";
+    if(isFinite(freq)) {
+        if(freq &lt; MZBeep.FREQ_MIN) {
+            freq = MZBeep.FREQ_MIN;
+        } else if(freq > MZBeep.FREQ_MAX) {
+            freq = MZBeep.FREQ_MAX;
+        }
+        oscNode.frequency.setValueAtTime(
+                freq, this.audio.currentTime);
+    }
+    oscNode.start = oscNode.start || oscNode.noteOn;
+    oscNode.connect(oscGainNode);
+    oscNode.start();
+
+};
+
+/**
+ * Stop the oscillator beeping.
+ * @param {number} freq The frequency.
+ * @returns {undefined}
+ */
+MZBeep.prototype.stopSound = function() {
+    var indexOsc = this.indexOsc;
+    var oscGainNode = this.oscGainNodes[indexOsc];
+    if(oscGainNode != null) {
+        oscGainNode.gain.linearRampToValueAtTime(
+                0.0, this.audio.currentTime + this.releaseTime);
+    }
+    this.indexOsc = (indexOsc + 1) % this.poly;
+};
+
+module.exports = MZBeep;
+</code></pre>
+        </article>
+    </section>
 
 
 

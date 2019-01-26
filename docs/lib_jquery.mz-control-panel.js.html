@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>tabview - Documentation</title>
+    <title>lib/jquery.mz-control-panel.js - Documentation</title>
 
     <script src="scripts/prettify/prettify.js"></script>
     <script src="scripts/prettify/lang-css.js"></script>
@@ -29,1611 +29,569 @@
 
 <div id="main">
     
-    <h1 class="page-title">tabview</h1>
-    
-
-    
-
-
-
-
-<section>
-
-<header>
-    
-        <h2>
-        tabview
-        </h2>
-        
-    
-</header>
-
-<article>
-    <div class="container-overview">
-    
-        
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="tabview"><span class="type-signature"></span>new tabview<span class="signature">(element)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>jquery plug-in tabview.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="lib_jquery.tabview.js.html">lib/jquery.tabview.js</a>, <a href="lib_jquery.tabview.js.html#line10">line 10</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>element</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>Element</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>DOM element to be a tab control.</p>
-                
-            </td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-</div>
-    
-    </div>
-
-    
-
-    
-
-    
-
-     
-
-    
-
-    
-
-    
-        <h3 class="subsection-title">Methods</h3>
-
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id=".tabId"><span class="type-signature">(static) </span>tabId<span class="signature">(domId)</span><span class="type-signature"> &rarr; {string}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Convert the DOM id of source element to
-id to operate the tab page.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="lib_jquery.tabview.js.html">lib/jquery.tabview.js</a>, <a href="lib_jquery.tabview.js.html#line33">line 33</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>domId</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>string</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>The id attribute that set to source element of DOM.</p>
-                
-            </td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
-<span class="param-type"><code>string</code></span>
-
-
-    </dd>
-</dl>
-
-
-<div class="param-desc">
-    <p>Id to be set TabPage object.</p>
-</div>
-
-    
-</div>
-
-
-
-</div>
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="add"><span class="type-signature"></span>add<span class="signature">(id, page)</span><span class="type-signature"> &rarr; {undefined}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Add tab page.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="lib_jquery.tabview.js.html">lib/jquery.tabview.js</a>, <a href="lib_jquery.tabview.js.html#line59">line 59</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>id</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>string</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>A caption for the tab. Or object {id:{string}, caption:{string}}</p>
-                
-            </td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>page</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>jQueryElement</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>A tab-page content.</p>
-                
-            </td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
-<span class="param-type"><code>undefined</code></span>
-
-
-    </dd>
-</dl>
-
-
-    
-</div>
-
-
-
-</div>
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="caption"><span class="type-signature"></span>caption<span class="signature">(index, caption)</span><span class="type-signature"> &rarr; {undefined|string}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Set caption to the tab page.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="lib_jquery.tabview.js.html">lib/jquery.tabview.js</a>, <a href="lib_jquery.tabview.js.html#line163">line 163</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>index</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>string</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>The selector of jquery to a select tab page.</p>
-                
-            </td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>caption</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>string</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>(optional) New caption for the tab page.</p>
-                
-            </td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
-<span class="param-type"><code>undefined</code></span>
-|
-
-<span class="param-type"><code>string</code></span>
-
-
-    </dd>
-</dl>
-
-
-<div class="param-desc">
-    <p>Returns the caption if the captio parameter is not specified.</p>
-</div>
-
-    
-</div>
-
-
-
-</div>
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="create"><span class="type-signature"></span>create<span class="signature">()</span><span class="type-signature"> &rarr; {undefined}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>create tabview's DOM.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="lib_jquery.tabview.js.html">lib/jquery.tabview.js</a>, <a href="lib_jquery.tabview.js.html#line41">line 41</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
-<span class="param-type"><code>undefined</code></span>
-
-
-    </dd>
-</dl>
-
-
-    
-</div>
-
-
-
-</div>
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="currentPage"><span class="type-signature"></span>currentPage<span class="signature">()</span><span class="type-signature"> &rarr; {number|undefined}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Get the current page.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="lib_jquery.tabview.js.html">lib/jquery.tabview.js</a>, <a href="lib_jquery.tabview.js.html#line127">line 127</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
-<span class="param-type"><code>number</code></span>
-|
-
-<span class="param-type"><code>undefined</code></span>
-
-
-    </dd>
-</dl>
-
-
-<div class="param-desc">
-    <p>Current page index.</p>
-</div>
-
-    
-</div>
-
-
-
-</div>
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="data"><span class="type-signature"></span>data<span class="signature">(name, value)</span><span class="type-signature"> &rarr; {undefined|any}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Set or get the user data.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="lib_jquery.tabview.js.html">lib/jquery.tabview.js</a>, <a href="lib_jquery.tabview.js.html#line149">line 149</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>name</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>string</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>data name</p>
-                
-            </td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>value</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>any</code></span>
-|
-
-<span class="param-type"><code>null</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>user data</p>
-                
-            </td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
-<span class="param-type"><code>undefined</code></span>
-|
-
-<span class="param-type"><code>any</code></span>
-
-
-    </dd>
-</dl>
-
-
-<div class="param-desc">
-    <p>if the value is null, returns the user data.
-     Otherwise undefined.</p>
-</div>
-
-    
-</div>
-
-
-
-</div>
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="index"><span class="type-signature"></span>index<span class="signature">(index)</span><span class="type-signature"> &rarr; {number|undefined}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Set or get the current page index.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="lib_jquery.tabview.js.html">lib/jquery.tabview.js</a>, <a href="lib_jquery.tabview.js.html#line103">line 103</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>index</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>undefined</code></span>
-|
-
-<span class="param-type"><code>number</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>The page index to show.</p>
-                
-            </td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
-<span class="param-type"><code>number</code></span>
-|
-
-<span class="param-type"><code>undefined</code></span>
-
-
-    </dd>
-</dl>
-
-
-<div class="param-desc">
-    <p>Current page index.</p>
-</div>
-
-    
-</div>
-
-
-
-</div>
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="page"><span class="type-signature"></span>page<span class="signature">(index)</span><span class="type-signature"> &rarr; {jQueryObject}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Get tab page.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="lib_jquery.tabview.js.html">lib/jquery.tabview.js</a>, <a href="lib_jquery.tabview.js.html#line136">line 136</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>index</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>string</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>A page index</p>
-                
-            </td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
-<span class="param-type"><code>jQueryObject</code></span>
-
-
-    </dd>
-</dl>
-
-
-<div class="param-desc">
-    <p>returns page content.</p>
-</div>
-
-    
-</div>
-
-
-
-</div>
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="show"><span class="type-signature"></span>show<span class="signature">(id)</span><span class="type-signature"> &rarr; {undefined}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Show specified tab page.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="lib_jquery.tabview.js.html">lib/jquery.tabview.js</a>, <a href="lib_jquery.tabview.js.html#line88">line 88</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>id</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>string</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>the page index number or jquery selector for the page.</p>
-                
-            </td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
-<span class="param-type"><code>undefined</code></span>
-
-
-    </dd>
-</dl>
-
-
-    
-</div>
-
-
-
-</div>
-        
-    
-
-    
-
-    
-</article>
-
-</section>
+    <h1 class="page-title">lib/jquery.mz-control-panel.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>"use strict";
+const jquery_plugin_class = require("../lib/jquery_plugin_class");
+jquery_plugin_class("MZControlPanel");
+
+const BBox = require("b-box");
+
+const { getDeviceType } = require("./user-agent-util.js");
+const parseRequest = require("../lib/parse-request");
+const requestJsonp = require("../lib/jsonp");
+
+const MZ700 = require("../MZ-700/mz700.js");
+const MZ_TapeHeader = require('../lib/mz-tape-header.js');
+const MZ700KeyMatrix = require("../MZ-700/mz700-key-matrix.js");
+
+function MZControlPanel(element) {
+    this._mz700jsContainer = $(element);
+    this._mz700ScreenElement = $(element).find(".screen").get(0);
+    this._mz700js = null;
+
+    this._controlPanel = $("&lt;div/>").attr("id", "control-panel");
+    this._keyboard = $("&lt;div/>").addClass("keyboard");
+    this._emulationPanel = $("&lt;div/>").addClass("emulation-panel");
+    this._dataRecorder = $("&lt;div/>").addClass("data-recorder");
+
+    this._mz700jsContainer
+        .append(this._controlPanel
+            .append(this._keyboard)
+            .append(this._emulationPanel)
+            .append(this._dataRecorder));
+
+    this._acceptKey = false;
+    this._keyAcceptor = $("&lt;span/>").addClass("key-switcher").html("Key-In");
+    this._tidHide = null;
+    this._keystates = {};
+    this._isRunning = false;
+    window.addEventListener("mz700started", () => {
+        this._isRunning = true;
+    });
+    window.addEventListener("mz700stopped", () => {
+        this._isRunning = false;
+    });
+}
+
+MZControlPanel.prototype.create = async function(mz700js, mzBeep) {
+    this._mz700js = mz700js;
+    this.createSoftwareKeyboard();
+    this._emulationPanel
+        .append(this._keyAcceptor)
+        .append($("&lt;span/>").MZSoundControl("create", mzBeep))
+        .append(this.createStartButton())
+        .append(this.createResetButton())
+        .append(this.createStepInButton())
+        .append($("&lt;input/>").EmuSpeedControl(
+            "create", this._mz700js, MZ700.DEFAULT_TIMER_INTERVAL,
+            interval => this._mz700js.setExecutionParameter(interval)))
+        .append(this.createScreenKeyboardButton())
+        .append(this.createFullScreenButton());
+
+    switch(getDeviceType()) {
+    case "tablet":
+        this._controlPanel.click( event => {
+            event.stopPropagation();
+            this.toggleVisibility();
+        });
+        break;
+    case "pc":
+        this._mz700jsContainer.mouseenter(() => {
+            this.acceptKey(true);
+        }).mouseleave(() => {
+            this.acceptKey(false);
+            this.hide();
+            this.cancelTimer();
+        });
+        this._controlPanel.mouseenter(event => {
+            event.stopPropagation();
+            this.acceptKey(true);
+            this.cancelTimer();
+            this._controlPanel.show(0, () => {
+                this.resize();
+            });
+        });
+        this.show();
+        break;
+    }
+    this.createDataRecorderControl();
+
+    const mztButtons = await this.createPublicMztLoadingButtons();
+    this._controlPanel.append(mztButtons);
+
+    const onkey = (event, state) => {
+        if(this._acceptKey) {
+            event.stopPropagation();
+            this.updateKeyStates(event, state);
+            return false;
+        }
+    };
+    window.addEventListener("keydown", event => onkey(event, true));
+    window.addEventListener("keyup", event => onkey(event, false));
+}
+
+MZControlPanel.prototype.createSoftwareKeyboard = function() {
+    this._keyboard.mz700keyboard("create", {
+        onStateChange: (strobe, bit, state) => {
+            this._mz700js.setKeyState(strobe, bit, state);
+        }
+    });
+    window.addEventListener("keyup", async event => {
+        switch(event.keyCode) {
+        case 119://F8 - RUN/STOP
+            event.stopPropagation();
+            if(this._isRunning) {
+                this._mz700jsContainer.trigger("stop");
+            } else {
+                this._mz700jsContainer.trigger("start");
+            }
+            return;
+        case 120://F9 - STEP In
+            event.stopPropagation();
+            if(this._isRunning) {
+                this._mz700jsContainer.trigger("stop");
+            } else {
+                this._mz700jsContainer.trigger("stepIn");
+            }
+            return;
+        }
+    });
+};
+
+MZControlPanel.prototype.createDataRecorderControl = function() {
+    this.cmtMessageArea = $("&lt;span/>").addClass("cmt-message").html("(EMPTY)");
+    const btnCmtRec = $("&lt;button/>").attr("type", "button")
+        .html("&lt;span style='color:red'>●&lt;/span> RECPLAY").click( () => {
+            this.cmtMessageArea.empty().html("Recording ...");
+            this._mz700js.dataRecorder_pushRec( );
+        });
+    const btnCmtPlay = $("&lt;button/>").attr("type", "button")
+        .html("&lt;span class='cmtPlayImage'>▼&lt;/span> PLAY").click( () => {
+            this._mz700js.dataRecorder_pushPlay( );
+        });
+    const btnCmtStop = $("&lt;button/>").attr("type", "button")
+        .html("&lt;span>■&lt;/span> STOP").click( () => {
+            this._mz700js.dataRecorder_pushStop( );
+        });
+    const btnCmtEject = $("&lt;button/>").attr("type", "button")
+        .html("&lt;span>▲&lt;/span>EJECT").click( async () => {
+            await this._mz700js.dataRecorder_ejectCmt();
+            await this.updateCmtSlot();
+        });
+    if (window.File &amp;&amp; window.FileReader &amp;&amp; window.FileList &amp;&amp; window.Blob) {
+        let el = this._dataRecorder.get(0);
+        el.addEventListener('dragover', event => {
+            event.stopPropagation();
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'copy'; // Explicitly show this is a copy.
+        }, false);
+        el.addEventListener('drop', event => {
+            event.stopPropagation();
+            event.preventDefault();
+            let files = event.dataTransfer.files; // FileList object.
+            if(files.length > 0) {
+                let f = files[0];
+                let reader = new FileReader();
+                reader.onload = async () => {
+                    let tape_data = new Uint8Array(reader.result);
+                    await this._mz700js.setCassetteTape(tape_data);
+                };
+                reader.readAsArrayBuffer(f);
+            }
+        }, false);
+    }
+    this._dataRecorder
+        .html("CMT: ")
+        .attr("title", "Drop MZT file here to load with 'L' command")
+        .append(this.cmtMessageArea)
+        .append(btnCmtRec)
+        .append(btnCmtPlay)
+        .append(btnCmtStop)
+        .append(btnCmtEject);
+
+    this._mz700js.subscribe("onStartDataRecorder", () => {
+        btnCmtRec.prop("disabled", true);
+        btnCmtEject.prop("disabled", true);
+        btnCmtStop.prop("disabled", false);
+    });
+
+    this._mz700js.subscribe("onStopDataRecorder", async ()=>{
+        await this.updateCmtSlot();
+        btnCmtRec.prop("disabled", false);
+        btnCmtEject.prop("disabled", false);
+        btnCmtStop.prop("disabled", true);
+    });
+};
+
+MZControlPanel.prototype.updateCmtSlot = async function() {
+    const bytes = await this._mz700js.getCassetteTape();
+    this.createCmtDownloadLink(bytes);
+};
+
+MZControlPanel.prototype.createCmtDownloadLink = function(bytes) {
+    if(bytes == null || bytes.length &lt; 128) {
+        this.cmtMessageArea.empty().append("(EMPTY)");
+        return;
+    }
+    let header = new MZ_TapeHeader(bytes, 0);
+    let byteArr = new Uint8Array(bytes);
+    let blob = new Blob([byteArr], {'type': "application/octet-stream"});
+    this.cmtMessageArea.empty().html(header.filename).append(
+            $("&lt;a/>").addClass("download-link")
+                .attr("download", header.filename + ".MZT")
+                .attr("type", "application/octet-stream")
+                .attr("href", URL.createObjectURL(blob))
+                .html("")
+                .attr("title",
+                    "Download " + header.filename + ".MZT" +
+                    " (" + header.file_size + " bytes) " +
+                    " ADDR:(" + header.addr_load.HEX(4) + " - " +
+                    (header.addr_load + header.file_size - 1).HEX(4) + ") EXEC:" +
+                    header.addr_exec.HEX(4))
+            );
+};
+
+/**
+ * Create the buttons to download and run the public MZT binary.
+ * @returns {Promise&lt;undefined>} The promise to synchronize
+ */
+MZControlPanel.prototype.createPublicMztLoadingButtons = function() {
+    const request = parseRequest();
+    return new Promise( resolve => {
+        requestJsonp("mztList",
+            "https://takamin.github.io/MZ-700/mzt/mzt-list.js",
+            files => {
+                const mztButtons = $("&lt;div/>");
+                files.forEach(mzt => {
+                    mztButtons.append(
+                        $("&lt;button/>").attr("type", "button")
+                        .css("padding", 0).css("height", "24px")
+                        .css("border", "solid 0px transparent")
+                        .css("padding", 0).css("margin", "4px 2px")
+                        .append($("&lt;span/>").addClass("mz700scrn")
+                            .attr("charSize", "8").attr("padding", "1")
+                            .attr("color", mzt.mz700_buttonStyle.color)
+                            .attr("bgColor", mzt.mz700_buttonStyle.bgColor)
+                            .html(mzt.name))
+                        .click(() => {
+                            window.location.href =
+                                request.path + "?mzt=" + mzt.path;
+                        }));
+                });
+                resolve(mztButtons);
+            });
+    });
+};
+
+MZControlPanel.prototype.acceptKey = function(state) {
+    this._acceptKey = state;
+    if(this._acceptKey) {
+        this._keyAcceptor.addClass("on");
+    } else {
+        this._keyAcceptor.removeClass("on");
+    }
+};
+
+/**
+ * Show the panel to operate MZ-700.
+ * @returns {undefined}
+ */
+MZControlPanel.prototype.show = function() {
+    if(this._tidHide) {
+        clearTimeout(this._tidHide);
+    } else {
+        this._controlPanel.addClass("hover");
+        this._controlPanel.show(0, () => {
+            this.resize();
+        });
+    }
+    this._tidHide = setTimeout(() => {
+        this.hide();
+        this._tidHide = null;
+    }, 1000);
+};
+
+/**
+ * Hide the panel to operate MZ-700.
+ * @returns {undefined}
+ */
+MZControlPanel.prototype.hide = function() {
+    this._controlPanel.removeClass("hover");
+    this._controlPanel.hide();
+};
+
+/**
+ * Cancel the timeout timer of control panel showing.
+ * @returns {undefined}
+ */
+MZControlPanel.prototype.cancelTimer = function() {
+    if(this._tidHide) {
+        clearTimeout(this._tidHide);
+        this._tidHide = null;
+    }
+};
+
+MZControlPanel.prototype.resize = function() {
+    var bboxContainer = new BBox(this._mz700jsContainer.get(0));
+    var bboxScreen = new BBox(this._mz700ScreenElement);
+    var containerSize = bboxContainer.getSize();
+    containerSize._h -= bboxScreen.px("border-top-width");
+    containerSize._h -= bboxScreen.px("border-bottom-width");
+    var orgSize = new BBox.Size(320,200);
+    var innerSize = containerSize.getMaxInscribedSize(orgSize);
+
+    if(this._controlPanel.is(":visible")) {
+        var phifBBox = new BBox(this._controlPanel.get(0));
+        var phifSize = phifBBox.getSize();
+        var phifMargin = new BBox.Size(
+                (containerSize._w - phifSize._w) / 2,
+                innerSize._h - phifSize._h);
+        if(phifMargin._w &lt; 0) {
+            phifMargin._w = 0;
+        }
+        if(phifMargin._h &lt; 0) {
+            phifMargin._h = 0;
+        }
+        this._controlPanel.css("margin-left", phifMargin._w + "px")
+            .css("margin-top", phifMargin._h + "px");
+    }
+};
+
+/**
+ * Toggle the control panel visibility.
+ * @returns {undefined}
+ */
+MZControlPanel.prototype.toggleVisibility = function() {
+    if(this._controlPanel.css("display") !== "none") {
+        this._controlPanel.hide(0, () => {
+            this.resize();
+        });
+    } else {
+        this._controlPanel.show(0, () => {
+            this.resize();
+        });
+    }
+};
+
+//
+// Run/Stop Button
+//
+MZControlPanel.prototype.createStartButton = function() {
+    let btnStart = $("&lt;button/>")
+        .attr("type", "button")
+        .attr("title", "[F8]")
+        .addClass("imaged")
+        .click(() => {
+            if(this._isRunning) {
+                this._mz700jsContainer.trigger("stop");
+            } else {
+                this._mz700jsContainer.trigger("start");
+            }
+        });
+    let img = $("&lt;img/>");
+    btnStart.append(img);
+    let setImg = relURL => {
+        img.attr("src", `./${relURL}`);
+    };
+    let setAlt = caption => {
+        img.attr("title", caption).attr("alt", caption);
+    };
+    btnStart.hover( () => {
+        setImg(this._isRunning ?
+            "image/btnStop-on.png" :
+            "image/btnRun-on.png");
+    }, () => {
+        setImg(this._isRunning ?
+            "image/btnStop-off.png" :
+            "image/btnRun-off.png");
+    });
+    window.addEventListener("mz700started", () => {
+        setImg("image/btnStop-off.png");
+        setAlt("Stop");
+    });
+    window.addEventListener("mz700stopped", () => {
+        setImg("image/btnRun-off.png");
+        setAlt("Run");
+    });
+    setImg("image/btnRun-off.png");
+    setAlt("Run");
+    return btnStart;
+};
+
+//
+// Reset Button
+//
+MZControlPanel.prototype.createResetButton = function() {
+    const btnReset = $("&lt;button/>").attr("type", "button")
+        .addClass("imaged").append(
+            $("&lt;img/>").attr("title", "Reset").attr("alt", "Reset"))
+        .click(() => this._mz700jsContainer.trigger("reset"));
+
+    const btnReset_hover = () => {
+        btnReset.find("img")
+            .attr("src", "./image/btnReset-on.png");
+    };
+
+    const btnReset_notHover = () => {
+        btnReset.find("img")
+            .attr("src", "./image/btnReset-off.png");
+    };
+
+    btnReset.hover(btnReset_hover, btnReset_notHover);
+    btnReset_notHover();
+    return btnReset;
+};
+
+//
+// Step-In Button
+//
+MZControlPanel.prototype.createStepInButton = function() {
+    const btnStep = $("&lt;button/>").attr("type", "button")
+        .attr("title", "[F9]").addClass("imaged")
+        .click( () => this._mz700jsContainer.trigger("stepIn") );
+    const img = $("&lt;img/>")
+        .attr("title", "Step-In")
+        .attr("alt", "Step-In");
+    btnStep.append(img);
+    const setImg = relURL => {
+        img.attr("src", `./${relURL}`);
+    };
+    btnStep.hover(() => {
+        if(!this._isRunning) {
+            btnStep.prop('disabled', '');
+            setImg("image/btnStepIn-on.png");
+        }
+    }, () => {
+        if(!this._isRunning) {
+            btnStep.prop('disabled', '');
+            setImg("image/btnStepIn-off.png");
+        }
+    });
+    window.addEventListener("mz700started", () => {
+        btnStep.prop('disabled', 'disabled')
+        setImg("image/btnStepIn-disabled.png");
+    });
+    window.addEventListener("mz700stopped", () => {
+        btnStep.prop('disabled', '');
+        setImg("image/btnStepIn-off.png");
+    });
+    setImg("image/btnStepIn-off.png");
+    return btnStep;
+};
+
+/**
+ * Create Screen keyboard button.
+ * @returns {ToggleButton} The ToggleButton widget.
+ */
+MZControlPanel.prototype.createScreenKeyboardButton = function() {
+    const button = $("&lt;button/>")
+        .addClass("imaged").attr("id", "btnToggleScreenKeyboard")
+        .append($("&lt;img/>")
+            .attr("src", "./image/btnKeyboard-off.png")
+            .attr("title", "Keyboard").attr("alt", "Keyboard"))
+        .ToggleButton("create", {
+            on: button => {
+                button.find("img")
+                    .attr("src", "./image/btnKeyboard-on.png");
+                $(".keyboard").show();
+                this.resize();
+            },
+            off: button => {
+                button.find("img")
+                    .attr("src", "./image/btnKeyboard-off.png");
+                $(".keyboard").hide();
+                this.resize();
+            },
+        });
+    switch(getDeviceType()) {
+        case "mobile":
+            button.ToggleButton("on");
+            break;
+        case "tablet":
+            button.ToggleButton("off");
+            break;
+        case "pc":
+            button.ToggleButton("off");
+            break;
+    }
+    return button;
+};
+
+/**
+ * Create Full screen button.
+ * @returns {ToggleButton} The ToggleButton widget.
+ */
+MZControlPanel.prototype.createFullScreenButton = function() {
+    const onclick = () => {
+        if(document.fullscreenElement === document.body) {
+            document.exitFullscreen();
+        } else {
+            document.body.requestFullscreen().then(() => {
+                this.acceptKey(true);
+            });
+        }
+    };
+    const button = $("&lt;button/>")
+        .attr("id", "fullscreenButton").addClass("imaged off")
+        .append($("&lt;img/>")
+            .attr("src", "./image/btnFullscreen-off.png")
+            .attr("title", "Fullscreen")
+            .attr("alt", "Fullscreen"))
+        .ToggleButton("create", {
+            autoState: false,
+            on: onclick,
+            off: onclick,
+        });
+
+    document.addEventListener("fullscreenchange", () => {
+        if(document.fullscreenElement == null) {
+            button.ToggleButton("setOff")
+                .find("img")
+                    .attr("src", "./image/btnFullscreen-off.png")
+                    .attr("title", "Fullscreen")
+                    .attr("alt", "Fullscreen");
+        } else {
+            button.ToggleButton("setOn")
+                .find("img")
+                    .attr("src", "./image/btnFullscreen-on.png")
+                    .attr("title", "Exit Fullscreen")
+                    .attr("alt", "Exit Fullscreen");
+        }
+    });
+    return button;
+};
+
+// Handle Key events
+MZControlPanel.prototype.updateKeyStates = function(event, state) {
+    const code = event.keyCode;
+    const matrix = MZ700KeyMatrix.Code2Key[code];
+    if(!(code in this._keystates) || this._keystates[code] != state) {
+        this._keystates[code] = state;
+        if(matrix != null) {
+            this._mz700js.setKeyState(
+                matrix.strobe, matrix.bit, state);
+        }
+    }
+    if(matrix != null) {
+        this._keyboard.mz700keyboard("setState",
+            matrix.strobe, matrix.bit, state);
+    }
+};
+
+window.MZControlPanel = MZControlPanel;
+module.exports = MZControlPanel;
+</code></pre>
+        </article>
+    </section>
 
 
 
