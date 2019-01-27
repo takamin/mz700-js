@@ -52,7 +52,41 @@ const requestJsonp = require("../lib/jsonp");
 
     let isRunning = false;
 
+    mz700js.subscribe("start", () => {
+        isRunning = true;
+        window.dispatchEvent(new Event("mz700started"));
+        $(".MZ-700").addClass("running");
+        if(regview.is(":visible")) {
+            regview.Z80RegView("autoUpdate", true);
+        }
+        $("#wndAsmList").asmview("clearCurrentLine");
+    });
+    mz700js.subscribe("stop", async () => {
+        isRunning = false;
+        window.dispatchEvent(new Event("mz700stopped"));
+        $(".MZ-700").removeClass("running");
+        regview.Z80RegView("autoUpdate", false);
+        const reg = await mz700js.getRegister();
+        $("#wndAsmList").asmview("currentLine", reg.PC);
+        await regview.Z80RegView("updateRegister", reg);
+    });
+    mz700js.subscribe('onUpdateScreen', updateData => {
+        for(const addr of Object.keys(updateData)) {
+            const chr = updateData[addr];
+            screenElement.writeVram(parseInt(addr), chr.attr, chr.dispcode);
+        }
+    });
+    mz700js.subscribe("onBreak", ()=> mz700js.stop());
+    mz700js.subscribe("onNotifyClockFreq", tCyclePerSec => {
+        $(".speed-control-slider").attr("title",
+            `Clock: ${(Math.round((tCyclePerSec / 1000000) * 100) / 100)} MHz`);
+    });
+    mz700js.subscribe("onPortRead", ()=>{});
+    mz700js.subscribe("onPortWrite", ()=>{});
+
+    //
     // MZ-700 Screen
+    //
     const mz700container = $(".MZ-700-body");
     const mz700screen = $(".MZ-700-body .screen");
     mz700screen.mz700scrn("create", { CG: new MZ700CG(), });
@@ -85,24 +119,6 @@ const requestJsonp = require("../lib/jsonp");
             .css("height", innerSize._h + "px");
     };
 
-    mz700js.subscribe("start", () => {
-        isRunning = true;
-        window.dispatchEvent(new Event("mz700started"));
-        $(".MZ-700").addClass("running");
-    });
-    mz700js.subscribe("stop", () => {
-        isRunning = false;
-        window.dispatchEvent(new Event("mz700stopped"));
-        $(".MZ-700").removeClass("running");
-    });
-    mz700js.subscribe("onBreak", ()=> mz700js.stop());
-    mz700js.subscribe("onNotifyClockFreq", tCyclePerSec => {
-        $(".speed-control-slider").attr("title",
-            `Clock: ${(Math.round((tCyclePerSec / 1000000) * 100) / 100)} MHz`);
-    });
-    mz700js.subscribe("onPortRead", ()=>{});
-    mz700js.subscribe("onPortWrite", ()=>{});
-
     //
     // Setup memory map I/O system
     //
@@ -133,13 +149,11 @@ const requestJsonp = require("../lib/jsonp");
     // Setup PCG-700
     PCG700.create(mmio, screenElement);
 
-    mz700js.subscribe('onUpdateScreen', updateData => {
-        for(const addr of Object.keys(updateData)) {
-            const chr = updateData[addr];
-            screenElement.writeVram(
-                    parseInt(addr), chr.attr, chr.dispcode);
-        }
-    });
+    const dockPanelRight = $("#dock-panel-right");
+
+    if(getDeviceType() !== "pc") {
+        dockPanelRight.remove();
+    }
 
     //
     // Register View
@@ -317,7 +331,7 @@ const requestJsonp = require("../lib/jsonp");
                         await mz700js.setPC(execAddr);
                         await mz700js.exec(1);
                         await mz700js.setPC(reg.PC);
-                        await regview.Z80RegView("updateRegister");
+                        await regview.Z80RegView("updateRegister", reg);
                     }
                 }))
         .append($("<br/>"))
@@ -388,7 +402,30 @@ const requestJsonp = require("../lib/jsonp");
 
         taskbar.append(wndSw);
     });
+
+    // Fire the events when the jquery elements was shown or hidden
+    for(const ev of ["show", "hide"]) {
+        const el = $.fn[ev];
+        $.fn[ev] = function() {
+            this.trigger(ev);
+            return el.apply(this, arguments);
+        }
+    }
     updateWndButton();
+
+    $("#wndRegView")
+        .on("show", () => {
+            console.log("on shown");
+            if(isRunning) {
+                regview.Z80RegView("autoUpdate", true);
+            }
+        })
+        .on("hide", () => {
+            console.log("on hidden");
+            if(isRunning) {
+                regview.Z80RegView("autoUpdate", false);
+            }
+        });
 
     //
     // Control panel
@@ -408,7 +445,7 @@ const requestJsonp = require("../lib/jsonp");
             await mz700js.exec(1);
             const reg = await mz700js.getRegister();
             $("#wndAsmList").asmview("currentLine", reg.PC);
-            await regview.Z80RegView("updateRegister");
+            await regview.Z80RegView("updateRegister", reg);
         });
 
     // Convert MZ-700 character
@@ -433,28 +470,6 @@ const requestJsonp = require("../lib/jsonp");
     }
 
     //
-    // Update after emulation status changed
-    //
-    let reg_upd_tid = null;
-    window.addEventListener("mz700started", () => {
-        if(!reg_upd_tid) {
-            reg_upd_tid = setInterval(()=>{
-                regview.Z80RegView("updateRegister");
-            }, 50);
-        }
-        $("#wndAsmList").asmview("clearCurrentLine");
-    });
-    window.addEventListener("mz700stopped", async () => {
-        const reg = await mz700js.getRegister();
-        $("#wndAsmList").asmview("currentLine", reg.PC);
-        if(reg_upd_tid) {
-            clearInterval(reg_upd_tid);
-            reg_upd_tid = null;
-        }
-        await regview.Z80RegView("updateRegister");
-    });
-
-    //
     // Layout
     //
     window.addEventListener("resize", () => {
@@ -463,12 +478,8 @@ const requestJsonp = require("../lib/jsonp");
         mz700container.MZControlPanel("resize");
     });
 
-    const dockPanelHeader = $("#dock-panel-header");
-    const dockPanelRight = $("#dock-panel-right");
-    if(getDeviceType() !== "pc") {
-        dockPanelRight.remove();
-    }
     document.addEventListener("fullscreenchange", () => {
+        const dockPanelHeader = $("#dock-panel-header");
         if(document.fullscreenElement == null) {
             dockPanelHeader.show();
             dockPanelRight.show();
@@ -492,7 +503,6 @@ const requestJsonp = require("../lib/jsonp");
 
     await mz700js.reset();
     await mz700js.start();
-    //await mz700container.MZControlPanel("updateCmtSlot");
 
     // Load MZT file when the filename is included in URL
     const request = parseRequest();
