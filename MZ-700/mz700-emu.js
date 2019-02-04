@@ -81,8 +81,6 @@ const requestJsonp = require("../lib/jsonp");
         $(".speed-control-slider").attr("title",
             `Clock: ${(Math.round((tCyclePerSec / 1000000) * 100) / 100)} MHz`);
     });
-    mz700js.subscribe("onPortRead", ()=>{});
-    mz700js.subscribe("onPortWrite", ()=>{});
 
     //
     // MZ-700 Screen
