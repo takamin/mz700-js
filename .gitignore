@@ -5,3 +5,6 @@ bower_components/
 npm-debug.log
 tags
 bundle-*.js
+Z80/register.js
+Z80/register.js.map
+.tscache/
