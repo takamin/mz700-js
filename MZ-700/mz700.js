@@ -427,26 +427,6 @@ MZ700.prototype.setPC = function(addr) {
     this.z80.reg.PC = addr;
 };
 
-MZ700.prototype.getRegisterB = function() {
-    return this.z80.regB.cloneRaw();
-};
-
-MZ700.prototype.getIFF1 = function() {
-    return this.z80.IFF1;
-};
-
-MZ700.prototype.getIFF2 = function() {
-    return this.z80.IFF2;
-};
-
-MZ700.prototype.getIM = function() {
-    return this.z80.IM;
-};
-
-MZ700.prototype.getHALT = function() {
-    return this.z80.HALT;
-};
-
 MZ700.prototype.readMemory = function(addr) {
     return this.memory.peek(addr);
 };
