@@ -143,7 +143,7 @@ if('reuse-mzt-header' in cli.options) {
     //
     fs.writeFileSync(
         output_filename,
-        new Buffer(mzt_header_buf.concat(asm.buffer)));
+        Buffer.from(mzt_header_buf.concat(asm.buffer)));
 
     //
     // Output address map
