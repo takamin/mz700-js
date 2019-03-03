@@ -26,12 +26,15 @@ const Z80 = function(opt) {
     for(var i = 0; i < 256; i++) { this.ioPort[i] = 0; }
 	this.reg = new Z80_Register();
 	this.regB = new Z80_Register();
-    this.onReadIoPort = (/*port*/) => {};
-    this.onReadIoPort = opt.onReadIoPort || ((/*port, value*/) => {});
-    this.onWriteIoPort = opt.onWriteIoPort || ((/*port, value*/) => {});
     this.bpmap = new Array(0x10000);
     this.consumedTCycle = 0;
 	this.createOpecodeTable();
+    this._onReadIoPort = {};
+    this._onWriteIoPort = {};
+    for(let i = 0; i < 256; i++) {
+        this._onWriteIoPort[i] = ()=>{};
+        this._onReadIoPort[i] = ()=>{};
+    }
 };
 
 /**
@@ -42,7 +45,7 @@ const Z80 = function(opt) {
 Z80.prototype.readIoPort = function(port) {
     const value = this.ioPort[port];
     this.reg.onReadIoPort(value);
-    this.onReadIoPort(port, value);
+    this._onReadIoPort[port](value);
     return value;
 };
 
@@ -54,7 +57,7 @@ Z80.prototype.readIoPort = function(port) {
  */
 Z80.prototype.writeIoPort = function(port, value) {
     this.ioPort[port] = value;
-    this.onWriteIoPort(port, value);
+    this._onWriteIoPort[port](value);
 };
 
 /**
@@ -6183,5 +6186,10 @@ Z80.prototype.createOpecodeTable = function() {
         }
     };
 };
-
+Z80.prototype.onReadIoPort = function(port, handler) {
+    this._onReadIoPort[port] = handler;
+};
+Z80.prototype.onWriteIoPort = function(port, handler) {
+    this._onWriteIoPort[port] = handler;
+};
 module.exports = Z80;
