@@ -1826,7 +1826,7 @@ Z80.prototype.createOpecodeTable = function() {
         cycle:4,
         proc: () => {
             var tmp = getA();
-            setA( getA() );
+            setA( this.regB.getA() );
             this.regB.setA( tmp );
             tmp = reg.getF();
             reg.setF( this.regB.getF() );
