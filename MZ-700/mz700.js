@@ -103,8 +103,6 @@ var MZ700 = function(opt) {
         },
         onMmioRead: (/*address, value*/) => { },
         onMmioWrite: (/*address, value*/) => { },
-        onPortRead: (/*port, value*/) => { },
-        onPortWrite: (/*port, value*/) => { },
         startSound: (/*freq*/) => { },
         stopSound: () => {},
         onStartDataRecorder: () => {},
@@ -288,26 +286,17 @@ var MZ700 = function(opt) {
         }
     });
 
-    this.z80 = new Z80({
-        memory: this.memory,
-        onReadIoPort: (port, value) => {
-            this.opt.onPortRead(port, value);
-        },
-        onWriteIoPort: (port, value) => {
-            switch(port) {
-                case 0xe0: this.memory.changeBlock0_DRAM(); break;
-                case 0xe1: this.memory.changeBlock1_DRAM(); break;
-                case 0xe2: this.memory.changeBlock0_MONITOR(); break;
-                case 0xe3: this.memory.changeBlock1_VRAM(); break;
-                case 0xe4: this.memory.changeBlock0_MONITOR();
-                           this.memory.changeBlock1_VRAM();
-                           break;
-                case 0xe5: this.memory.disableBlock1(); break;
-                case 0xe6: this.memory.enableBlock1(); break;
-            }
-            this.opt.onPortWrite(port, value);
-        }
+    this.z80 = new Z80({ memory: this.memory });
+    this.z80.onWriteIoPort(0xe0, () => this.memory.changeBlock0_DRAM());
+    this.z80.onWriteIoPort(0xe1, () => this.memory.changeBlock1_DRAM());
+    this.z80.onWriteIoPort(0xe2, () => this.memory.changeBlock0_MONITOR());
+    this.z80.onWriteIoPort(0xe3, () => this.memory.changeBlock1_VRAM());
+    this.z80.onWriteIoPort(0xe4, () => {
+        this.memory.changeBlock0_MONITOR();
+        this.memory.changeBlock1_VRAM();
     });
+    this.z80.onWriteIoPort(0xe5, () => this.memory.disableBlock1());
+    this.z80.onWriteIoPort(0xe6, () => this.memory.enableBlock1());
 };
 
 MZ700.AVG_CYCLE = 40;
@@ -425,26 +414,6 @@ MZ700.prototype.getRegister = function() {
 
 MZ700.prototype.setPC = function(addr) {
     this.z80.reg.PC = addr;
-};
-
-MZ700.prototype.getRegisterB = function() {
-    return this.z80.regB.cloneRaw();
-};
-
-MZ700.prototype.getIFF1 = function() {
-    return this.z80.IFF1;
-};
-
-MZ700.prototype.getIFF2 = function() {
-    return this.z80.IFF2;
-};
-
-MZ700.prototype.getIM = function() {
-    return this.z80.IM;
-};
-
-MZ700.prototype.getHALT = function() {
-    return this.z80.HALT;
 };
 
 MZ700.prototype.readMemory = function(addr) {
