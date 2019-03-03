@@ -1,6 +1,6 @@
 {
   "name": "mz700-js",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "MZ-700 Full JavaScript Emulator",
   "private": false,
   "scripts": {
@@ -62,7 +62,7 @@
   "bugs": {
     "url": "https://github.com/takamin/mz700-js/issues"
   },
-  "homepage": "https://takamin.github.io/mz700-js/MZ-700/client",
+  "homepage": "https://takamin.github.io/mz700-js/emu.html",
   "engines": {
     "node": ">=7.6"
   },
@@ -82,6 +82,7 @@
     },
     "rules": {
       "no-console": "off",
+      "no-unused-vars": "warn",
       "valid-jsdoc": "warn"
     },
     "extends": "eslint:recommended"
