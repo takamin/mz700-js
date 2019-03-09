@@ -146,6 +146,10 @@ const requestJsonp = require("../lib/jsonp");
 
     // Setup PCG-700
     PCG700.create(mmio, screenElement);
+    mz700js.subscribe("onMmioWrite", (param) => {
+        const {address, value} = param;
+        mmio.write(address, value);
+    });
 
     const dockPanelRight = $("#dock-panel-right");
 
