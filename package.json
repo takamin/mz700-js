@@ -10,7 +10,10 @@
     "grunt": "grunt",
     "build": "grunt",
     "release": "grunt release",
-    "generate-docs": "jsdoc --configure jsdoc.json --verbose"
+    "generate-docs": "jsdoc --configure jsdoc.json --verbose",
+    "asbuild:untouched": "asc assembly/index.ts -b build/untouched.wasm -t build/untouched.wat --sourceMap --validate --debug",
+    "asbuild:optimized": "asc assembly/index.ts -b build/optimized.wasm -t build/optimized.wat --sourceMap --validate --optimize",
+    "asbuild": "npm run asbuild:untouched && npm run asbuild:optimized"
   },
   "bin": {
     "mz700-js": "./bin/mz700-web.js",
@@ -22,6 +25,7 @@
   "dependencies": {
     "@types/node": "^12.0.4",
     "ansi-escape-sequences": "^4.1.0",
+    "assemblyscript": "github:AssemblyScript/assemblyscript",
     "b-box": "^0.1.2",
     "codemirror": "^5.47.0",
     "debug": "^4.1.1",
