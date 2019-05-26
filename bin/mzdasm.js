@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 require("../lib/context.js");
-require('../lib/ex_number.js');
+const NumberUtil = require("../lib/number-util.js");
 var Z80 = require("../Z80/Z80.js");
 var Z80BinUtil = require("../Z80/bin-util.js");
 const parseAddress = require("../lib/parse-addr.js");
@@ -83,9 +83,9 @@ fs.readFile(input_filename, function(err, data) {
         outbuf.push(
             ";======================================================",
             "; filename  :   '" + input_filename + "'",
-            "; loadaddr  :   " + addr_load.HEX(4) + "H",
+            "; loadaddr  :   " + NumberUtil.HEX(addr_load, 4) + "H",
             "; filesize  :   " + buf.length + " bytes / " +
-                                 buf.length.HEX(4) + "H bytes",
+                                 NumberUtil.HEX(buf.length, 4) + "H bytes",
             ";======================================================"
             );
         dasmlist = Z80.dasm(buf, 0, buf.length, addr_load);

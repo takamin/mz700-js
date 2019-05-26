@@ -1,5 +1,4 @@
 "use strict";
-require('../lib/ex_number.js');
 const assert = require("chai").assert;
 const assembler = require("../Z80/assembler.js");
 describe("Z80/assembler", () => {

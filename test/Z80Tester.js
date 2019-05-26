@@ -1,5 +1,3 @@
-require("../lib/context.js");
-require('../lib/ex_number.js');
 var Z80_assemble = require('../Z80/assembler');
 function Z80Tester() {  }
 Z80Tester.prototype.runMnemonics = function(Z80cpu, mnemonics) {

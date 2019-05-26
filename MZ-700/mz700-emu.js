@@ -1,6 +1,6 @@
 require("fullscrn");
 require("../lib/context.js");
-require("../lib/ex_number.js");
+const       NumberUtil = require("../lib/number-util.js");
 const      TransWorker = require("transworker");
 const     Z80_assemble = require("../Z80/assembler.js");
 const              Z80 = require("../Z80/Z80.js");
@@ -146,6 +146,10 @@ const requestJsonp = require("../lib/jsonp");
 
     // Setup PCG-700
     PCG700.create(mmio, screenElement);
+    mz700js.subscribe("onMmioWrite", (param) => {
+        const {address, value} = param;
+        mmio.write(address, value);
+    });
 
     const dockPanelRight = $("#dock-panel-right");
 
@@ -321,7 +325,7 @@ const requestJsonp = require("../lib/jsonp");
                     const addrToken = par.find("input.address").val();
                     const addr = parseAddress(addrToken);
                     if(addr != null) {
-                        let src = 'ORG ' + addr.HEX(4) + "H\r\n";
+                        let src = 'ORG ' + NumberUtil.HEX(addr, 4) + "H\r\n";
                         src += par.find("input.mnemonic").val() + "\r\n";
                         const bin = Z80_assemble.assemble([src]).obj[0];
                         const reg = await mz700js.getRegister();
@@ -512,6 +516,7 @@ const requestJsonp = require("../lib/jsonp");
             await setMztData(tape_data);
         } catch (err) {
             console.warn(err.message);
+            console.warn(err.stack);
         }
     }
 
