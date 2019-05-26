@@ -66,7 +66,7 @@ fs.readFile(input_filename, function(err, data) {
         throw err;
     }
     var outbuf = [];
-    var buf = new Buffer(data);
+    const buf = Buffer.from(data);
     var dasmlist = [];
     var i;
     if(input_mzt) {
