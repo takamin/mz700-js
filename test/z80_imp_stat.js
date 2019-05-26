@@ -1,12 +1,11 @@
-require("../lib/context.js");
-require('../lib/ex_number.js');
+const NumberUtil = require("../lib/number-util.js");
 var Z80 = require('../Z80/Z80.js');
 var Z80_assemble = require('../Z80/assembler');
 var z80 = new Z80();
 function get_hex_code(codes) {
     var a = [];
     codes.forEach(function(code) {
-        a.push(code.HEX(2));
+        a.push( NumberUtil.HEX(code, 2) );
     });
     return a.join(" ");
 }
@@ -116,7 +115,7 @@ var check_asm_dasm = function (codes) {
             ++disasmUnsupported;
             errorMessages = ["DISASSEMBLE FAIL:",
                             codes_src.map(function(n) {
-                                return Number.prototype.HEX.call(n, 2);
+                                return NumberUtil.HEX(n, 2);
                             }).join(' '),
                             asm];
         } else if(!match) {
@@ -152,10 +151,10 @@ var check_asm_dasm = function (codes) {
                 "CODES UNMATCH MATCH: " + asm,
                 "ORG: " + codes_src.slice(0, codes_result.length)
                     .map(function(n) {
-                        return Number.prototype.HEX.call(n, 2);
+                        return NumberUtil.HEX(n, 2);
                     }).join(' '),
                 "ASM: " + codes_result.map(function(n) {
-                        return Number.prototype.HEX.call(n, 2);
+                        return NumberUtil.HEX(n, 2);
                     }).join(' ')];
         }
     }

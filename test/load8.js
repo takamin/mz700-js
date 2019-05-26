@@ -1,7 +1,7 @@
-require("../lib/context");
 var UnitTest = require("./UnitTest");
 var Z80Tester = require('./Z80Tester.js');
 var Z80 = require('../Z80/Z80.js');
+const NumberUtil = require("../lib/number-util.js");
 
 var tester = new Z80Tester();
 var cpu = new Z80();
@@ -16,17 +16,17 @@ var tests = [
                     var mne = "LD (" + IDX + "+" + d +")," + r;
                     tester.runMnemonics(cpu, [mne]);
                     UnitTest.report(
-                            mne + " - 1. mem " + (0x1200+d).HEX(4) + "H must be " + d,
+                            mne + " - 1. mem " + NumberUtil.HEX(0x1200+d, 4) + "H must be " + d,
                             cpu.memory.peek(0x1200 + d) == d,
-                            d.HEX(2) + "H");
+                            NumberUtil.HEX(d, 2) + "H");
                     UnitTest.report(
                             mne + " - 2. " + IDX + " is not changed",
                             cpu.reg[IDX] == 0x1200,
-                            "changed to " + cpu.reg[IDX].HEX(4) + "H");
+                            "changed to " + NumberUtil.HEX(cpu.reg[IDX], 4) + "H");
                     UnitTest.report(
                             mne + " - 3 " + r + " is not changed",
                             cpu.reg["get" + r]() == d,
-                            "changed to " + cpu.reg["get" + r]().HEX(2) + "H");
+                            "changed to " + NumberUtil.HEX(cpu.reg["get"+r](), 2) + "H");
                 });
             });
         });
@@ -42,17 +42,17 @@ var tests = [
                     tester.runMnemonics(cpu, [mne]);
                     UnitTest.report(
                             mne + " - 1. reg "+ r + " must be " + d,
-                            cpu.reg["get" + r]() == d,
-                            cpu.reg["get" + r]().HEX(2) + "H");
+                            cpu.reg["get"+r]() == d,
+                            NumberUtil.HEX(cpu.reg["get"+r](), 2) + "H");
                     UnitTest.report(
                             mne + " - 2. " + IDX + " is not changed",
                             cpu.reg[IDX] == 0x1200,
-                            "changed to " + cpu.reg[IDX].HEX(4) + "H");
+                            "changed to " + NumberUtil.HEX(cpu.reg[IDX], 4) + "H");
                     UnitTest.report(
-                            mne + " - 3. mem " + (0x1200+d).HEX(4)
+                            mne + " - 3. mem " + NumberUtil.HEX(0x1200+d, 4)
                             + "H is not changed " + d,
                             cpu.memory.peek(0x1200 + d) == d,
-                            "changed to " + cpu.memory.peek(0x1200 + d).HEX(4) + "H");
+                            "changed to " + NumberUtil.HEX(cpu.memory.peek(0x1200+d), 4) + "H");
                 });
             });
         });
@@ -63,16 +63,16 @@ var tests = [
                 [0,1,254,255].forEach(function(n) {
                     cpu.memory.poke(0x1200 + d, (0xff & (~d)));
                     cpu.reg[IDX] = 0x1200;
-                    var mne = "LD (" + IDX + "+" + d +")," + n.HEX(2) + "H";
+                    var mne = "LD (" + IDX + "+" + d +")," + NumberUtil.HEX(n, 2) + "H";
                     tester.runMnemonics(cpu, [mne]);
                     UnitTest.report(
-                            mne + " - 1. mem " + (0x1200+d).HEX(4) + "H must be " + d,
+                            mne + " - 1. mem " + NumberUtil.HEX(0x1200+d, 4) + "H must be " + d,
                             cpu.memory.peek(0x1200 + d) == n,
-                            d.HEX(2) + "H");
+                            NumberUtil.HEX(d, 2) + "H");
                     UnitTest.report(
                             mne + " - 2. " + IDX + " is not changed",
                             cpu.reg[IDX] == 0x1200,
-                            "changed to " + cpu.reg[IDX].HEX(4) + "H");
+                            "changed to " + NumberUtil.HEX(cpu.reg[IDX], 4) + "H");
                 });
             });
         });

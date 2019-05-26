@@ -1,4 +1,3 @@
-require("../lib/ex_number.js");
 var FractionalTimer = require("fractional-timer");
 var MZ_TapeHeader   = require('../lib/mz-tape-header');
 var MZ_Tape         = require('../lib/mz-tape');

@@ -1,6 +1,7 @@
 /* eslint no-unused-vars: "off" */
 (function() {
     "use strict";
+    const NumberUtil = require("../lib/number-util.js");
     var Z80Reg8bitIf = require("./register-asm.js");
     var Z80BinUtil = require("./bin-util.js");
     var Z80_Register = function() {
@@ -164,21 +165,21 @@
     }
     Z80_Register.prototype.debugDump = function() {
         console.info(
-                "B:" + this.getB().HEX(2) + "H " + this.getB() + " " +
-                "C:" + this.getC().HEX(2) + "H " + this.getC() + " / " + this.getBC());
+                "B:" + NumberUtil.HEX(this.getB(), 2) + "H " + this.getB() + " " +
+                "C:" + NumberUtil.HEX(this.getC(), 2) + "H " + this.getC() + " / " + this.getBC());
         console.info(
-                "D:" + this.getD().HEX(2) + "H " + this.getD() + " " +
-                "E:" + this.getE().HEX(2) + "H " + this.getE() + " / " + this.getDE());
+                "D:" + NumberUtil.HEX(this.getD(), 2) + "H " + this.getD() + " " +
+                "E:" + NumberUtil.HEX(this.getE(), 2) + "H " + this.getE() + " / " + this.getDE());
         console.info(
-                "H:" + this.getH().HEX(2) + "H " + this.getH() + " " +
-                "L:" + this.getL().HEX(2) + "H " + this.getL() + " / " + this.getHL());
-        console.info("A:" + this.getA().HEX(2) + "H " + this.getA());
+                "H:" + NumberUtil.HEX(this.getH(), 2) + "H " + this.getH() + " " +
+                "L:" + NumberUtil.HEX(this.getL(), 2) + "H " + this.getL() + " / " + this.getHL());
+        console.info("A:" + NumberUtil.HEX(this.getA(), 2) + "H " + this.getA());
         console.info("SZ-HPN-C");
-        console.info(this.getF().bin(8));
-        console.info("PC:" + this.PC.HEX(4) + "H " + this.PC.bin(16) + "(2) " + this.PC);
-        console.info("SP:" + this.SP.HEX(4) + "H " + this.SP.bin(16) + "(2) " + this.SP);
-        console.info("I:" + this.I.HEX(2) + "H " + this.I.bin(8) + "(2) " + this.I + " " +
-        "R:" + this.R.HEX(2) + "H " + this.R.bin(8) + "(2) " + this.R);
+        console.info(NumberUtil.bin(this.getF(), 8));
+        console.info("PC:" + NumberUtil.HEX(this.PC, 4) + "H " + NumberUtil.bin(this.PC, 16) + "(2) " + this.PC);
+        console.info("SP:" + NumberUtil.HEX(this.SP, 4) + "H " + NumberUtil.bin(this.SP, 16) + "(2) " + this.SP);
+        console.info("I:" + NumberUtil.HEX(this.I, 2) + "H " + NumberUtil.bin(this.I, 8) + "(2) " + this.I + " " +
+        "R:" + NumberUtil.HEX(this.R, 2) + "H " + NumberUtil.bin(this.R, 8) + "(2) " + this.R);
     }
 
     Z80_Register.prototype.ADD_IX = function(n)
