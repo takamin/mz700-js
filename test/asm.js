@@ -1,5 +1,4 @@
-require("../lib/context.js");
-require('../lib/ex_number.js');
+const NumberUtil = require("../lib/number-util.js");
 var UnitTest = require("./UnitTest");
 var Z80 = require('../Z80/Z80.js');
 var Z80_assemble = require('../Z80/assembler');
@@ -759,12 +758,12 @@ module.exports = {
                 if(!test_result) {
                     test_detail += " expect:"
                     for(var j = 0; j < line_asm_test_pattern[i].code.length; j++) {
-                        test_detail += " " + line_asm_test_pattern[i].code[j].HEX(2);
+                        test_detail += " " + NumberUtil.HEX(line_asm_test_pattern[i].code[j], 2);
                     }
                     test_detail += "(" + line_asm_test_pattern[i].code.length + "bytes)"; 
                     test_detail += " result:";
                     for(var j = 0; j < codes.length; j++) {
-                        test_detail += " " + codes[j].HEX(2);
+                        test_detail += " " + NumberUtil.HEX(codes[j], 2);
                     }
                     test_detail += "(" + codes.length + "bytes)"; 
                 }
@@ -774,7 +773,7 @@ module.exports = {
         for(var i = 0; i < line_asm_test_pattern.length; i++) {
             var code = line_asm_test_pattern[i].code;
             var test_name = "DISASSEMBLE ["
-                + code.map( function(c) { return c.HEX(2); }).join(' ')
+                + code.map( function(c) { return NumberUtil.HEX(c, 2); }).join(' ')
                 + '] to "' + line_asm_test_pattern[i].mnemonic + '"';
             var test_result = true;
             var test_detail = "";
@@ -790,9 +789,9 @@ module.exports = {
                         return;
                     }
                     var binsrcCode = line_asm_test_pattern[i].code.map(
-                            function(c) { return c.HEX(2); }).join(' ')
+                            function(c) { return NumberUtil.HEX(c, 2); }).join(' ')
                     var disasmCode = mnemonicInfo.code.map(
-                            function(c) { return c.HEX(2); }).join(' ')
+                            function(c) { return NumberUtil.HEX(c, 2); }).join(' ')
                     if(binsrcCode != disasmCode) {
                         console.log("");
                         console.log("## " + test_name);
@@ -802,7 +801,7 @@ module.exports = {
                         console.log("BINSRC SOURCE:" + binsrcCode);
                         console.log("DISASM SOURCE:" + disasmCode);
                         console.log(
-                            mnemonicInfo.addr.HEX(4) + "\t"
+                            NumberUtil.HEX(mnemonicInfo.addr, 4) + "\t"
                             + disasmCode + "\t"
                             + ((mnemonicInfo.mnemonic.length == 0) ? '':
                                 mnemonicInfo.mnemonic[0] + "\t"
@@ -819,13 +818,13 @@ module.exports = {
                     disasmMnemonic = disasmMnemonic.replace(/;.*$/, '');
                     disasmMnemonic = disasmMnemonic.toUpperCase();
                     disasmMnemonic = disasmMnemonic.replace(/\b([0-9]+)\b/,
-                            function() { return parseInt(arguments[1]).HEX(4)+"H"; });
+                            function() { return NumberUtil.HEX(parseInt(arguments[1]), 4)+"H"; });
                     disasmMnemonic = disasmMnemonic.replace(/\b0+([1-9A-F]+H)\b/, function() {return arguments[1] });
                     disasmMnemonic = disasmMnemonic.replace(/ /g, '');
                     var sourceMnemonic = line_asm_test_pattern[i].mnemonic
                     sourceMnemonic = sourceMnemonic.toUpperCase();
                     sourceMnemonic = sourceMnemonic.replace(/\b([0-9]+)\b/,
-                            function() { return parseInt(arguments[1]).HEX(4)+"H"; });
+                            function() { return NumberUtil.HEX(parseInt(arguments[1]), 4)+"H"; });
                     sourceMnemonic = sourceMnemonic.replace(/\b0+([1-9A-F]+H)\b/, function() {return arguments[1] });
                     sourceMnemonic = sourceMnemonic.replace(/ /g, '');
                     if(disasmMnemonic != sourceMnemonic) {
@@ -839,7 +838,7 @@ module.exports = {
                         console.log("    DISASSEMBLED:" + disasmMnemonic);
                         console.log("     SOURCE CODE:" + line_asm_test_pattern[i].mnemonic);
                         console.log(
-                            mnemonicInfo.addr.HEX(4) + "\t"
+                            NumberUtil.HEX(mnemonicInfo.addr, 4) + "\t"
                             + disasmCode + "\t"
                             + ((mnemonicInfo.mnemonic.length == 0) ? '':
                                 mnemonicInfo.mnemonic[0] + "\t"

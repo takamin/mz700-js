@@ -2,6 +2,7 @@
 (function() {
     "use strict";
 
+    const NumberUtil = require("../lib/number-util.js");
     var getPackageJson = require("../lib/get-package-json");
     var npmInfo = getPackageJson(__dirname + "/..");
     var Getopt = require('node-getopt');
@@ -83,10 +84,10 @@
             mmio.write(address, value);
         },
         "onPortRead": function(/*port, value*/){
-            //console.log("IN ", port.HEX(2) + "H", value.HEX(2) + "H");
+            //console.log("IN ", NumberUtil.HEX(port, 2) + "H", NumberUtil.HEX(value, 2) + "H");
         },
         "onPortWrite": function(port, value){
-            console.log("OUT ", port.HEX(2) + "H", value.HEX(2) + "H");
+            console.log("OUT ", NumberUtil.HEX(port, 2) + "H", NumberUtil.HEX(value, 2) + "H");
         },
         'startSound': function(/*freq*/) {
             //console.log("bz:", freq, "Hz");
@@ -142,10 +143,10 @@
                 if(mzt_list != null && mzt_list.length > 0) {
                     mzt_list.forEach(function(mzt, i) {
                         console.log("[" + (i + 1) + "/" + mzt_list.length + "] " +
-                            mzt.header.addr_load.HEX(4) + "h --- " +
-                            (mzt.header.addr_load + mzt.header.file_size - 1).HEX(4) + "h " +
+                            NumberUtil.HEX(mzt.header.addr_load, 4) + "h --- " +
+                            NumberUtil.HEX((mzt.header.addr_load + mzt.header.file_size - 1), 4) + "h " +
                             "(" + mzt.header.file_size + " bytes), " +
-                            mzt.header.addr_exec.HEX(4) + "h, " + mzt.header.filename);
+                            NumberUtil.HEX(mzt.header.addr_exec, 4) + "h, " + mzt.header.filename);
                         memsetMZ(
                             mzt.header.addr_load,
                             mzt.body.buffer,

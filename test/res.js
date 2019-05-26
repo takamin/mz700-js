@@ -1,7 +1,7 @@
-require("../lib/context.js");
 var UnitTest = require("./UnitTest");
 var Z80Tester = require('./Z80Tester.js');
 var Z80 = require('../Z80/Z80.js');
+const NumberUtil = require("../lib/number-util.js");
 
 var tester = new Z80Tester();
 var cpu = new Z80();
@@ -16,9 +16,9 @@ var tests = [
                 cpu.reg["set" + r]( init );
                 tester.runMnemonics(cpu, [mnemonic]);
                 UnitTest.report(
-                        "" + mnemonic + ": to " + init.HEX(2) + "H must be " + expect.HEX(2) + "H",
+                        "" + mnemonic + ": to " + NumberUtil.HEX(init, 2) + "H must be " + NumberUtil.HEX(expect, 2) + "H",
                         cpu.reg["get" + r]() == expect,
-                        cpu.reg["get" + r]().HEX(2) + "H");
+                        NumberUtil.HEX(cpu.reg["get" + r](), 2) + "H");
             }
         });
     },
@@ -33,9 +33,9 @@ var tests = [
             tester.runMnemonics(cpu, [mnemonic]);
             var result = cpu.memory.peek(addr);
             UnitTest.report(
-                    "" + mnemonic + ": to " + init.HEX(2) + "H must be " + expect.HEX(2) + "H",
+                    "" + mnemonic + ": to " + NumberUtil.HEX(init, 2) + "H must be " + NumberUtil.HEX(expect, 2) + "H",
                     result == expect,
-                    result.HEX(2) + "H");
+                    NumberUtil.HEX(result, 2) + "H");
         }
     },
     function() {
@@ -51,9 +51,9 @@ var tests = [
                     tester.runMnemonics(cpu, [mnemonic]);
                     var result = cpu.memory.peek(addr + d);
                     UnitTest.report(
-                            "" + mnemonic + ": to " + init.HEX(2) + "H must be " + expect.HEX(2) + "H",
+                            "" + mnemonic + ": to " + NumberUtil.HEX(init, 2) + "H must be " + NumberUtil.HEX(expect, 2) + "H",
                             result == expect,
-                            result.HEX(2) + "H");
+                            NumberUtil.HEX(result, 2) + "H");
                 }
             });
         });

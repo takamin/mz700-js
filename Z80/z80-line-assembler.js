@@ -1,4 +1,5 @@
 "use strict";
+const NumberUtil = require("../lib/number-util.js");
 const oct = require("../lib/oct");
 const mz700charcode = require("../lib/mz700-charcode.js");
 const parseAddress = require("../lib/parse-addr.js");
@@ -120,7 +121,7 @@ Z80LineAssembler.getBytecodesFromOperandOfDEFB = function(operand, dictionary) {
                                 throw new Error(
                                     "The character code exceeds the maximum",
                                     "value of 8 bit with the label", element,
-                                    "(", "0x" + deref.HEX(4) , ")");
+                                    "(", "0x" + NumberUtil.HEX(deref, 4) , ")");
                             }
                             strcode = [deref];
                         } else {

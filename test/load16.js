@@ -1,4 +1,3 @@
-require("../lib/context");
 var UnitTest = require("./UnitTest");
 var Z80Tester = require('./Z80Tester.js');
 var Z80 = require('../Z80/Z80.js');
