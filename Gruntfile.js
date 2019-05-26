@@ -4,7 +4,10 @@ module.exports = function(grunt) {
         ts: {
             default: {
                 files: [
-                    { src: ["./Z80/register.ts"], dest: "./Z80/register.js" },
+                    { src: [
+                        "./Z80/*.ts",
+                        "./lib/*.ts",
+                    ] },
                 ],
                 "tsconfig": "./tsconfig.json",
             },

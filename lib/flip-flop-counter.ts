@@ -1,9 +1,17 @@
-(function() {
-    "use strict";
-    //
-    // FlipFlopCounter
-    //
-    function FlipFlopCounter(freq) {
+"use strict";
+//
+// FlipFlopCounter
+//
+export default class FlipFlopCounter {
+    static SPEED_FACTOR:number = 1.5;
+    static CPU_CLOCK:number = 4.0 * 1000 * 1000;
+    static MNEMONIC_AVE_CYCLE:number = 6;
+    _handlers:object;
+    _out:boolean;
+    _counter:number;
+    _counter_max:number;
+
+    constructor(freq:number) {
         this.initialize();
         this.setFrequency(freq);
         this._handlers = {
@@ -11,26 +19,23 @@
         };
     }
 
-    FlipFlopCounter.SPEED_FACTOR = 1.5;
-    FlipFlopCounter.CPU_CLOCK = 4.0 * 1000 * 1000;
-    FlipFlopCounter.MNEMONIC_AVE_CYCLE = 6;
-    FlipFlopCounter.prototype.initialize = function() {
+    initialize() {
         this._out = false;
         this._counter = 0;
-    };
+    }
 
-    FlipFlopCounter.prototype.setFrequency = function(freq) {
+    setFrequency(freq:number) {
         this._counter_max =
             FlipFlopCounter.CPU_CLOCK /
             FlipFlopCounter.MNEMONIC_AVE_CYCLE /
             freq;
-    };
+    }
 
-    FlipFlopCounter.prototype.readOutput = function() {
+    readOutput():boolean {
         return this._out;
-    };
+    }
 
-    FlipFlopCounter.prototype.count = function() {
+    count():boolean {
         this._counter += FlipFlopCounter.SPEED_FACTOR;
         if(this._counter >= this._counter_max / 2) {
             this._out = !this._out;
@@ -39,16 +44,16 @@
             return true;
         }
         return false;
-    };
+    }
 
-    FlipFlopCounter.prototype.addEventListener = function(evt, handler) {
+    addEventListener(evt:string, handler:Function) {
         this._handlers[evt].push(handler);
     };
 
-    FlipFlopCounter.prototype.fireEvent = function(evt) {
+    fireEvent(evt:string) {
         this._handlers[evt].forEach(function(handler) {
             handler();
         });
-    };
-    module.exports = FlipFlopCounter;
-}());
+    }
+}
+module.exports = FlipFlopCounter;
