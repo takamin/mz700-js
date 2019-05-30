@@ -13,4 +13,6 @@
 /lib/mz700-charcode.js
 /lib/oct.js
 /lib/parse-addr.js
+/lib/parse-request.js
+/lib/user-agent-util.js
 /Z80/*.js
