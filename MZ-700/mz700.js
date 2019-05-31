@@ -1,8 +1,7 @@
-require("../lib/ex_number.js");
 var FractionalTimer = require("fractional-timer");
-var MZ_TapeHeader   = require('./mz-tape-header');
-var MZ_Tape         = require('./mz-tape');
-var MZ_DataRecorder = require('./mz-data-recorder');
+var MZ_TapeHeader   = require('../lib/mz-tape-header');
+var MZ_Tape         = require('../lib/mz-tape');
+var MZ_DataRecorder = require('../lib/mz-data-recorder');
 var Intel8253       = require('../lib/intel-8253');
 var FlipFlopCounter = require('../lib/flip-flop-counter');
 var IC556           = require('../lib/ic556');
@@ -103,8 +102,6 @@ var MZ700 = function(opt) {
         },
         onMmioRead: (/*address, value*/) => { },
         onMmioWrite: (/*address, value*/) => { },
-        onPortRead: (/*port, value*/) => { },
-        onPortWrite: (/*port, value*/) => { },
         startSound: (/*freq*/) => { },
         stopSound: () => {},
         onStartDataRecorder: () => {},
@@ -127,191 +124,197 @@ var MZ700 = function(opt) {
 
     this.mmioMap = [];
     for(var address = 0xE000; address < 0xE800; address++) {
-        this.mmioMap.push({ "r": false, "w": false });
+        this.mmioMap.push({ "r": (()=>{}), "w": (()=>{}) });
     }
+    //MMIO $E000
+    this.mmioMap[0xE000 - 0xE000] = {
+        r: (/*address, value*/) => {},
+        w: (address, value) => {
+            this.memory.poke(0xE001, this.keymatrix.getKeyData(value));
+            this.ic556.loadReset(value & 0x80);
+        },
+    };
+    //MMIO $E001
+    this.mmioMap[0xE001 - 0xE000] = {
+        r: (/*address, value*/) => {},
+        w: (/*address, value*/) => {},
+    };
+    //MMIO $E002
+    this.mmioMap[0xE002 - 0xE000] = {
+        r: (address, value) => {
+            // [VBLK~] [556OUT] [RDATA] [MOTOR] [M-ON] [INTMSK] [WDATA] [*****]
+            //    |        |       |       |       |       |       |       |
+            //    |        |       |       |       |       |       |       +---- b0. --- (undefined)
+            //    |        |       |       |       |       |       +------------ b1. OUT CMT WRITE DATA
+            //    |        |       |       |       |       +-------------------- b2. OUT CLOCK INT MASK
+            //    |        |       |       |       +---------------------------- b3. OUT DRIVE CMT MOTOR
+            //    |        |       |       +------------------------------------ b4. IN  CMT MOTOR FEEDBACK
+            //    |        |       +-------------------------------------------- b5. IN  CMT READ DATA
+            //    |        +---------------------------------------------------- b6. IN  BLINK CURSOR
+            //    +------------------------------------------------------------- b7. IN  VERTICAL BLANK
+
+            value = value & 0x0f; // 入力上位4ビットをオフ
+
+            // PC4 - MOTOR : The motor driving state (high active)
+            if(this.dataRecorder.motor()) {
+                value = value | 0x10;
+            } else {
+                value = value & 0xef;
+            }
+            // PC5 - RDATA : A bit data to read
+            if(this.dataRecorder_readBit()) {
+                value = value | 0x20;
+            } else {
+                value = value & 0xdf;
+            }
+            // PC6 - 556_OUT : A signal to blink cursor on the screen
+            if(this.ic556_OUT) {
+                value = value | 0x40;
+            } else {
+                value = value & 0xbf;
+            }
+            // PC7 - VBLK : A virtical blanking signal
+            // set V-BLANK bit
+            if(this.VBLK) {
+                value = value | 0x80;
+            } else {
+                value = value & 0x7f;
+            }
+            return value
+        },
+        w: (/*address, value*/) => {
+            //上位4ビットは読み取り専用。
+            //下位4ビットへの書き込みは、
+            //8255コントロール(E003H)のビット操作によって行う
+        },
+    };
+    //MMIO $E003
+    this.mmioMap[0xE003 - 0xE000] = {
+        r: (/*address, value*/) => {},
+        w: (address, value) => {
+            // MSB==0の場合、PortCへのビット単位の書き込みを指示する。
+            //
+            // [ 7   6   5   4   3   2   1   0 ]
+            //  ---             ----------- ---
+            //   0   -   -   -  ビット番号  値
+            //
+            // MSB==1の場合は、モードセット
+            //
+            // [ 7   6   5   4   3   2   1   0 ]
+            //  --- ------- --- --- --- --- ---
+            //   1   ModeA   |   |   |   |   |
+            //       PortA --+   |   |   |   |
+            //       PortCH------+   |   |   +----- PortCL
+            //               ModeB --+   +--------- PortB
+            //
+            //  ModeA: 1x - モード2、01 - モード1、00 - モード0
+            //  ModeB: 1  - モード1、0  - モード0
+            //  PortA: Port A 入出力設定 0 - 出力、1 - 入力
+            //  PortB: Port B 入出力設定 0 - 出力、1 - 入力
+            //  PortCH: Port C 上位ニブル入出力設定 0 - 出力、1 - 入力
+            //  PortCL: Port C 下位ニブル入出力設定 0 - 出力、1 - 入力
+            //
+            if((value & 0x80) == 0) {
+                const bit = ((value & 0x01) != 0);
+                const bitno = (value & 0x0e) >> 1;
+                //var name = [
+                //    "SOUNDMSK(MZ-1500)",
+                //    "WDATA","INTMSK","M-ON",
+                //    "MOTOR","RDATA", "556 OUT", "VBLK"][bitno];
+                //console.log("$E003 8255 CTRL BITSET", name, bit);
+                switch(bitno) {
+                    case 0://SOUNDMSK
+                        break;
+                    case 1://WDATA
+                        this.dataRecorder_writeBit(bit);
+                        break;
+                    case 2://INTMSK
+                        this.INTMSK = bit;//trueで割り込み許可
+                        break;
+                    case 3://M-ON
+                        this.dataRecorder_motorOn(bit);
+                        break;
+                }
+            }
+        },
+    };
+    //MMIO $E004
+    this.mmioMap[0xE004 - 0xE000] = {
+        r: (/*address, value*/) => this.intel8253.counter[0].read(),
+        w: (address, value) => {
+            if(this.intel8253.counter[0].load(value) && this.MLDST) {
+                this.opt.startSound(895000 / this.intel8253.counter[0].value);
+            }
+        },
+    };
+    //MMIO $E005
+    this.mmioMap[0xE005 - 0xE000] = {
+        r: (/*address, value*/) => this.intel8253.counter[1].read(),
+        w: (address, value) => this.intel8253.counter[1].load(value),
+    };
+    //MMIO $E006
+    this.mmioMap[0xE006 - 0xE000] = {
+        r: (/*address, value*/) => this.intel8253.counter[2].read(),
+        w: (address, value) => this.intel8253.counter[2].load(value),
+    };
+    //MMIO $E007
+    this.mmioMap[0xE007 - 0xE000] = {
+        r: (/*address, value*/) => {},
+        w: (address, value) => this.intel8253.setCtrlWord(value),
+    };
+    //MMIO $E008
+    this.mmioMap[0xE008 - 0xE000] = {
+        r: (address, value) => {
+            value = value & 0xfe; // MSBをオフ
+            // set H-BLANK bit
+            if(this.hblank.readOutput()) {
+                value = value | 0x01;
+            } else {
+                value = value & 0xfe;
+            }
+            return value;
+        },
+        w: (address, value) => {
+            if((this.MLDST = ((value & 0x01) != 0)) == true) {
+                this.opt.startSound(895000 / this.intel8253.counter[0].value);
+            } else {
+                this.opt.stopSound();
+            }
+        },
+    };
 
     this.memory = new MZ700_Memory({
         onVramUpdate: this.opt.onVramUpdate,
         onMappedIoRead: (address, value) => {
 
             //MMIO: Input from memory mapped peripherals
-            if(this.mmioIsMappedToRead(address)) {
-                this.opt.onMmioRead(address, value);
+            const readValue = this.mmioMap[address - 0xE000].r(address, value);
+            if(readValue == null || readValue == undefined) {
+                return value;
             }
+            return readValue;
 
-            switch(address) {
-                case 0xE001:
-                    break;
-                case 0xE002:
-                    // [VBLK~] [556OUT] [RDATA] [MOTOR] [M-ON] [INTMSK] [WDATA] [*****]
-                    //    |        |       |       |       |       |       |       |
-                    //    |        |       |       |       |       |       |       +---- b0. --- (undefined)
-                    //    |        |       |       |       |       |       +------------ b1. OUT CMT WRITE DATA
-                    //    |        |       |       |       |       +-------------------- b2. OUT CLOCK INT MASK
-                    //    |        |       |       |       +---------------------------- b3. OUT DRIVE CMT MOTOR
-                    //    |        |       |       +------------------------------------ b4. IN  CMT MOTOR FEEDBACK
-                    //    |        |       +-------------------------------------------- b5. IN  CMT READ DATA
-                    //    |        +---------------------------------------------------- b6. IN  BLINK CURSOR
-                    //    +------------------------------------------------------------- b7. IN  VERTICAL BLANK
-
-                    value = value & 0x0f; // 入力上位4ビットをオフ
-
-                    // PC4 - MOTOR : The motor driving state (high active)
-                    if(this.dataRecorder.motor()) {
-                        value = value | 0x10;
-                    } else {
-                        value = value & 0xef;
-                    }
-
-                    // PC5 - RDATA : A bit data to read
-                    if(this.dataRecorder_readBit()) {
-                        value = value | 0x20;
-                    } else {
-                        value = value & 0xdf;
-                    }
-
-                    // PC6 - 556_OUT : A signal to blink cursor on the screen
-                    if(this.ic556_OUT) {
-                        value = value | 0x40;
-                    } else {
-                        value = value & 0xbf;
-                    }
-
-                    // PC7 - VBLK : A virtical blanking signal
-                    // set V-BLANK bit
-                    if(this.VBLK) {
-                        value = value | 0x80;
-                    } else {
-                        value = value & 0x7f;
-                    }
-                    break;
-                case 0xE004:
-                    value = this.intel8253.counter[0].read();
-                    break;
-                case 0xE005:
-                    value = this.intel8253.counter[1].read();
-                    break;
-                case 0xE006:
-                    value = this.intel8253.counter[2].read();
-                    break;
-                case 0xE007:
-                    break;
-                case 0xE008:
-                    value = value & 0xfe; // MSBをオフ
-                    // set H-BLANK bit
-                    if(this.hblank.readOutput()) {
-                        value = value | 0x01;
-                    } else {
-                        value = value & 0xfe;
-                    }
-                    break;
-            }
-            return value;
         },
         onMappedIoUpdate: (address, value) => {
 
             //MMIO: Output to memory mapped peripherals
-            if(this.mmioIsMappedToWrite(address)) {
-                this.opt.onMmioWrite(address, value);
-            }
-
-            switch(address) {
-                case 0xE000:
-                    this.memory.poke(0xE001, this.keymatrix.getKeyData(value));
-                    this.ic556.loadReset(value & 0x80);
-                    break;
-                case 0xE002:
-                    //上位4ビットは読み取り専用。
-                    //下位4ビットへの書き込みは、
-                    //8255コントロール(E003H)のビット操作によって行う
-                    break;
-                case 0xE003:
-                    // MSB==0の場合、PortCへのビット単位の書き込みを指示する。
-                    //
-                    // [ 7   6   5   4   3   2   1   0 ]
-                    //  ---             ----------- ---
-                    //   0   -   -   -  ビット番号  値
-                    //
-                    // MSB==1の場合は、モードセット
-                    //
-                    // [ 7   6   5   4   3   2   1   0 ]
-                    //  --- ------- --- --- --- --- ---
-                    //   1   ModeA   |   |   |   |   |
-                    //       PortA --+   |   |   |   |
-                    //       PortCH------+   |   |   +----- PortCL
-                    //               ModeB --+   +--------- PortB
-                    //
-                    //  ModeA: 1x - モード2、01 - モード1、00 - モード0
-                    //  ModeB: 1  - モード1、0  - モード0
-                    //  PortA: Port A 入出力設定 0 - 出力、1 - 入力
-                    //  PortB: Port B 入出力設定 0 - 出力、1 - 入力
-                    //  PortCH: Port C 上位ニブル入出力設定 0 - 出力、1 - 入力
-                    //  PortCL: Port C 下位ニブル入出力設定 0 - 出力、1 - 入力
-                    //
-                    if((value & 0x80) == 0) {
-                        var bit = ((value & 0x01) != 0);
-                        var bitno = (value & 0x0e) >> 1;
-                        //var name = [
-                        //    "SOUNDMSK(MZ-1500)",
-                        //    "WDATA","INTMSK","M-ON",
-                        //    "MOTOR","RDATA", "556 OUT", "VBLK"][bitno];
-                        //console.log("$E003 8255 CTRL BITSET", name, bit);
-                        switch(bitno) {
-                            case 0://SOUNDMSK
-                                break;
-                            case 1://WDATA
-                                this.dataRecorder_writeBit(bit);
-                                break;
-                            case 2://INTMSK
-                                this.INTMSK = bit;//trueで割り込み許可
-                                break;
-                            case 3://M-ON
-                                this.dataRecorder_motorOn(bit);
-                                break;
-                        }
-                    }
-                    break;
-                case 0xE004:
-                    if(this.intel8253.counter[0].load(value) && this.MLDST) {
-                        this.opt.startSound(895000 / this.intel8253.counter[0].value);
-                    }
-                    break;
-                case 0xE005: this.intel8253.counter[1].load(value); break;
-                case 0xE006: this.intel8253.counter[2].load(value); break;
-                case 0xE007: this.intel8253.setCtrlWord(value); break;
-                case 0xE008:
-                    if((this.MLDST = ((value & 0x01) != 0)) == true) {
-                        this.opt.startSound(895000 / this.intel8253.counter[0].value);
-                    } else {
-                        this.opt.stopSound();
-                    }
-                    break;
-            }
-
+            this.mmioMap[address - 0xE000].w(address, value);
             return value;
+
         }
     });
 
-    this.z80 = new Z80({
-        memory: this.memory,
-        onReadIoPort: (port, value) => {
-            this.opt.onPortRead(port, value);
-        },
-        onWriteIoPort: (port, value) => {
-            switch(port) {
-                case 0xe0: this.memory.changeBlock0_DRAM(); break;
-                case 0xe1: this.memory.changeBlock1_DRAM(); break;
-                case 0xe2: this.memory.changeBlock0_MONITOR(); break;
-                case 0xe3: this.memory.changeBlock1_VRAM(); break;
-                case 0xe4: this.memory.changeBlock0_MONITOR();
-                           this.memory.changeBlock1_VRAM();
-                           break;
-                case 0xe5: this.memory.disableBlock1(); break;
-                case 0xe6: this.memory.enableBlock1(); break;
-            }
-            this.opt.onPortWrite(port, value);
-        }
+    this.z80 = new Z80({ memory: this.memory });
+    this.z80.onWriteIoPort(0xe0, () => this.memory.changeBlock0_DRAM());
+    this.z80.onWriteIoPort(0xe1, () => this.memory.changeBlock1_DRAM());
+    this.z80.onWriteIoPort(0xe2, () => this.memory.changeBlock0_MONITOR());
+    this.z80.onWriteIoPort(0xe3, () => this.memory.changeBlock1_VRAM());
+    this.z80.onWriteIoPort(0xe4, () => {
+        this.memory.changeBlock0_MONITOR();
+        this.memory.changeBlock1_VRAM();
     });
+    this.z80.onWriteIoPort(0xe5, () => this.memory.disableBlock1());
+    this.z80.onWriteIoPort(0xe6, () => this.memory.enableBlock1());
 };
 
 MZ700.AVG_CYCLE = 40;
@@ -319,23 +322,15 @@ MZ700.Z80_CLOCK = 3.579545 * 1000000;// 3.58 MHz
 MZ700.DEFAULT_TIMER_INTERVAL = MZ700.AVG_CYCLE * (1000 / MZ700.Z80_CLOCK)
 
 MZ700.prototype.mmioMapToRead = function(address) {
-    address.forEach(function(a) {
-        this.mmioMap[a - 0xE000].r = true;
-    }, this);
+    for(const a of address) {
+        this.mmioMap[a - 0xE000].r = this.opt.onMmioRead;
+    }
 };
 
 MZ700.prototype.mmioMapToWrite = function(address) {
-    address.forEach(function(a) {
-        this.mmioMap[a - 0xE000].w = true;
-    }, this);
-};
-
-MZ700.prototype.mmioIsMappedToRead = function(address) {
-    return this.mmioMap[address - 0xE000].r;
-};
-
-MZ700.prototype.mmioIsMappedToWrite = function(address) {
-    return this.mmioMap[address - 0xE000].w;
+    for(const a of address) {
+        this.mmioMap[a - 0xE000].w = this.opt.onMmioWrite;
+    }
 };
 
 MZ700.prototype.writeAsmCode = function(assembled) {
@@ -422,35 +417,21 @@ MZ700.prototype.reset = function() {
         this.memory.poke(0xd000 + i, 0x00);
         this.memory.poke(0xd800 + i, 0x71);
     }
-    return this.z80.reset();
+    this.z80.reset();
 };
 
 MZ700.prototype.getRegister = function() {
-    return this.z80.reg.cloneRaw();
-};
-
-MZ700.prototype.getRegisterB = function() {
-    return this.z80.regB.cloneRaw();
+    const reg = this.z80.reg.cloneRaw();
+    reg._ = this.z80.regB.cloneRaw();
+    reg.IFF1 = this.z80.IFF1;
+    reg.IFF2 = this.z80.IFF2;
+    reg.IM = this.z80.IM;
+    reg.HALT = this.z80.HALT;
+    return reg;
 };
 
 MZ700.prototype.setPC = function(addr) {
     this.z80.reg.PC = addr;
-};
-
-MZ700.prototype.getIFF1 = function() {
-    return this.z80.IFF1;
-};
-
-MZ700.prototype.getIFF2 = function() {
-    return this.z80.IFF2;
-};
-
-MZ700.prototype.getIM = function() {
-    return this.z80.IM;
-};
-
-MZ700.prototype.getHALT = function() {
-    return this.z80.HALT;
 };
 
 MZ700.prototype.readMemory = function(addr) {
@@ -510,28 +491,17 @@ MZ700.prototype.start = function() {
                 MZ700.prototype.start.caller);
         return false;
     }
-    this.tid = FractionalTimer.setInterval(
-        this.run.bind(this), this.timerInterval);
+    this.startEmulation();
     this.opt.started();
-
-    var t_cycle_0 = 0;
-    this.tidMeasClock = setInterval(() => {
-        this.opt.notifyClockFreq(this.z80.tick - t_cycle_0);
-        t_cycle_0 = this.z80.tick;
-    }, 1000);
 
     return true;
 };
 
 MZ700.prototype.stop = function() {
-    if(this.tid != null) {
-        FractionalTimer.clearInterval(this.tid);
-        this.tid = null;
+    const running = (this.tid != null);
+    this.stopEmulation();
+    if(running) {
         this.opt.stopped();
-    }
-    if(this.tidMeasClock != null) {
-        clearInterval(this.tidMeasClock);
-        this.tidMeasClock = null;
     }
 };
 
@@ -618,11 +588,11 @@ MZ700.prototype.dataRecorder_motorOn = function(state) {
 };
 
 MZ700.prototype.dataRecorder_readBit = function() {
-    return this.dataRecorder.rdata(this.z80.tick);
+    return this.dataRecorder.rdata(this.z80.consumedTCycle);
 };
 
 MZ700.prototype.dataRecorder_writeBit = function(state) {
-    this.dataRecorder.wdata(state, this.z80.tick);
+    this.dataRecorder.wdata(state, this.z80.consumedTCycle);
 };
 
 // VALUE            SLOW ... FAST
@@ -636,14 +606,34 @@ MZ700.prototype.getExecutionParameter = function() {
 };
 
 MZ700.prototype.setExecutionParameter = function(param) {
-    var running = (this.tid != null);
+    const running = (this.tid != null);
     if(running) {
-        this.stop();
+        this.stopEmulation();
     }
     this.timerInterval = param;
     this.opt.onExecutionParameterUpdate(param);
     if(running) {
-        this.start();
+        this.startEmulation();
+    }
+};
+MZ700.prototype.startEmulation = function() {
+    this.tid = FractionalTimer.setInterval(
+        this.run.bind(this), this.timerInterval);
+    let t_cycle_0 = 0;
+    this.tidMeasClock = setInterval(() => {
+        this.opt.notifyClockFreq(this.z80.consumedTCycle - t_cycle_0);
+        t_cycle_0 = this.z80.consumedTCycle;
+    }, 1000);
+
+};
+MZ700.prototype.stopEmulation = function() {
+    if(this.tid != null) {
+        FractionalTimer.clearInterval(this.tid);
+        this.tid = null;
+    }
+    if(this.tidMeasClock != null) {
+        clearInterval(this.tidMeasClock);
+        this.tidMeasClock = null;
     }
 };
 module.exports = MZ700;

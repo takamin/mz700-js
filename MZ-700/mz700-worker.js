@@ -23,9 +23,9 @@
         },
         started: function() { transworker.postNotify("start"); },
         stopped: function() { transworker.postNotify("stop"); },
-        notifyClockFreq: function(clockCount) {
+        notifyClockFreq: function(tCyclePerSec) {
             transworker.postNotify(
-                    "onNotifyClockFreq", [ clockCount ]);
+                    "onNotifyClockFreq", [ tCyclePerSec ]);
         },
         onBreak: function() {
             transworker.postNotify("onBreak");
@@ -41,14 +41,6 @@
         onMmioWrite: function(address, value){
             transworker.postNotify(
                     "onMmioWrite", { address: address, value: value });
-        },
-        onPortRead: function(port, value){
-            transworker.postNotify(
-                    "onPortRead", { port: port, value: value });
-        },
-        onPortWrite: function(port, value){
-            transworker.postNotify(
-                    "onPortWrite", { port: port, value: value });
         },
         startSound: function(freq){
             transworker.postNotify("startSound",[ freq ]);

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 require("../lib/context.js");
-require("../lib/ex_number.js");
+const NumberUtil = require("../lib/number-util.js");
 var Z80_assemble = require('../Z80/assembler');
-var MZ_TapeHeader = require('../MZ-700/mz-tape-header');
+var MZ_TapeHeader = require('../lib/mz-tape-header');
 var fnut = require('../lib/fnuts.js');
 var fs = require('fs');
 var getPackageJson = require("../lib/get-package-json");
@@ -143,13 +143,13 @@ if('reuse-mzt-header' in cli.options) {
     //
     fs.writeFileSync(
         output_filename,
-        new Buffer(mzt_header_buf.concat(asm.buffer)));
+        Buffer.from(mzt_header_buf.concat(asm.buffer)));
 
     //
     // Output address map
     //
     let map = Z80_assemble.hashMapArray(asm.label2value).map(function(item) {
-        return [item.label, ":\t", item.address.HEX(4), "H"].join('');
+        return [item.label, ":\t", NumberUtil.HEX(item.address, 4), "H"].join('');
     }).join("\n");
     if(map.length > 0) {
         fs.writeFileSync(fnMap, map);

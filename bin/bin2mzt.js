@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 require("../lib/ex_number.js");
-var MZ_TapeHeader = require('../MZ-700/mz-tape-header.js');
+var MZ_TapeHeader = require('../lib/mz-tape-header.js');
 var fnut = require('../lib/fnuts.js');
 var fs = require('fs');
 var getPackageJson = require("../lib/get-package-json");
@@ -64,11 +64,11 @@ fs.readFile(input_filename, function(err, data) {
     if(err) {
         throw err;
     }
-    var buffer = new Buffer(data, 'binary');
+    const buffer = Buffer.from(data);
     mzt_header.setFilename(output_filename);
     mzt_header.setAddrLoad(load_addr);
     mzt_header.setAddrExec(exec_addr);
     mzt_header.setFilesize(buffer.length);
     fs.writeFileSync(output_filename,
-        Buffer.concat([new Buffer(mzt_header.buffer), buffer]));
+        Buffer.concat([Buffer.from(mzt_header.buffer), buffer]));
 });
