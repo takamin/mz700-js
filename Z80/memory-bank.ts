@@ -58,7 +58,7 @@ export default class MemoryBank extends IMem {
      * @returns {number} the value in the memory.
      */
     peekByte(address) {
-        return (this.mem[address - this.startAddr]).peek(address);
+        return (this.mem[address - this.startAddr]).peek(address) & 0xff;
     }
     /**
      * Write a byte data.
@@ -67,7 +67,7 @@ export default class MemoryBank extends IMem {
      * @returns {undefined}
      */
     pokeByte(address, value) {
-        (this.mem[address - this.startAddr]).poke(address, value);
+        (this.mem[address - this.startAddr]).poke(address, value & 0xff);
     }
 }
 
