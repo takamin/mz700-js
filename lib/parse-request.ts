@@ -4,7 +4,7 @@
  * Parse currently request URL.
  * @returns {object} The result of parsing.
  */
-function parseRequest() {
+export default function parseRequest() {
     var request = { uri: "", path: "", queryString: "", parameters: {} };
     request.uri = window.location.href;
     request.path = request.uri.replace(/\?.*$/, "");
