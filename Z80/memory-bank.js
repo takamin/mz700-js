@@ -58,7 +58,7 @@ MemoryBank.prototype.setMemoryBlock = function(name, memblk) {
  * @returns {number} the value in the memory.
  */
 MemoryBank.prototype.peekByte = function(address) {
-    return (this.mem[address - this.startAddr]).peek(address);
+    return (this.mem[address - this.startAddr]).peek(address) & 0xff;
 };
 
 /**
@@ -68,7 +68,7 @@ MemoryBank.prototype.peekByte = function(address) {
  * @returns {undefined}
  */
 MemoryBank.prototype.pokeByte = function(address, value) {
-    (this.mem[address - this.startAddr]).poke(address, value);
+    (this.mem[address - this.startAddr]).poke(address, value & 0xff);
 };
 
 module.exports = MemoryBank;
