@@ -1,7 +1,7 @@
 (function(){
     "use strict";
     var CliCommand = require("./command");
-    var parseAddr = require("../parse-addr");
+    var parseAddr = require("../../lib/parse-addr");
     module.exports = new CliCommand("mem", function(mz700, args) {
         var addr = null;
         switch(args[0]) {

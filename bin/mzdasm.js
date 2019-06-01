@@ -4,7 +4,7 @@ const NumberUtil = require("../lib/number-util.js");
 var Z80 = require("../Z80/Z80.js");
 var Z80BinUtil = require("../Z80/bin-util.js");
 const parseAddress = require("../lib/parse-addr.js");
-var MZ700 = require('../MZ-700/mz700.js');
+const MZ_Tape = require("../lib/mz-tape.js");
 var fnut = require("../lib/fnuts.js");
 var fs = require('fs');
 var getPackageJson = require("../lib/get-package-json");
@@ -70,7 +70,7 @@ fs.readFile(input_filename, function(err, data) {
     var dasmlist = [];
     var i;
     if(input_mzt) {
-        var mzts = MZ700.parseMZT(buf); 
+        var mzts = MZ_Tape.parseMZT(buf); 
         for(i = 0; i < mzts.length; i++) {
             var mzt = mzts[i];
             outbuf.push(mzt.header.getHeadline());

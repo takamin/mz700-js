@@ -1,7 +1,7 @@
 (function(){
     "use strict";
     var CliCommand = require("./command");
-    var parseAddr = require("../parse-addr");
+    var parseAddr = require("../../lib/parse-addr");
     module.exports = new CliCommand("bp", function(mz700, args) {
         var bp = mz700.getBreakPoints();
         if(args.length > 0) {

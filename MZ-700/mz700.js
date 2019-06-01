@@ -124,7 +124,11 @@ var MZ700 = function(opt) {
 
     this.mmioMap = [];
     for(var address = 0xE000; address < 0xE800; address++) {
-        this.mmioMap.push({ "r": (()=>{}), "w": (()=>{}) });
+        //this.mmioMap.push({ "r": (()=>{}), "w": (()=>{}) });
+        this.mmioMap.push({
+            "r": this.opt.onMmioRead,
+            "w": this.opt.onMmioWrite,
+        });
     }
     //MMIO $E000
     this.mmioMap[0xE000 - 0xE000] = {
@@ -321,18 +325,6 @@ MZ700.AVG_CYCLE = 40;
 MZ700.Z80_CLOCK = 3.579545 * 1000000;// 3.58 MHz
 MZ700.DEFAULT_TIMER_INTERVAL = MZ700.AVG_CYCLE * (1000 / MZ700.Z80_CLOCK)
 
-MZ700.prototype.mmioMapToRead = function(address) {
-    for(const a of address) {
-        this.mmioMap[a - 0xE000].r = this.opt.onMmioRead;
-    }
-};
-
-MZ700.prototype.mmioMapToWrite = function(address) {
-    for(const a of address) {
-        this.mmioMap[a - 0xE000].w = this.opt.onMmioWrite;
-    }
-};
-
 MZ700.prototype.writeAsmCode = function(assembled) {
     for(var i = 0; i < assembled.buffer.length; i++) {
         this.memory.poke(
@@ -375,7 +367,7 @@ MZ700.prototype.setCassetteTape = function(tape_data) {
             console.error("error buf.length <= 128");
             return null;
         }
-        this.mzt_array = MZ700.parseMZT(tape_data);
+        this.mzt_array = MZ_Tape.parseMZT(tape_data);
         if(this.mzt_array == null || this.mzt_array.length < 1) {
             console.error("setCassetteTape fail to parse");
             return null;
@@ -456,29 +448,6 @@ MZ700.prototype.removeBreak = function(addr, size) {
 
 MZ700.prototype.addBreak = function(addr, size) {
     this.z80.setBreak(addr, size);
-};
-
-MZ700.parseMZT = function(buf) {
-    var sections = [];
-    var offset = 0;
-    while(offset + 128 <= buf.length) {
-        var header = new MZ_TapeHeader(buf, offset);
-        offset += 128;
-
-        var body_buffer = [];
-        for(var i = 0; i < header.file_size; i++) {
-            body_buffer.push(buf[offset + i]);
-        }
-        offset += header.file_size;
-
-        sections.push({
-            "header": header,
-            "body": {
-                "buffer": body_buffer
-            }
-        });
-    }
-    return sections;
 };
 
 //

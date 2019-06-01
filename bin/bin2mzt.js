@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-require("../lib/ex_number.js");
 var MZ_TapeHeader = require('../lib/mz-tape-header.js');
 var fnut = require('../lib/fnuts.js');
 var fs = require('fs');

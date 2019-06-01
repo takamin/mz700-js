@@ -38,35 +38,35 @@
 
     const readline = require("linebyline")(process.stdin);
     require("../lib/context.js");
-    require("../lib/ex_number.js");
     const MZ700 = require("../MZ-700/mz700.js");
-    const MMIO = require("../lib/mz-mmio.js");
+    const MZMMIO = require("../lib/mz-mmio.js");
     const PCG700 = require("../lib/PCG-700");
     const mztReadFile = require("../lib/mzt-read-file");
 
-    const CliCommand = require("../lib/cli/command.js");
+    const CliCommand = require("../MZ-700/cli/command.js");
     const commands = new CliCommand();
     commands.install([
-        require("../lib/cli/exit.js"),
-        require("../lib/cli/register.js"),
-        require("../lib/cli/run.js"),
-        require("../lib/cli/stop.js"),
-        require("../lib/cli/step.js"),
-        require("../lib/cli/jump.js"),
-        require("../lib/cli/breakpoint.js"),
-        require("../lib/cli/mem.js")
+        require("../MZ-700/cli/exit.js"),
+        require("../MZ-700/cli/register.js"),
+        require("../MZ-700/cli/run.js"),
+        require("../MZ-700/cli/stop.js"),
+        require("../MZ-700/cli/step.js"),
+        require("../MZ-700/cli/jump.js"),
+        require("../MZ-700/cli/breakpoint.js"),
+        require("../MZ-700/cli/mem.js")
     ]);
-    const cliCommandSendKey = require("../lib/cli/sendkey.js");
-    const cliCommandVram = require("../lib/cli/vram.js");
-    const cliCommandCmt = require("../lib/cli/cmt.js");
+    const cliCommandSendKey = require("../MZ-700/cli/sendkey.js");
+    const cliCommandVram = require("../MZ-700/cli/vram.js");
+    const cliCommandCmt = require("../MZ-700/cli/cmt.js");
     commands.install([
         cliCommandSendKey,
         cliCommandVram,
         cliCommandCmt
     ]);
 
-    commands.install(require("../lib/cli/conf.js"));
+    commands.install(require("../MZ-700/cli/conf.js"));
 
+    const mzMMIO = new MZMMIO();
     const mz700 = new MZ700({
         "onExecutionParameterUpdate" : function() { },
         "started": function() { },
@@ -78,10 +78,10 @@
             cliCommandVram.setAt(index, dispcode, attr);
         },
         'onMmioRead': function(address, value) {
-            mmio.read(address, value);
+            mzMMIO.read(address, value);
         },
         'onMmioWrite': function(address, value) {
-            mmio.write(address, value);
+            mzMMIO.write(address, value);
         },
         "onPortRead": function(/*port, value*/){
             //console.log("IN ", NumberUtil.HEX(port, 2) + "H", NumberUtil.HEX(value, 2) + "H");
@@ -112,8 +112,8 @@
         }
     };
 
-    const mmio = MMIO.create(mz700);
-    PCG700.create(mmio);
+    const pcg700 = new PCG700();
+    pcg700.setupMMIO(mzMMIO);
     mz700.memory.poke(0xE010, 0x00);
     mz700.memory.poke(0xE011, 0x00);
     mz700.memory.poke(0xE012, 0x18);
