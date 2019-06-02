@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>lib/mz-mmio.js - Documentation</title>
+    <title>MZMMIO - Documentation</title>
 
     <script src="scripts/prettify/prettify.js"></script>
     <script src="scripts/prettify/lang-css.js"></script>
@@ -29,71 +29,501 @@
 
 <div id="main">
     
-    <h1 class="page-title">lib/mz-mmio.js</h1>
+    <h1 class="page-title">MZMMIO</h1>
     
 
     
 
 
 
+
+<section>
+
+<header>
     
-    <section>
-        <article>
-            <pre class="prettyprint source linenums"><code>"use strict";
+        <h2>
+        MZMMIO
+        </h2>
+        
+    
+</header>
 
-/**
- * Memory Mapped I/O
- * @constructor
- */
-function MZMMIO() {
-    this._map = [ ];
-    for(var addr = 0xE000; addr &lt; 0xE800; addr++) {
-        this._map.push({ "r":[],"w":[] });
-    }
-}
+<article>
+    <div class="container-overview">
+    
+        
+<div class="section-method">
 
-MZMMIO.prototype.onRead = function(address, handler) {
-    this._map[address - 0xE000].r.push(handler);
-};
+    
 
-MZMMIO.prototype.onWrite = function(address, handler) {
-    this._map[address - 0xE000].w.push(handler);
-};
+    <h4 class="name" id="MZMMIO"><span class="type-signature"></span>new MZMMIO<span class="signature">()</span><span class="type-signature"></span></h4>
 
-/**
- * Invoke the read handlers of this memory mapped I/O.
- * @param {number} address An address
- * @param {number} value A value
- * @returns {undefined}
- */
-MZMMIO.prototype.read = function(address, value) {
-    const handlers = this._map[address - 0xE000];
-    if(handlers) {
-        for(const handler of handlers.r) {
-            handler(value);
-        }
-    }
-};
+    
 
-/**
- * Invoke the write handlers of this memory mapped I/O.
- * @param {number} address An address
- * @param {number} value A value
- * @returns {undefined}
- */
-MZMMIO.prototype.write = function(address, value) {
-    const handlers = this._map[address - 0xE000];
-    if(handlers) {
-        for(const handler of handlers.w) {
-            handler(value);
-        }
-    }
-};
 
-module.exports = MZMMIO;
-</code></pre>
-        </article>
-    </section>
+
+<div class="description">
+    <p>Memory Mapped I/O</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="lib_mz-mmio.js.html">lib/mz-mmio.js</a>, <a href="lib_mz-mmio.js.html#line7">line 7</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+    
+    </div>
+
+    
+
+    
+
+    
+
+     
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+<div class="section-method">
+
+    
+
+    <h4 class="name" id="read"><span class="type-signature"></span>read<span class="signature">(address, value)</span><span class="type-signature"> &rarr; {undefined}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Invoke the read handlers of this memory mapped I/O.</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="lib_mz-mmio.js.html">lib/mz-mmio.js</a>, <a href="lib_mz-mmio.js.html#line28">line 28</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>address</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>number</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <p>An address</p>
+                
+            </td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>value</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>number</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <p>A value</p>
+                
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="section-returns">
+<h5>Returns:</h5>
+
+        
+
+<dl class="param-type">
+    <dt>
+        Type:
+    </dt>
+    <dd>
+        
+<span class="param-type"><code>undefined</code></span>
+
+
+    </dd>
+</dl>
+
+
+    
+</div>
+
+
+
+</div>
+        
+            
+<div class="section-method">
+
+    
+
+    <h4 class="name" id="write"><span class="type-signature"></span>write<span class="signature">(address, value)</span><span class="type-signature"> &rarr; {undefined}</span></h4>
+
+    
+
+
+
+<div class="description">
+    <p>Invoke the write handlers of this memory mapped I/O.</p>
+</div>
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="lib_mz-mmio.js.html">lib/mz-mmio.js</a>, <a href="lib_mz-mmio.js.html#line43">line 43</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>address</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>number</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <p>An address</p>
+                
+            </td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>value</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><code>number</code></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last">
+                <p>A value</p>
+                
+            </td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="section-returns">
+<h5>Returns:</h5>
+
+        
+
+<dl class="param-type">
+    <dt>
+        Type:
+    </dt>
+    <dd>
+        
+<span class="param-type"><code>undefined</code></span>
+
+
+    </dd>
+</dl>
+
+
+    
+</div>
+
+
+
+</div>
+        
+    
+
+    
+
+    
+</article>
+
+</section>
 
 
 
@@ -103,7 +533,7 @@ module.exports = MZMMIO;
 <br class="clear">
 
 <footer>
-    Generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.6.2</a> on Sun Jun 02 2019 20:55:40 GMT+0900 (GMT+09:00) using the Minami theme.
+    Generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.6.2</a> on Sun Jun 02 2019 20:55:41 GMT+0900 (GMT+09:00) using the Minami theme.
 </footer>
 
 <script>prettyPrint();</script>
