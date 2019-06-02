@@ -1,53 +1,69 @@
-(function() {
-    "use strict";
-    //
-    // Intel 8253 Programmable Interval Timer
-    //
-    function Intel8253() {
+"use strict";
+//
+// Intel 8253 Programmable Interval Timer
+//
+export default class Intel8253 {
+    counter: Array<Intel8253Counter>
+    constructor() {
         this.counter = [
             new Intel8253Counter("#0"),
             new Intel8253Counter("#1"),
             new Intel8253Counter("#2") ];
     }
-
-    Intel8253.prototype.setCtrlWord = function(ctrlword) {
+    setCtrlWord(ctrlword) {
         var index = (ctrlword & 0xc0) >> 6;
         this.counter[index].setCtrlWord(ctrlword & 0x3f);
     };
+}
 
-    //
-    //   8253 MODE CTRL WORD
-    //
-    //       $E007 Memory Mapped I/O
-    //
-    //       ---------------------------------
-    //       b7  b6  b5  b4  b3  b2  b1  b0
-    //       [ SC ]  [ RL ]  [  MODE  ]  [BCD]
-    //       ---------------------------------
-    //
-    //       SC:     0: Select counter 0
-    //               1: Select counter 1
-    //               2: Select counter 2
-    //               3: Illegal
-    //
-    //       RL:     0: Counter latching operation
-    //               1: Read/load LSB only
-    //               2: Read/load MSB only
-    //               3: Read/load LSB first, then MSB
-    //
-    //       MODE:   0: Mode 0   Interrupt on terminal count
-    //               1: Mode 1   Programmable one shot
-    //               2: Mode 2   Rate Generator
-    //               3: Mode 3   Square wave rate Generator
-    //               4: Mode 4   Software triggered strobe
-    //               5: Mode 5   Hardware triggered strobe
-    //               6: Mode 2
-    //               7: Mode 3
-    //
-    //       BCD:    0: Binary counter
-    //               1: BCD counter
-    //
-    function Intel8253Counter(name) {
+
+//
+//   8253 MODE CTRL WORD
+//
+//       $E007 Memory Mapped I/O
+//
+//       ---------------------------------
+//       b7  b6  b5  b4  b3  b2  b1  b0
+//       [ SC ]  [ RL ]  [  MODE  ]  [BCD]
+//       ---------------------------------
+//
+//       SC:     0: Select counter 0
+//               1: Select counter 1
+//               2: Select counter 2
+//               3: Illegal
+//
+//       RL:     0: Counter latching operation
+//               1: Read/load LSB only
+//               2: Read/load MSB only
+//               3: Read/load LSB first, then MSB
+//
+//       MODE:   0: Mode 0   Interrupt on terminal count
+//               1: Mode 1   Programmable one shot
+//               2: Mode 2   Rate Generator
+//               3: Mode 3   Square wave rate Generator
+//               4: Mode 4   Software triggered strobe
+//               5: Mode 5   Hardware triggered strobe
+//               6: Mode 2
+//               7: Mode 3
+//
+//       BCD:    0: Binary counter
+//               1: BCD counter
+//
+class Intel8253Counter {
+    _name:string;
+    RL:number;
+    MODE:number;
+    BCD:number;
+    value:number;
+    counter:number = 0xffff;
+    _written:boolean = true;
+    _read:boolean = true;
+    out:boolean = true;
+    gate:boolean = false;
+    _handlers = {
+        timeup: []
+    };
+    constructor(name:string) {
         this._name = name;
         this.RL = 3;
         this.MODE = 3;
@@ -63,19 +79,19 @@
         };
     }
 
-    Intel8253Counter.prototype.setCtrlWord = function(ctrlword) {
+    setCtrlWord(ctrlword) {
         this.RL = (ctrlword & 0x30) >> 4;
         this.MODE = (ctrlword & 0x0e) >> 1;
-        this.BCD = ((ctrlword & 0x01) != 0);
+        this.BCD = (ctrlword & 0x01) != 0 ? 1 : 0;
         this.value = 0;
         this.counter = 0;
         this._written = true;
         this._read = true;
         this.out = false;
         this.gate = false;
-    };
+    }
 
-    Intel8253Counter.prototype.load = function(value) {
+    load(value) {
         this.counter = 0;
         var set_comp = false;
         switch(this.RL) {
@@ -127,9 +143,9 @@
             }
         }
         return set_comp;
-    };
+    }
 
-    Intel8253Counter.prototype.read = function() {
+    read() {
         switch(this.RL) {
             case 0: //Counter latching operation
                 break;
@@ -147,14 +163,14 @@
                 }
         }
         return null;
-    };
+    }
 
     // TODO: 未使用？
-    Intel8253Counter.prototype.setGate = function(gate) {
+    setGate(gate) {
         this.gate = gate;
-    };
+    }
 
-    Intel8253Counter.prototype.count = function(count) {
+    count(count) {
         var prevOut = this.out;
         switch(this.MODE) {
             case 0:
@@ -200,14 +216,14 @@
         if(!prevOut && this.out) {
             this.fireEvent("timeup");
         }
-    };
-    Intel8253Counter.prototype.addEventListener = function(evt, handler) {
+    }
+    addEventListener(evt, handler) {
         this._handlers[evt].push(handler);
-    };
-    Intel8253Counter.prototype.fireEvent = function(evt) {
+    }
+    fireEvent(evt) {
         this._handlers[evt].forEach(function(handler) {
             handler();
         });
-    };
-    module.exports = Intel8253;
-}());
+    }
+}
+module.exports = Intel8253;

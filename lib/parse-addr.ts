@@ -1,20 +1,22 @@
-(function(){
-    "use strict";
-    const Z80BinUtil = require("../Z80/bin-util.js");
+"use strict";
+import Z80BinUtil from "../Z80/bin-util";
 
-    /**
-     * Translate address string to value.
-     * @param {string} addrToken
-     * The address to be converted.
-     * @param {object|undefined} mapLabelToAddress
-     * A dictionary to get address of the labels.
-     * @returns {number} as the address.
-     */
-    function parseAddress(addrToken, mapLabelToAddress) {
-        var bytes = parseAddress.parseNumLiteralPair(addrToken);
+/**
+ * Translate address string to value.
+ * @param {string} addrToken
+ * The address to be converted.
+ * @param {object|undefined} mapLabelToAddress
+ * A dictionary to get address of the labels.
+ * @returns {number} as the address.
+ */
+export default class parseAddress {
+    static parseAddress(addrToken:string, mapLabelToAddress:any):number {
+        const bytes = parseAddress.parseNumLiteralPair(addrToken);
         if(bytes == null) {
             return null;
         }
+        let H:any = bytes[1];
+        let L:any = bytes[0];
         if(mapLabelToAddress != null) {
             if(typeof(H) == "function") {
                 H = H(mapLabelToAddress);
@@ -25,13 +27,11 @@
         } else if(typeof(H) === "function" || typeof(L) === "function") {
             return null;
         }
-        var H = bytes[1];
-        var L = bytes[0];
-        var addr = Z80BinUtil.pair(H,L);
+        const addr = Z80BinUtil.pair(H,L);
         return addr;
     }
 
-    parseAddress.parseNumLiteral = function(tok) {
+    static parseNumLiteral(tok:string):any {
         var n = parseAddress._parseNumLiteral(tok);
         if(typeof(n) == 'number') {
             if(n < -128 || 256 <= n) {
@@ -42,9 +42,9 @@
         return function(dictionary) {
             return parseAddress.dereferLowByte(tok, dictionary);
         };
-    };
+    }
 
-    parseAddress.parseNumLiteralPair = function(tok) {
+    static parseNumLiteralPair(tok:string):any {
         var n = parseAddress._parseNumLiteral(tok);
         if(typeof(n) == 'number') {
             if(n < -32768 || 65535 < n) {
@@ -56,9 +56,9 @@
             function(dictionary){ return parseAddress.dereferLowByte(tok, dictionary); },
             function(dictionary){ return parseAddress.dereferHighByte(tok, dictionary); }
         ];
-    };
+    }
 
-    parseAddress.parseRelAddr = function(tok, fromAddr) {
+    static parseRelAddr(tok, fromAddr) {
         var n = parseAddress._parseNumLiteral(tok);
         if(typeof(n) == 'number') {
             var c0 = tok.charAt(0);
@@ -74,26 +74,26 @@
         return function(dictionary) {
             return (parseAddress.derefer(tok, dictionary) - fromAddr) & 0xff;
         };
-    };
+    }
 
-    parseAddress.dereferLowByte = function(label, dictionary) {
+    static dereferLowByte(label, dictionary) {
         return parseAddress.derefer(label, dictionary) & 0xff;
-    };
+    }
 
-    parseAddress.dereferHighByte = function(label, dictionary) {
+    static dereferHighByte(label, dictionary) {
         return (parseAddress.derefer(label, dictionary) >> 8) & 0xff;
-    };
+    }
 
-    parseAddress.derefer = function(label, dictionary) {
+    static derefer(label, dictionary) {
         if(label in dictionary) {
             return dictionary[label];
         }
         return 0;
-    };
+    }
 
-    parseAddress._parseNumLiteral = function(tok) {
+    static _parseNumLiteral(tok:string):any {
         if(/^[+-]?[0-9]+$/.test(tok) || /^[+-]?[0-9A-F]+H$/i.test(tok)) {
-            var matches;
+            var matches:Array<any>;
             var n = 0;
             var s = (/^-/.test(tok) ? -1:1);
             if(/[hH]$/.test(tok)) {
@@ -109,7 +109,6 @@
             return s * n;
         }
         return tok;
-    };
-
-    module.exports = parseAddress;
-}());
+    }
+}
+module.exports = parseAddress;
