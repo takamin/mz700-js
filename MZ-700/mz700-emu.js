@@ -6,6 +6,8 @@ const     Z80_assemble = require("../Z80/assembler.js");
 const              Z80 = require("../Z80/Z80.js");
 const            MZ700 = require("./mz700.js");
 const MZ700_MonitorRom = require("./mz700-new-monitor.js");
+const   MZ700KeyMatrix = require("../MZ-700/mz700-key-matrix.js");
+const          MZ_Tape = require("../lib/mz-tape.js");
 const    MZ_TapeHeader = require("../lib/mz-tape-header.js");
 const     parseAddress = require("../lib/parse-addr.js");
 require("../lib/jquery.mz700-kb.js");
@@ -19,18 +21,17 @@ require("../lib/jquery.mz700-scrn.js");
 require("../lib/jquery.mz-sound-control.js");
 require("../lib/jquery.emu-speed-control.js");
 require("../lib/jquery.mz-control-panel.js");
-
-
 const BBox = require("b-box");
 const dock_n_liquid = require("dock-n-liquid");
 const packageJson = require("../package.json");
 const { getDeviceType } = require("../lib/user-agent-util.js");
 const MZ700CG = require("../lib/mz700-cg.js");
-const MMIO = require("../lib/mz-mmio.js");
+const MZMMIO = require("../lib/mz-mmio.js");
 const PCG700 = require("../lib/PCG-700");
 const MZBeep = require("../lib/mz-beep.js");
 const parseRequest = require("../lib/parse-request");
 const requestJsonp = require("../lib/jsonp");
+const cookies = require("../lib/cookies");
 
 ((async () => {
 
@@ -120,19 +121,28 @@ const requestJsonp = require("../lib/jsonp");
     //
     // Setup memory map I/O system
     //
-    const mmio = MMIO.create(mz700js);
+    const mzMMIO = new MZMMIO();
+    mz700js.subscribe("onMmioRead", (param) => {
+        const {address, value} = param;
+        mzMMIO.read(address, value);
+    });
+    mz700js.subscribe("onMmioWrite", (param) => {
+        const {address, value} = param;
+        mzMMIO.write(address, value);
+    });
 
     // MZ-700 Beep sound
     window.AudioContext = window.AudioContext || window.webkitAudioContext;
     const audioContext = (window.AudioContext ? new AudioContext() : null);
-    const mzBeep = new MZBeep(mz700js, audioContext);
+
+    const mzBeep = new MZBeep(audioContext);
+    mz700js.subscribe("startSound", freq => mzBeep.startSound(freq[0]));
+    mz700js.subscribe("stopSound", () => mzBeep.stopSound());
+
     const elementToResume = mz700screen.find("canvas");
     elementToResume.click(()=>{ mzBeep.allowToPlaySound(); });
-    audioContext.addEventListener("statechange", event=>{
-        event.stopPropagation();
-        checkSound();
-    });
     const originalTitle = elementToResume.attr("title");
+
     const checkSound = () => {
         if(!mzBeep.resumed()) {
             elementToResume.attr("title",
@@ -143,13 +153,14 @@ const requestJsonp = require("../lib/jsonp");
         }
     };
     checkSound();
+    audioContext.addEventListener("statechange", event=>{
+        event.stopPropagation();
+        checkSound();
+    });
 
     // Setup PCG-700
-    PCG700.create(mmio, screenElement);
-    mz700js.subscribe("onMmioWrite", (param) => {
-        const {address, value} = param;
-        mmio.write(address, value);
-    });
+    const pcg700 = new PCG700(screenElement);
+    pcg700.setupMMIO(mzMMIO);
 
     const dockPanelRight = $("#dock-panel-right");
 
@@ -278,7 +289,7 @@ const requestJsonp = require("../lib/jsonp");
         await mz700js.stop();
         await mz700js.setCassetteTape(tape_data);
         if(tape_data != null) {
-            const mztape_array = MZ700.parseMZT(tape_data);
+            const mztape_array = MZ_Tape.parseMZT(tape_data);
             await mz700js.loadCassetteTape();
             await disassemble(mztape_array);
             await mz700js.setPC(mztape_array[0].header.addr_exec);
@@ -417,13 +428,11 @@ const requestJsonp = require("../lib/jsonp");
 
     $("#wndRegView")
         .on("show", () => {
-            console.log("on shown");
             if(isRunning) {
                 regview.Z80RegView("autoUpdate", true);
             }
         })
         .on("hide", () => {
-            console.log("on hidden");
             if(isRunning) {
                 regview.Z80RegView("autoUpdate", false);
             }
@@ -449,6 +458,75 @@ const requestJsonp = require("../lib/jsonp");
             $("#wndAsmList").asmview("currentLine", reg.PC);
             await regview.Z80RegView("updateRegister", reg);
         });
+
+    //
+    // Handling events about the keyboard and key strobe signal changing.
+    //
+    mz700container.get(0).addEventListener("KeyStrobeStateChange", event => {
+        const {strobe, bit, state} = event.data;
+        mz700js.setKeyState(strobe, bit, state);
+    });
+    const onkey = (event, state) => {
+        if(mz700container.MZControlPanel("acceptKey")) {
+            event.stopPropagation();
+            const matrix = MZ700KeyMatrix.Code2Key[event.keyCode];
+            if(matrix != null) {
+                const { strobe, bit } = matrix;
+                mz700js.setKeyState(strobe, bit, state);
+                mz700container.MZControlPanel(
+                    "updateKeyStates", strobe, bit, state);
+            }
+            return false;
+        }
+    };
+    window.addEventListener("keydown", event => onkey(event, true));
+    window.addEventListener("keyup", event => onkey(event, false));
+
+    //
+    // Handling events about the data recorder control
+    //
+    mz700container.get(0).addEventListener("DataRecorderRec", () => {
+        mz700js.dataRecorder_pushRec();
+    });
+    mz700container.get(0).addEventListener("DataRecorderPlay", () => {
+        mz700js.dataRecorder_pushPlay();
+    });
+    mz700container.get(0).addEventListener("DataRecorderStop", () => {
+        mz700js.dataRecorder_pushStop();
+    });
+    mz700container.get(0).addEventListener("DataRecorderEject", async () => {
+        await mz700js.dataRecorder_ejectCmt();
+        await mz700container.MZControlPanel("updateCmtSlot");
+    });
+    mz700container.get(0).addEventListener("DataRecorderSetTape", async event => {
+        await mz700js.setCassetteTape(event.tapeData);
+    });
+    mz700js.subscribe("onStartDataRecorder", () => {
+        mz700container.MZControlPanel("startDataRecorder");
+    });
+    mz700js.subscribe("onStopDataRecorder", ()=>{
+        mz700container.MZControlPanel("stopDataRecorder");
+    });
+
+    //
+    // Handling events about the emulation speed control slider
+    //
+    if(cookies.hasItem("speedSliderValue")) {
+        const emuTimerInterval = parseFloat(cookies.getItem("speedSliderValue"));
+        mz700js.setExecutionParameter(emuTimerInterval);
+        mz700container.MZControlPanel("emuTimerInterval", emuTimerInterval);
+    } else {
+        const emuTimerInterval = await mz700js.getExecutionParameter();
+        mz700container.MZControlPanel("emuTimerInterval", emuTimerInterval);
+    }
+    mz700js.subscribe("onExecutionParameterUpdate", param => {
+        const emuTimerInterval = param;
+        mz700container.MZControlPanel("emuTimerInterval", emuTimerInterval);
+        cookies.setItem("speedSliderValue", emuTimerInterval, Infinity);
+    });
+    mz700container.get(0).addEventListener("EmuTimerIntervalChange", event => {
+        mz700js.setExecutionParameter(event.timerInterval);
+    });
 
     // Convert MZ-700 character
     for(const element of document.querySelectorAll("span.mz700scrn")) {

@@ -1,25 +1,24 @@
-(function(){
-    "use strict";
-    var FlipFlopCounter = require('../lib/flip-flop-counter');
-    //
-    // IC BJ 556
-    //
-    function IC556(freq) {
+"use strict";
+import FlipFlopCounter from "../lib/flip-flop-counter";
+
+//
+// IC BJ 556
+//
+export default class IC556 extends FlipFlopCounter {
+    _reset: boolean;
+    constructor(freq) {
+        super(freq);
         this._reset = false;
-        this.initialize();
-        this.setFrequency(freq);
     }
 
-    IC556.prototype = new FlipFlopCounter();
-
-    IC556.prototype.count = function() {
+    count() {
         if(this._reset) {
             return FlipFlopCounter.prototype.count.call(this);
         }
         return false;
-    };
+    }
 
-    IC556.prototype.loadReset = function(value) {
+    loadReset(value) {
         if(!value) {
             if(this._reset) {
                 this._reset = false;
@@ -30,7 +29,6 @@
                 this._reset = true;
             }
         }
-    };
-
-    module.exports = IC556;
-}());
+    }
+}
+module.exports = IC556;

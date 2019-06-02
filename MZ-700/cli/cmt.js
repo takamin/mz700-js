@@ -2,7 +2,7 @@
 (function(){
     "use strict";
     var CliCommand = require("./command");
-    var mztReadFile = require("../mzt-read-file");
+    var mztReadFile = require("../../lib/mzt-read-file");
     var MZ_TapeHeader = require('../../lib/mz-tape-header.js');
 
     module.exports = new CliCommand("cmt", function(mz700, args) {

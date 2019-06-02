@@ -1,6 +1,17 @@
 module.exports = function(grunt) {
     require('load-grunt-tasks')(grunt);
     grunt.initConfig({
+        ts: {
+            default: {
+                files: [
+                    { src: [
+                        "./Z80/*.ts",
+                        "./lib/*.ts",
+                    ] },
+                ],
+                "tsconfig": "./tsconfig.json",
+            },
+        },
         browserify: {
             build: {
                 files: {
@@ -36,11 +47,12 @@ module.exports = function(grunt) {
         }
     });
 
+    grunt.loadNpmTasks("grunt-ts");
     grunt.loadNpmTasks("grunt-browserify");
     grunt.loadNpmTasks('grunt-contrib-uglify-es');
     grunt.loadNpmTasks('grunt-contrib-copy');
 
-    grunt.registerTask('lint',      ['eslint']);
+    grunt.registerTask('lint',      ["ts", "eslint"]);
     grunt.registerTask("debug",     ["lint", "browserify", "copy:debug" ]);
     grunt.registerTask("release",   ["lint", "browserify", "uglify", "copy:release"]);
     grunt.registerTask("default",   ["debug"]);
