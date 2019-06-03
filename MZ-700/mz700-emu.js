@@ -249,7 +249,7 @@ const cookies = require("../lib/cookies");
     // Show a sample assemble source
     //
     const asmlistMzt = $("<div/>").asmlist("create")
-        .on("assemble", (e, src) => mz700js.assemble(src, asmlistMzt));
+        .on("assemble", (e, src) => assemble(src, asmlistMzt));
     $("#wndAsmList").asmview("addAsmList",
         "mzt", "PCG-700 sample", asmlistMzt);
 
