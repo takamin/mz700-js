@@ -594,7 +594,7 @@ MZ700.prototype.setExecutionParameter = function(param) {
 };
 MZ700.prototype.startEmulation = function() {
     this.tid = FractionalTimer.setInterval(
-        this.run.bind(this), this.timerInterval, 50, 200);
+        this.run.bind(this), this.timerInterval, 80, 200);
     let t_cycle_0 = 0;
     this.tidMeasClock = setInterval(() => {
         this.opt.notifyClockFreq(this.z80.consumedTCycle - t_cycle_0);

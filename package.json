@@ -20,7 +20,7 @@
     "bin2mzt": "./bin/bin2mzt.js"
   },
   "dependencies": {
-    "@types/node": "^12.0.4",
+    "@types/node": "^12.0.7",
     "ansi-escape-sequences": "^4.1.0",
     "b-box": "^0.1.2",
     "codemirror": "^5.47.0",
@@ -38,10 +38,10 @@
     "hash-arg": "0.3.3",
     "http-server": "^0.11.1",
     "linebyline": "^1.3.0",
-    "list-it": "^1.0.0",
+    "list-it": "^1.0.1",
     "load-grunt-tasks": "^5.0.0",
     "node-getopt": "^0.3.2",
-    "transworker": "^1.2.1",
+    "transworker": "^1.2.2",
     "typescript": "^3.5.1"
   },
   "devDependencies": {
