@@ -13,10 +13,10 @@
 
     var transworker = new TransWorker();
     transworker.create(new MZ700({
-        onExecutionParameterUpdate: function(param) {
+        onClockFactorUpdate: function(param) {
             try {
                 transworker.postNotify(
-                    "onExecutionParameterUpdate", param);
+                    "onClockFactorUpdate", param);
             } catch(ex) {
                 console.error(ex);
             }

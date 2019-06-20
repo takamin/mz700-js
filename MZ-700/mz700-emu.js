@@ -79,8 +79,7 @@ const cookies = require("../lib/cookies");
     });
     mz700js.subscribe("onBreak", ()=> mz700js.stop());
     mz700js.subscribe("onNotifyClockFreq", tCyclePerSec => {
-        $(".speed-control-slider").attr("title",
-            `Clock: ${(Math.round((tCyclePerSec / 1000000) * 100) / 100)} MHz`);
+        $(".speed-control-slider").EmuSpeedControl("actualClock", tCyclePerSec);
     });
 
     //
@@ -441,7 +440,7 @@ const cookies = require("../lib/cookies");
     //
     // Control panel
     //
-    await mz700container.MZControlPanel("create", mz700js, mzBeep);
+    await mz700container.MZControlPanel("create", mz700js, mzBeep, MZ700.Z80_CLOCK);
     mz700container
         .on("reset", async () => {
             await mz700js.stop();
@@ -511,21 +510,20 @@ const cookies = require("../lib/cookies");
     //
     // Handling events about the emulation speed control slider
     //
-    if(cookies.hasItem("speedSliderValue")) {
-        const emuTimerInterval = parseFloat(cookies.getItem("speedSliderValue"));
-        mz700js.setExecutionParameter(emuTimerInterval);
-        mz700container.MZControlPanel("emuTimerInterval", emuTimerInterval);
+    if(cookies.hasItem("clockFactor")) {
+        const clockFactor = parseFloat(cookies.getItem("clockFactor"));
+        mz700js.setClockFactor(clockFactor);
+        mz700container.MZControlPanel("clockFactor", clockFactor);
     } else {
-        const emuTimerInterval = await mz700js.getExecutionParameter();
-        mz700container.MZControlPanel("emuTimerInterval", emuTimerInterval);
+        const clockFactor = await mz700js.getClockFactor();
+        mz700container.MZControlPanel("clockFactor", clockFactor);
     }
-    mz700js.subscribe("onExecutionParameterUpdate", param => {
-        const emuTimerInterval = param;
-        mz700container.MZControlPanel("emuTimerInterval", emuTimerInterval);
-        cookies.setItem("speedSliderValue", emuTimerInterval, Infinity);
+    mz700js.subscribe("onClockFactorUpdate", clockFactor => {
+        mz700container.MZControlPanel("clockFactor", clockFactor);
+        cookies.setItem("clockFactor", clockFactor, Infinity);
     });
-    mz700container.get(0).addEventListener("EmuTimerIntervalChange", event => {
-        mz700js.setExecutionParameter(event.timerInterval);
+    mz700container.get(0).addEventListener("clockFactorChange", event => {
+        mz700js.setClockFactor(event.clockFactor);
     });
 
     // Convert MZ-700 character
