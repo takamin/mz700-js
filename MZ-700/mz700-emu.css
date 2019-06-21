@@ -43,11 +43,6 @@
     transform:rotate(-90deg);
 }
 
-#control-panel,
-{
-    position:fixed;
-    opacity:0.0;
-}
 @media screen and (orientation: portrait) {
     .screen {
         position:relative;
@@ -67,9 +62,6 @@
 .MZ-700 .emulation-panel {
     background-color: white;
     min-width:690px;
-}
-.MZ-700 .emulation-panel input[type='range'] {
-    width:100px;
 }
 .MZ-700 .emulation-panel > span.key-switcher {
     margin:0px;
@@ -166,17 +158,6 @@
 .MZ-700 .data-recorder .cmt-message a.download-link:before {
     content:"▼MZT";
 }
-.MZ-700 .speed-control-slider {
-    display: inline-block;
-    height:24px;
-    line-height:24px;
-    padding: 0 1em;
-    background-color:white;
-    color:blue;
-    font-family: Arial;
-    font-weight: bold;
-}
-
 .MZ-700 button.toggle.on
 {
     background-color: white;
