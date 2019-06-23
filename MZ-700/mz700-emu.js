@@ -6,7 +6,6 @@ const     Z80_assemble = require("../Z80/assembler.js");
 const              Z80 = require("../Z80/Z80.js");
 const            MZ700 = require("./mz700.js");
 const MZ700_MonitorRom = require("./mz700-new-monitor.js");
-const   MZ700KeyMatrix = require("../MZ-700/mz700-key-matrix.js");
 const          MZ_Tape = require("../lib/mz-tape.js");
 const    MZ_TapeHeader = require("../lib/mz-tape-header.js");
 const     parseAddress = require("../lib/parse-addr.js");
@@ -26,14 +25,13 @@ const dock_n_liquid = require("dock-n-liquid");
 const packageJson = require("../package.json");
 const { getDeviceType } = require("../lib/user-agent-util.js");
 const MZ700CG = require("../lib/mz700-cg.js");
-const MZMMIO = require("../lib/mz-mmio.js");
-const PCG700 = require("../lib/PCG-700");
 const MZBeep = require("../lib/mz-beep.js");
 const parseRequest = require("../lib/parse-request");
 const requestJsonp = require("../lib/jsonp");
-const cookies = require("../lib/cookies");
 
 ((async () => {
+
+    const liquidRoot = dock_n_liquid.select($("#liquid-panel-MZ-700").get(0));
 
     // Set module version to the page title
     const pageTitle = [
@@ -44,273 +42,139 @@ const cookies = require("../lib/cookies");
     $("title").html(pageTitle);
     $("h1 .mz700scrn").html(pageTitle);
 
-    //
+    const dockPanelHeader = $("#dock-panel-header");
+    document.addEventListener("fullscreenchange", () => {
+        if(document.fullscreenElement == null) {
+            dockPanelHeader.show();
+        } else {
+            dockPanelHeader.hide();
+        }
+    });
+    const dockPanelRight = $("#dock-panel-right");
+    if(getDeviceType() !== "pc") {
+        dockPanelRight.remove();
+    } else {
+        document.addEventListener("fullscreenchange", () => {
+            if(document.fullscreenElement == null) {
+                dockPanelRight.show();
+            } else {
+                dockPanelRight.hide();
+            }
+        });
+    }
+
     // Create MZ-700 Emulator
-    //
     const mz700js = TransWorker.createInterface(
         "./js/bundle-mz700-worker.js", MZ700,
         { syncType: TransWorker.SyncTypePromise });
 
-    let isRunning = false;
-
     mz700js.subscribe("start", () => {
-        isRunning = true;
-        window.dispatchEvent(new Event("mz700started"));
         $(".MZ-700").addClass("running");
-        if(regview.is(":visible")) {
-            regview.Z80RegView("autoUpdate", true);
-        }
-        $("#wndAsmList").asmview("clearCurrentLine");
     });
     mz700js.subscribe("stop", async () => {
-        isRunning = false;
-        window.dispatchEvent(new Event("mz700stopped"));
         $(".MZ-700").removeClass("running");
-        regview.Z80RegView("autoUpdate", false);
-        const reg = await mz700js.getRegister();
-        $("#wndAsmList").asmview("currentLine", reg.PC);
-        await regview.Z80RegView("updateRegister", reg);
-    });
-    mz700js.subscribe('onUpdateScreen', updateData => {
-        for(const addr of Object.keys(updateData)) {
-            const chr = updateData[addr];
-            screenElement.writeVram(parseInt(addr), chr.attr, chr.dispcode);
-        }
     });
     mz700js.subscribe("onBreak", ()=> mz700js.stop());
-    mz700js.subscribe("onNotifyClockFreq", tCyclePerSec => {
-        $(".speed-control-slider").EmuSpeedControl("actualClock", tCyclePerSec);
-    });
 
-    //
     // MZ-700 Screen
-    //
-    const mz700container = $(".MZ-700-body");
-    const mz700screen = $(".MZ-700-body .screen");
-    mz700screen.mz700scrn("create", { CG: new MZ700CG(), });
+    const mz700screen = $(".MZ-700-body .screen")
+        .mz700scrn("create", { CG: new MZ700CG(), })
+        .mz700scrn("mz700js", mz700js).hide();
     mz700screen.find("canvas").css("height", "calc(100% - 1px)");
 
-    const liquidRoot = dock_n_liquid.select($("#liquid-panel-MZ-700").get(0));
-    const screenElement = mz700screen.get(0)["mz700scrn"];
-
-    /**
-     * Resize the MZ-700 Screen.
-     * @returns {undefined}
-     */
-    const resizeScreen = function() {
-        const bboxContainer = new BBox(mz700container.get(0));
-        const bboxScreen = new BBox(mz700screen.get(0));
-        const containerSize = bboxContainer.getSize();
-        containerSize._h -= bboxScreen.px("border-top-width");
-        containerSize._h -= bboxScreen.px("border-bottom-width");
-        const orgSize = new BBox.Size(320,200);
-        const innerSize = containerSize.getMaxInscribedSize(orgSize);
-
-        const margin = new BBox.Size((containerSize._w - innerSize._w) / 2, 0);
-        if(margin._w < 0) {
-            margin._w = 0;
-        }
-        mz700screen
-            .css("margin-left", margin._w + "px")
-            .css("margin-top", margin._h + "px")
-            .css("width", innerSize._w + "px")
-            .css("height", innerSize._h + "px");
-    };
-
-    //
-    // Setup memory map I/O system
-    //
-    const mzMMIO = new MZMMIO();
-    mz700js.subscribe("onMmioRead", (param) => {
-        const {address, value} = param;
-        mzMMIO.read(address, value);
-    });
-    mz700js.subscribe("onMmioWrite", (param) => {
-        const {address, value} = param;
-        mzMMIO.write(address, value);
-    });
-
     // MZ-700 Beep sound
-    window.AudioContext = window.AudioContext || window.webkitAudioContext;
-    const audioContext = (window.AudioContext ? new AudioContext() : null);
+    const mzBeep = new MZBeep(mz700js);
 
-    const mzBeep = new MZBeep(audioContext);
-    mz700js.subscribe("startSound", freq => mzBeep.startSound(freq[0]));
-    mz700js.subscribe("stopSound", () => mzBeep.stopSound());
+    // Control panel
+    const mz700container = $(".MZ-700-body");
+    await mz700container.MZControlPanel(
+        "create", mz700js, mzBeep, MZ700.Z80_CLOCK);
 
-    const elementToResume = mz700screen.find("canvas");
-    elementToResume.click(()=>{ mzBeep.allowToPlaySound(); });
-    const originalTitle = elementToResume.attr("title");
-
-    const checkSound = () => {
-        if(!mzBeep.resumed()) {
-            elementToResume.attr("title",
-                "The Audio API is suspended by autoplay policy. " +
-                "To resume the sound, click here or volume controls.");
-        } else {
-            elementToResume.attr("title", originalTitle);
-        }
-    };
-    checkSound();
-    audioContext.addEventListener("statechange", event=>{
-        event.stopPropagation();
-        checkSound();
-    });
-
-    // Setup PCG-700
-    const pcg700 = new PCG700(screenElement);
-    pcg700.setupMMIO(mzMMIO);
-
-    const dockPanelRight = $("#dock-panel-right");
-
-    if(getDeviceType() !== "pc") {
-        dockPanelRight.remove();
+    switch(getDeviceType()) {
+    case "tablet":
+        mz700screen.click(event => {
+            event.stopPropagation();
+            mz700container.MZControlPanel("toggleVisibility");
+        });
+        break;
+    case "pc":
+        mz700screen.mousemove(event => {
+            event.stopPropagation();
+            mz700container.MZControlPanel("acceptKey", true);
+            mz700container.MZControlPanel("show");
+        });
+        break;
     }
 
-    //
     // Register View
-    //
-    const regview = $("<div/>").Z80RegView("init", mz700js);
-    $("#wndRegView").append(
-        $("<div/>").css("display", "inline-block")
-        .append(regview));
+    {
+        const regview = $("<div/>").Z80RegView("init", mz700js);
+        $("#wndRegView")
+            .append($("<div/>").css("display", "inline-block").append(regview))
+            .on("show", () => regview.Z80RegView("visibility", true))
+            .on("hide", () => regview.Z80RegView("visibility", false));
 
-    //
+        // Fire the events when the jquery elements was shown or hidden
+        for(const ev of ["show", "hide"]) {
+            const el = $.fn[ev];
+            $.fn[ev] = function() {
+                this.trigger(ev);
+                return el.apply(this, arguments);
+            }
+        }
+    }
+
     // Create dump list
-    //
-    const $dumplist = $("<div/>").dumplist("init")
-        .on("querymemory", async (event, addr, callback) => {
-            callback(await mz700js.readMemory(addr));
-        });
-    $("#wndDumpList").append(
-        $("<div/>")
-        .Z80AddressSpecifier("create")
-        .on("queryregister", async (event, regName, callback) => {
-            const reg = await mz700js.getRegister();
-            callback(reg[regName]);
-        })
-        .on("notifyaddress", (event, address) => {
-            $dumplist.dumplist("topAddr", address);
-        })
-    ).append($dumplist);
+    {
+        const dumplist = $("<div/>").dumplist("init", { mz700js: mz700js });
+        $("#wndDumpList")
+            .append(dumplist.dumplist("addrSpecifier"))
+            .append(dumplist);
+    }
 
-    //
     // Create assemble list
-    //
     $("#wndAsmList").asmview("create", mz700js);
 
-    //
-    // Debugging panel
-    //
-    //
-    /**
-     * Assemble and display the list.
-     * @async
-     * @param {string} asmsrc
-     * The source to be assemble with Z80 assembler.
-     * @param {object} asmlist
-     * jquery.asmlist object
-     * @returns {Promise<object>} as a result of assemble.
-     */
-    const assemble = async function( asmsrc, asmlist ) {
-        const shouldBeResumed = isRunning;
-        if(shouldBeResumed) {
-            await mz700js.stop();
-        }
-        const assembled = Z80_assemble.assemble([asmsrc]).obj[0];
-        await mz700js.writeAsmCode( assembled );
-        asmlist.asmlist("writeList",
-            assembled.list, await mz700js.getBreakPoints());
-        if(shouldBeResumed) {
-            await mz700js.start();
-        }
-        return assembled;
-    };
-
-    const asmlistMonitorRom = $("<div/>").asmlist("create")
-        .on("assemble", (e, src) => assemble(src, asmlistMonitorRom));
-    $("#wndAsmList").asmview("addAsmList",
-        "monitor-rom", "", asmlistMonitorRom);
-    const asmlist = Z80.dasm(MZ700_MonitorRom.Binary, 0x0000, 0x1000, 0x0000);
-    const dasmlines = Z80.dasmlines(asmlist);
-    const outbuf = dasmlines.join("\n") + "\n";
-    $("#wndAsmList").asmview("name", "monitor-rom", "MZ-700 NEW MONITOR");
-    asmlistMonitorRom.asmlist("text", [
-        ";;;",
-        ";;; This is a disassembled list of the MZ-NEW MONITOR",
-        ";;; provided from the Marukun's website 'MZ-Memories'",
-        ";;; ( http://retropc.net/mz-memories/mz700/ ).",
-        ";;; ",
-    ].join("\n") + "\n" + outbuf);
-    await assemble( outbuf, asmlistMonitorRom );
-
-    //
-    // Show a sample assemble source
-    //
-    const asmlistMzt = $("<div/>").asmlist("create")
-        .on("assemble", (e, src) => assemble(src, asmlistMzt));
-    $("#wndAsmList").asmview("addAsmList",
-        "mzt", "PCG-700 sample", asmlistMzt);
-
-    const sampleSource = $($("textarea.default.source").get(0)).val();
-    asmlistMzt.asmlist("text", sampleSource);
-    await assemble( sampleSource, asmlistMzt );
-
-    // Accept MZT file to drop to the MZ-700 screen
-    const mztLoader = document.querySelector(".MZ-700 .cmt-slot");
-    if(mztLoader &&
-        window.File && window.FileReader &&
-        window.FileList && window.Blob)
+    // Disassemble MONITOR ROM and show that source.
     {
-        const el = mztLoader;
-        el.addEventListener("dragover", event => {
-            event.stopPropagation();
-            event.preventDefault();
-            event.dataTransfer.dropEffect = "copy"; // Explicitly show this is a copy.
-        }, false);
-        el.addEventListener("drop", event => {
-            event.stopPropagation();
-            event.preventDefault();
-            const files = event.dataTransfer.files; // FileList object.
-            if(files.length > 0) {
-                const f = files[0];
-                const reader = new FileReader();
-                reader.onload = () => {
-                    const tape_data = new Uint8Array(reader.result);
-                    setMztData(tape_data);
-                };
-                reader.readAsArrayBuffer(f);
-            }
-        }, false);
+        const monRom = $("#wndAsmList").asmview("newAsmList",
+            "monitor-rom", "MZ-700 NEW MONITOR");
+        const dasmlist = Z80.dasm(MZ700_MonitorRom.Binary, 0x0000, 0x1000, 0x0000);
+        const dasmlines = Z80.dasmlines(dasmlist);
+        await monRom.asmlist("assemble", [
+            ";;;",
+            ";;; This is a disassembled list of the MZ-NEW MONITOR",
+            ";;; provided from the Marukun's website 'MZ-Memories'",
+            ";;; ( http://retropc.net/mz-memories/mz700/ ).",
+            ";;; ",
+        ].join("\n") + "\n" + dasmlines.join("\n") + "\n");
     }
 
-    const setMztData = async function(tape_data) {
-        await mz700js.stop();
-        await mz700js.setCassetteTape(tape_data);
-        if(tape_data != null) {
-            const mztape_array = MZ_Tape.parseMZT(tape_data);
-            await mz700js.loadCassetteTape();
-            await disassemble(mztape_array);
-            await mz700js.setPC(mztape_array[0].header.addr_exec);
-            await mz700js.start();
-        }
-        await mz700container.MZControlPanel("updateCmtSlot");
-    };
+    // Show a sample assemble source
+    const asmlistMzt = $("#wndAsmList").asmview("newAsmList",
+            "mzt", "PCG-700 sample");
+    await asmlistMzt.asmlist("assemble", $("textarea.default.source").val());
 
-    const disassemble = async function(mztape_array) {
-        const name = MZ_TapeHeader.get1stFilename(mztape_array) || "(empty)";
-        const result = MZ700.disassemble(mztape_array);
-        if($(".source-list").length > 0) {
-            $(".source-list").asmview("name", "mzt", name);
-            asmlistMzt.asmlist("text", result.outbuf);
-            asmlistMzt.asmlist("writeList",
-                result.asmlist, await mz700js.getBreakPoints());
-        }
-    };
-
-    //
     //直接実行ボタン
-    //
+    const btnExecImm = $("<button/>").attr("type", "button").html("Execute")
+        .click(async function() {
+            const par = $(this).parent();
+            const addrToken = par.find("input.address").val();
+            const addr = parseAddress.parseAddress(addrToken);
+            if(addr != null) {
+                let src = 'ORG ' + NumberUtil.HEX(addr, 4) + "H\r\n";
+                src += par.find("input.mnemonic").val() + "\r\n";
+                const bin = Z80_assemble.assemble([src]).obj[0];
+                const reg = await mz700js.getRegister();
+                const execAddr = await mz700js.writeAsmCode( bin );
+                await mz700js.setPC(execAddr);
+                await mz700js.step();
+                await mz700js.setPC(reg.PC);
+            }
+        });
+    mz700js.subscribe("start", () => btnExecImm.prop("disabled", true));
+    mz700js.subscribe("stop", () => btnExecImm.prop("disabled", false));
+
     $("#wndImmExec").append(
         $("<div/>").addClass("imm-exec").css("height", "306px")
         .css("padding","15px 5px")
@@ -329,29 +193,11 @@ const cookies = require("../lib/cookies");
         .append($("<input/>")
                 .attr("type", "text").attr("value", "NOP")
                 .addClass("mnemonic"))
-        .append($("<button/>").attr("type", "button").html("Execute")
-                .click(async function() {
-                    const par = $(this).parent();
-                    const addrToken = par.find("input.address").val();
-                    const addr = parseAddress(addrToken);
-                    if(addr != null) {
-                        let src = 'ORG ' + NumberUtil.HEX(addr, 4) + "H\r\n";
-                        src += par.find("input.mnemonic").val() + "\r\n";
-                        const bin = Z80_assemble.assemble([src]).obj[0];
-                        const reg = await mz700js.getRegister();
-                        const execAddr = await mz700js.writeAsmCode( bin );
-                        await mz700js.setPC(execAddr);
-                        await mz700js.exec(1);
-                        await mz700js.setPC(reg.PC);
-                        await regview.Z80RegView("updateRegister", reg);
-                    }
-                }))
+        .append(btnExecImm)
         .append($("<br/>"))
     );
 
-    //
     // Tools on the right pane
-    //
     const taskbar = $("#toolwndTaskbar");
     const wndBase = $(".toolwnd:first").parent();
     const updateWndButton = () => {
@@ -414,185 +260,113 @@ const cookies = require("../lib/cookies");
 
         taskbar.append(wndSw);
     });
-
-    // Fire the events when the jquery elements was shown or hidden
-    for(const ev of ["show", "hide"]) {
-        const el = $.fn[ev];
-        $.fn[ev] = function() {
-            this.trigger(ev);
-            return el.apply(this, arguments);
-        }
-    }
     updateWndButton();
-
-    $("#wndRegView")
-        .on("show", () => {
-            if(isRunning) {
-                regview.Z80RegView("autoUpdate", true);
-            }
-        })
-        .on("hide", () => {
-            if(isRunning) {
-                regview.Z80RegView("autoUpdate", false);
-            }
-        });
-
-    //
-    // Control panel
-    //
-    await mz700container.MZControlPanel("create", mz700js, mzBeep, MZ700.Z80_CLOCK);
-    mz700container
-        .on("reset", async () => {
-            await mz700js.stop();
-            await mz700js.reset();
-            await mz700js.start();
-            await mz700container.MZControlPanel("updateCmtSlot");
-        })
-        .on("start", () => mz700js.start())
-        .on("stop", () => mz700js.stop())
-        .on("stepIn", async () => {
-            $("#wndAsmList").asmview("clearCurrentLine");
-            await mz700js.exec(1);
-            const reg = await mz700js.getRegister();
-            $("#wndAsmList").asmview("currentLine", reg.PC);
-            await regview.Z80RegView("updateRegister", reg);
-        });
-
-    //
-    // Handling events about the keyboard and key strobe signal changing.
-    //
-    mz700container.get(0).addEventListener("KeyStrobeStateChange", event => {
-        const {strobe, bit, state} = event.data;
-        mz700js.setKeyState(strobe, bit, state);
-    });
-    const onkey = (event, state) => {
-        if(mz700container.MZControlPanel("acceptKey")) {
-            event.stopPropagation();
-            const matrix = MZ700KeyMatrix.Code2Key[event.keyCode];
-            if(matrix != null) {
-                const { strobe, bit } = matrix;
-                mz700js.setKeyState(strobe, bit, state);
-                mz700container.MZControlPanel(
-                    "updateKeyStates", strobe, bit, state);
-            }
-            return false;
-        }
-    };
-    window.addEventListener("keydown", event => onkey(event, true));
-    window.addEventListener("keyup", event => onkey(event, false));
-
-    //
-    // Handling events about the data recorder control
-    //
-    mz700container.get(0).addEventListener("DataRecorderRec", () => {
-        mz700js.dataRecorder_pushRec();
-    });
-    mz700container.get(0).addEventListener("DataRecorderPlay", () => {
-        mz700js.dataRecorder_pushPlay();
-    });
-    mz700container.get(0).addEventListener("DataRecorderStop", () => {
-        mz700js.dataRecorder_pushStop();
-    });
-    mz700container.get(0).addEventListener("DataRecorderEject", async () => {
-        await mz700js.dataRecorder_ejectCmt();
-        await mz700container.MZControlPanel("updateCmtSlot");
-    });
-    mz700container.get(0).addEventListener("DataRecorderSetTape", async event => {
-        await mz700js.setCassetteTape(event.tapeData);
-    });
-    mz700js.subscribe("onStartDataRecorder", () => {
-        mz700container.MZControlPanel("startDataRecorder");
-    });
-    mz700js.subscribe("onStopDataRecorder", ()=>{
-        mz700container.MZControlPanel("stopDataRecorder");
-    });
-
-    //
-    // Handling events about the emulation speed control slider
-    //
-    if(cookies.hasItem("clockFactor")) {
-        const clockFactor = parseFloat(cookies.getItem("clockFactor"));
-        mz700js.setClockFactor(clockFactor);
-        mz700container.MZControlPanel("clockFactor", clockFactor);
-    } else {
-        const clockFactor = await mz700js.getClockFactor();
-        mz700container.MZControlPanel("clockFactor", clockFactor);
-    }
-    mz700js.subscribe("onClockFactorUpdate", clockFactor => {
-        mz700container.MZControlPanel("clockFactor", clockFactor);
-        cookies.setItem("clockFactor", clockFactor, Infinity);
-    });
-    mz700container.get(0).addEventListener("clockFactorChange", event => {
-        mz700js.setClockFactor(event.clockFactor);
-    });
 
     // Convert MZ-700 character
     for(const element of document.querySelectorAll("span.mz700scrn")) {
         window.mz700scrn.convert(element);
     }
 
-    switch(getDeviceType()) {
-    case "tablet":
-        mz700screen.click(event => {
-            event.stopPropagation();
-            mz700container.MZControlPanel("toggleVisibility");
-        });
-        break;
-    case "pc":
-        mz700screen.mousemove(event => {
-            event.stopPropagation();
-            mz700container.MZControlPanel("acceptKey", true);
-            mz700container.MZControlPanel("show");
-        });
-        break;
-    }
-
-    //
     // Layout
-    //
-    window.addEventListener("resize", () => {
+    const resizeScreen = function() {
         liquidRoot.layout();
-        resizeScreen();
-        mz700container.MZControlPanel("resize");
-    });
+        const bboxContainer = new BBox(mz700container.get(0));
+        const bboxScreen = new BBox(mz700screen.get(0));
+        const containerSize = bboxContainer.getSize();
+        containerSize._h -= bboxScreen.px("border-top-width");
+        containerSize._h -= bboxScreen.px("border-bottom-width");
+        const orgSize = new BBox.Size(320,200);
+        const innerSize = containerSize.getMaxInscribedSize(orgSize);
 
-    document.addEventListener("fullscreenchange", () => {
-        const dockPanelHeader = $("#dock-panel-header");
-        if(document.fullscreenElement == null) {
-            dockPanelHeader.show();
-            dockPanelRight.show();
-        } else {
-            dockPanelHeader.hide();
-            dockPanelRight.hide();
+        const margin = new BBox.Size((containerSize._w - innerSize._w) / 2, 0);
+        if(margin._w < 0) {
+            margin._w = 0;
         }
-        liquidRoot.layout();
-        resizeScreen();
+        mz700screen
+            .css("margin-left", margin._w + "px")
+            .css("margin-top", margin._h + "px")
+            .css("width", innerSize._w + "px")
+            .css("height", innerSize._h + "px");
         mz700container.MZControlPanel("resize");
-    });
-
-    dock_n_liquid.init(() => {
+    };
+    window.addEventListener("resize", () => resizeScreen());
+    document.addEventListener("fullscreenchange", () => {
         resizeScreen();
-        mz700container.MZControlPanel("resize");
     });
-    dock_n_liquid.select($(".MZ-700").get(0)).layout();
-    liquidRoot.layout();
+    mz700screen.show();
     resizeScreen();
-    mz700container.MZControlPanel("resize");
 
     await mz700js.reset();
     await mz700js.start();
 
-    // Load MZT file when the filename is included in URL
-    const request = parseRequest();
-    if("mzt" in request.parameters) {
-        const filename = request.parameters.mzt;
-        const url = `https://takamin.github.io/MZ-700/mzt/${filename}.js`;
-        try {
-            const tape_data = await requestJsonp("loadMZT", url);
-            await setMztData(tape_data);
-        } catch (err) {
-            console.warn(err.message);
-            console.warn(err.stack);
+    {
+        // Disassemble MZTape array
+        const disassemble = async function(mztape_array) {
+            const name = MZ_TapeHeader.get1stFilename(mztape_array) || "(empty)";
+            const result = MZ700.disassemble(mztape_array);
+            if($(".source-list").length > 0) {
+                $(".source-list").asmview("name", "mzt", name);
+                asmlistMzt.asmlist("text", result.outbuf);
+                asmlistMzt.asmlist("writeList",
+                    result.asmlist, await mz700js.getBreakPoints());
+            }
+        };
+
+        // Set a cassette tape to data recorder of MZ-700 and
+        // load the MZT to memory directly.
+        const setMztData = async function(tape_data) {
+            await mz700js.stop();
+            await mz700js.setCassetteTape(tape_data);
+            if(tape_data != null) {
+                const mztape_array = MZ_Tape.parseMZT(tape_data);
+                await mz700js.loadCassetteTape();
+                await disassemble(mztape_array);
+                await mz700js.setPC(mztape_array[0].header.addr_exec);
+                await mz700js.start();
+            }
+            await mz700container.MZControlPanel("updateCmtSlot");
+        };
+
+        // Accept MZT file to drop to the MZ-700 screen
+        const mztLoader = document.querySelector(".MZ-700 .cmt-slot");
+        if(mztLoader &&
+            window.File && window.FileReader &&
+            window.FileList && window.Blob)
+        {
+            const el = mztLoader;
+            el.addEventListener("dragover", event => {
+                event.stopPropagation();
+                event.preventDefault();
+                event.dataTransfer.dropEffect = "copy"; // Explicitly show this is a copy.
+            }, false);
+            el.addEventListener("drop", event => {
+                event.stopPropagation();
+                event.preventDefault();
+                const files = event.dataTransfer.files; // FileList object.
+                if(files.length > 0) {
+                    const f = files[0];
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        const tape_data = new Uint8Array(reader.result);
+                        setMztData(tape_data);
+                    };
+                    reader.readAsArrayBuffer(f);
+                }
+            }, false);
+        }
+
+        // Load MZT file when the filename is included in URL
+        const request = parseRequest();
+        if("mzt" in request.parameters) {
+            const filename = request.parameters.mzt;
+            const url = `https://takamin.github.io/MZ-700/mzt/${filename}.js`;
+            try {
+                const tape_data = await requestJsonp("loadMZT", url);
+                await setMztData(tape_data);
+            } catch (err) {
+                console.warn(err.message);
+                console.warn(err.stack);
+            }
         }
     }
 
