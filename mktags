@@ -1,3 +1,0 @@
-#!/bin/sh
-ctags -R `find . -name '*.js' | egrep -v '(\/(node_modules|bower_components|docs|build)\/|\bbundle\b)'`
-
