@@ -1,13 +1,11 @@
-*.BIN
-*.BN2
-*.ASM
-*.AS2
+*.bin
+*.bn2
 *.asm
+*.as2
 *.bin
 *.asm
 *._asm_
 *.map
-*.as2
 *.hex
 ASM/REFUGEE.asm
 REFUGEE.mzt

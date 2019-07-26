@@ -3,7 +3,7 @@ import oct from "../lib/oct";
 import MemoryBlock from "./memory-block";
 import Z80_Register from "./register";
 import BinUtil from "./bin-util";
-import Z80LineAssembler from "./z80-line-assembler";
+import Z80LineAssembler from "./Z80-line-assembler";
 import NumberUtil from "../lib/number-util";
 
 export default class Z80 {
