@@ -475,6 +475,16 @@ MZ700.prototype.stop = function() {
     }
 };
 
+MZ700.prototype.step = function() {
+    if("tid" in this && this.tid != null) {
+        this.stop();
+        return;
+    }
+    this.exec(1);
+    this.opt.started();
+    this.opt.stopped();
+};
+
 MZ700.prototype.run = function() {
     try {
         if(this._cycleToWait > 0) {
