@@ -8,7 +8,7 @@ var IC556           = require('../lib/ic556');
 var MZ700KeyMatrix  = require('./mz700-key-matrix');
 var MZ700_Memory    = require("./mz700-memory.js");
 var Z80             = require('../Z80/Z80.js');
-var Z80LineAssembler = require("../Z80/z80-line-assembler");
+var Z80LineAssembler = require("../Z80/Z80-line-assembler");
 
 var MZ700 = function(opt) {
     "use strict";
