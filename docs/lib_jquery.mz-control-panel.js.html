@@ -46,11 +46,11 @@ jquery_plugin_class("MZControlPanel");
 const BBox = require("b-box");
 
 const { getDeviceType } = require("./user-agent-util.js");
-const parseRequest = require("../lib/parse-request");
-const requestJsonp = require("../lib/jsonp");
+const parseRequest = require("./parse-request");
+const requestJsonp = require("./jsonp");
 
-const MZ_TapeHeader = require('../lib/mz-tape-header.js');
-const NumberUtil = require("../lib/number-util.js");
+const MZ_TapeHeader = require('./mz-tape-header.js');
+const NumberUtil = require("./number-util.js");
 
 function MZControlPanel(element) {
     this._element = element;
@@ -69,27 +69,15 @@ function MZControlPanel(element) {
             .append(this._emulationPanel)
             .append(this._dataRecorder));
 
-    this._acceptKey = false;
     this._keyAcceptor = $("&lt;span/>").addClass("key-switcher").html("Key-In");
     this._tidHide = null;
     this._isRunning = false;
-    window.addEventListener("mz700started", () => {
-        this._isRunning = true;
-    });
-    window.addEventListener("mz700stopped", () => {
-        this._isRunning = false;
-    });
 }
 
 MZControlPanel.prototype.create = async function(mz700js, mzBeep, baseClock) {
     this._mz700js = mz700js;
-    this.createSoftwareKeyboard();
-    this._emuSpeedControl = $("&lt;span/>").EmuSpeedControl("create", baseClock);
-    this._emuSpeedControl.get(0).addEventListener("clockFactorChange", event => {
-        const routeEvent = new Event("clockFactorChange");
-        routeEvent.clockFactor = event.clockFactor;
-        this._element.dispatchEvent(routeEvent);
-    });
+    this._keyboard.mz700keyboard("create", this._mz700js);
+    this._emuSpeedControl = $("&lt;span/>").EmuSpeedControl("create", mz700js, baseClock);
     this._emulationPanel
         .append(this._keyAcceptor)
         .append($("&lt;span/>").MZSoundControl("create", mzBeep))
@@ -130,39 +118,20 @@ MZControlPanel.prototype.create = async function(mz700js, mzBeep, baseClock) {
 
     const mztButtons = await this.createPublicMztLoadingButtons();
     this._controlPanel.append(mztButtons);
-}
 
-MZControlPanel.prototype.clockFactor = function(clockFactor) {
-    this._emuSpeedControl.EmuSpeedControl("clockFactor", clockFactor);
-};
-
-MZControlPanel.prototype.createSoftwareKeyboard = function() {
-    this._keyboard.mz700keyboard("create", {
-        onStateChange: (strobe, bit, state) => {
-            const event = new Event("KeyStrobeStateChange");
-            event.data = { strobe, bit, state };
-            this._element.dispatchEvent(event);
-        }
+    this._mz700js.subscribe("start", () => {
+        this._isRunning = true;
     });
-    window.addEventListener("keyup", async event => {
-        switch(event.keyCode) {
-        case 119://F8 - RUN/STOP
-            event.stopPropagation();
-            if(this._isRunning) {
-                this._mz700jsContainer.trigger("stop");
-            } else {
-                this._mz700jsContainer.trigger("start");
-            }
-            return;
-        case 120://F9 - STEP In
-            event.stopPropagation();
-            if(this._isRunning) {
-                this._mz700jsContainer.trigger("stop");
-            } else {
-                this._mz700jsContainer.trigger("stepIn");
-            }
-            return;
-        }
+    this._mz700js.subscribe("stop", async () => {
+        this._isRunning = false;
+    });
+
+    // Handling events about the data recorder control
+    mz700js.subscribe("onStartDataRecorder", () => {
+        this.startDataRecorder();
+    });
+    mz700js.subscribe("onStopDataRecorder", ()=>{
+        this.stopDataRecorder();
     });
 };
 
@@ -171,19 +140,20 @@ MZControlPanel.prototype.createDataRecorderControl = function() {
     const btnCmtRec = $("&lt;button/>").attr("type", "button").addClass("rec")
         .html("&lt;span style='color:red'>●&lt;/span> RECPLAY").click( () => {
             this.cmtMessageArea.empty().html("Recording ...");
-            this._element.dispatchEvent(new Event("DataRecorderRec"));
+            this._mz700js.dataRecorder_pushRec();
         });
     const btnCmtPlay = $("&lt;button/>").attr("type", "button").addClass("play")
         .html("&lt;span class='cmtPlayImage'>▼&lt;/span> PLAY").click( () => {
-            this._element.dispatchEvent(new Event("DataRecorderPlay"));
+            this._mz700js.dataRecorder_pushPlay();
         });
     const btnCmtStop = $("&lt;button/>").attr("type", "button").addClass("stop")
         .html("&lt;span>■&lt;/span> STOP").click( () => {
-            this._element.dispatchEvent(new Event("DataRecorderStop"));
+            this._mz700js.dataRecorder_pushStop();
         });
     const btnCmtEject = $("&lt;button/>").attr("type", "button").addClass("eject")
-        .html("&lt;span>▲&lt;/span>EJECT").click( () => {
-            this._element.dispatchEvent(new Event("DataRecorderEject"));
+        .html("&lt;span>▲&lt;/span>EJECT").click(async () => {
+            await this._mz700js.dataRecorder_ejectCmt();
+            await this.updateCmtSlot();
         });
     if (window.File &amp;&amp; window.FileReader &amp;&amp; window.FileList &amp;&amp; window.Blob) {
         let el = this._dataRecorder.get(0);
@@ -199,11 +169,9 @@ MZControlPanel.prototype.createDataRecorderControl = function() {
             if(files.length > 0) {
                 let f = files[0];
                 let reader = new FileReader();
-                reader.onload = () => {
+                reader.onload = async () => {
                     const tapeData = new Uint8Array(reader.result);
-                    const setTapeEvent = new Event("DataRecorderSetTape");
-                    setTapeEvent.tapeData = tapeData;
-                    this._element.dispatchEvent(setTapeEvent);
+                    await this._mz700js.setCassetteTape(tapeData);
                 };
                 reader.readAsArrayBuffer(f);
             }
@@ -295,10 +263,10 @@ MZControlPanel.prototype.createPublicMztLoadingButtons = function() {
 
 MZControlPanel.prototype.acceptKey = function(state) {
     if(state == null) {
-        return this._acceptKey;
+        return this._keyboard.mz700keyboard("acceptKey");
     }
-    this._acceptKey = state;
-    if(this._acceptKey) {
+    this._keyboard.mz700keyboard("acceptKey", state);
+    if(state) {
         this._keyAcceptor.addClass("on");
     } else {
         this._keyAcceptor.removeClass("on");
@@ -396,9 +364,9 @@ MZControlPanel.prototype.createStartButton = function() {
         .addClass("imaged")
         .click(() => {
             if(this._isRunning) {
-                this._mz700jsContainer.trigger("stop");
+                this._mz700js.stop();
             } else {
-                this._mz700jsContainer.trigger("start");
+                this._mz700js.start();
             }
         });
     let img = $("&lt;img/>");
@@ -418,13 +386,24 @@ MZControlPanel.prototype.createStartButton = function() {
             "image/btnStop-off.png" :
             "image/btnRun-off.png");
     });
-    window.addEventListener("mz700started", () => {
+    this._mz700js.subscribe("start", () => {
         setImg("image/btnStop-off.png");
         setAlt("Stop");
     });
-    window.addEventListener("mz700stopped", () => {
+    this._mz700js.subscribe("stop", async () => {
         setImg("image/btnRun-off.png");
         setAlt("Run");
+    });
+    window.addEventListener("keyup", async event => {
+        if(event.keyCode == 119) {//F8 - RUN/STOP
+            event.stopPropagation();
+            if(this._isRunning) {
+                this._mz700js.stop();
+            } else {
+                this._mz700js.start();
+            }
+            return;
+        }
     });
     setImg("image/btnRun-off.png");
     setAlt("Run");
@@ -438,7 +417,12 @@ MZControlPanel.prototype.createResetButton = function() {
     const btnReset = $("&lt;button/>").attr("type", "button")
         .addClass("imaged").append(
             $("&lt;img/>").attr("title", "Reset").attr("alt", "Reset"))
-        .click(() => this._mz700jsContainer.trigger("reset"));
+        .click(async () => {
+            await this._mz700js.stop();
+            await this._mz700js.reset();
+            await this._mz700js.start();
+            await this.updateCmtSlot();
+        });
 
     const btnReset_hover = () => {
         btnReset.find("img")
@@ -461,7 +445,7 @@ MZControlPanel.prototype.createResetButton = function() {
 MZControlPanel.prototype.createStepInButton = function() {
     const btnStep = $("&lt;button/>").attr("type", "button")
         .attr("title", "[F9]").addClass("imaged")
-        .click( () => this._mz700jsContainer.trigger("stepIn") );
+        .click( () => this._mz700js.step() );
     const img = $("&lt;img/>")
         .attr("title", "Step-In")
         .attr("alt", "Step-In");
@@ -480,13 +464,24 @@ MZControlPanel.prototype.createStepInButton = function() {
             setImg("image/btnStepIn-off.png");
         }
     });
-    window.addEventListener("mz700started", () => {
+    this._mz700js.subscribe("start", () => {
         btnStep.prop('disabled', 'disabled')
         setImg("image/btnStepIn-disabled.png");
     });
-    window.addEventListener("mz700stopped", () => {
+    this._mz700js.subscribe("stop", async () => {
         btnStep.prop('disabled', '');
         setImg("image/btnStepIn-off.png");
+    });
+    window.addEventListener("keyup", async event => {
+        if(event.keyCode == 120) {//F9 - STEP In
+            event.stopPropagation();
+            if(this._isRunning) {
+                this._mz700js.stop();
+            } else {
+                this._mz700js.step();
+            }
+            return;
+        }
     });
     setImg("image/btnStepIn-off.png");
     return btnStep;
@@ -593,7 +588,7 @@ module.exports = MZControlPanel;
 <br class="clear">
 
 <footer>
-    Generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.6.2</a> on Fri Jun 21 2019 21:24:41 GMT+0900 (GMT+09:00) using the Minami theme.
+    Generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.6.3</a> on Tue Aug 27 2019 19:29:07 GMT+0900 (GMT+09:00) using the Minami theme.
 </footer>
 
 <script>prettyPrint();</script>
