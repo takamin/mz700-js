@@ -1,7 +1,7 @@
 /**
  * @fileoverview Z80 assembler class.
  */
-import Z80LineAssembler from "./z80-line-assembler";
+import Z80LineAssembler from "./Z80-line-assembler";
 import parseAddress from "../lib/parse-addr";
 
 /**

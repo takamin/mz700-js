@@ -1,6 +1,6 @@
 {
   "name": "mz700-js",
-  "version": "1.2.0",
+  "version": "1.2.3",
   "description": "MZ-700 Full JavaScript Emulator",
   "private": false,
   "scripts": {
@@ -20,10 +20,10 @@
     "bin2mzt": "./bin/bin2mzt.js"
   },
   "dependencies": {
-    "@types/node": "^12.0.8",
+    "@types/node": "^12.6.2",
     "ansi-escape-sequences": "^4.1.0",
-    "b-box": "^0.1.2",
-    "codemirror": "^5.47.0",
+    "b-box": "^1.0.1",
+    "codemirror": "^5.48.0",
     "debug": "^4.1.1",
     "dock-n-liquid": "^0.5.3",
     "fractional-timer": "^1.0.2",
@@ -33,20 +33,20 @@
     "grunt-cli": "^1.3.2",
     "grunt-contrib-copy": "^1.0.0",
     "grunt-contrib-uglify-es": "^3.3.0",
-    "grunt-eslint": "^21.1.0",
+    "grunt-eslint": "^22.0.0",
     "grunt-ts": "^6.0.0-beta.22",
-    "hash-arg": "0.3.3",
+    "hash-arg": "0.3.5",
     "http-server": "^0.11.1",
     "linebyline": "^1.3.0",
-    "list-it": "^1.0.2",
+    "list-it": "^1.0.3",
     "load-grunt-tasks": "^5.0.0",
     "node-getopt": "^0.3.2",
-    "transworker": "^1.2.2",
-    "typescript": "^3.5.2"
+    "transworker": "^1.2.6",
+    "typescript": "^3.5.3"
   },
   "devDependencies": {
     "chai": "^4.2.0",
-    "jsdoc": "^3.6.2",
+    "jsdoc": "^3.6.3",
     "minami": "^1.2.3",
     "mocha": "^6.1.4"
   },

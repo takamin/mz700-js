@@ -544,7 +544,7 @@ foreach($MZ700FON as $f) {
             $fname = './MZ700FON/' . $attr . $dispcode . '.png';
 
             // Remove files that have lower alphabet in its filename
-            if(/[a-f]/.test($attr.$dispcode)) {
+            if(preg_match("/[a-f]/", $attr.$dispcode)) {
                 $rm_fname = './MZ700FON/' . strtolower($attr . $dispcode) . '.png';
                 if(file_exists($rm_fname)) {
                     unlink($rm_fname);

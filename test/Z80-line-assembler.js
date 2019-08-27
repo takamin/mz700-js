@@ -1,6 +1,6 @@
 "use strict";
 const assert = require("chai").assert;
-const Z80LineAssembler = require("../Z80/z80-line-assembler.js");
+const Z80LineAssembler = require("../Z80/Z80-line-assembler.js");
 const oct = require("../lib/oct.js");
 describe("Z80LineAssembler", () => {
     describe("#assemble", () => {

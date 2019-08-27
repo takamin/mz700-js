@@ -1,6 +1,8 @@
 MZ-700 Full JavaScript Emulator
 ===============================
 
+[![Build Status](https://travis-ci.org/takamin/mz700-js.svg?branch=master)](https://travis-ci.org/takamin/mz700-js)
+
 <a href="https://takamin.github.io/mz700-js/emu.html"
 target="_blank" title="Click to run this emulator on the Github page">
 <img src="https://github.com/takamin/mz700-js/blob/gh-pages/image/title.png?raw=true"

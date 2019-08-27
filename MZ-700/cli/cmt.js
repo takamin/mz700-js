@@ -1,4 +1,3 @@
-/* global Promise */
 (function(){
     "use strict";
     var CliCommand = require("./command");
