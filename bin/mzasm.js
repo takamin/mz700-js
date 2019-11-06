@@ -1,9 +1,8 @@
 #!/usr/bin/env node
-require("../lib/context.js");
 const NumberUtil = require("../lib/number-util.js");
 var Z80_assemble = require('../Z80/assembler');
 var MZ_TapeHeader = require('../lib/mz-tape-header');
-var fnut = require('../lib/fnuts.js');
+var changeExt = require('../lib/change-ext.js');
 var fs = require('fs');
 var getPackageJson = require("../lib/get-package-json");
 var npmInfo = getPackageJson(__dirname + "/..");
@@ -59,8 +58,7 @@ if('output-file' in cli.options) {
         ext = ".bin";
     }
     let input_filename = args.input_filenames[0];
-    output_filename = fnut.exchangeExtension(
-            input_filename, ext);
+    output_filename = changeExt(input_filename, ext);
 }
 
 // Determine filename of address map
@@ -68,8 +66,7 @@ var fnMap = null;
 if('map' in cli.options) {
     fnMap = cli.options['map'];
 } else {
-    fnMap = fnut.exchangeExtension(
-            output_filename, ".map");
+    fnMap = changeExt(output_filename, ".map");
 }
 
 //

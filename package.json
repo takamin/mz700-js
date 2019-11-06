@@ -41,6 +41,7 @@
     "list-it": "^1.0.3",
     "load-grunt-tasks": "^5.0.0",
     "node-getopt": "^0.3.2",
+    "path": "^0.12.7",
     "transworker": "^1.2.6",
     "typescript": "^3.5.3"
   },
