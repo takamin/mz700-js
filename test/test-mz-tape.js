@@ -1,9 +1,7 @@
 describe("MZ_Tape", function() {
     "use strict";
     var chai = require("chai");
-    var should = chai.should;
     var assert = chai.assert;
-    require("../lib/context");
     var MZ_Tape = require("../lib/mz-tape");
     var MZ_TapeHeader = require("../lib/mz-tape-header");
     describe("#isThereSignal", function() {

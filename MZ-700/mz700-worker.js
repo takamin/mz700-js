@@ -2,57 +2,32 @@
 // Codes for Worker context.
 // Override the methods in Worker context
 //
-(function(g) {
-    "use strict";
-    require("../lib/context.js");
-    if(!g.context.webWorker) {
-        throw new Error("This script must run on WebWorker context.");
-    }
-    var TransWorker = require('transworker');
-    var MZ700 = require('./mz700.js');
+"use strict";
+const TransWorker = require('transworker');
+const MZ700 = require('./mz700.js');
 
-    var transworker = new TransWorker();
-    transworker.create(new MZ700({
-        onClockFactorUpdate: function(param) {
-            try {
-                transworker.postNotify(
-                    "onClockFactorUpdate", param);
-            } catch(ex) {
-                console.error(ex);
-            }
-        },
-        started: function() { transworker.postNotify("start"); },
-        stopped: function() { transworker.postNotify("stop"); },
-        notifyClockFreq: function(tCyclePerSec) {
-            transworker.postNotify(
-                    "onNotifyClockFreq", [ tCyclePerSec ]);
-        },
-        onBreak: function() {
-            transworker.postNotify("onBreak");
-        },
-        onUpdateScreen: function(screenUpdateData) {
-            transworker.postNotify(
-                "onUpdateScreen", screenUpdateData);
-        },
-        onMmioRead: function(address, value){
-            transworker.postNotify(
-                    "onMmioRead", { address: address, value: value });
-        },
-        onMmioWrite: function(address, value){
-            transworker.postNotify(
-                    "onMmioWrite", { address: address, value: value });
-        },
-        startSound: function(freq){
-            transworker.postNotify("startSound",[ freq ]);
-        },
-        stopSound: function(){
-            transworker.postNotify("stopSound");
-        },
-        onStartDataRecorder: function(){
-            transworker.postNotify("onStartDataRecorder");
-        },
-        onStopDataRecorder: function(){
-            transworker.postNotify("onStopDataRecorder");
+const transworker = new TransWorker();
+transworker.create(new MZ700({
+    onClockFactorUpdate: param => {
+        try {
+            transworker.postNotify("onClockFactorUpdate", param);
+        } catch(ex) {
+            console.error(ex);
         }
-    }));
-}(Function("return this;")()));
+    },
+    started: () => transworker.postNotify("start"),
+    stopped: () => transworker.postNotify("stop"),
+    notifyClockFreq: tCyclePerSec => transworker.postNotify(
+        "onNotifyClockFreq", [ tCyclePerSec ]),
+    onBreak: () => transworker.postNotify("onBreak"),
+    onUpdateScreen: screenUpdateData => transworker.postNotify(
+        "onUpdateScreen", screenUpdateData),
+    onMmioRead: (address, value) => transworker.postNotify(
+        "onMmioRead", { address: address, value: value }),
+    onMmioWrite: (address, value) => transworker.postNotify(
+        "onMmioWrite", { address: address, value: value }),
+    startSound: freq => transworker.postNotify("startSound", [ freq ]),
+    stopSound: () => transworker.postNotify("stopSound"),
+    onStartDataRecorder: () => transworker.postNotify("onStartDataRecorder"),
+    onStopDataRecorder: () => transworker.postNotify("onStopDataRecorder"),
+}));

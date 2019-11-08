@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 var MZ_TapeHeader = require('../lib/mz-tape-header.js');
-var fnut = require('../lib/fnuts.js');
+var changeExt = require('../lib/change-ext.js');
 var fs = require('fs');
 var getPackageJson = require("../lib/get-package-json");
 var npmInfo = getPackageJson(__dirname + "/..");
@@ -43,7 +43,7 @@ var output_filename = null;
 if('output-file' in cli.options) {
     output_filename = cli.options['output-file'];
 } else {
-    output_filename = fnut.exchangeExtension(input_filename, ".mzt");
+    output_filename = changeExt(input_filename, ".mzt");
 }
 
 //

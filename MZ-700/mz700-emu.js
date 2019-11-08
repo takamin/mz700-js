@@ -1,5 +1,4 @@
 require("fullscrn");
-require("../lib/context.js");
 const       NumberUtil = require("../lib/number-util.js");
 const      TransWorker = require("transworker");
 const     Z80_assemble = require("../Z80/assembler.js");

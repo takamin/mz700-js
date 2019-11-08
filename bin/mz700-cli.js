@@ -37,7 +37,6 @@
     console.log(description);
 
     const readline = require("linebyline")(process.stdin);
-    require("../lib/context.js");
     const MZ700 = require("../MZ-700/mz700.js");
     const MZMMIO = require("../lib/mz-mmio.js");
     const PCG700 = require("../lib/PCG-700");
