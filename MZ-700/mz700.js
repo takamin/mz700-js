@@ -427,8 +427,18 @@ MZ700.prototype.setPC = function(addr) {
     this.z80.reg.PC = addr;
 };
 
-MZ700.prototype.readMemory = function(addr) {
-    return this.memory.peek(addr);
+/**
+ * Read memory.
+ * @param {number} addrStart start address
+ * @param {number} addrEnd (optional) end address
+ * @returns {number|Array<number>} A value in the start addr or memory block
+ */
+MZ700.prototype.readMemory = function(addrStart, addrEnd) {
+    if(addrEnd) {
+        return Array(addrEnd - addrStart).fill()
+            .map( () => this.memory.peek(addrStart++) );
+    }
+    return this.memory.peek(addrStart);
 };
 
 MZ700.prototype.setKeyState = function(strobe, bit, state) {
