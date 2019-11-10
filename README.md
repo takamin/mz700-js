@@ -14,7 +14,7 @@ Description
 
 This is an emulator of "MZ-700", a Japanese historical 8-bit micro computer.
 
-This emulator is written in JavaScript.
+This emulator is written by JavaScript.
 It works on the modern HTML5 web browser.
 I would strongly recommend Google Chrome,
 because of the emulation speed and its stability.
@@ -55,29 +55,16 @@ PREREQUISITES and FEATURES
 INSTALLATION
 ------------
 
-To install on your local PC,
-[clone the repository or get the zip from GitHub](https://github.com/takamin/mz700-js).
-
-And, 
-
 ```
 $ npm install   # Build
 $ npm start     # Start local web server and run the app.
 ```
 
-Access http://localhost:3000/mz700-js/emu.html with your browser.
+Access http://localhost:3000/mz700-js/emu.html with your browser,
+if the emulation page does not open.
 
-Or if you would'nt install or the installation fails,
-[the emulation page](https://takamin.github.io/mz700-js/emu.html) is available.
-
-
-Available Browsers
-------------------
-
-* Google Chrome
-* Mozzilla Firefox
-* Microsoft Internet explorer 11 (but no sound and slow)
-* Microsoft Edge (but slow)
+Or [the emulation page](https://takamin.github.io/mz700-js/emu.html) is available
+without local installation.
 
 
 LICENCE
