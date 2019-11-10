@@ -1,6 +1,6 @@
 {
   "name": "mz700-js",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "MZ-700 Full JavaScript Emulator",
   "private": false,
   "scripts": {
@@ -41,11 +41,13 @@
     "list-it": "^1.0.3",
     "load-grunt-tasks": "^5.0.0",
     "node-getopt": "^0.3.2",
+    "path": "^0.12.7",
     "transworker": "^1.2.6",
     "typescript": "^3.5.3"
   },
   "devDependencies": {
     "chai": "^4.2.0",
+    "js-cookie": "^2.2.1",
     "jsdoc": "^3.6.3",
     "minami": "^1.2.3",
     "mocha": "^6.1.4"

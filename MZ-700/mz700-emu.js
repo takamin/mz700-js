@@ -1,5 +1,4 @@
 require("fullscrn");
-require("../lib/context.js");
 const       NumberUtil = require("../lib/number-util.js");
 const      TransWorker = require("transworker");
 const     Z80_assemble = require("../Z80/assembler.js");
@@ -11,7 +10,6 @@ const    MZ_TapeHeader = require("../lib/mz-tape-header.js");
 const     parseAddress = require("../lib/parse-addr.js");
 require("../lib/jquery.mz700-kb.js");
 require("../lib/jquery.Z80-reg.js");
-require("../lib/jquery.toggle-button.js");
 require("../lib/jquery.asmview.js");
 require("../lib/jquery.asmlist.js");
 require("../lib/jquery.tabview.js");
@@ -28,6 +26,7 @@ const MZ700CG = require("../lib/mz700-cg.js");
 const MZBeep = require("../lib/mz-beep.js");
 const parseRequest = require("../lib/parse-request");
 const requestJsonp = require("../lib/jsonp");
+const ToolWindow = require("../lib/tool-window.js");
 
 ((async () => {
 
@@ -133,11 +132,12 @@ const requestJsonp = require("../lib/jsonp");
     }
 
     // Create assemble list
-    $("#wndAsmList").asmview("create", mz700js);
+    const asmView = $("<div/>").asmview("create", mz700js);
+    $("#wndAsmList").append(asmView);
 
     // Disassemble MONITOR ROM and show that source.
     {
-        const monRom = $("#wndAsmList").asmview("newAsmList",
+        const monRom = asmView.asmview("newAsmList",
             "monitor-rom", "MZ-700 NEW MONITOR");
         const dasmlist = Z80.dasm(MZ700_MonitorRom.Binary, 0x0000, 0x1000, 0x0000);
         const dasmlines = Z80.dasmlines(dasmlist);
@@ -151,7 +151,7 @@ const requestJsonp = require("../lib/jsonp");
     }
 
     // Show a sample assemble source
-    const asmlistMzt = $("#wndAsmList").asmview("newAsmList",
+    const asmlistMzt = asmView.asmview("newAsmList",
             "mzt", "PCG-700 sample");
     await asmlistMzt.asmlist("assemble", $("textarea.default.source").val());
 
@@ -176,7 +176,7 @@ const requestJsonp = require("../lib/jsonp");
     mz700js.subscribe("stop", () => btnExecImm.prop("disabled", false));
 
     $("#wndImmExec").append(
-        $("<div/>").addClass("imm-exec").css("height", "306px")
+        $("<div/>").addClass("imm-exec")
         .css("padding","15px 5px")
         .append($("<label/>")
             .css("display","inline-block").css("width", "80px")
@@ -197,70 +197,7 @@ const requestJsonp = require("../lib/jsonp");
         .append($("<br/>"))
     );
 
-    // Tools on the right pane
-    const taskbar = $("#toolwndTaskbar");
-    const wndBase = $(".toolwnd:first").parent();
-    const updateWndButton = () => {
-        wndBase.find(".toolwnd .move-up-button").prop("disabled", false);
-        wndBase.find(".toolwnd .move-down-button").prop("disabled", false);
-        wndBase.find(".toolwnd:visible:first .move-up-button")
-            .prop("disabled", true);
-        wndBase.find(".toolwnd:visible:last .move-down-button")
-            .prop("disabled", true);
-    };
-    $(".toolwnd").each(function() {
-        const wnd = $(this);
-        const wndSw = $("<button/>").html(wnd.attr("title"))
-            .addClass(wnd.hasClass("open")?"on":"off")
-            .ToggleButton("create", {
-                "on": () => {
-                    wnd.show();
-                    updateWndButton();
-                },
-                "off": () => {
-                    wnd.hide();
-                    updateWndButton();
-                }
-            });
-        const title = $("<div/>").addClass("titlebar")
-            .append($("<span/>").addClass("title").html(wnd.attr("title")))
-            .append($("<span/>").addClass("buttons")
-                .append($("<button/>").attr("type","button")
-                    .html("▼").attr("title", "Down").addClass("move-down-button")
-                    .click(()=>{
-                        wnd.next().after(wnd);
-                        wndSw.next().after(wndSw);
-                        updateWndButton();
-                    })
-                ).append($("<button/>").attr("type","button")
-                    .html("▲").attr("title", "Up").addClass("move-up-button")
-                    .click(()=>{
-                        wnd.prev().before(wnd);
-                        wndSw.prev().before(wndSw);
-                        updateWndButton();
-                    })
-                ).append($("<button/>").attr("type","button")
-                    .html("■").attr("title", "Expand")
-                    .click(()=>{
-                        taskbar.find("button").ToggleButton("off");
-                        wndSw.ToggleButton("on");
-                        wndBase.find(".toolwnd:first-child").before(wnd);
-                        taskbar.find("button:first-child").before(wndSw);
-                        updateWndButton();
-                    })
-                ).append($("<button/>").attr("type","button")
-                    .html("×").attr("title", "Close")
-                    .click(()=>{
-                        wndSw.ToggleButton("off");
-                    })
-                )
-            );
-        const content = $("<div/>").addClass("content").append(wnd.children());
-        wnd.append(title).append(content);
-
-        taskbar.append(wndSw);
-    });
-    updateWndButton();
+    ToolWindow.create($("#toolwndBase"));
 
     // Convert MZ-700 character
     for(const element of document.querySelectorAll("span.mz700scrn")) {
@@ -304,12 +241,10 @@ const requestJsonp = require("../lib/jsonp");
         const disassemble = async function(mztape_array) {
             const name = MZ_TapeHeader.get1stFilename(mztape_array) || "(empty)";
             const result = MZ700.disassemble(mztape_array);
-            if($(".source-list").length > 0) {
-                $(".source-list").asmview("name", "mzt", name);
-                asmlistMzt.asmlist("text", result.outbuf);
-                asmlistMzt.asmlist("writeList",
-                    result.asmlist, await mz700js.getBreakPoints());
-            }
+            asmView.asmview("name", "mzt", name);
+            asmlistMzt.asmlist("text", result.outbuf);
+            asmlistMzt.asmlist("writeList",
+                result.asmlist, await mz700js.getBreakPoints());
         };
 
         // Set a cassette tape to data recorder of MZ-700 and
