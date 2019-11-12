@@ -83,6 +83,8 @@ const ToolWindow = require("../lib/tool-window.js");
 
     // MZ-700 Beep sound
     const mzBeep = new MZBeep(mz700js);
+    mz700js.subscribe("startSound", freq => mzBeep.startSound(freq[0]));
+    mz700js.subscribe("stopSound", () => mzBeep.stopSound());
 
     // Control panel
     const mz700container = $(".MZ-700-body");
