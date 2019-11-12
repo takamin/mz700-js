@@ -41,16 +41,9 @@ const MZMMIO = require("../lib/mz-mmio.js");
 const PCG700 = require("../lib/PCG-700");
 const mztReadFile = require("../lib/mzt-read-file");
 
-function MZ700CLI() {
-    MZ700.apply(this, Array.from(arguments));
-}
-MZ700CLI.prototype = new MZ700;
-MZ700CLI.prototype.subscribe = function(notify, handler) {
+MZ700.prototype.subscribe = function(notify, handler) {
     console.log(`subscribe ${notify} = ${handler}`);
 };
-MZ700CLI.prototype.setExecutionParameter = function(interval) {
-    console.log(`setExecutionParameter(${interval})`);
-}
 const CliCommand = require("../MZ-700/cli/command.js");
 const commands = new CliCommand();
 commands.install([
@@ -74,44 +67,44 @@ commands.install([
 
 commands.install(require("../MZ-700/cli/conf.js"));
 
-const mz700 = new MZ700CLI({
-    "onExecutionParameterUpdate" : function() { },
-    "started": function() { },
-    "stopped": function() { },
-    "notifyClockFreq": function() { },
-    "onBreak" : function() { },
-    "onUpdateScreen": function(/*updateData*/) { },
-    "onVramUpdate": function(index, dispcode, attr){
+const mz700 = new MZ700({
+    "onExecutionParameterUpdate" : ()=> { },
+    "started": ()=> { },
+    "stopped": ()=> { },
+    "notifyClockFreq": ()=> { },
+    "onBreak" : ()=> { },
+    "onUpdateScreen": (/*updateData*/)=> { },
+    "onVramUpdate": (index, dispcode, attr)=>{
         cliCommandVram.setAt(index, dispcode, attr);
     },
-    'onMmioRead': function(address, value) {
+    'onMmioRead': (address, value)=> {
         mzMMIO.read(address, value);
     },
-    'onMmioWrite': function(address, value) {
+    'onMmioWrite': (address, value)=> {
         mzMMIO.write(address, value);
     },
-    "onPortRead": function(/*port, value*/){
+    "onPortRead": (/*port, value*/)=> {
         //console.log("IN ", NumberUtil.HEX(port, 2) + "H", NumberUtil.HEX(value, 2) + "H");
     },
-    "onPortWrite": function(port, value){
+    "onPortWrite": (port, value)=>{
         console.log("OUT ", NumberUtil.HEX(port, 2) + "H", NumberUtil.HEX(value, 2) + "H");
     },
-    'startSound': function(/*freq*/) {
+    'startSound': (/*freq*/)=> {
         //console.log("bz:", freq, "Hz");
     },
-    'stopSound': function() {
+    'stopSound': ()=> {
         //console.log("bz: off");
     },
-    "onStartDataRecorder": function(){
+    "onStartDataRecorder": ()=>{
         //console.log("MOTOR: ON");
     },
-    "onStopDataRecorder": function(){
+    "onStopDataRecorder": ()=>{
         //console.log("MOTOR: OFF");
     }
 });
 const mzMMIO = new MZMMIO(mz700);
 
-mz700.setExecutionParameter(MZ700.DEFAULT_TIMER_INTERVAL);
+mz700.setClockFactor(1.0);
 cliCommandSendKey.setMakeReleaseDurations(200,50);
 
 const memsetMZ = function(addr, buf, size) {
