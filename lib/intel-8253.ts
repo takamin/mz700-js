@@ -1,19 +1,23 @@
 "use strict";
+import EventDispatcher from "./event-dispatcher";
 //
 // Intel 8253 Programmable Interval Timer
 //
 export default class Intel8253 {
-    counter: Array<Intel8253Counter>
+    private _counter: Array<Intel8253Counter>
     constructor() {
-        this.counter = [
-            new Intel8253Counter("#0"),
-            new Intel8253Counter("#1"),
-            new Intel8253Counter("#2") ];
+        this._counter = [
+            new Intel8253Counter(),
+            new Intel8253Counter(),
+            new Intel8253Counter() ];
     }
-    setCtrlWord(ctrlword) {
-        var index = (ctrlword & 0xc0) >> 6;
-        this.counter[index].setCtrlWord(ctrlword & 0x3f);
+    public setCtrlWord(ctrlword) {
+        const index = (ctrlword & 0xc0) >> 6;
+        this._counter[index].setCtrlWord(ctrlword & 0x3f);
     };
+    public counter(index:number):Intel8253Counter {
+        return this._counter[index];
+    }
 }
 
 
@@ -49,8 +53,7 @@ export default class Intel8253 {
 //       BCD:    0: Binary counter
 //               1: BCD counter
 //
-class Intel8253Counter {
-    _name:string;
+class Intel8253Counter extends EventDispatcher {
     RL:number;
     MODE:number;
     BCD:number;
@@ -60,11 +63,10 @@ class Intel8253Counter {
     _read:boolean = true;
     out:boolean = true;
     gate:boolean = false;
-    _handlers = {
-        timeup: []
-    };
-    constructor(name:string) {
-        this._name = name;
+    constructor() {
+        super();
+        this.declareEvent("timeup");
+
         this.RL = 3;
         this.MODE = 3;
         this.BCD = 0;
@@ -74,12 +76,9 @@ class Intel8253Counter {
         this._read = true;
         this.out = true;
         this.gate = false;
-        this._handlers = {
-            timeup: []
-        };
     }
 
-    setCtrlWord(ctrlword) {
+    setCtrlWord(ctrlword:number):void {
         this.RL = (ctrlword & 0x30) >> 4;
         this.MODE = (ctrlword & 0x0e) >> 1;
         this.BCD = (ctrlword & 0x01) != 0 ? 1 : 0;
@@ -91,9 +90,15 @@ class Intel8253Counter {
         this.gate = false;
     }
 
-    load(value) {
+    initCount(counter:number, handler:Function):void {
+        this.value = counter;
+        this.counter = counter;
+        this.addEventListener("timeup", handler);
+    }
+
+    load(value:number):boolean {
         this.counter = 0;
-        var set_comp = false;
+        let set_comp = false;
         switch(this.RL) {
             case 0: //Counter latching operation
                 break;
@@ -145,7 +150,7 @@ class Intel8253Counter {
         return set_comp;
     }
 
-    read() {
+    read():number|null {
         switch(this.RL) {
             case 0: //Counter latching operation
                 break;
@@ -166,11 +171,11 @@ class Intel8253Counter {
     }
 
     // TODO: 未使用？
-    setGate(gate) {
+    setGate(gate:boolean):void {
         this.gate = gate;
     }
 
-    count(count) {
+    count(count:number):void {
         var prevOut = this.out;
         switch(this.MODE) {
             case 0:
@@ -216,14 +221,6 @@ class Intel8253Counter {
         if(!prevOut && this.out) {
             this.fireEvent("timeup");
         }
-    }
-    addEventListener(evt, handler) {
-        this._handlers[evt].push(handler);
-    }
-    fireEvent(evt) {
-        this._handlers[evt].forEach(function(handler) {
-            handler();
-        });
     }
 }
 module.exports = Intel8253;

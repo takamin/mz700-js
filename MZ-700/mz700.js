@@ -25,14 +25,10 @@ const MZ700 = function(opt) {
 
     // Create 8253
     this.intel8253 = new Intel8253();
-    this.intel8253.counter[1].counter = 15700;
-    this.intel8253.counter[1].value = 15700;
-    this.intel8253.counter[1].addEventListener("timeup", () => {
-        this.intel8253.counter[2].count(1);
+    this.intel8253.counter(1).initCount(15700, () => {
+        this.intel8253.counter(2).count(1);
     });
-    this.intel8253.counter[2].counter = 43200;
-    this.intel8253.counter[2].value = 43200;
-    this.intel8253.counter[2].addEventListener("timeup", () => {
+    this.intel8253.counter(1).initCount(43200, () => {
         if(this.INTMSK) {
             this.z80.interrupt();
         }
@@ -41,7 +37,7 @@ const MZ700 = function(opt) {
     //HBLNK F/F in 15.7 kHz
     this.hblank = new FlipFlopCounter(MZ700.Z80_CLOCK / 15700);
     this.hblank.addEventListener("change", () => {
-        this.intel8253.counter[1].count(1);
+        this.intel8253.counter(1).count(1);
     });
 
     //VBLNK F/F in 50 Hz
@@ -246,22 +242,22 @@ const MZ700 = function(opt) {
     };
     //MMIO $E004
     this.mmioMap[0xE004 - 0xE000] = {
-        r: (/*address, value*/) => this.intel8253.counter[0].read(),
+        r: (/*address, value*/) => this.intel8253.counter(0).read(),
         w: (address, value) => {
-            if(this.intel8253.counter[0].load(value) && this.MLDST) {
-                this.opt.startSound(895000 / this.intel8253.counter[0].value);
+            if(this.intel8253.counter(0).load(value) && this.MLDST) {
+                this.opt.startSound(895000 / this.intel8253.counter(0).value);
             }
         },
     };
     //MMIO $E005
     this.mmioMap[0xE005 - 0xE000] = {
-        r: (/*address, value*/) => this.intel8253.counter[1].read(),
-        w: (address, value) => this.intel8253.counter[1].load(value),
+        r: (/*address, value*/) => this.intel8253.counter(1).read(),
+        w: (address, value) => this.intel8253.counter(1).load(value),
     };
     //MMIO $E006
     this.mmioMap[0xE006 - 0xE000] = {
-        r: (/*address, value*/) => this.intel8253.counter[2].read(),
-        w: (address, value) => this.intel8253.counter[2].load(value),
+        r: (/*address, value*/) => this.intel8253.counter(2).read(),
+        w: (address, value) => this.intel8253.counter(2).load(value),
     };
     //MMIO $E007
     this.mmioMap[0xE007 - 0xE000] = {
@@ -282,7 +278,7 @@ const MZ700 = function(opt) {
         },
         w: (address, value) => {
             if((this.MLDST = ((value & 0x01) != 0)) == true) {
-                this.opt.startSound(895000 / this.intel8253.counter[0].value);
+                this.opt.startSound(895000 / this.intel8253.counter(0).value);
             } else {
                 this.opt.stopSound();
             }

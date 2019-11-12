@@ -77,7 +77,7 @@ const ToolWindow = require("../lib/tool-window.js");
 
     // MZ-700 Screen
     const mz700screen = $(".MZ-700-body .screen")
-        .mz700scrn("create", { CG: new MZ700CG(), })
+        .mz700scrn("create", { CG: new MZ700CG(MZ700CG.ROM, 8, 8) })
         .mz700scrn("mz700js", mz700js).hide();
     mz700screen.find("canvas").css("height", "calc(100% - 1px)");
 
