@@ -19,10 +19,10 @@ export default class mz700cg {
     _patternBuffer:Array<Array<number>>;
     _width:number;
     _height:number;
-    constructor(patternBuffer, width, height) {
-        patternBuffer = patternBuffer || mz700cg.ROM;
-        width = width || 8;
-        height = height || 8;
+    constructor(patternBuffer:Array<Array<number>>, width:number, height:number) {
+        patternBuffer = patternBuffer;
+        width = width;
+        height = height;
         this._fontTable = null;
         this._patternBuffer = patternBuffer;
         this._width = width;

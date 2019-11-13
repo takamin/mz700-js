@@ -1,22 +1,24 @@
 "use strict";
-//
-// FlipFlopCounter
-//
-export default class FlipFlopCounter {
+import EventDispatcher from "./event-dispatcher";
+
+/**
+ * FlipFlopCounter
+ */
+export default class FlipFlopCounter extends EventDispatcher {
     _handlers:object;
     _out:boolean;
     _counter:number;
     _counter_max:number;
 
     constructor(count:number) {
+        super();
+        this.declareEvent("change");
+
         this.initialize();
         this._counter_max = count;
-        this._handlers = {
-            change: []
-        };
     }
 
-    initialize() {
+    initialize():void {
         this._out = false;
         this._counter = 0;
     }
@@ -34,16 +36,6 @@ export default class FlipFlopCounter {
             return true;
         }
         return false;
-    }
-
-    addEventListener(evt:string, handler:Function) {
-        this._handlers[evt].push(handler);
-    };
-
-    fireEvent(evt:string) {
-        this._handlers[evt].forEach(function(handler) {
-            handler();
-        });
     }
 }
 module.exports = FlipFlopCounter;
