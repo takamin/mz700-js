@@ -94,7 +94,7 @@ const MZ700 = function(opt) {
                     this.opt.onUpdateScreen(this._screenUpdateData);
                     this._screenUpdateData = {};
                     this._vramTxTid = null;
-                }, 100);
+                }, 10);
             }
         },
         onMmioRead: (/*address, value*/) => { },

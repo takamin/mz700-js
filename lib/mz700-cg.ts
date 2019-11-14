@@ -74,7 +74,9 @@ export default class mz700cg {
                 var attr = (atb << 7) | (fg << 4) | bg;
                 const index0 = mz700cg.tableIndex(attr | 0x00, dispCode);
                 const index1 = mz700cg.tableIndex(attr | 0x08, dispCode);
-                const font = new FontImage(pattern, mz700cg.Colors[fg], mz700cg.Colors[bg], this._width, this._height);
+                const font = new FontImage(pattern,
+                    mz700cg.Colors[fg], mz700cg.Colors[bg],
+                    this._width, this._height);
                 this._fontTable[index0] = font;
                 this._fontTable[index1] = font;
             }
@@ -135,15 +137,15 @@ export default class mz700cg {
     // Color table
     // [Black, Blue, Red, Magenta, Green, Cyan, Yellow, White]
     //
-    static Colors:Array<string> = [
-        "rgb(0,0,0)",
-        "rgb(0,0,255)",
-        "rgb(255,0,0)",
-        "rgb(255,0,255)",
-        "rgb(0,255,0)",
-        "rgb(0,255,255)",
-        "rgb(255,255,0)",
-        "rgb(255,255,255)",
+    static Colors:Array<{R:number,G:number,B:number,A:number}> = [
+        {R:0x00, G:0x00, B:0x00, A: 0xff},
+        {R:0x00, G:0x00, B:0xff, A: 0xff},
+        {R:0xff, G:0x00, B:0x00, A: 0xff},
+        {R:0xff, G:0x00, B:0xff, A: 0xff},
+        {R:0x00, G:0xff, B:0x00, A: 0xff},
+        {R:0x00, G:0xff, B:0xff, A: 0xff},
+        {R:0xff, G:0xff, B:0x00, A: 0xff},
+        {R:0xff, G:0xff, B:0xff, A: 0xff},
     ];
 
     //
@@ -700,26 +702,38 @@ export default class mz700cg {
  */
 class FontImage {
     getImageData:Function;
-    constructor(pattern, fg, bg, width, height) {
+    constructor(
+        pattern:Array<number>,
+        fg:{R:number,G:number,B:number,A:number},
+        bg:{R:number,G:number,B:number,A:number},
+        width:number,
+        height:number)
+    {
         this.getImageData = () => {
-            const canvas:HTMLCanvasElement = document.createElement("CANVAS") as HTMLCanvasElement;
-            canvas.setAttribute("width", width + "px");
-            canvas.setAttribute("height", height + "px");
-            var ctx = canvas.getContext("2d");
-            for(var row = 0; row < 8; row++) {
-                var bits = pattern[row];
-                for(var col = 0; col < 8; col++) {
+            const buf:Array<number> = Array(width * 4 * height).fill(0);
+            let index = 0;
+            for(let row = 0; row < 8; row++) {
+                const bits = pattern[row];
+                for(let col = 0; col < 8; col++) {
                     if((bits & (0x80 >> col)) != 0) {
-                        ctx.fillStyle = fg;
+                        buf[index + 0] = fg.R;
+                        buf[index + 1] = fg.G;
+                        buf[index + 2] = fg.B;
+                        buf[index + 3] = fg.A;
                     } else {
-                        ctx.fillStyle = bg;
+                        buf[index + 0] = bg.R;
+                        buf[index + 1] = bg.G;
+                        buf[index + 2] = bg.B;
+                        buf[index + 3] = bg.A;
                     }
-                    ctx.fillRect(col, row, 1, 1);
+                    index += 4;
                 }
             }
-            this.getImageData = function() {
-                return ctx.getImageData(0, 0, width, height);
-            };
+
+            const array = Uint8ClampedArray.from(buf);
+            const imageData = new ImageData(array, width, height);
+            this.getImageData = () => imageData;
+
             return this.getImageData();
         };
     }
