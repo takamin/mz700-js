@@ -28,7 +28,7 @@ const MZ700 = function(opt) {
     this.intel8253.counter(1).initCount(15700, () => {
         this.intel8253.counter(2).count(1);
     });
-    this.intel8253.counter(1).initCount(43200, () => {
+    this.intel8253.counter(2).initCount(43200, () => {
         if(this.INTMSK) {
             this.z80.interrupt();
         }
