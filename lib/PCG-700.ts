@@ -2,6 +2,7 @@
 
 import mz700cg from "./mz700-cg";
 import mz700scrn from "./mz700-scrn";
+import MZ700CanvasRenderer from "./mz700-canvas-renderer";
 
 //
 // http://www.maroon.dti.ne.jp/youkan/mz700/mziomap.html
@@ -29,7 +30,7 @@ export default class PCG700 {
     static SSW:number = 0x08;
     static ADDR:number = 0x07;
 
-    _screen:mz700scrn;
+    _screen:MZ700CanvasRenderer;
     addr:number = 0x000;
     pattern:number = 0x00;
     we:number = 0;
@@ -41,7 +42,7 @@ export default class PCG700 {
      * @param {mz700scrn} screen object.
      * @constructor
      */
-    constructor(screen:mz700scrn) {
+    constructor(screen:MZ700CanvasRenderer) {
         this._screen = screen;
 
         //Copy original CGROM

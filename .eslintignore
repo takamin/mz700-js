@@ -13,6 +13,7 @@
 /lib/mz-mmio.js
 /lib/mz-tape.js
 /lib/mz-tape-header.js
+/lib/mz700-canvas-renderer.js
 /lib/mz700-cg.js
 /lib/mz700-scrn.js
 /lib/mz700-charcode.js
