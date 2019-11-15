@@ -10,9 +10,16 @@
 /lib/flip-flop-counter.js
 /lib/ic556.js
 /lib/intel-8253.js
+/lib/event-dispatcher.js
+/lib/mz-mmio.js
+/lib/mz-tape.js
+/lib/mz-tape-header.js
+/lib/mz700-canvas-renderer.js
 /lib/mz700-cg.js
+/lib/mz700-scrn.js
 /lib/mz700-charcode.js
 /lib/oct.js
+/lib/PCG-700.js
 /lib/parse-addr.js
 /lib/parse-request.js
 /lib/user-agent-util.js

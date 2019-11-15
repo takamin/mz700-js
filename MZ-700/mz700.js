@@ -1,17 +1,17 @@
-var FractionalTimer = require("fractional-timer");
-var MZ_TapeHeader   = require('../lib/mz-tape-header');
-var MZ_Tape         = require('../lib/mz-tape');
-var MZ_DataRecorder = require('../lib/mz-data-recorder');
-var Intel8253       = require('../lib/intel-8253');
-var FlipFlopCounter = require('../lib/flip-flop-counter');
-var IC556           = require('../lib/ic556');
-var MZ700KeyMatrix  = require('./mz700-key-matrix');
-var MZ700_Memory    = require("./mz700-memory.js");
-var Z80             = require('../Z80/Z80.js');
-var Z80LineAssembler = require("../Z80/Z80-line-assembler");
+"use strict";
+const FractionalTimer = require("fractional-timer");
+const MZ_TapeHeader   = require('../lib/mz-tape-header');
+const MZ_Tape         = require('../lib/mz-tape');
+const MZ_DataRecorder = require('../lib/mz-data-recorder');
+const Intel8253       = require('../lib/intel-8253');
+const FlipFlopCounter = require('../lib/flip-flop-counter');
+const IC556           = require('../lib/ic556');
+const MZ700KeyMatrix  = require('./mz700-key-matrix');
+const MZ700_Memory    = require("./mz700-memory.js");
+const Z80             = require('../Z80/Z80.js');
+const Z80LineAssembler = require("../Z80/Z80-line-assembler");
 
-var MZ700 = function(opt) {
-    "use strict";
+const MZ700 = function(opt) {
 
     // Screen update buffer
     this._screenUpdateData = {};
@@ -25,14 +25,10 @@ var MZ700 = function(opt) {
 
     // Create 8253
     this.intel8253 = new Intel8253();
-    this.intel8253.counter[1].counter = 15700;
-    this.intel8253.counter[1].value = 15700;
-    this.intel8253.counter[1].addEventListener("timeup", () => {
-        this.intel8253.counter[2].count(1);
+    this.intel8253.counter(1).initCount(15700, () => {
+        this.intel8253.counter(2).count(1);
     });
-    this.intel8253.counter[2].counter = 43200;
-    this.intel8253.counter[2].value = 43200;
-    this.intel8253.counter[2].addEventListener("timeup", () => {
+    this.intel8253.counter(2).initCount(43200, () => {
         if(this.INTMSK) {
             this.z80.interrupt();
         }
@@ -41,7 +37,7 @@ var MZ700 = function(opt) {
     //HBLNK F/F in 15.7 kHz
     this.hblank = new FlipFlopCounter(MZ700.Z80_CLOCK / 15700);
     this.hblank.addEventListener("change", () => {
-        this.intel8253.counter[1].count(1);
+        this.intel8253.counter(1).count(1);
     });
 
     //VBLNK F/F in 50 Hz
@@ -62,7 +58,7 @@ var MZ700 = function(opt) {
 
     this.MLDST = false;
 
-    var motorOffDelayTid = null;
+    let motorOffDelayTid = null;
     this.dataRecorder = new MZ_DataRecorder(motorState => {
         if(motorState) {
             if(motorOffDelayTid != null) {
@@ -98,7 +94,7 @@ var MZ700 = function(opt) {
                     this.opt.onUpdateScreen(this._screenUpdateData);
                     this._screenUpdateData = {};
                     this._vramTxTid = null;
-                }, 100);
+                }, 10);
             }
         },
         onMmioRead: (/*address, value*/) => { },
@@ -125,7 +121,7 @@ var MZ700 = function(opt) {
     this._cycleToWait = 0;
 
     this.mmioMap = [];
-    for(var address = 0xE000; address < 0xE800; address++) {
+    for(let address = 0xE000; address < 0xE800; address++) {
         //this.mmioMap.push({ "r": (()=>{}), "w": (()=>{}) });
         this.mmioMap.push({
             "r": this.opt.onMmioRead,
@@ -223,7 +219,7 @@ var MZ700 = function(opt) {
             if((value & 0x80) == 0) {
                 const bit = ((value & 0x01) != 0);
                 const bitno = (value & 0x0e) >> 1;
-                //var name = [
+                //const name = [
                 //    "SOUNDMSK(MZ-1500)",
                 //    "WDATA","INTMSK","M-ON",
                 //    "MOTOR","RDATA", "556 OUT", "VBLK"][bitno];
@@ -246,22 +242,22 @@ var MZ700 = function(opt) {
     };
     //MMIO $E004
     this.mmioMap[0xE004 - 0xE000] = {
-        r: (/*address, value*/) => this.intel8253.counter[0].read(),
+        r: (/*address, value*/) => this.intel8253.counter(0).read(),
         w: (address, value) => {
-            if(this.intel8253.counter[0].load(value) && this.MLDST) {
-                this.opt.startSound(895000 / this.intel8253.counter[0].value);
+            if(this.intel8253.counter(0).load(value) && this.MLDST) {
+                this.opt.startSound(895000 / this.intel8253.counter(0).value);
             }
         },
     };
     //MMIO $E005
     this.mmioMap[0xE005 - 0xE000] = {
-        r: (/*address, value*/) => this.intel8253.counter[1].read(),
-        w: (address, value) => this.intel8253.counter[1].load(value),
+        r: (/*address, value*/) => this.intel8253.counter(1).read(),
+        w: (address, value) => this.intel8253.counter(1).load(value),
     };
     //MMIO $E006
     this.mmioMap[0xE006 - 0xE000] = {
-        r: (/*address, value*/) => this.intel8253.counter[2].read(),
-        w: (address, value) => this.intel8253.counter[2].load(value),
+        r: (/*address, value*/) => this.intel8253.counter(2).read(),
+        w: (address, value) => this.intel8253.counter(2).load(value),
     };
     //MMIO $E007
     this.mmioMap[0xE007 - 0xE000] = {
@@ -282,7 +278,7 @@ var MZ700 = function(opt) {
         },
         w: (address, value) => {
             if((this.MLDST = ((value & 0x01) != 0)) == true) {
-                this.opt.startSound(895000 / this.intel8253.counter[0].value);
+                this.opt.startSound(895000 / this.intel8253.counter(0).value);
             } else {
                 this.opt.stopSound();
             }
@@ -327,7 +323,7 @@ MZ700.Z80_CLOCK = 3.579545 * 1000000;// 3.58 MHz
 MZ700.DEFAULT_TIMER_INTERVAL = 1.0 / MZ700.Z80_CLOCK;
 
 MZ700.prototype.writeAsmCode = function(assembled) {
-    for(var i = 0; i < assembled.buffer.length; i++) {
+    for(let i = 0; i < assembled.buffer.length; i++) {
         this.memory.poke(
                 assembled.min_addr + i,
                 assembled.buffer[i]);
@@ -338,7 +334,7 @@ MZ700.prototype.writeAsmCode = function(assembled) {
 MZ700.prototype.exec = function(execCount) {
     execCount = execCount || 1;
     try {
-        for(var i = 0; i < execCount; i++) {
+        for(let i = 0; i < execCount; i++) {
             this.z80.exec();
             this.clock();
         }
@@ -383,7 +379,7 @@ MZ700.prototype.setCassetteTape = function(tape_data) {
  * @returns {Buffer|null} CMT data buffer
  */
 MZ700.prototype.getCassetteTape = function() {
-    var cmt = this.dataRecorder.getCmt();
+    const cmt = this.dataRecorder.getCmt();
     if(cmt == null) {
         return null;
     }
@@ -391,9 +387,9 @@ MZ700.prototype.getCassetteTape = function() {
 };
 
 MZ700.prototype.loadCassetteTape = function() {
-    for(var i = 0; i < this.mzt_array.length; i++) {
-        var mzt = this.mzt_array[i];
-        for(var j = 0; j < mzt.header.file_size; j++) {
+    for(let i = 0; i < this.mzt_array.length; i++) {
+        const mzt = this.mzt_array[i];
+        for(let j = 0; j < mzt.header.file_size; j++) {
             this.memory.poke(mzt.header.addr_load + j, mzt.body.buffer[j]);
         }
     }
@@ -406,7 +402,7 @@ MZ700.prototype.reset = function() {
     this.memory.changeBlock1_VRAM();
 
     // Clear VRAM
-    for(var i = 0; i < 40 * 25; i++) {
+    for(let i = 0; i < 40 * 25; i++) {
         this.memory.poke(0xd000 + i, 0x00);
         this.memory.poke(0xd800 + i, 0x71);
     }
@@ -524,7 +520,7 @@ MZ700.disassemble = function(mztape_array) {
             "No MZT-header");
         let mzthead = mzt.header.getHeadline().split("\n");
         Array.prototype.push.apply(dasmlist, mzthead.map(line => {
-            var asmline = new Z80LineAssembler();
+            const asmline = new Z80LineAssembler();
             asmline.setComment(line);
             return asmline;
         }));
@@ -543,19 +539,18 @@ MZ700.disassemble = function(mztape_array) {
 };
 
 MZ700.prototype.dataRecorder_setCmt = function(bytes) {
-    var cmt = null;
     if(bytes.length == 0) {
-        cmt = [];
-    } else {
-        cmt = MZ_Tape.fromBytes(bytes);
+        this.dataRecorder.setCmt([]);
+        return [];
     }
+    const cmt = MZ_Tape.fromBytes(bytes);
     this.dataRecorder.setCmt(cmt);
     return cmt;
 };
 
 MZ700.prototype.dataRecorder_ejectCmt = function() {
     if(this.dataRecorder.isCmtSet()) {
-        var cmt = this.dataRecorder.ejectCmt();
+        const cmt = this.dataRecorder.ejectCmt();
         if(cmt != null) {
             return MZ_Tape.toBytes(cmt);
         }

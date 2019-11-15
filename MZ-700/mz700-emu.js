@@ -76,13 +76,53 @@ const ToolWindow = require("../lib/tool-window.js");
     mz700js.subscribe("onBreak", ()=> mz700js.stop());
 
     // MZ-700 Screen
-    const mz700screen = $(".MZ-700-body .screen")
-        .mz700scrn("create", { CG: new MZ700CG(), })
-        .mz700scrn("mz700js", mz700js).hide();
+    const mz700screen = $(".MZ-700-body .screen");
+    const canvas = document.createElement("CANVAS");
+    mz700screen.get(0).appendChild(canvas);
+    {
+        mz700screen.mz700scrn("create", {
+            canvas: canvas,
+            CG: new MZ700CG(MZ700CG.ROM, 8, 8),
+        });
+        if (!canvas.transferControlToOffscreen) {
+            mz700screen.mz700scrn("setupRendering");
+            mz700js.subscribe('onUpdateScreen', updateData => {
+                for (const addr of Object.keys(updateData)) {
+                    const chr = updateData[addr];
+                    mz700screen.mz700scrn("writeVram",
+                        parseInt(addr), chr.attr, chr.dispcode);
+                }
+            });
+        } else {
+            mz700js.subscribe('onUpdateScreen', (/*updateData*/) => {/*none*/});
+            const invokeMethod = (methodName, param, transferObjects) => {
+                return new Promise((resolve, reject) => {
+                    try {
+                        const queryId = mz700js.queryId++;
+                        mz700js.callbacks[queryId] = result => resolve(result);
+                        mz700js.messagePort.postMessage({
+                            method: methodName,
+                            param: param,
+                            uuid: mz700js._uuid,
+                            queryId: queryId
+                        }, transferObjects);
+                    } catch(err) {
+                        reject(err);
+                    }
+                });
+            };
+            const offscreenCanvas = canvas.transferControlToOffscreen();
+            await invokeMethod("transferScreenCanvas", [offscreenCanvas],
+                [offscreenCanvas]);
+        }
+    }
+    mz700screen.mz700scrn("mz700js", mz700js).hide();
     mz700screen.find("canvas").css("height", "calc(100% - 1px)");
 
     // MZ-700 Beep sound
     const mzBeep = new MZBeep(mz700js);
+    mz700js.subscribe("startSound", freq => mzBeep.startSound(freq[0]));
+    mz700js.subscribe("stopSound", () => mzBeep.stopSound());
 
     // Control panel
     const mz700container = $(".MZ-700-body");
