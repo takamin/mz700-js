@@ -8,6 +8,8 @@ const MZ700_MonitorRom = require("./mz700-new-monitor.js");
 const          MZ_Tape = require("../lib/mz-tape.js");
 const    MZ_TapeHeader = require("../lib/mz-tape-header.js");
 const     parseAddress = require("../lib/parse-addr.js");
+const           PCG700 = require("../lib/PCG-700.js");
+const           MZMMIO = require("../lib/mz-mmio.js");
 require("../lib/jquery.mz700-kb.js");
 require("../lib/jquery.Z80-reg.js");
 require("../lib/jquery.asmview.js");
@@ -93,8 +95,24 @@ const ToolWindow = require("../lib/tool-window.js");
                         parseInt(addr), chr.attr, chr.dispcode);
                 }
             });
+            {
+                // Setup PCG-700
+                const mzMMIO = new MZMMIO();
+                const pcg700 = new PCG700(mz700screen);
+                mz700js.subscribe("onMmioRead", (param) => {
+                    const { address, value } = param;
+                    mzMMIO.read(address, value);
+                });
+                mz700js.subscribe("onMmioWrite", (param) => {
+                    const { address, value } = param;
+                    mzMMIO.write(address, value);
+                });
+                pcg700.setupMMIO(mzMMIO);
+            }
         } else {
             mz700js.subscribe('onUpdateScreen', (/*updateData*/) => {/*none*/});
+            mz700js.subscribe("onMmioRead", (/*param*/) => {/*none*/});
+            mz700js.subscribe("onMmioWrite", (/*param*/) => {/*none*/});
             const invokeMethod = (methodName, param, transferObjects) => {
                 return new Promise((resolve, reject) => {
                     try {
@@ -116,7 +134,7 @@ const ToolWindow = require("../lib/tool-window.js");
                 [offscreenCanvas]);
         }
     }
-    mz700screen.mz700scrn("mz700js", mz700js).hide();
+    mz700screen.hide();
     mz700screen.find("canvas").css("height", "calc(100% - 1px)");
 
     // MZ-700 Beep sound
