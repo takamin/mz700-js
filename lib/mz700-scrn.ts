@@ -46,20 +46,6 @@ export default class mz700scrn extends MZ700CanvasRenderer {
             this._canvas.setAttribute("title", this.opt.title);
         }
     }
-    mz700js(mz700js:any):void {
-        // Setup PCG-700
-        const mzMMIO = new MZMMIO();
-        const pcg700 = new PCG700(this);
-        mz700js.subscribe("onMmioRead", (param) => {
-            const { address, value } = param;
-            mzMMIO.read(address, value);
-        });
-        mz700js.subscribe("onMmioWrite", (param) => {
-            const { address, value } = param;
-            mzMMIO.write(address, value);
-        });
-        pcg700.setupMMIO(mzMMIO);
-    }
 }
 
 module.exports = mz700scrn;

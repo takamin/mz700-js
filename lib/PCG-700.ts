@@ -1,7 +1,6 @@
 "use strict";
 
 import mz700cg from "./mz700-cg";
-import mz700scrn from "./mz700-scrn";
 import MZ700CanvasRenderer from "./mz700-canvas-renderer";
 
 //
@@ -39,7 +38,7 @@ export default class PCG700 {
     _cg:mz700cg;
 
     /**
-     * @param {mz700scrn} screen object.
+     * @param {MZ700CanvasRenderer} screen object.
      * @constructor
      */
     constructor(screen:MZ700CanvasRenderer) {

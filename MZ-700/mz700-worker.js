@@ -7,6 +7,8 @@ const TransWorker = require('transworker');
 const MZ700 = require('./mz700.js');
 const MZ700CanvasRenderer = require('../lib/mz700-canvas-renderer.js');
 const MZ700CG = require("../lib/mz700-cg.js");
+const PCG700 = require("../lib/PCG-700.js");
+const MZMMIO = require("../lib/mz-mmio.js");
 
 const transworker = new TransWorker();
 
@@ -17,6 +19,9 @@ MZ700.prototype.transferScreenCanvas = function(offscreenCanvas) {
         CG: new MZ700CG(MZ700CG.ROM, 8, 8),
     });
     transworker.mz700CanvasRenderer.setupRendering();
+    transworker.mzMMIO = new MZMMIO();
+    const pcg700 = new PCG700(transworker.mz700CanvasRenderer);
+    pcg700.setupMMIO(transworker.mzMMIO);
 };
 
 transworker.create(new MZ700({
@@ -43,10 +48,22 @@ transworker.create(new MZ700({
             transworker.postNotify( "onUpdateScreen", screenUpdateData);
         }
     },
-    onMmioRead: (address, value) => transworker.postNotify(
-        "onMmioRead", { address: address, value: value }),
-    onMmioWrite: (address, value) => transworker.postNotify(
-        "onMmioWrite", { address: address, value: value }),
+    onMmioRead: (address, value) => {
+        if(transworker.mz700CanvasRenderer) {
+            transworker.mzMMIO.read(address, value);
+        } else {
+            transworker.postNotify(
+                "onMmioRead", { address: address, value: value });
+        }
+    },
+    onMmioWrite: (address, value) => {
+        if(transworker.mz700CanvasRenderer) {
+            transworker.mzMMIO.write(address, value);
+        } else {
+            transworker.postNotify(
+                "onMmioWrite", { address: address, value: value });
+        }
+    },
     startSound: freq => transworker.postNotify("startSound", [ freq ]),
     stopSound: () => transworker.postNotify("stopSound"),
     onStartDataRecorder: () => transworker.postNotify("onStartDataRecorder"),
