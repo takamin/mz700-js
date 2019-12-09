@@ -40,16 +40,16 @@ var tests = [
     },
     function() {
         ["IX","IY"].forEach(function(idx) {
-            [0, 1, 127, 254, 255].forEach(function(d) {
-                for(var b = 0; b < 8; b++) {
-                    var mnemonic = "RES " + b + ",(" + idx + "+" + d + ")";
-                    var init = 0xff;
-                    var expect = 0xff & ~(1 << b);
-                    var addr = 0x100;
+            [0, 1, 127, -128, -1].forEach( d => {
+                for(let b = 0; b < 8; b++) {
+                    const mnemonic = `RES ${b},(${idx}${d>=0?"+":""}${d})`;
+                    const init = 0xff;
+                    const expect = 0xff & ~(1 << b);
+                    const addr = 0x100;
                     cpu.reg[idx] = addr;
                     cpu.memory.poke(addr + d, init);
                     tester.runMnemonics(cpu, [mnemonic]);
-                    var result = cpu.memory.peek(addr + d);
+                    const result = cpu.memory.peek(addr + d);
                     UnitTest.report(
                             "" + mnemonic + ": to " + NumberUtil.HEX(init, 2) + "H must be " + NumberUtil.HEX(expect, 2) + "H",
                             result == expect,
@@ -60,7 +60,7 @@ var tests = [
     }
 ];
 var test_set = [ ];
-module.exports = {
+UnitTest.test({
     name: "RES b,r",
     test: function() {
         for(var i = 0; i < tests.length; i++) {
@@ -68,5 +68,5 @@ module.exports = {
         }
     },
     test_set: test_set
-};
+});
 

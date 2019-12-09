@@ -64,7 +64,9 @@ registers_rr.forEach(function(rr) {
         return cpu.reg["get" + rr]() == 0x25;//00100101
     }});
 });
-module.exports = {
+
+const UnitTest = require("./UnitTest");
+UnitTest.test({
     name: "Rotate group",
     test_set: test_set
-};
+});

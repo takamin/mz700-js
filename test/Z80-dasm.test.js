@@ -1,8 +1,8 @@
-const NumberUtil = require("../lib/number-util.js");
-var UnitTest = require("./UnitTest");
-var Z80 = require('../Z80/Z80.js');
-var Z80_assemble = require('../Z80/assembler');
-var line_asm_test_pattern = [
+//"use strict";
+const assert = require("chai").assert;
+const Z80 = require('../Z80/Z80.js');
+const Z80LineAssembler = require("../Z80/Z80-line-assembler.js");
+const test_pattern = [
     { code:[0x00], mnemonic:"NOP" },
     { code:[0x01, 0x34, 0x12], mnemonic:"LD BC,1234H" },
     { code:[0x02], mnemonic:"LD (BC),A" },
@@ -24,7 +24,7 @@ var line_asm_test_pattern = [
     { code:[0x1D], mnemonic:"DEC E" },
     { code:[0x1E, 0x12], mnemonic:"LD E,12H" },
     { code:[0x21, 0x34, 0x12], mnemonic:"LD HL,1234H" },
-    { code:[0x22, 0x34, 0x12], mnemonic:"LD (1234H), HL" },
+    { code:[0x22, 0x34, 0x12], mnemonic:"LD (1234H),HL" },
     { code:[0x24], mnemonic:"INC H" },
     { code:[0x25], mnemonic:"DEC H" },
     { code:[0x26, 0x12], mnemonic:"LD H,12H" },
@@ -178,26 +178,24 @@ var line_asm_test_pattern = [
     { code:[0xD9], mnemonic:"EXX" },
     { code:[0xDD, 0x21, 0x34, 0x12], mnemonic:"LD IX,1234H" },
     { code:[0xDD, 0x2A, 0x34, 0x12], mnemonic:"LD IX,(1234H)" },
-    { code:[0xDD, 0x34, 0x23], mnemonic:"INC (IX+23H)" },
-    { code:[0xDD, 0x34, 0x23], mnemonic:"INC (IX+ 23H)" },
-    { code:[0xDD, 0x35, 0x23], mnemonic:"DEC (IX+ 23H)" },
-    { code:[0xDD, 0x35, 0x23], mnemonic:"DEC (IX+23H)" },
-    { code:[0xDD, 0x36, 0x23, 0x12], mnemonic:"LD (IX+23H),12H" },
-    { code:[0xDD, 0x70, 0x23], mnemonic:"LD (IX+23H),B" },
-    { code:[0xDD, 0x71, 0x23], mnemonic:"LD (IX+23H),C" },
-    { code:[0xDD, 0x72, 0x23], mnemonic:"LD (IX+23H),D" },
-    { code:[0xDD, 0x73, 0x23], mnemonic:"LD (IX+23H),E" },
-    { code:[0xDD, 0x74, 0x23], mnemonic:"LD (IX+23H),H" },
-    { code:[0xDD, 0x75, 0x23], mnemonic:"LD (IX+23H),L" },
-    { code:[0xDD, 0x77, 0x23], mnemonic:"LD (IX+23H),A" },
-    { code:[0xDD, 0x86, 0x23], mnemonic:"ADD A,(IX+23H)" },
-    { code:[0xDD, 0x8E, 0x23], mnemonic:"ADC A,(IX+23H)" },
-    { code:[0xDD, 0x96, 0x23], mnemonic:"SUB A,(IX+23H)" },
-    { code:[0xDD, 0x9E, 0x23], mnemonic:"SBC A,(IX+23H)" },
-    { code:[0xDD, 0xA6, 0x23], mnemonic:"AND (IX+23H)" },
-    { code:[0xDD, 0xAE, 0x23], mnemonic:"XOR (IX+23H)" },
-    { code:[0xDD, 0xB6, 0x23], mnemonic:"OR (IX+23H)" },
-    { code:[0xDD, 0xBE, 0x23], mnemonic:"CP (IX+23H)" },
+    { code:[0xDD, 0x34, 0x23], mnemonic:"INC (IX+35)" },
+    { code:[0xDD, 0x35, 0x23], mnemonic:"DEC (IX+35)" },
+    { code:[0xDD, 0x36, 0x23, 0x12], mnemonic:"LD (IX+35),12H" },
+    { code:[0xDD, 0x70, 0x23], mnemonic:"LD (IX+35),B" },
+    { code:[0xDD, 0x71, 0x23], mnemonic:"LD (IX+35),C" },
+    { code:[0xDD, 0x72, 0x23], mnemonic:"LD (IX+35),D" },
+    { code:[0xDD, 0x73, 0x23], mnemonic:"LD (IX+35),E" },
+    { code:[0xDD, 0x74, 0x23], mnemonic:"LD (IX+35),H" },
+    { code:[0xDD, 0x75, 0x23], mnemonic:"LD (IX+35),L" },
+    { code:[0xDD, 0x77, 0x23], mnemonic:"LD (IX+35),A" },
+    { code:[0xDD, 0x86, 0x23], mnemonic:"ADD A,(IX+35)" },
+    { code:[0xDD, 0x8E, 0x23], mnemonic:"ADC A,(IX+35)" },
+    { code:[0xDD, 0x96, 0x23], mnemonic:"SUB A,(IX+35)" },
+    { code:[0xDD, 0x9E, 0x23], mnemonic:"SBC A,(IX+35)" },
+    { code:[0xDD, 0xA6, 0x23], mnemonic:"AND (IX+35)" },
+    { code:[0xDD, 0xAE, 0x23], mnemonic:"XOR (IX+35)" },
+    { code:[0xDD, 0xB6, 0x23], mnemonic:"OR (IX+35)" },
+    { code:[0xDD, 0xBE, 0x23], mnemonic:"CP (IX+35)" },
     { code:[0xDD, 0xE1], mnemonic:"POP IX" },
     { code:[0xDD, 0xE3], mnemonic:"EX (SP),IX" },
     { code:[0xDD, 0xE5], mnemonic:"PUSH IX" },
@@ -207,7 +205,7 @@ var line_asm_test_pattern = [
     { code:[0xE3], mnemonic:"EX (SP),HL" },
     { code:[0xE5], mnemonic:"PUSH HL" },
     { code:[0xE6, 0x12], mnemonic:"AND 12H" },
-    { code:[0xEB], mnemonic:"EX DE,HL " },
+    { code:[0xEB], mnemonic:"EX DE,HL" },
     { code:[0xED, 0x47], mnemonic:"LD I,A" },
     { code:[0xED, 0x4F], mnemonic:"LD R,A" },
     { code:[0xED, 0x57], mnemonic:"LD A,I" },
@@ -238,26 +236,26 @@ var line_asm_test_pattern = [
     { code:[0xF9], mnemonic:"LD SP,HL" },
     { code:[0xFD, 0x21, 0x34, 0x12], mnemonic:"LD IY,1234H" },
     { code:[0xFD, 0x2A, 0x34, 0x12], mnemonic:"LD IY,(1234H)" },
-    { code:[0xFD, 0x34, 0x23], mnemonic:"INC (IY+23H)" },
-    { code:[0xFD, 0x35, 0x23], mnemonic:"DEC (IY+23H)" },
-    { code:[0xFD, 0x36, 0x23, 0x12], mnemonic:"LD (IY+23H),12H" },
+    { code:[0xFD, 0x34, 0x23], mnemonic:"INC (IY+35)" },
+    { code:[0xFD, 0x35, 0x23], mnemonic:"DEC (IY+35)" },
+    { code:[0xFD, 0x36, 0x23, 0x12], mnemonic:"LD (IY+35),12H" },
     { code:[0xFD, 0x70, 0xff], mnemonic:"LD (IY-1),B" },
     { code:[0xFD, 0x70, 0x80], mnemonic:"LD (IY-128),B" },
-    { code:[0xFD, 0x70, 0x23], mnemonic:"LD (IY+23H),B" },
-    { code:[0xFD, 0x71, 0x23], mnemonic:"LD (IY+23H),C" },
-    { code:[0xFD, 0x72, 0x23], mnemonic:"LD (IY+23H),D" },
-    { code:[0xFD, 0x73, 0x23], mnemonic:"LD (IY+23H),E" },
-    { code:[0xFD, 0x74, 0x23], mnemonic:"LD (IY+23H),H" },
-    { code:[0xFD, 0x75, 0x23], mnemonic:"LD (IY+23H),L" },
-    { code:[0xFD, 0x77, 0x23], mnemonic:"LD (IY+23H),A" },
-    { code:[0xFD, 0x86, 0x23], mnemonic:"ADD A,(IY+23H)" },
-    { code:[0xFD, 0x8E, 0x23], mnemonic:"ADC A,(IY+23H)" },
-    { code:[0xFD, 0x96, 0x23], mnemonic:"SUB A,(IY+23H)" },
-    { code:[0xFD, 0x9E, 0x23], mnemonic:"SBC A,(IY+23H)" },
-    { code:[0xFD, 0xA6, 0x23], mnemonic:"AND (IY+23H)" },
-    { code:[0xFD, 0xAE, 0x23], mnemonic:"XOR (IY+23H)" },
-    { code:[0xFD, 0xB6, 0x23], mnemonic:"OR (IY+23H)" },
-    { code:[0xFD, 0xBE, 0x23], mnemonic:"CP (IY+23H)" },
+    { code:[0xFD, 0x70, 0x23], mnemonic:"LD (IY+35),B" },
+    { code:[0xFD, 0x71, 0x23], mnemonic:"LD (IY+35),C" },
+    { code:[0xFD, 0x72, 0x23], mnemonic:"LD (IY+35),D" },
+    { code:[0xFD, 0x73, 0x23], mnemonic:"LD (IY+35),E" },
+    { code:[0xFD, 0x74, 0x23], mnemonic:"LD (IY+35),H" },
+    { code:[0xFD, 0x75, 0x23], mnemonic:"LD (IY+35),L" },
+    { code:[0xFD, 0x77, 0x23], mnemonic:"LD (IY+35),A" },
+    { code:[0xFD, 0x86, 0x23], mnemonic:"ADD A,(IY+35)" },
+    { code:[0xFD, 0x8E, 0x23], mnemonic:"ADC A,(IY+35)" },
+    { code:[0xFD, 0x96, 0x23], mnemonic:"SUB A,(IY+35)" },
+    { code:[0xFD, 0x9E, 0x23], mnemonic:"SBC A,(IY+35)" },
+    { code:[0xFD, 0xA6, 0x23], mnemonic:"AND (IY+35)" },
+    { code:[0xFD, 0xAE, 0x23], mnemonic:"XOR (IY+35)" },
+    { code:[0xFD, 0xB6, 0x23], mnemonic:"OR (IY+35)" },
+    { code:[0xFD, 0xBE, 0x23], mnemonic:"CP (IY+35)" },
     { code:[0xFD, 0xE1], mnemonic:"POP IY" },
     { code:[0xFD, 0xE3], mnemonic:"EX (SP),IY" },
     { code:[0xFD, 0xE5], mnemonic:"PUSH IY" },
@@ -317,8 +315,8 @@ var line_asm_test_pattern = [
     { code:[0313, 0025], mnemonic:"RL L" },
     { code:[0313, 0027], mnemonic:"RL A" },
     { code:[0313, 0026], mnemonic:"RL (HL)" },
-    { code:[0335, 0313, 0x7f, 0026], mnemonic:"RL (IX+7fH)" },
-    { code:[0375, 0313, 0x01, 0026], mnemonic:"RL (IY+01H)" },
+    { code:[0335, 0313, 0x7f, 0026], mnemonic:"RL (IX+127)" },
+    { code:[0375, 0313, 0x01, 0026], mnemonic:"RL (IY+1)" },
     { code:[0313, 0010], mnemonic:"RRC B" },
     { code:[0313, 0011], mnemonic:"RRC C" },
     { code:[0313, 0012], mnemonic:"RRC D" },
@@ -327,8 +325,8 @@ var line_asm_test_pattern = [
     { code:[0313, 0015], mnemonic:"RRC L" },
     { code:[0313, 0017], mnemonic:"RRC A" },
     { code:[0313, 0016], mnemonic:"RRC (HL)" },
-    { code:[0335, 0313, 0x7f, 0016], mnemonic:"RRC (IX+7fH)" },
-    { code:[0375, 0313, 0x01, 0016], mnemonic:"RRC (IY+01H)" },
+    { code:[0335, 0313, 0x7f, 0016], mnemonic:"RRC (IX+127)" },
+    { code:[0375, 0313, 0x01, 0016], mnemonic:"RRC (IY+1)" },
     { code:[0313, 0030], mnemonic:"RR B" },
     { code:[0313, 0031], mnemonic:"RR C" },
     { code:[0313, 0032], mnemonic:"RR D" },
@@ -337,8 +335,8 @@ var line_asm_test_pattern = [
     { code:[0313, 0035], mnemonic:"RR L" },
     { code:[0313, 0037], mnemonic:"RR A" },
     { code:[0313, 0036], mnemonic:"RR (HL)" },
-    { code:[0335, 0313, 0x7f, 0036], mnemonic:"RR (IX+7fH)" },
-    { code:[0375, 0313, 0x01, 0036], mnemonic:"RR (IY+01H)" },
+    { code:[0335, 0313, 0x7f, 0036], mnemonic:"RR (IX+127)" },
+    { code:[0375, 0313, 0x01, 0036], mnemonic:"RR (IY+1)" },
     { code:[0313, 0040], mnemonic:"SLA B" },
     { code:[0313, 0041], mnemonic:"SLA C" },
     { code:[0313, 0042], mnemonic:"SLA D" },
@@ -347,8 +345,8 @@ var line_asm_test_pattern = [
     { code:[0313, 0045], mnemonic:"SLA L" },
     { code:[0313, 0047], mnemonic:"SLA A" },
     { code:[0313, 0046], mnemonic:"SLA (HL)" },
-    { code:[0335, 0313, 0x7f, 0046], mnemonic:"SLA (IX+7fH)" },
-    { code:[0375, 0313, 0x01, 0046], mnemonic:"SLA (IY+01H)" },
+    { code:[0335, 0313, 0x7f, 0046], mnemonic:"SLA (IX+127)" },
+    { code:[0375, 0313, 0x01, 0046], mnemonic:"SLA (IY+1)" },
     { code:[0313, 0050], mnemonic:"SRA B" },
     { code:[0313, 0051], mnemonic:"SRA C" },
     { code:[0313, 0052], mnemonic:"SRA D" },
@@ -357,8 +355,8 @@ var line_asm_test_pattern = [
     { code:[0313, 0055], mnemonic:"SRA L" },
     { code:[0313, 0057], mnemonic:"SRA A" },
     { code:[0313, 0056], mnemonic:"SRA (HL)" },
-    { code:[0335, 0313, 0x7f, 0056], mnemonic:"SRA (IX+7fH)" },
-    { code:[0375, 0313, 0x01, 0056], mnemonic:"SRA (IY+01H)" },
+    { code:[0335, 0313, 0x7f, 0056], mnemonic:"SRA (IX+127)" },
+    { code:[0375, 0313, 0x01, 0056], mnemonic:"SRA (IY+1)" },
     { code:[0313, 0070], mnemonic:"SRL B" },
     { code:[0313, 0071], mnemonic:"SRL C" },
     { code:[0313, 0072], mnemonic:"SRL D" },
@@ -367,8 +365,8 @@ var line_asm_test_pattern = [
     { code:[0313, 0075], mnemonic:"SRL L" },
     { code:[0313, 0077], mnemonic:"SRL A" },
     { code:[0313, 0076], mnemonic:"SRL (HL)" },
-    { code:[0335, 0313, 0x7f, 0076], mnemonic:"SRL (IX+7fH)" },
-    { code:[0375, 0313, 0x01, 0076], mnemonic:"SRL (IY+01H)" },
+    { code:[0335, 0313, 0x7f, 0076], mnemonic:"SRL (IX+127)" },
+    { code:[0375, 0313, 0x01, 0076], mnemonic:"SRL (IY+1)" },
     { code:[0355, 0157], mnemonic:"RLD" },
     { code:[0355, 0147], mnemonic:"RRD" },
 
@@ -444,23 +442,23 @@ var line_asm_test_pattern = [
     { code:[0313, 0166], mnemonic:"BIT 6,(HL)" },
     { code:[0313, 0176], mnemonic:"BIT 7,(HL)" },
 
-    { code:[0335, 0313, 0x89, 0106], mnemonic:"BIT 0,(IX+89H)" },
-    { code:[0335, 0313, 0x89, 0116], mnemonic:"BIT 1,(IX+89H)" },
-    { code:[0335, 0313, 0x89, 0126], mnemonic:"BIT 2,(IX+89H)" },
-    { code:[0335, 0313, 0x89, 0136], mnemonic:"BIT 3,(IX+89H)" },
-    { code:[0335, 0313, 0x89, 0146], mnemonic:"BIT 4,(IX+89H)" },
-    { code:[0335, 0313, 0x89, 0156], mnemonic:"BIT 5,(IX+89H)" },
-    { code:[0335, 0313, 0x89, 0166], mnemonic:"BIT 6,(IX+89H)" },
-    { code:[0335, 0313, 0x89, 0176], mnemonic:"BIT 7,(IX+89H)" },
+    { code:[0335, 0313, 0x89, 0106], mnemonic:"BIT 0,(IX-119)" },
+    { code:[0335, 0313, 0x89, 0116], mnemonic:"BIT 1,(IX-119)" },
+    { code:[0335, 0313, 0x89, 0126], mnemonic:"BIT 2,(IX-119)" },
+    { code:[0335, 0313, 0x89, 0136], mnemonic:"BIT 3,(IX-119)" },
+    { code:[0335, 0313, 0x89, 0146], mnemonic:"BIT 4,(IX-119)" },
+    { code:[0335, 0313, 0x89, 0156], mnemonic:"BIT 5,(IX-119)" },
+    { code:[0335, 0313, 0x89, 0166], mnemonic:"BIT 6,(IX-119)" },
+    { code:[0335, 0313, 0x89, 0176], mnemonic:"BIT 7,(IX-119)" },
 
-    { code:[0375, 0313, 0x89, 0106], mnemonic:"BIT 0,(IY+89H)" },
-    { code:[0375, 0313, 0x89, 0116], mnemonic:"BIT 1,(IY+89H)" },
-    { code:[0375, 0313, 0x89, 0126], mnemonic:"BIT 2,(IY+89H)" },
-    { code:[0375, 0313, 0x89, 0136], mnemonic:"BIT 3,(IY+89H)" },
-    { code:[0375, 0313, 0x89, 0146], mnemonic:"BIT 4,(IY+89H)" },
-    { code:[0375, 0313, 0x89, 0156], mnemonic:"BIT 5,(IY+89H)" },
-    { code:[0375, 0313, 0x89, 0166], mnemonic:"BIT 6,(IY+89H)" },
-    { code:[0375, 0313, 0x89, 0176], mnemonic:"BIT 7,(IY+89H)" },
+    { code:[0375, 0313, 0x89, 0106], mnemonic:"BIT 0,(IY-119)" },
+    { code:[0375, 0313, 0x89, 0116], mnemonic:"BIT 1,(IY-119)" },
+    { code:[0375, 0313, 0x89, 0126], mnemonic:"BIT 2,(IY-119)" },
+    { code:[0375, 0313, 0x89, 0136], mnemonic:"BIT 3,(IY-119)" },
+    { code:[0375, 0313, 0x89, 0146], mnemonic:"BIT 4,(IY-119)" },
+    { code:[0375, 0313, 0x89, 0156], mnemonic:"BIT 5,(IY-119)" },
+    { code:[0375, 0313, 0x89, 0166], mnemonic:"BIT 6,(IY-119)" },
+    { code:[0375, 0313, 0x89, 0176], mnemonic:"BIT 7,(IY-119)" },
 
     { code:[0313, 0300], mnemonic:"SET 0,B" },
     { code:[0313, 0310], mnemonic:"SET 1,B" },
@@ -534,23 +532,23 @@ var line_asm_test_pattern = [
     { code:[0313, 0366], mnemonic:"SET 6,(HL)" },
     { code:[0313, 0376], mnemonic:"SET 7,(HL)" },
 
-    { code:[0335, 0313, 0x89, 0306], mnemonic:"SET 0,(IX+89H)" },
-    { code:[0335, 0313, 0x89, 0316], mnemonic:"SET 1,(IX+89H)" },
-    { code:[0335, 0313, 0x89, 0326], mnemonic:"SET 2,(IX+89H)" },
-    { code:[0335, 0313, 0x89, 0336], mnemonic:"SET 3,(IX+89H)" },
-    { code:[0335, 0313, 0x89, 0346], mnemonic:"SET 4,(IX+89H)" },
-    { code:[0335, 0313, 0x89, 0356], mnemonic:"SET 5,(IX+89H)" },
-    { code:[0335, 0313, 0x89, 0366], mnemonic:"SET 6,(IX+89H)" },
-    { code:[0335, 0313, 0x89, 0376], mnemonic:"SET 7,(IX+89H)" },
+    { code:[0335, 0313, 0x89, 0306], mnemonic:"SET 0,(IX-119)" },
+    { code:[0335, 0313, 0x89, 0316], mnemonic:"SET 1,(IX-119)" },
+    { code:[0335, 0313, 0x89, 0326], mnemonic:"SET 2,(IX-119)" },
+    { code:[0335, 0313, 0x89, 0336], mnemonic:"SET 3,(IX-119)" },
+    { code:[0335, 0313, 0x89, 0346], mnemonic:"SET 4,(IX-119)" },
+    { code:[0335, 0313, 0x89, 0356], mnemonic:"SET 5,(IX-119)" },
+    { code:[0335, 0313, 0x89, 0366], mnemonic:"SET 6,(IX-119)" },
+    { code:[0335, 0313, 0x89, 0376], mnemonic:"SET 7,(IX-119)" },
 
-    { code:[0375, 0313, 0x89, 0306], mnemonic:"SET 0,(IY+89H)" },
-    { code:[0375, 0313, 0x89, 0316], mnemonic:"SET 1,(IY+89H)" },
-    { code:[0375, 0313, 0x89, 0326], mnemonic:"SET 2,(IY+89H)" },
-    { code:[0375, 0313, 0x89, 0336], mnemonic:"SET 3,(IY+89H)" },
-    { code:[0375, 0313, 0x89, 0346], mnemonic:"SET 4,(IY+89H)" },
-    { code:[0375, 0313, 0x89, 0356], mnemonic:"SET 5,(IY+89H)" },
-    { code:[0375, 0313, 0x89, 0366], mnemonic:"SET 6,(IY+89H)" },
-    { code:[0375, 0313, 0x89, 0376], mnemonic:"SET 7,(IY+89H)" },
+    { code:[0375, 0313, 0x89, 0306], mnemonic:"SET 0,(IY-119)" },
+    { code:[0375, 0313, 0x89, 0316], mnemonic:"SET 1,(IY-119)" },
+    { code:[0375, 0313, 0x89, 0326], mnemonic:"SET 2,(IY-119)" },
+    { code:[0375, 0313, 0x89, 0336], mnemonic:"SET 3,(IY-119)" },
+    { code:[0375, 0313, 0x89, 0346], mnemonic:"SET 4,(IY-119)" },
+    { code:[0375, 0313, 0x89, 0356], mnemonic:"SET 5,(IY-119)" },
+    { code:[0375, 0313, 0x89, 0366], mnemonic:"SET 6,(IY-119)" },
+    { code:[0375, 0313, 0x89, 0376], mnemonic:"SET 7,(IY-119)" },
 
     { code:[0313, 0200], mnemonic:"RES 0,B" },
     { code:[0313, 0210], mnemonic:"RES 1,B" },
@@ -624,25 +622,25 @@ var line_asm_test_pattern = [
     { code:[0313, 0266], mnemonic:"RES 6,(HL)" },
     { code:[0313, 0276], mnemonic:"RES 7,(HL)" },
 
-    { code:[0335, 0313, 0x89, 0206], mnemonic:"RES 0,(IX+89H)" },
-    { code:[0335, 0313, 0x89, 0216], mnemonic:"RES 1,(IX+89H)" },
-    { code:[0335, 0313, 0x89, 0226], mnemonic:"RES 2,(IX+89H)" },
-    { code:[0335, 0313, 0x89, 0236], mnemonic:"RES 3,(IX+89H)" },
-    { code:[0335, 0313, 0x89, 0246], mnemonic:"RES 4,(IX+89H)" },
-    { code:[0335, 0313, 0x89, 0256], mnemonic:"RES 5,(IX+89H)" },
-    { code:[0335, 0313, 0x89, 0266], mnemonic:"RES 6,(IX+89H)" },
-    { code:[0335, 0313, 0x89, 0276], mnemonic:"RES 7,(IX+89H)" },
+    { code:[0335, 0313, 0x89, 0206], mnemonic:"RES 0,(IX-119)" },
+    { code:[0335, 0313, 0x89, 0216], mnemonic:"RES 1,(IX-119)" },
+    { code:[0335, 0313, 0x89, 0226], mnemonic:"RES 2,(IX-119)" },
+    { code:[0335, 0313, 0x89, 0236], mnemonic:"RES 3,(IX-119)" },
+    { code:[0335, 0313, 0x89, 0246], mnemonic:"RES 4,(IX-119)" },
+    { code:[0335, 0313, 0x89, 0256], mnemonic:"RES 5,(IX-119)" },
+    { code:[0335, 0313, 0x89, 0266], mnemonic:"RES 6,(IX-119)" },
+    { code:[0335, 0313, 0x89, 0276], mnemonic:"RES 7,(IX-119)" },
 
-    { code:[0375, 0313, 0x89, 0206], mnemonic:"RES 0,(IY+89H)" },
-    { code:[0375, 0313, 0x89, 0216], mnemonic:"RES 1,(IY+89H)" },
-    { code:[0375, 0313, 0x89, 0226], mnemonic:"RES 2,(IY+89H)" },
-    { code:[0375, 0313, 0x89, 0236], mnemonic:"RES 3,(IY+89H)" },
-    { code:[0375, 0313, 0x89, 0246], mnemonic:"RES 4,(IY+89H)" },
-    { code:[0375, 0313, 0x89, 0256], mnemonic:"RES 5,(IY+89H)" },
-    { code:[0375, 0313, 0x89, 0266], mnemonic:"RES 6,(IY+89H)" },
-    { code:[0375, 0313, 0x89, 0276], mnemonic:"RES 7,(IY+89H)" },
+    { code:[0375, 0313, 0x89, 0206], mnemonic:"RES 0,(IY-119)" },
+    { code:[0375, 0313, 0x89, 0216], mnemonic:"RES 1,(IY-119)" },
+    { code:[0375, 0313, 0x89, 0226], mnemonic:"RES 2,(IY-119)" },
+    { code:[0375, 0313, 0x89, 0236], mnemonic:"RES 3,(IY-119)" },
+    { code:[0375, 0313, 0x89, 0246], mnemonic:"RES 4,(IY-119)" },
+    { code:[0375, 0313, 0x89, 0256], mnemonic:"RES 5,(IY-119)" },
+    { code:[0375, 0313, 0x89, 0266], mnemonic:"RES 6,(IY-119)" },
+    { code:[0375, 0313, 0x89, 0276], mnemonic:"RES 7,(IY-119)" },
 
-    { code:[0303, 0x01, 0x00], mnemonic:"JP 0001h" },
+    { code:[0303, 0x01, 0x00], mnemonic:"JP 0001H" },
     { code:[0302, 0x34, 0x12], mnemonic:"JP NZ,1234H" },
     { code:[0312, 0x34, 0x12], mnemonic:"JP Z,1234H" },
     { code:[0322, 0x34, 0x12], mnemonic:"JP NC,1234H" },
@@ -652,17 +650,17 @@ var line_asm_test_pattern = [
     { code:[0362, 0x34, 0x12], mnemonic:"JP P,1234H" },
     { code:[0372, 0x34, 0x12], mnemonic:"JP M,1234H" },
 
-    { code:[0030, 0x10], mnemonic:"JR 12H" },
-    { code:[0040, 0x10], mnemonic:"JR NZ,12H" },
-    { code:[0050, 0x10], mnemonic:"JR Z,12H" },
-    { code:[0060, 0x10], mnemonic:"JR NC,12H" },
-    { code:[0070, 0x10], mnemonic:"JR C,12H" },
+    { code:[0030, 0x10], mnemonic:"JR 0012H;(+18)" },
+    { code:[0040, 0x10], mnemonic:"JR NZ,0012H;(+18)" },
+    { code:[0050, 0x10], mnemonic:"JR Z,0012H;(+18)" },
+    { code:[0060, 0x10], mnemonic:"JR NC,0012H;(+18)" },
+    { code:[0070, 0x10], mnemonic:"JR C,0012H;(+18)" },
 
     { code:[0351], mnemonic:"JP (HL)" },
     { code:[0335, 0351], mnemonic:"JP (IX)" },
     { code:[0375, 0351], mnemonic:"JP (IY)" },
 
-    { code:[0020, 0x32], mnemonic:"DJNZ 34H" },
+    { code:[0020, 0x32], mnemonic:"DJNZ 0034H;(+52)" },
 
     { code:[0315, 0x01, 0x00], mnemonic:"CALL 0001H" },
     { code:[0304, 0x34, 0x12], mnemonic:"CALL NZ,1234H" },
@@ -696,7 +694,7 @@ var line_asm_test_pattern = [
     { code:[0367], mnemonic:"RST 30H" },
     { code:[0377], mnemonic:"RST 38H" },
 
-    { code:[0333,0x23], mnemonic:"IN A,(23H)" },
+    { code:[0333,0x23], mnemonic:"IN A,(35)" },
     { code:[0355,0100], mnemonic:"IN B,(C)" },
     { code:[0355,0110], mnemonic:"IN C,(C)" },
     { code:[0355,0120], mnemonic:"IN D,(C)" },
@@ -709,7 +707,7 @@ var line_asm_test_pattern = [
     { code:[0355,0252], mnemonic:"IND" },
     { code:[0355,0272], mnemonic:"INDR" },
 
-    { code:[0323,0x23], mnemonic:"OUT (23H),A" },
+    { code:[0323,0x23], mnemonic:"OUT (35),A" },
     { code:[0355,0101], mnemonic:"OUT (C),B" },
     { code:[0355,0111], mnemonic:"OUT (C),C" },
     { code:[0355,0121], mnemonic:"OUT (C),D" },
@@ -726,171 +724,51 @@ var line_asm_test_pattern = [
 
     { code:[0xDD, 0x70, 0xff], mnemonic:"LD (IX-1),B" },
     { code:[0xDD, 0x70, 0x80], mnemonic:"LD (IX-128),B" },
-    { code:[0xDD, 0x70, 0xff], mnemonic:"LD (IX- 1),B" },
-    { code:[0xDD, 0x70, 0xff], mnemonic:"LD (IX -1),B" },
-    { code:[0xDD, 0x70, 0xff], mnemonic:"LD (IX - 1),B" },
-    { code:[0xDD, 0x70, 0x80], mnemonic:"LD (IX- 128),B" },
 
     { code:[0xDD, 0x34, 0xff], mnemonic:"INC (IX-1)" },
-    { code:[0xDD, 0x34, 0xff], mnemonic:"INC (IX -1)" },
-    { code:[0xDD, 0x34, 0x80], mnemonic:"INC (IX- 128)" },
-    { code:[0xDD, 0x34, 0x80], mnemonic:"INC (IX - 80H)" },
+    { code:[0xDD, 0x34, 0x80], mnemonic:"INC (IX-128)" },
 
     { code:[0xDD, 0x35, 0x80], mnemonic:"DEC (IX-128)" },
-    { code:[0xDD, 0x35, 0x80], mnemonic:"DEC (IX-80H)" },
 
     { code:[0xDD, 0x86, 0x80], mnemonic:"ADD A,(IX-128)" },
-    { code:[0xDD, 0x8E, 0x80], mnemonic:"ADC A,(IX- 80H)" },
-    { code:[0xDD, 0x96, 0x80], mnemonic:"SUB A,(IX -128)" },
-    { code:[0xDD, 0x9E, 0x80], mnemonic:"SBC A,(IX - 80H)" },
+    { code:[0xDD, 0x8E, 0x80], mnemonic:"ADC A,(IX-128)" },
+    { code:[0xDD, 0x96, 0x80], mnemonic:"SUB A,(IX-128)" },
+    { code:[0xDD, 0x9E, 0x80], mnemonic:"SBC A,(IX-128)" },
 
-    { code:[0375, 0313, 0x00, 0016], mnemonic:"RRC (IY-00H)" },
+    { code:[0375, 0313, 0x00, 0016], mnemonic:"RRC (IY+0)" },
     { code:[0375, 0313, 0x80, 0176], mnemonic:"BIT 7,(IY-128)" },
-    { code:[0375, 0313, 0x80, 0176], mnemonic:"BIT 7,(IY - 128)" },
+    { code:[0375, 0313, 0x80, 0176], mnemonic:"BIT 7,(IY-128)" },
     { code:[0375, 0313, 0xff, 0006], mnemonic:"RLC (IY-1)" },
-    { code:[0375, 0313, 0x00, 0016], mnemonic:"RRC (IY+00H)" },
-    { code:[0375, 0313, 0x80, 0376], mnemonic:"SET 7,(IY -128)" },
-    { code:[0375, 0313, 0xFF, 0376], mnemonic:"SET 7,(IY - 1)" },
-    { code:[0375, 0313, 0xFF, 0276], mnemonic:"RES 7,(IY -01H)" },
+    { code:[0375, 0313, 0x00, 0016], mnemonic:"RRC (IY+0)" },
+    { code:[0375, 0313, 0x80, 0376], mnemonic:"SET 7,(IY-128)" },
+    { code:[0375, 0313, 0xFF, 0376], mnemonic:"SET 7,(IY-1)" },
 
-    { code:[0335, 0313, 0x80, 0006], mnemonic:"RLC (IX - 128)" },
-    { code:[0335, 0313, 0x80, 0006], mnemonic:"RLC (IX- 128)" },
-    { code:[0335, 0313, 0x80, 0026], mnemonic:"RL (IX-80H)" },
+    { code:[0335, 0313, 0x80, 0006], mnemonic:"RLC (IX-128)" },
+    { code:[0335, 0313, 0x80, 0026], mnemonic:"RL (IX-128)" },
     { code:[0335, 0313, 0xFF, 0106], mnemonic:"BIT 0,(IX-1)" },
-    { code:[0335, 0313, 0x80, 0106], mnemonic:"BIT 0,(IX- 128)" },
-    { code:[0335, 0313, 0x7F, 0306], mnemonic:"SET 0,(IX +127)" },
-    { code:[0335, 0313, 0x7F, 0206], mnemonic:"RES 0,(IX+ 127)" },
-
+    { code:[0335, 0313, 0x80, 0106], mnemonic:"BIT 0,(IX-128)" },
+    { code:[0335, 0313, 0x7F, 0306], mnemonic:"SET 0,(IX+127)" },
+    { code:[0335, 0313, 0x7F, 0206], mnemonic:"RES 0,(IX+127)" },
 ];
-UnitTest.test({
-    name: "Z80 Assembler",
-    test: function() {
-        for(var i = 0; i < line_asm_test_pattern.length; i++) {
-            var test_name = line_asm_test_pattern[i].mnemonic;
-            var test_result = true;
-            var test_detail = "";
-            var asmlist = new Z80_assemble(line_asm_test_pattern[i].mnemonic);
-            if(asmlist == null || asmlist.length <= 0) {
-                test_result = false;
-                test_detail = " FAIL TO TRANSLATE.";
-            } else {
-                var codes = [];
-                asmlist.list.forEach(function(asmline) {
-                    if("bytecode" in asmline && asmline.bytecode.length > 0) {
-                        asmline.bytecode.forEach(function(code) {
-                            codes.push(code);
-                        });
-                    }
-                });
-                if(line_asm_test_pattern[i].code.length != codes.length) {
-                    test_result = false;
-                    test_detail = ` The assembled code length ${line_asm_test_pattern[i].code.length} is expected ${codes.length}`;
-                } else {
-                    for(var j = 0; j < line_asm_test_pattern[i].code.length; j++) {
-                        if(line_asm_test_pattern[i].code[j] != codes[j]) {
-                            test_result = false;
-                            test_detail = " The assembled code is different.";
-                            break;
-                        }
-                    }
-                }
-                if(!test_result) {
-                    test_detail += " expect:"
-                    for(var j = 0; j < line_asm_test_pattern[i].code.length; j++) {
-                        test_detail += " " + NumberUtil.HEX(line_asm_test_pattern[i].code[j], 2);
-                    }
-                    test_detail += "(" + line_asm_test_pattern[i].code.length + "bytes)"; 
-                    test_detail += " result:";
-                    for(var j = 0; j < codes.length; j++) {
-                        test_detail += " " + NumberUtil.HEX(codes[j], 2);
-                    }
-                    test_detail += "(" + codes.length + "bytes)"; 
-                }
-            }
-            UnitTest.report(test_name, test_result, test_detail);
-        }
-        for(var i = 0; i < line_asm_test_pattern.length; i++) {
-            var code = line_asm_test_pattern[i].code;
-            var test_name = "DISASSEMBLE ["
-                + code.map( function(c) { return NumberUtil.HEX(c, 2); }).join(' ')
-                + '] to "' + line_asm_test_pattern[i].mnemonic + '"';
-            var test_result = true;
-            var test_detail = "";
-            var buf = Buffer.from(code);
-            var dasmlist = Z80.dasm(buf);
-            dasmlist.forEach(function(mnemonicInfo) {
-                if(!test_result) {
-                    return;
-                }
-                try {
-                    if(isNaN(mnemonicInfo.addr)) {
-                        return;
-                    }
-                    var binsrcCode = line_asm_test_pattern[i].code.map(
-                            function(c) { return NumberUtil.HEX(c, 2); }).join(' ')
-                    var disasmCode = mnemonicInfo.code.map(
-                            function(c) { return NumberUtil.HEX(c, 2); }).join(' ')
-                    if(binsrcCode != disasmCode) {
-                        console.log("");
-                        console.log("## " + test_name);
-                        console.log("");
-                        test_result = false;
-                        test_detail = "Disasm codes are not equals to source binary.";
-                        console.log("BINSRC SOURCE:" + binsrcCode);
-                        console.log("DISASM SOURCE:" + disasmCode);
-                        console.log(
-                            NumberUtil.HEX(mnemonicInfo.addr, 4) + "\t"
-                            + disasmCode + "\t"
-                            + ((mnemonicInfo.mnemonic.length == 0) ? '':
-                                mnemonicInfo.mnemonic[0] + "\t"
-                                + mnemonicInfo.mnemonic.slice(1).join(",")));
-                        return;
-                    }
-                    var disasmMnemonic = '';
-                    if(mnemonicInfo.mnemonic.length > 0) {
-                        disasmMnemonic = mnemonicInfo.mnemonic[0];
-                        if(mnemonicInfo.mnemonic.length > 1) {
-                            disasmMnemonic += " " + mnemonicInfo.mnemonic.slice(1).join(",");
-                        }
-                    }
-                    disasmMnemonic = disasmMnemonic.replace(/;.*$/, '');
-                    disasmMnemonic = disasmMnemonic.toUpperCase();
-                    disasmMnemonic = disasmMnemonic.replace(/\b([0-9]+)\b/,
-                            function() { return NumberUtil.HEX(parseInt(arguments[1]), 4)+"H"; });
-                    disasmMnemonic = disasmMnemonic.replace(/\b0+([1-9A-F]+H)\b/, function() {return arguments[1] });
-                    disasmMnemonic = disasmMnemonic.replace(/ /g, '');
-                    var sourceMnemonic = line_asm_test_pattern[i].mnemonic
-                    sourceMnemonic = sourceMnemonic.toUpperCase();
-                    sourceMnemonic = sourceMnemonic.replace(/\b([0-9]+)\b/,
-                            function() { return NumberUtil.HEX(parseInt(arguments[1]), 4)+"H"; });
-                    sourceMnemonic = sourceMnemonic.replace(/\b0+([1-9A-F]+H)\b/, function() {return arguments[1] });
-                    sourceMnemonic = sourceMnemonic.replace(/ /g, '');
-                    if(disasmMnemonic != sourceMnemonic) {
-                        console.log("");
-                        console.log("## " + test_name);
-                        console.log("");
-                        test_result = false;
-                        test_detail = "Disasm Mnemonics are not equals to source.";
-                        console.log("");
-                        console.log("*** DISASSEMBLED RESULT UNMATCH");
-                        console.log("    DISASSEMBLED:" + disasmMnemonic);
-                        console.log("     SOURCE CODE:" + line_asm_test_pattern[i].mnemonic);
-                        console.log(
-                            NumberUtil.HEX(mnemonicInfo.addr, 4) + "\t"
-                            + disasmCode + "\t"
-                            + ((mnemonicInfo.mnemonic.length == 0) ? '':
-                                mnemonicInfo.mnemonic[0] + "\t"
-                                + mnemonicInfo.mnemonic.slice(1).join(",")));
-                        console.log("");
-                    }
-                }
-                catch(ex) {
-                    console.log("*** EXCEPTION " + ex);
-                    console.log("*** EXCEPTION FAIL to " + test_name);
-                    console.log(JSON.stringify(mnemonicInfo,null,"  "));
-                }
-            });
-            UnitTest.report(test_name, test_result, test_detail);
-        }
-    }
+
+describe("Z80.dasm", ()=> {
+    test_pattern.forEach( test => {
+        it(test.mnemonic, ()=>{
+            // Disassemble the code
+            const disassembled_list = Z80.dasm(Buffer.from(test.code));
+            const result = disassembled_list[1];
+            const disassembled_source = `${result.mnemonic} ${result.operand}`.trim();
+
+            const expected_source = test.mnemonic;
+            assert.equal(disassembled_source, expected_source);
+        });
+        it(test.mnemonic, ()=>{
+            // Disassemble the code
+            const disassembled_list = Z80.dasm(Buffer.from(test.code));
+            const result = disassembled_list[1];
+            const disassembled_source = `${result.mnemonic} ${result.operand}`.trim();
+            const assembled = Z80LineAssembler.assemble(disassembled_source, 0, {});
+            assert.deepEqual(assembled.bytecode, test.code);
+        });
+    });
 });
