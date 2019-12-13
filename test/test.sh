@@ -3,7 +3,7 @@
 #Z80 Implemenation statistics
 node Z80_imp_stat > Z80_imp_stat.txt
 if [ $? -ne 0 ]; then
-    echo "Z80 IMPLEMENTATION INCOPLETE." 1>&2
+    echo "Z80 IMPLEMENTATION INCOMPLETE." 1>&2
     cat Z80_imp_stat.txt
 fi
 

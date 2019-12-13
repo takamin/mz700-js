@@ -1,5 +1,5 @@
-var UnitTest = require("./UnitTest");
-var Z80Tester = require('./Z80Tester.js');
+var UnitTest = require("./lib/UnitTest.js");
+var Z80Tester = require('./lib/Z80Tester.js');
 var Z80 = require('../Z80/Z80.js');
 var cpu = new Z80();
 
@@ -135,7 +135,7 @@ var test_set = [
         report(cpu, "LD SP,(1234h) (8)", cpu.reg.IY == 0);
     }},
 ];
-module.exports = {
+UnitTest.test({
     name: "16 bit load group",
     test_set: test_set
-};
+});

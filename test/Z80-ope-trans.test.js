@@ -1,5 +1,5 @@
-var UnitTest = require("./UnitTest");
-var Z80Tester = require('./Z80Tester.js');
+var UnitTest = require("./lib/UnitTest.js");
+var Z80Tester = require('./lib/Z80Tester.js');
 var Z80 = require('../Z80/Z80.js');
 var cpu = new Z80();
 
@@ -70,7 +70,7 @@ var test_set = [
         }
     }},
 ];
-module.exports = {
+UnitTest.test({
     name: "block transfer",
     test_set: test_set
-};
+});
