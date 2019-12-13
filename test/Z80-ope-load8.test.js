@@ -1,5 +1,5 @@
-var UnitTest = require("./UnitTest");
-var Z80Tester = require('./Z80Tester.js');
+var UnitTest = require("./lib/UnitTest.js");
+var Z80Tester = require('./lib/Z80Tester.js');
 var Z80 = require('../Z80/Z80.js');
 const NumberUtil = require("../lib/number-util.js");
 
@@ -9,23 +9,32 @@ var tests = [
     function() {
         ["IX","IY"].forEach(function(IDX) {
             ["B","C","D","E","H","L","A"].forEach(function(r) {
-                [0,1,254,255].forEach(function(d) {
-                    cpu.memory.poke(0x1200 + d, (0xff & (~d)));
-                    cpu.reg["set" + r]( d );
+                [0,1,127,-128].forEach(function(d) {
+                    const d_u8 = NumberUtil.to8bitUnsigned(d);
+                    const notD = (0xff & ~d_u8);
+                    cpu.memory.poke(0x1200 + d, notD );
+                    cpu.reg["set" + r]( d_u8 );
                     cpu.reg[IDX] = 0x1200;
-                    var mne = "LD (" + IDX + "+" + d +")," + r;
+                    var mne = "LD (" + IDX + (d >= 0 ? "+" : "") + d +")," + r;
                     tester.runMnemonics(cpu, [mne]);
+                    if(cpu.memory.peek(0x1200 + d) != d_u8) {
+                        console.error(`***** ASSEMBLING TEST FAILS on mnemonic ${mne}`);
+                        console.error(`d:${d}`);
+                        console.error(`d_u8:${d_u8}`);
+                        console.error(`notD:${notD}`);
+                        console.error(`cpu.memory.peek(0x1200 + ${d}):${cpu.memory.peek(0x1200 + d)}`);
+                    }
                     UnitTest.report(
-                            mne + " - 1. mem " + NumberUtil.HEX(0x1200+d, 4) + "H must be " + d,
-                            cpu.memory.peek(0x1200 + d) == d,
-                            NumberUtil.HEX(d, 2) + "H");
+                            mne + " - 1. mem " + NumberUtil.HEX(0x1200+d, 4) + "H must be " + d_u8,
+                            cpu.memory.peek(0x1200 + d) == d_u8,
+                            NumberUtil.HEX(d_u8, 2) + "H");
                     UnitTest.report(
                             mne + " - 2. " + IDX + " is not changed",
                             cpu.reg[IDX] == 0x1200,
                             "changed to " + NumberUtil.HEX(cpu.reg[IDX], 4) + "H");
                     UnitTest.report(
                             mne + " - 3 " + r + " is not changed",
-                            cpu.reg["get" + r]() == d,
+                            cpu.reg["get" + r]() == d_u8,
                             "changed to " + NumberUtil.HEX(cpu.reg["get"+r](), 2) + "H");
                 });
             });
@@ -34,15 +43,15 @@ var tests = [
     function() {
         ["IX","IY"].forEach(function(IDX) {
             ["B","C","D","E","H","L","A"].forEach(function(r) {
-                [0,1,254,255].forEach(function(d) {
-                    cpu.reg["set" + r]( (0xff & (~d)) );
-                    cpu.memory.poke(0x1200 + d, d);
+                [0,1,127,-128].forEach(function(d) {
+                    cpu.reg["set" + r]( 0xff & ~NumberUtil.to8bitUnsigned(d) );
+                    cpu.memory.poke(0x1200 + d, NumberUtil.to8bitUnsigned(d));
                     cpu.reg[IDX] = 0x1200;
-                    var mne = "LD "+ r + ",(" + IDX + "+" + d +")";
+                    var mne = "LD "+ r + ",(" + IDX + (d >= 0 ? "+" : "") + d +")";
                     tester.runMnemonics(cpu, [mne]);
                     UnitTest.report(
                             mne + " - 1. reg "+ r + " must be " + d,
-                            cpu.reg["get"+r]() == d,
+                            cpu.reg["get"+r]() == NumberUtil.to8bitUnsigned(d),
                             NumberUtil.HEX(cpu.reg["get"+r](), 2) + "H");
                     UnitTest.report(
                             mne + " - 2. " + IDX + " is not changed",
@@ -50,8 +59,8 @@ var tests = [
                             "changed to " + NumberUtil.HEX(cpu.reg[IDX], 4) + "H");
                     UnitTest.report(
                             mne + " - 3. mem " + NumberUtil.HEX(0x1200+d, 4)
-                            + "H is not changed " + d,
-                            cpu.memory.peek(0x1200 + d) == d,
+                            + "H is not changed " + (0xff & d),
+                            cpu.memory.peek(0x1200 + d) == NumberUtil.to8bitUnsigned(d),
                             "changed to " + NumberUtil.HEX(cpu.memory.peek(0x1200+d), 4) + "H");
                 });
             });
@@ -59,16 +68,16 @@ var tests = [
     },
     function() {
         ["IX","IY"].forEach(function(IDX) {
-            [0,1,254,255].forEach(function(d) {
+            [0,1,127,-128].forEach(function(d) {
                 [0,1,254,255].forEach(function(n) {
-                    cpu.memory.poke(0x1200 + d, (0xff & (~d)));
+                    cpu.memory.poke(0x1200 + d, 0xff & ~n);
                     cpu.reg[IDX] = 0x1200;
-                    var mne = "LD (" + IDX + "+" + d +")," + NumberUtil.HEX(n, 2) + "H";
+                    var mne = "LD (" + IDX + (d >= 0 ? "+" : "") + d +")," + NumberUtil.HEX(n, 2) + "H";
                     tester.runMnemonics(cpu, [mne]);
                     UnitTest.report(
-                            mne + " - 1. mem " + NumberUtil.HEX(0x1200+d, 4) + "H must be " + d,
+                            mne + " - 1. mem " + NumberUtil.HEX(0x1200+d, 4) + "H must be " + NumberUtil.HEX(n, 2),
                             cpu.memory.peek(0x1200 + d) == n,
-                            NumberUtil.HEX(d, 2) + "H");
+                            NumberUtil.HEX(cpu.memory.peek(0x1200 + d), 2)  + "H");
                     UnitTest.report(
                             mne + " - 2. " + IDX + " is not changed",
                             cpu.reg[IDX] == 0x1200,

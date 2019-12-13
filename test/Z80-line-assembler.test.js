@@ -2,8 +2,51 @@
 const assert = require("chai").assert;
 const Z80LineAssembler = require("../Z80/Z80-line-assembler.js");
 const oct = require("../lib/oct.js");
+
+/**
+ * Test the source would be assembled to the machine code.
+ * @param {string} source The source code
+ * @param {Array<number>} machineCode The expected machine code
+ * @returns {undefined}
+ */
+const testAssemble = (source, machineCode) => {
+    const bin = Z80LineAssembler.assemble(source, 0, {});
+    assert.deepEqual(bin.bytecode, machineCode);
+};
 describe("Z80LineAssembler", () => {
     describe("#assemble", () => {
+        describe("load 8bit with index", () => {
+            describe("LD (IX+0),B", ()=>{
+                it("should assemble", ()=>{
+                    testAssemble( "LD (IX+0),B", [oct("0335"), oct("0160"), 0x00]);
+                });
+            });
+            describe("LD (IX+127),C", ()=>{
+                it("should assemble", ()=>{
+                    testAssemble( "LD (IX+127),C", [oct("0335"), oct("0161"), 0x7f]);
+                });
+            });
+            describe("LD (IY+1),D", ()=>{
+                it("should assemble", ()=>{
+                    testAssemble( "LD (IY+1),D", [oct("0375"), oct("0162"), 0x01]);
+                });
+            });
+            describe("LD (IX-1),H", ()=>{
+                it("should assemble", ()=>{
+                    testAssemble( "LD (IX-1),H", [oct("0335"), oct("0164"), 0xff]);
+                });
+            });
+            describe("LD (IY-0),L", ()=>{
+                it("should assemble", ()=>{
+                    testAssemble( "LD (IY-0),L", [oct("0375"), oct("0165"), 0x00]);
+                });
+            });
+            describe("LD (IY-128),A", ()=>{
+                it("should assemble", ()=>{
+                    testAssemble( "LD (IY-128),A", [oct("0375"), oct("0167"), 0x80]);
+                });
+            });
+        });
         describe("pseudo mnemonic DEFB", () => {
             describe("single numeric operand", () => {
                 it("should recognize a decimal number", () => {

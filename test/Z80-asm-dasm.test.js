@@ -1,5 +1,5 @@
 const NumberUtil = require("../lib/number-util.js");
-var UnitTest = require("./UnitTest");
+var UnitTest = require("./lib/UnitTest.js");
 var Z80 = require('../Z80/Z80.js');
 var Z80_assemble = require('../Z80/assembler');
 var line_asm_test_pattern = [
@@ -241,6 +241,8 @@ var line_asm_test_pattern = [
     { code:[0xFD, 0x34, 0x23], mnemonic:"INC (IY+23H)" },
     { code:[0xFD, 0x35, 0x23], mnemonic:"DEC (IY+23H)" },
     { code:[0xFD, 0x36, 0x23, 0x12], mnemonic:"LD (IY+23H),12H" },
+    { code:[0xFD, 0x70, 0xff], mnemonic:"LD (IY-1),B" },
+    { code:[0xFD, 0x70, 0x80], mnemonic:"LD (IY-128),B" },
     { code:[0xFD, 0x70, 0x23], mnemonic:"LD (IY+23H),B" },
     { code:[0xFD, 0x71, 0x23], mnemonic:"LD (IY+23H),C" },
     { code:[0xFD, 0x72, 0x23], mnemonic:"LD (IY+23H),D" },
@@ -305,8 +307,8 @@ var line_asm_test_pattern = [
     { code:[0313, 0005], mnemonic:"RLC L" },
     { code:[0313, 0007], mnemonic:"RLC A" },
     { code:[0313, 0006], mnemonic:"RLC (HL)" },
-    { code:[0335, 0313, 0x98, 0006], mnemonic:"RLC (IX+98H)" },
-    { code:[0375, 0313, 0x98, 0006], mnemonic:"RLC (IY+98H)" },
+    { code:[0335, 0313, 0x7f, 0006], mnemonic:"RLC (IX+127)" },
+    { code:[0375, 0313, 0x01, 0006], mnemonic:"RLC (IY+1)" },
     { code:[0313, 0020], mnemonic:"RL B" },
     { code:[0313, 0021], mnemonic:"RL C" },
     { code:[0313, 0022], mnemonic:"RL D" },
@@ -315,8 +317,8 @@ var line_asm_test_pattern = [
     { code:[0313, 0025], mnemonic:"RL L" },
     { code:[0313, 0027], mnemonic:"RL A" },
     { code:[0313, 0026], mnemonic:"RL (HL)" },
-    { code:[0335, 0313, 0x98, 0026], mnemonic:"RL (IX+98H)" },
-    { code:[0375, 0313, 0x98, 0026], mnemonic:"RL (IY+98H)" },
+    { code:[0335, 0313, 0x7f, 0026], mnemonic:"RL (IX+7fH)" },
+    { code:[0375, 0313, 0x01, 0026], mnemonic:"RL (IY+01H)" },
     { code:[0313, 0010], mnemonic:"RRC B" },
     { code:[0313, 0011], mnemonic:"RRC C" },
     { code:[0313, 0012], mnemonic:"RRC D" },
@@ -325,8 +327,8 @@ var line_asm_test_pattern = [
     { code:[0313, 0015], mnemonic:"RRC L" },
     { code:[0313, 0017], mnemonic:"RRC A" },
     { code:[0313, 0016], mnemonic:"RRC (HL)" },
-    { code:[0335, 0313, 0x98, 0016], mnemonic:"RRC (IX+98H)" },
-    { code:[0375, 0313, 0x98, 0016], mnemonic:"RRC (IY+98H)" },
+    { code:[0335, 0313, 0x7f, 0016], mnemonic:"RRC (IX+7fH)" },
+    { code:[0375, 0313, 0x01, 0016], mnemonic:"RRC (IY+01H)" },
     { code:[0313, 0030], mnemonic:"RR B" },
     { code:[0313, 0031], mnemonic:"RR C" },
     { code:[0313, 0032], mnemonic:"RR D" },
@@ -335,8 +337,8 @@ var line_asm_test_pattern = [
     { code:[0313, 0035], mnemonic:"RR L" },
     { code:[0313, 0037], mnemonic:"RR A" },
     { code:[0313, 0036], mnemonic:"RR (HL)" },
-    { code:[0335, 0313, 0x98, 0036], mnemonic:"RR (IX+98H)" },
-    { code:[0375, 0313, 0x98, 0036], mnemonic:"RR (IY+98H)" },
+    { code:[0335, 0313, 0x7f, 0036], mnemonic:"RR (IX+7fH)" },
+    { code:[0375, 0313, 0x01, 0036], mnemonic:"RR (IY+01H)" },
     { code:[0313, 0040], mnemonic:"SLA B" },
     { code:[0313, 0041], mnemonic:"SLA C" },
     { code:[0313, 0042], mnemonic:"SLA D" },
@@ -345,8 +347,8 @@ var line_asm_test_pattern = [
     { code:[0313, 0045], mnemonic:"SLA L" },
     { code:[0313, 0047], mnemonic:"SLA A" },
     { code:[0313, 0046], mnemonic:"SLA (HL)" },
-    { code:[0335, 0313, 0x98, 0046], mnemonic:"SLA (IX+98H)" },
-    { code:[0375, 0313, 0x98, 0046], mnemonic:"SLA (IY+98H)" },
+    { code:[0335, 0313, 0x7f, 0046], mnemonic:"SLA (IX+7fH)" },
+    { code:[0375, 0313, 0x01, 0046], mnemonic:"SLA (IY+01H)" },
     { code:[0313, 0050], mnemonic:"SRA B" },
     { code:[0313, 0051], mnemonic:"SRA C" },
     { code:[0313, 0052], mnemonic:"SRA D" },
@@ -355,8 +357,8 @@ var line_asm_test_pattern = [
     { code:[0313, 0055], mnemonic:"SRA L" },
     { code:[0313, 0057], mnemonic:"SRA A" },
     { code:[0313, 0056], mnemonic:"SRA (HL)" },
-    { code:[0335, 0313, 0x98, 0056], mnemonic:"SRA (IX+98H)" },
-    { code:[0375, 0313, 0x98, 0056], mnemonic:"SRA (IY+98H)" },
+    { code:[0335, 0313, 0x7f, 0056], mnemonic:"SRA (IX+7fH)" },
+    { code:[0375, 0313, 0x01, 0056], mnemonic:"SRA (IY+01H)" },
     { code:[0313, 0070], mnemonic:"SRL B" },
     { code:[0313, 0071], mnemonic:"SRL C" },
     { code:[0313, 0072], mnemonic:"SRL D" },
@@ -365,8 +367,8 @@ var line_asm_test_pattern = [
     { code:[0313, 0075], mnemonic:"SRL L" },
     { code:[0313, 0077], mnemonic:"SRL A" },
     { code:[0313, 0076], mnemonic:"SRL (HL)" },
-    { code:[0335, 0313, 0x98, 0076], mnemonic:"SRL (IX+98H)" },
-    { code:[0375, 0313, 0x98, 0076], mnemonic:"SRL (IY+98H)" },
+    { code:[0335, 0313, 0x7f, 0076], mnemonic:"SRL (IX+7fH)" },
+    { code:[0375, 0313, 0x01, 0076], mnemonic:"SRL (IY+01H)" },
     { code:[0355, 0157], mnemonic:"RLD" },
     { code:[0355, 0147], mnemonic:"RRD" },
 
@@ -721,8 +723,46 @@ var line_asm_test_pattern = [
     { code:[0355,0273], mnemonic:"OTDR" },
 
     { code:[0166], mnemonic:'HALT' },
+
+    { code:[0xDD, 0x70, 0xff], mnemonic:"LD (IX-1),B" },
+    { code:[0xDD, 0x70, 0x80], mnemonic:"LD (IX-128),B" },
+    { code:[0xDD, 0x70, 0xff], mnemonic:"LD (IX- 1),B" },
+    { code:[0xDD, 0x70, 0xff], mnemonic:"LD (IX -1),B" },
+    { code:[0xDD, 0x70, 0xff], mnemonic:"LD (IX - 1),B" },
+    { code:[0xDD, 0x70, 0x80], mnemonic:"LD (IX- 128),B" },
+
+    { code:[0xDD, 0x34, 0xff], mnemonic:"INC (IX-1)" },
+    { code:[0xDD, 0x34, 0xff], mnemonic:"INC (IX -1)" },
+    { code:[0xDD, 0x34, 0x80], mnemonic:"INC (IX- 128)" },
+    { code:[0xDD, 0x34, 0x80], mnemonic:"INC (IX - 80H)" },
+
+    { code:[0xDD, 0x35, 0x80], mnemonic:"DEC (IX-128)" },
+    { code:[0xDD, 0x35, 0x80], mnemonic:"DEC (IX-80H)" },
+
+    { code:[0xDD, 0x86, 0x80], mnemonic:"ADD A,(IX-128)" },
+    { code:[0xDD, 0x8E, 0x80], mnemonic:"ADC A,(IX- 80H)" },
+    { code:[0xDD, 0x96, 0x80], mnemonic:"SUB A,(IX -128)" },
+    { code:[0xDD, 0x9E, 0x80], mnemonic:"SBC A,(IX - 80H)" },
+
+    { code:[0375, 0313, 0x00, 0016], mnemonic:"RRC (IY-00H)" },
+    { code:[0375, 0313, 0x80, 0176], mnemonic:"BIT 7,(IY-128)" },
+    { code:[0375, 0313, 0x80, 0176], mnemonic:"BIT 7,(IY - 128)" },
+    { code:[0375, 0313, 0xff, 0006], mnemonic:"RLC (IY-1)" },
+    { code:[0375, 0313, 0x00, 0016], mnemonic:"RRC (IY+00H)" },
+    { code:[0375, 0313, 0x80, 0376], mnemonic:"SET 7,(IY -128)" },
+    { code:[0375, 0313, 0xFF, 0376], mnemonic:"SET 7,(IY - 1)" },
+    { code:[0375, 0313, 0xFF, 0276], mnemonic:"RES 7,(IY -01H)" },
+
+    { code:[0335, 0313, 0x80, 0006], mnemonic:"RLC (IX - 128)" },
+    { code:[0335, 0313, 0x80, 0006], mnemonic:"RLC (IX- 128)" },
+    { code:[0335, 0313, 0x80, 0026], mnemonic:"RL (IX-80H)" },
+    { code:[0335, 0313, 0xFF, 0106], mnemonic:"BIT 0,(IX-1)" },
+    { code:[0335, 0313, 0x80, 0106], mnemonic:"BIT 0,(IX- 128)" },
+    { code:[0335, 0313, 0x7F, 0306], mnemonic:"SET 0,(IX +127)" },
+    { code:[0335, 0313, 0x7F, 0206], mnemonic:"RES 0,(IX+ 127)" },
+
 ];
-module.exports = {
+UnitTest.test({
     name: "Z80 Assembler",
     test: function() {
         for(var i = 0; i < line_asm_test_pattern.length; i++) {
@@ -742,15 +782,14 @@ module.exports = {
                         });
                     }
                 });
-                //var codes = asmlist.list[0].bytecode;
                 if(line_asm_test_pattern[i].code.length != codes.length) {
                     test_result = false;
-                    test_detail = " LENGTH DIFFER.";
+                    test_detail = ` The assembled code length ${line_asm_test_pattern[i].code.length} is expected ${codes.length}`;
                 } else {
                     for(var j = 0; j < line_asm_test_pattern[i].code.length; j++) {
                         if(line_asm_test_pattern[i].code[j] != codes[j]) {
                             test_result = false;
-                            test_detail = " CODES DIFFER.";
+                            test_detail = " The assembled code is different.";
                             break;
                         }
                     }
@@ -777,9 +816,8 @@ module.exports = {
                 + '] to "' + line_asm_test_pattern[i].mnemonic + '"';
             var test_result = true;
             var test_detail = "";
-            var buf = new Buffer(code);
+            var buf = Buffer.from(code);
             var dasmlist = Z80.dasm(buf);
-            var addr = 0;
             dasmlist.forEach(function(mnemonicInfo) {
                 if(!test_result) {
                     return;
@@ -855,4 +893,4 @@ module.exports = {
             UnitTest.report(test_name, test_result, test_detail);
         }
     }
-};
+});
