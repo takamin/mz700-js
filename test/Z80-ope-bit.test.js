@@ -1,5 +1,4 @@
-var UnitTest = require("./UnitTest");
-var Z80Tester = require('./Z80Tester.js');
+var Z80Tester = require('./lib/Z80Tester.js');
 var Z80 = require('../Z80/Z80.js');
 var tester = new Z80Tester();
 var cpu = new Z80();

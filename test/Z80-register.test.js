@@ -1,4 +1,4 @@
-var UnitTest = require("./UnitTest");
+var UnitTest = require("./lib/UnitTest.js");
 var Z80_Register = require('../Z80/register.js');
 var tests = [
     function () {
