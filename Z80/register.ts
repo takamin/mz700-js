@@ -381,7 +381,7 @@ export default class Z80_Register {
     //  }
     //
     addAccWithCarry(n:number): void {
-        const q = (this.getA() + n + (this.getF()) & Z80_Register.C_FLAG);
+        const q = this.getA() + n + (this.getF() & Z80_Register.C_FLAG);
         this.setF( this.getZSTable(q & 255) | ((q & 256) >> 8) |
             ((this.getA() ^ q ^ n) & Z80_Register.H_FLAG) |
             (((n ^ this.getA() ^ 0x80) & (n ^ q) & 0x80) >> 5) );
