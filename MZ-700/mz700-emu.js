@@ -20,6 +20,7 @@ require("../lib/jquery.mz700-scrn.js");
 require("../lib/jquery.mz-sound-control.js");
 require("../lib/jquery.emu-speed-control.js");
 require("../lib/jquery.mz-control-panel.js");
+require("../lib/jquery.tool-window.js");
 const BBox = require("b-box");
 const dock_n_liquid = require("dock-n-liquid");
 const packageJson = require("../package.json");
@@ -28,7 +29,6 @@ const MZ700CG = require("../lib/mz700-cg.js");
 const MZBeep = require("../lib/mz-beep.js");
 const parseRequest = require("../lib/parse-request");
 const requestJsonp = require("../lib/jsonp");
-const ToolWindow = require("../lib/tool-window.js");
 
 ((async () => {
 
@@ -186,7 +186,8 @@ const ToolWindow = require("../lib/tool-window.js");
             $("#wndRegView")
                 .append($("<div/>").css("display", "inline-block").append(regview))
                 .on("show", () => regview.Z80RegView("visibility", true))
-                .on("hide", () => regview.Z80RegView("visibility", false));
+                .on("hide", () => regview.Z80RegView("visibility", false))
+                .ToolWindow("create").ToolWindow("open");
 
             // Fire the events when the jquery elements was shown or hidden
             for(const ev of ["show", "hide"]) {
@@ -203,13 +204,14 @@ const ToolWindow = require("../lib/tool-window.js");
             const dumplist = $("<div/>").dumplist("init", { mz700js: mz700js });
             $("#wndDumpList")
                 .append(dumplist.dumplist("addrSpecifier"))
-                .append(dumplist);
+                .append(dumplist)
+                .ToolWindow("create").ToolWindow("open");
         }
 
         // Create assemble list
         {
             const asmView = $("<div/>").asmview("create", mz700js);
-            $("#wndAsmList").append(asmView);
+            $("#wndAsmList").append(asmView).ToolWindow("create").ToolWindow("open");
 
             // Show a sample assemble source
             const asmlistMzt = asmView.asmview("newAsmList", "mzt", "PCG-700 sample");
@@ -282,9 +284,8 @@ const ToolWindow = require("../lib/tool-window.js");
                         .addClass("mnemonic"))
                 .append(btnExecImm)
                 .append($("<br/>"))
-            );
+            ).ToolWindow("create").ToolWindow("close");
         }
-        ToolWindow.create(dockPanelRight);
     }
 
     // Convert MZ-700 character
