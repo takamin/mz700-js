@@ -1,0 +1,43 @@
+.toolwnd {
+    border: solid 1px blue;
+}
+.toolwnd > .titlebar {
+    overflow: hidden;
+    height: 30px;
+    line-height: 30px;
+    font-size: 11pt;
+    border-style: solid;
+    border-color: white;
+    border-width: 0 0 1px 0;
+    background-color: blue;
+    color: white;
+    font-weight:bold;
+}
+.toolwnd > .titlebar > .title {
+    display: inline-block;
+    width: calc(100% - 34px);
+    padding-left:2px;
+}
+.toolwnd > .titlebar > .buttons {
+    display: inline-block;
+    width: 30px;
+    padding: 0 1px;
+}
+.toolwnd > .titlebar > .buttons > button {
+    display: inline-block;
+    width: 25px;
+    height: 25px;
+    line-height: 12px;
+    margin: 1px 1px 1px 0;
+    font-size: 11pt;
+    border: solid 1px #44f;
+}
+.toolwnd > .titlebar > .buttons > button:hover {
+    background-color: white;
+    border: solid 1px white;
+}
+.toolwnd > .titlebar > .buttons > button:disabled {
+    background-color: blue;
+    color: #44f;
+    border: solid 1px #44f;
+}
