@@ -6,10 +6,15 @@ npm-debug.log
 tags
 bundle-*.js
 lib/number-util.js
+lib/change-ext.js
+lib/do-later.js
 lib/event-dispatcher.js
 lib/flip-flop-counter.js
 lib/ic556.js
 lib/intel-8253.js
+lib/jsonp.js
+lib/mz-beep.js
+lib/mz-data-recorder.js
 lib/mz-mmio.js
 lib/mz-tape.js
 lib/mz-tape-header.js

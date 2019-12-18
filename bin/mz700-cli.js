@@ -2,7 +2,7 @@
 "use strict";
 
 const NumberUtil = require("../lib/number-util.js");
-const getPackageJson = require("../lib/get-package-json");
+const getPackageJson = require("./lib/get-package-json");
 const npmInfo = getPackageJson(__dirname + "/..");
 const Getopt = require('node-getopt');
 const getopt = new Getopt([
