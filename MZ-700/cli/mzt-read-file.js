@@ -1,6 +1,6 @@
 "use strict";
 const fs = require('fs');
-const MZ_Tape = require("./mz-tape.js");
+const MZ_Tape = require("../../lib/mz-tape.js");
 module.exports = function (filename) {
     return new Promise(function(resolve, reject) {
         if(!filename) {
