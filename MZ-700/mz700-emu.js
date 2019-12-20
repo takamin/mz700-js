@@ -20,6 +20,7 @@ require("../lib/jquery.mz700-scrn.js");
 require("../lib/jquery.mz-sound-control.js");
 require("../lib/jquery.emu-speed-control.js");
 require("../lib/jquery.mz-control-panel.js");
+require("../lib/jquery.tool-window.js");
 const BBox = require("b-box");
 const dock_n_liquid = require("dock-n-liquid");
 const packageJson = require("../package.json");
@@ -28,7 +29,6 @@ const MZ700CG = require("../lib/mz700-cg.js");
 const MZBeep = require("../lib/mz-beep.js");
 const parseRequest = require("../lib/parse-request");
 const requestJsonp = require("../lib/jsonp");
-const ToolWindow = require("../lib/tool-window.js");
 
 ((async () => {
 
@@ -152,60 +152,7 @@ const ToolWindow = require("../lib/tool-window.js");
     }
 
     const dockPanelRight = $("#dock-panel-right");
-    if(getDeviceType() !== "pc") {
-        dockPanelRight.remove();
-    } else {
-        document.addEventListener("fullscreenchange", () => {
-            if(document.fullscreenElement == null) {
-                dockPanelRight.show();
-            } else {
-                dockPanelRight.hide();
-            }
-        });
-        // Register View
-        {
-            const regview = $("<div/>").Z80RegView("init", mz700js);
-            $("#wndRegView")
-                .append($("<div/>").css("display", "inline-block").append(regview))
-                .on("show", () => regview.Z80RegView("visibility", true))
-                .on("hide", () => regview.Z80RegView("visibility", false));
-
-            // Fire the events when the jquery elements was shown or hidden
-            for(const ev of ["show", "hide"]) {
-                const el = $.fn[ev];
-                $.fn[ev] = function() {
-                    this.trigger(ev);
-                    return el.apply(this, arguments);
-                }
-            }
-        }
-
-        // Create dump list
-        {
-            const dumplist = $("<div/>").dumplist("init", { mz700js: mz700js });
-            $("#wndDumpList")
-                .append(dumplist.dumplist("addrSpecifier"))
-                .append(dumplist);
-        }
-    }
-
-    // Create assemble list
-    const asmView = $("<div/>").asmview("create", mz700js);
-    $("#wndAsmList").append(asmView);
-
-    // Show a sample assemble source
-    const asmlistMzt = asmView.asmview("newAsmList", "mzt", "PCG-700 sample");
-    await asmlistMzt.asmlist("assemble", $("textarea.default.source").val());
-
-    // Disassemble MZTape array
-    const disassemble = async function(mztape_array) {
-        const name = MZ_TapeHeader.get1stFilename(mztape_array) || "(empty)";
-        const result = MZ700.disassemble(mztape_array);
-        asmView.asmview("name", "mzt", name);
-        asmlistMzt.asmlist("text", result.outbuf);
-        asmlistMzt.asmlist("writeList",
-            result.asmlist, await mz700js.getBreakPoints());
-    };
+    let disassemble = async ()=>{};
 
     // Set a cassette tape to data recorder of MZ-700 and
     // load the MZT to memory directly.
@@ -222,20 +169,78 @@ const ToolWindow = require("../lib/tool-window.js");
         await mz700container.MZControlPanel("updateCmtSlot");
     };
 
-    {
-        // Disassemble MONITOR ROM and show that source.
+
+    if(getDeviceType() !== "pc") {
+        dockPanelRight.remove();
+    } else {
+        document.addEventListener("fullscreenchange", () => {
+            if(document.fullscreenElement == null) {
+                dockPanelRight.show();
+            } else {
+                dockPanelRight.hide();
+            }
+        });
+        // Register View
         {
-            const monRom = asmView.asmview("newAsmList",
-                "monitor-rom", "MZ-700 NEW MONITOR");
-            const dasmlist = Z80.dasm(MZ700_MonitorRom.Binary, 0x0000, 0x1000, 0x0000);
-            const dasmlines = Z80.dasmlines(dasmlist);
-            await monRom.asmlist("assemble", [
-                ";;;",
-                ";;; This is a disassembled list of the MZ-NEW MONITOR",
-                ";;; provided from the Marukun's website 'MZ-Memories'",
-                ";;; ( http://retropc.net/mz-memories/mz700/ ).",
-                ";;; ",
-            ].join("\n") + "\n" + dasmlines.join("\n") + "\n");
+            const regview = $("<div/>").Z80RegView("init", mz700js);
+            $("#wndRegView")
+                .append($("<div/>").css("display", "inline-block").append(regview))
+                .on("show", () => regview.Z80RegView("visibility", true))
+                .on("hide", () => regview.Z80RegView("visibility", false))
+                .ToolWindow("create").ToolWindow("open");
+
+            // Fire the events when the jquery elements was shown or hidden
+            for(const ev of ["show", "hide"]) {
+                const el = $.fn[ev];
+                $.fn[ev] = function() {
+                    this.trigger(ev);
+                    return el.apply(this, arguments);
+                }
+            }
+        }
+
+        // Create dump list
+        {
+            const dumplist = $("<div/>").dumplist("init", { mz700js: mz700js });
+            $("#wndDumpList")
+                .append(dumplist.dumplist("addrSpecifier"))
+                .append(dumplist)
+                .ToolWindow("create").ToolWindow("open");
+        }
+
+        // Create assemble list
+        {
+            const asmView = $("<div/>").asmview("create", mz700js);
+            $("#wndAsmList").append(asmView).ToolWindow("create").ToolWindow("open");
+
+            // Show a sample assemble source
+            const asmlistMzt = asmView.asmview("newAsmList", "mzt", "PCG-700 sample");
+            await asmlistMzt.asmlist("assemble", $("textarea.default.source").val());
+
+            // Disassemble MZTape array
+            disassemble = async function(mztape_array) {
+                const name = MZ_TapeHeader.get1stFilename(mztape_array) || "(empty)";
+                const result = MZ700.disassemble(mztape_array);
+                asmView.asmview("name", "mzt", name);
+                asmlistMzt.asmlist("text", result.outbuf);
+                asmlistMzt.asmlist("writeList",
+                    result.asmlist, await mz700js.getBreakPoints());
+            };
+
+            // Disassemble MONITOR ROM and show that source.
+            {
+                const monRom = asmView.asmview("newAsmList",
+                    "monitor-rom", "MZ-700 NEW MONITOR");
+                const dasmlist = Z80.dasm(MZ700_MonitorRom.Binary, 0x0000, 0x1000, 0x0000);
+                const dasmlines = Z80.dasmlines(dasmlist);
+                await monRom.asmlist("assemble", [
+                    ";;;",
+                    ";;; This is a disassembled list of the MZ-NEW MONITOR",
+                    ";;; provided from the Marukun's website 'MZ-Memories'",
+                    ";;; ( http://retropc.net/mz-memories/mz700/ ).",
+                    ";;; ",
+                ].join("\n") + "\n" + dasmlines.join("\n") + "\n");
+            }
         }
 
         //直接実行ボタン
@@ -279,9 +284,8 @@ const ToolWindow = require("../lib/tool-window.js");
                         .addClass("mnemonic"))
                 .append(btnExecImm)
                 .append($("<br/>"))
-            );
+            ).ToolWindow("create").ToolWindow("close");
         }
-        ToolWindow.create(dockPanelRight);
     }
 
     // Convert MZ-700 character
