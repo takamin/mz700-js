@@ -2,7 +2,7 @@
 "use strict";
 
 const NumberUtil = require("../lib/number-util.js");
-const getPackageJson = require("../lib/get-package-json");
+const getPackageJson = require("./lib/get-package-json");
 const npmInfo = getPackageJson(__dirname + "/..");
 const Getopt = require('node-getopt');
 const getopt = new Getopt([
@@ -39,7 +39,7 @@ const readline = require("linebyline")(process.stdin);
 const MZ700 = require("../MZ-700/mz700.js");
 const MZMMIO = require("../lib/mz-mmio.js");
 const PCG700 = require("../lib/PCG-700");
-const mztReadFile = require("../lib/mzt-read-file");
+const mztReadFile = require("./lib/mzt-read-file");
 
 MZ700.prototype.subscribe = function(notify, handler) {
     console.log(`subscribe ${notify} = ${handler}`);

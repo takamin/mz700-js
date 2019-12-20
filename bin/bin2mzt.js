@@ -2,7 +2,7 @@
 var MZ_TapeHeader = require('../lib/mz-tape-header.js');
 var changeExt = require('../lib/change-ext.js');
 var fs = require('fs');
-var getPackageJson = require("../lib/get-package-json");
+var getPackageJson = require("./lib/get-package-json");
 var npmInfo = getPackageJson(__dirname + "/..");
 var Getopt = require('node-getopt');
 var getopt = new Getopt([
