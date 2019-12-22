@@ -1,6 +1,6 @@
 {
   "name": "mz700-js",
-  "version": "1.2.14",
+  "version": "1.2.15",
   "description": "MZ-700 Full JavaScript Emulator",
   "private": false,
   "scripts": {
@@ -20,7 +20,7 @@
     "bin2mzt": "./bin/bin2mzt.js"
   },
   "dependencies": {
-    "@types/node": "^12.12.14",
+    "@types/node": "^12.12.17",
     "ansi-escape-sequences": "^5.1.2",
     "b-box": "^1.0.1",
     "codemirror": "^5.49.2",
