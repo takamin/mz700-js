@@ -8,9 +8,9 @@ let id = 0;
  * @param {Function} callback A function to callback
  * @returns {Promise} It will be resolved after the :bJSONP function is called.
  */
-function requestJsonp(callbackName, url, callback) {
+export default function requestJsonp(callbackName:string, url:string, callback:Function):Promise<string> {
     return new Promise( (resolve, reject) => {
-        window[callbackName] = (...args) => {
+        window[callbackName] = (...args:any):void => {
             if(callback) {
                 callback.apply(null, args);
             }
@@ -26,8 +26,9 @@ function requestJsonp(callbackName, url, callback) {
         setTimeout( () => reject(), 30000);
     });
 }
+
 if(!("removeJsonp" in window)) {
-    window.removeJsonp = function(id) {
+    window["removeJsonp"] = function(id) {
         var e = document.getElementById("jsonp" + id);
         document.body.removeChild(e);
     };

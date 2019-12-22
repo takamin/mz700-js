@@ -14,19 +14,21 @@
         <meta name="twitter:image" content="https://takamin.github.io/mz700-js/image/title.png">
         <title>MZ-700 FULL JAVASCRIPT EMULATOR</title>
         <link rel="stylesheet" type="text/css" href="https://code.jquery.com/ui/1.12.1/themes/smoothness/jquery-ui.css"/>
-        <link rel="stylesheet" type="text/css" href="./lib/jquery.soundctrl.css"/>
-        <link rel="stylesheet" type="text/css" href="./lib/jquery.Z80-reg.css"/>
-        <link rel="stylesheet" type="text/css" href="./lib/jquery.Z80-mem.css"/>
-        <link rel="stylesheet" type="text/css" href="./lib/jquery.mz700-kb.css"/>
+        <link rel="stylesheet" type="text/css" href="./lib/jquery-plugin/jquery.soundctrl.css"/>
+        <link rel="stylesheet" type="text/css" href="./lib/jquery-plugin/jquery.Z80-reg.css"/>
+        <link rel="stylesheet" type="text/css" href="./lib/jquery-plugin/jquery.Z80-mem.css"/>
+        <link rel="stylesheet" type="text/css" href="./lib/jquery-plugin/jquery.mz700-kb.css"/>
         <link rel="stylesheet" type="text/css" href="./MZ-700/mz700-emu.css"/>
-        <link rel="stylesheet" type="text/css" href="./lib/jquery.emu-speed-control.css"/>
-        <link rel="stylesheet" type="text/css" href="./lib/jquery.tabview.css"/>
-        <link rel="stylesheet" type="text/css" href="./lib/jquery.asmlist.css"/>
-        <link rel="stylesheet" href="./lib/codemirror.css">
-        <link rel="icon" type="image/png" href="./image/favicon-16x16.png" sizes="16x16"/>
-        <link rel="icon" type="image/png" href="./image/favicon-32x32.png" sizes="32x32"/>
-        <link rel="icon" type="image/png" href="./image/favicon-48x48.png" sizes="48x48"/>
-        <link rel="icon" type="image/png" href="./image/favicon-96x96.png" sizes="96x96"/>
+        <link rel="stylesheet" type="text/css" href="./lib/jquery-plugin/jquery.emu-speed-control.css"/>
+        <link rel="stylesheet" type="text/css" href="./lib/jquery-plugin/jquery.tabview.css"/>
+        <link rel="stylesheet" type="text/css" href="./lib/jquery-plugin/jquery.asmlist.css"/>
+        <link rel="stylesheet" type="text/css" href="./lib/jquery-plugin/jquery.tool-window.css"/>
+        <link rel="stylesheet" href="./node_modules/codemirror/lib/codemirror.css">
+
+        <link rel="icon" type="image/png" href="/mz700-js/image/favicon-16x16.png" sizes="16x16"/>
+        <link rel="icon" type="image/png" href="/mz700-js/image/favicon-32x32.png" sizes="32x32"/>
+        <link rel="icon" type="image/png" href="/mz700-js/image/favicon-48x48.png" sizes="48x48"/>
+        <link rel="icon" type="image/png" href="/mz700-js/image/favicon-96x96.png" sizes="96x96"/>
 
         <script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
         <script>
@@ -65,10 +67,10 @@
                 <div class="screen cmt-slot key-switcher"></div>
             </div>
             <div id="dock-panel-right" class="dock right resizable" style="width:590px;">
-                <div id="wndRegView" class="toolwnd register-monitor open" title="REGISTER"></div>
-                <div id="wndDumpList" class="toolwnd memory open" title="MEMORY"></div>
-                <div id="wndImmExec" class="toolwnd" title="IMM.EXEC."></div>
-                <div id="wndAsmList" class="toolwnd open" title="Z80 ASM"></div>
+                <div id="wndRegView" class="register-monitor open" title="REGISTER"></div>
+                <div id="wndDumpList" class="memory open" title="MEMORY"></div>
+                <div id="wndImmExec" title="IMM.EXEC."></div>
+                <div id="wndAsmList" class="open" title="Z80 ASM"></div>
             </div>
         </div>
         <textarea class="default source" style="display:none;">
