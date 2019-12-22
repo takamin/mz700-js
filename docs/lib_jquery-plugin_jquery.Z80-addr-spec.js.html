@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Z80AddressSpecifier - Documentation</title>
+    <title>lib/jquery-plugin/jquery.Z80-addr-spec.js - Documentation</title>
 
     <script src="scripts/prettify/prettify.js"></script>
     <script src="scripts/prettify/lang-css.js"></script>
@@ -29,377 +29,132 @@
 
 <div id="main">
     
-    <h1 class="page-title">Z80AddressSpecifier</h1>
+    <h1 class="page-title">lib/jquery-plugin/jquery.Z80-addr-spec.js</h1>
     
 
     
 
 
 
-
-<section>
-
-<header>
     
-        <h2>
-        Z80AddressSpecifier
-        </h2>
-        
-    
-</header>
-
-<article>
-    <div class="container-overview">
-    
-        
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="Z80AddressSpecifier"><span class="type-signature"></span>new Z80AddressSpecifier<span class="signature">(element, opt)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Z80 address specification controll panel(jquery plugin)</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="lib_jquery-plugin_jquery.Z80-addr-spec.js.html">lib/jquery-plugin/jquery.Z80-addr-spec.js</a>, <a href="lib_jquery-plugin_jquery.Z80-addr-spec.js.html#line17">line 17</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>element</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>HTMLElement</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>The DOM element to create widget.</p>
-                
-            </td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>opt</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>object</code></span>
-|
-
-<span class="param-type"><code>undefined</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>An option for this widget.</p>
-                
-            </td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-</div>
-    
-    </div>
-
-    
-
-    
-
-    
-
-     
-
-    
-
-    
-
-    
-        <h3 class="subsection-title">Methods</h3>
-
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="create"><span class="type-signature"></span>create<span class="signature">(opt)</span><span class="type-signature"> &rarr; {undefined}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Create this widget.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="lib_jquery-plugin_jquery.Z80-addr-spec.js.html">lib/jquery-plugin/jquery.Z80-addr-spec.js</a>, <a href="lib_jquery-plugin_jquery.Z80-addr-spec.js.html#line36">line 36</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>opt</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>object</code></span>
-|
-
-<span class="param-type"><code>undefined</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>An option for this widget.</p>
-                
-            </td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
-<span class="param-type"><code>undefined</code></span>
-
-
-    </dd>
-</dl>
-
-
-    
-</div>
-
-
-
-</div>
-        
-    
-
-    
-
-    
-</article>
-
-</section>
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>"use strict";
+const NumberUtil = require("../number-util.js");
+const parseAddress = require("../parse-addr.js");
+const jquery_plugin_class = require("./jquery_plugin_class");
+jquery_plugin_class("Z80AddressSpecifier");
+
+/**
+ * Z80 address specification controll panel(jquery plugin)
+ * @constructor
+ *
+ * @param {HTMLElement} element
+ * The DOM element to create widget.
+ *
+ * @param {object|undefined} opt
+ * An option for this widget.
+ */
+function Z80AddressSpecifier(element, opt) {
+    this._element = element;
+    this._opt = {};
+    if(opt) {
+        this.create(opt);
+    }
+}
+
+window.Z80AddressSpecifier = Z80AddressSpecifier;
+module.exports = Z80AddressSpecifier;
+
+/**
+ * Create this widget.
+ *
+ * @param {object|undefined} opt
+ * An option for this widget.
+ *
+ * @return {undefined}
+ */
+Z80AddressSpecifier.prototype.create = function(opt) {
+
+    let $root = $(this._element).css("width", "550px");
+
+    const IDC = "z80-addr-spec";
+    if($root.hasClass(IDC)) {
+        return;
+    }
+    $root.addClass(IDC);
+
+    opt = opt || {};
+    Object.keys(this._opt).forEach(key=>{
+        if(key in opt) {
+            this._opt[key] = opt[key];
+        }
+    });
+
+    const getReg = regName => {
+        return new Promise( (resolve, reject) => {
+            try {
+                $root.trigger("queryregister", [ regName, value => {
+                    resolve(value);
+                }]);
+            } catch(err) {
+                reject(err);
+            }
+        });
+    };
+
+    [
+        {"H":"B","L": "C"},
+        {"H":"D","L": "E"},
+        {"H":"H","L": "L"},
+        "PC", "SP", "IX", "IY"
+    ].forEach(regs => {
+        var pair = ((typeof(regs) === "string") ? false : true);
+        var name16 = (pair ? regs.H + regs.L : regs);
+        var getRegValue = (pair ?
+            (regs => {
+                let value = 0;
+                return getReg(regs.H).then(value_H => {
+                    value = value_H * 256;
+                    return getReg(regs.L);
+                }).then( value_L => {
+                    return value + value_L;
+                });
+            }) : (regs => { return getReg(regs); }));
+        $root
+            .append($("&lt;button/>")
+                .attr("id", "btnShowMem" + name16)
+                .attr("type", "button").css("width", "50px").html(name16)
+                .click(() => {
+                    getRegValue(regs).then(value => {
+                        $("#txtShowMemAddr").val( NumberUtil.HEX(value, 4) + "H" );
+                        $root.trigger("notifyaddress", value);
+                    }).catch(err=> {
+                        console.error(err.stack);
+                    });
+                }));
+    });
+
+    $root.append($("&lt;input/>")
+            .attr("id", "txtShowMemAddr").attr("type", "text")
+            .attr("value", "0000h").css("width", "80px")
+            .attr("title",
+                "16進数(最後にhまたはH)の他、プログラム中のラベルも使えます。"
+                + "10進数、8進数(0から始まる数字)もOK"))
+        .append($("&lt;button/>")
+            .attr("id", "btnShowMemAddr")
+            .attr("type", "button").css("width", "80px").html("表示更新")
+            .click(() => {
+                var addrToken = $("#txtShowMemAddr").val();
+                var addr = parseAddress.parseAddress(addrToken);
+                if(addr != null) {
+                    $root.trigger("notifyaddress", addr);
+                }
+            }));
+};
+</code></pre>
+        </article>
+    </section>
 
 
 

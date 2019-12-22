@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Z80AddressSpecifier - Documentation</title>
+    <title>lib/jquery-plugin/jquery.asmeditor.js - Documentation</title>
 
     <script src="scripts/prettify/prettify.js"></script>
     <script src="scripts/prettify/lang-css.js"></script>
@@ -29,377 +29,91 @@
 
 <div id="main">
     
-    <h1 class="page-title">Z80AddressSpecifier</h1>
+    <h1 class="page-title">lib/jquery-plugin/jquery.asmeditor.js</h1>
     
 
     
 
 
 
-
-<section>
-
-<header>
     
-        <h2>
-        Z80AddressSpecifier
-        </h2>
-        
-    
-</header>
-
-<article>
-    <div class="container-overview">
-    
-        
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="Z80AddressSpecifier"><span class="type-signature"></span>new Z80AddressSpecifier<span class="signature">(element, opt)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Z80 address specification controll panel(jquery plugin)</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="lib_jquery-plugin_jquery.Z80-addr-spec.js.html">lib/jquery-plugin/jquery.Z80-addr-spec.js</a>, <a href="lib_jquery-plugin_jquery.Z80-addr-spec.js.html#line17">line 17</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>element</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>HTMLElement</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>The DOM element to create widget.</p>
-                
-            </td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>opt</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>object</code></span>
-|
-
-<span class="param-type"><code>undefined</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>An option for this widget.</p>
-                
-            </td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-</div>
-    
-    </div>
-
-    
-
-    
-
-    
-
-     
-
-    
-
-    
-
-    
-        <h3 class="subsection-title">Methods</h3>
-
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="create"><span class="type-signature"></span>create<span class="signature">(opt)</span><span class="type-signature"> &rarr; {undefined}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Create this widget.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="lib_jquery-plugin_jquery.Z80-addr-spec.js.html">lib/jquery-plugin/jquery.Z80-addr-spec.js</a>, <a href="lib_jquery-plugin_jquery.Z80-addr-spec.js.html#line36">line 36</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>opt</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>object</code></span>
-|
-
-<span class="param-type"><code>undefined</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>An option for this widget.</p>
-                
-            </td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
-<span class="param-type"><code>undefined</code></span>
-
-
-    </dd>
-</dl>
-
-
-    
-</div>
-
-
-
-</div>
-        
-    
-
-    
-
-    
-</article>
-
-</section>
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>"use strict";
+
+const jquery_plugin_class = require("./jquery_plugin_class");
+const CodeMirror = require("codemirror");
+
+require("codemirror/mode/z80/z80");
+
+jquery_plugin_class("asmeditor");
+
+/**
+ * A Z80 Assembler editor using CodeMirror.
+ *
+ * Events:
+ *  change: text changed
+ *
+ * @constructor
+ *
+ * @param {HTMLElement} element
+ * A root element for jquery plug-in.
+ *
+ * @see [CodeMirror: User Manual](http://codemirror.net/doc/manual.html)
+ */
+function asmeditor(element) {
+    this._root = $(element);
+    this._editor = null;    // editor object of codemirror
+}
+
+// Exports
+window.asmeditor = asmeditor;
+module.exports = asmeditor;
+
+/**
+ * Create editor.
+ *
+ * @returns {undefined}
+ */
+asmeditor.prototype.create = function() {
+    var $textarea = $("&lt;textarea type='text'/>");
+    this._root.append($textarea);
+    this._editor = CodeMirror.fromTextArea(
+            $textarea.get(0), { mode: "z80" });
+    this._editor.on("change", (/*editor, changeObj*/) => {
+        this._root.trigger("change");
+    });
+};
+
+/**
+ * Refresh the editor view.
+ * @returns {undefined}
+ */
+asmeditor.prototype.refresh = function() {
+    this._editor.refresh();
+    this._editor.focus();
+};
+
+/**
+ * Set or get source as text.
+ *
+ * @param {string|undefined} text
+ * source file to be set.
+ *
+ * @returns {undefined|string}
+ * returns source text, if text parameter was not provided.
+ */
+asmeditor.prototype.text = function(text) {
+    if(text == null) {
+        return this._editor.getValue();
+    } else {
+        this._editor.setValue(text);
+        this._editor.markClean();
+    }
+};
+</code></pre>
+        </article>
+    </section>
 
 
 

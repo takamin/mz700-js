@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Z80AddressSpecifier - Documentation</title>
+    <title>lib/jquery-plugin/jquery.Z80-mem.js - Documentation</title>
 
     <script src="scripts/prettify/prettify.js"></script>
     <script src="scripts/prettify/lang-css.js"></script>
@@ -29,377 +29,272 @@
 
 <div id="main">
     
-    <h1 class="page-title">Z80AddressSpecifier</h1>
+    <h1 class="page-title">lib/jquery-plugin/jquery.Z80-mem.js</h1>
     
 
     
 
 
 
-
-<section>
-
-<header>
     
-        <h2>
-        Z80AddressSpecifier
-        </h2>
-        
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>"use strict";
+const mz700charcode = require("../mz700-charcode.js");
+const NumberUtil = require("../number-util.js");
+var jquery_plugin_class = require("./jquery_plugin_class");
+
+// Use "vscrlist" jQuery plugin
+require("./jquery.vscrlist.js");
+
+// Load jQuery plug-in Z80AddressSpecifier
+require("./jquery.Z80-addr-spec.js");
+
+jquery_plugin_class("dumplist");
+
+/**
+ * Hex dump list with MZ-700 characters.
+ * @constructor
+ *
+ * @param {HTMLElement} element
+ * A root element for this widget.
+ */
+var dumplist = function(element) {
+    this.element = element;
+    this.opt = {
+        "mz700js": null,
+        "cols" : 16,
+        "rows" : 16,
+        "_topAddr" : 0,
+    };
+    this._charViewAscii = true;
+    this._topAddr = 0;
+    this._topLeftAddr = 0;
+    this.addrCols = [];
+    this.dataCells = [];
+    this._charViewRows = [];
+    this._hexadumpRows = [];
+};
+
+window.dumplist = dumplist;
+
+dumplist.charViewForeColor = 0;
+dumplist.charViewBackColor = 7;
+dumplist.charViewAttr =
+    (dumplist.charViewForeColor &lt;&lt; 4) |
+    dumplist.charViewBackColor;
+dumplist.mz700CharSizePx = 10;
+
+/**
+ * Create
+ *
+ * @param {object} opt
+ * An option parameter for this widget.
+ *
+ * @returns {undefined}
+ */
+dumplist.prototype.init = function(opt) {
+    if(opt) {
+        Object.keys(this.opt).forEach(function(key) {
+            if(key in opt) { this.opt[key] = opt[key]; }
+        }, this);
+    }
+    this._mz700js = this.opt.mz700js;
+
+    var $root = $("&lt;div/>");
+    $root.insertBefore($(this.element));
+    $(this.element).appendTo($root);
+
+    var $container = $(this.element);
+    $container.addClass("dumplist");
+    $container.empty();
+
+    // Create header row
+    let $headerRow = $("&lt;div/>").addClass("row").addClass("header");
+
+    //Create row header column in header row
+    var $col = $("&lt;span/>").addClass("cell").addClass("header")
+        .html("ADDR");
+    $headerRow.append($col);
     
-</header>
-
-<article>
-    <div class="container-overview">
-    
-        
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="Z80AddressSpecifier"><span class="type-signature"></span>new Z80AddressSpecifier<span class="signature">(element, opt)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Z80 address specification controll panel(jquery plugin)</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="lib_jquery-plugin_jquery.Z80-addr-spec.js.html">lib/jquery-plugin/jquery.Z80-addr-spec.js</a>, <a href="lib_jquery-plugin_jquery.Z80-addr-spec.js.html#line17">line 17</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>element</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>HTMLElement</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>The DOM element to create widget.</p>
-                
-            </td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>opt</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>object</code></span>
-|
-
-<span class="param-type"><code>undefined</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>An option for this widget.</p>
-                
-            </td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-</div>
-    
-    </div>
-
-    
-
-    
-
-    
-
-     
-
-    
-
-    
-
-    
-        <h3 class="subsection-title">Methods</h3>
-
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="create"><span class="type-signature"></span>create<span class="signature">(opt)</span><span class="type-signature"> &rarr; {undefined}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Create this widget.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="lib_jquery-plugin_jquery.Z80-addr-spec.js.html">lib/jquery-plugin/jquery.Z80-addr-spec.js</a>, <a href="lib_jquery-plugin_jquery.Z80-addr-spec.js.html#line36">line 36</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>opt</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>object</code></span>
-|
-
-<span class="param-type"><code>undefined</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>An option for this widget.</p>
-                
-            </td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
-<span class="param-type"><code>undefined</code></span>
-
-
-    </dd>
-</dl>
-
-
-    
-</div>
-
-
-
-</div>
-        
-    
-
-    
-
-    
-</article>
-
-</section>
+    // Create each columns in header row
+    for(var col = 0; col &lt; this.opt.cols; col++) {
+        $col = $("&lt;span/>").addClass("cell").addClass("c" + col);
+        $col.html('+' + NumberUtil.HEX(col, 1));
+        $headerRow.append($col);
+    }
+
+    // Create a character view controls in header row
+    let changeCharViewToAscii = showAscii => {
+        if(this._charViewAscii != showAscii) {
+            this._charViewAscii = showAscii;
+            this.redraw();
+        }
+    };
+    $headerRow.append($("&lt;span/>").addClass("char-selector")
+        .append(
+            $("&lt;input/>").attr("type", "radio").attr("name","charViewCode")
+            .click(()=>{ changeCharViewToAscii(true); })
+            .attr("checked", true))
+        .append($("&lt;label/>").html("ASCII CODE"))
+        .append($("&lt;span/>").html("/"))
+        .append(
+            $("&lt;input/>").attr("type", "radio").attr("name","charViewCode")
+            .click(()=>{ changeCharViewToAscii(false); }))
+        .append($("&lt;label/>").html("DISP.CODE")));
+
+    // Create data rows
+    for(var row = 0; row &lt; this.opt.rows; row++) {
+
+        // Create data row
+        let $row = $("&lt;div/>")
+            .addClass("row").addClass("r" + row);
+
+        $col = $("&lt;span/>").addClass("cell").addClass("header");
+
+        $row.append($col);
+        this.addrCols.push($col);
+
+        // Create all columns in data row
+        for(col = 0; col &lt; this.opt.cols; col++) {
+            $col = $("&lt;span/>")
+                .addClass("cell").addClass("c" + col);
+            this.dataCells.push($col);
+            $row.append($col);
+        }
+        const charViewRow = $("&lt;span/>").addClass("mz700chars").mz700scrn("create", {
+            cols: this.opt.cols, rows:1,
+            color: dumplist.charViewForeColor,
+            backgroundColor: dumplist.charViewBackColor,
+            width: (this.opt.cols * dumplist.mz700CharSizePx) + "px",
+            alt:"", title:""
+        }).mz700scrn("clear") .mz700scrn("setupRendering")
+            .css("width", this.opt.cols * dumplist.mz700CharSizePx)
+            .css("height", dumplist.mz700CharSizePx);
+        $row.append(charViewRow);
+        this._charViewRows.push(charViewRow);
+        this._hexadumpRows.push($row);
+    }
+
+    // Create vscrlist's items
+    let itemCount = 0x10000 / this.opt.cols;
+    let listItems = new Array(itemCount);
+    for(let i = 0; i &lt; itemCount; i++) {
+        listItems[i] = {
+            startAddr: i * this.opt.cols,
+        };
+    }
+
+    // Create vscrlist widget
+    this._hexdump = $("&lt;div/>").vscrlist("create", {
+        rowHeight: 16, rowCount: this.opt.rows,
+        keyRepeatBufferCount: 8,
+        headerRow: $headerRow,
+        createRow: index => {
+            if(!this._hexdump || index &lt; 0 || listItems.length &lt;= index) {
+                return;
+            }
+            let topItemIndex = this._hexdump.vscrlist("listTopIndex");
+            let row = index - topItemIndex;
+
+            let $row = this._hexadumpRows[row];
+            let cellIndex = row * this.opt.cols;
+            let addr = listItems[index].startAddr;
+            this.addrCols[row].html( NumberUtil.HEX(addr, 4) );
+
+            this._mz700js.readMemory(addr, addr + this.opt.cols).then(
+                memblock => memblock.forEach( (value, col) => {
+                    this.dataCells[cellIndex].html( NumberUtil.HEX(value, 2) );
+                    if(this._charViewAscii) {
+                        value = mz700charcode.ascii2dispcode[value];
+                    }
+                    this._charViewRows[row].mz700scrn(
+                        "writeVram", col, dumplist.charViewAttr, value);
+                    cellIndex++;
+                })
+            );
+            return $row.get(0);
+        }
+    }).vscrlist("items", listItems)
+    .on("scroll", () => {
+        let topItemIndex = this._hexdump.vscrlist("listTopIndex");
+        this._topLeftAddr = listItems[topItemIndex].startAddr;
+    });
+    $container.append(this._hexdump);
+    this._hexdump.append(this._hexadumpRows).css("height", "280px");
+
+    setTimeout(() => {
+        this.topAddr(this.opt._topAddr);
+    }, 0);
+};
+
+/**
+ * Set top address and redraw.
+ * @param {undefined|number} topAddr address to show. range: 0 to 65535.
+ * @returns {number|undefined} top address
+ */
+dumplist.prototype.topAddr = function(topAddr) {
+    if(topAddr == null) {
+        return this._topAddr;
+    }
+    this._topAddr = topAddr;
+    $("#txtShowMemAddr").val( NumberUtil.HEX(this._topAddr, 4) + "H" );
+
+    // Calculate address at top-left
+    var addr = this._topAddr - (this._topAddr % this.opt.cols) - 7 * this.opt.cols;
+    let ulim = 65536 - this.opt.cols * this.opt.rows;
+    if(addr > ulim) { addr = ulim; }
+    if(addr &lt; 0) { addr = 0; }
+    this._topLeftAddr = addr;
+    let topItemIndex = this._topLeftAddr / this.opt.cols;
+    this._hexdump.vscrlist("listTopIndex", topItemIndex);
+};
+
+/**
+ * Redraw dumplist.
+ *
+ * @returns {undefined}
+ */
+dumplist.prototype.redraw = function() {
+
+    let addr = this._topLeftAddr;
+    this._mz700js.readMemory(addr, addr + this.opt.rows * this.opt.cols).then(
+        memblock => {
+            let i = 0;
+            if(this._charViewAscii) {
+                for(let row = 0; row &lt; this.opt.rows; row++) {
+                    for(let col = 0; col &lt; this.opt.cols; col++) {
+                        this._charViewRows[row].mz700scrn(
+                            "writeVram", col, dumplist.charViewAttr,
+                            mz700charcode.ascii2dispcode[memblock[i++]]);
+                    }
+                }
+            } else {
+                for(let row = 0; row &lt; this.opt.rows; row++) {
+                    for(let col = 0; col &lt; this.opt.cols; col++) {
+                        this._charViewRows[row].mz700scrn(
+                            "writeVram", col, dumplist.charViewAttr,
+                            memblock[i++]);
+                    }
+                }
+            }
+        }
+    );
+};
+
+dumplist.prototype.addrSpecifier = function() {
+    return $("&lt;div/>").Z80AddressSpecifier("create")
+        .on("queryregister", async (event, regName, callback) => {
+            const reg = await this._mz700js.getRegister();
+            callback(reg[regName]);
+        })
+        .on("notifyaddress", (event, address) => {
+            this.topAddr(address);
+        });
+};
+</code></pre>
+        </article>
+    </section>
 
 
 

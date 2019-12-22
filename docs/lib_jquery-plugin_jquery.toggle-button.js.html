@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Z80AddressSpecifier - Documentation</title>
+    <title>lib/jquery-plugin/jquery.toggle-button.js - Documentation</title>
 
     <script src="scripts/prettify/prettify.js"></script>
     <script src="scripts/prettify/lang-css.js"></script>
@@ -29,377 +29,129 @@
 
 <div id="main">
     
-    <h1 class="page-title">Z80AddressSpecifier</h1>
+    <h1 class="page-title">lib/jquery-plugin/jquery.toggle-button.js</h1>
     
 
     
 
 
 
-
-<section>
-
-<header>
     
-        <h2>
-        Z80AddressSpecifier
-        </h2>
-        
-    
-</header>
-
-<article>
-    <div class="container-overview">
-    
-        
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="Z80AddressSpecifier"><span class="type-signature"></span>new Z80AddressSpecifier<span class="signature">(element, opt)</span><span class="type-signature"></span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Z80 address specification controll panel(jquery plugin)</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="lib_jquery-plugin_jquery.Z80-addr-spec.js.html">lib/jquery-plugin/jquery.Z80-addr-spec.js</a>, <a href="lib_jquery-plugin_jquery.Z80-addr-spec.js.html#line17">line 17</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>element</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>HTMLElement</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>The DOM element to create widget.</p>
-                
-            </td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>opt</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>object</code></span>
-|
-
-<span class="param-type"><code>undefined</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>An option for this widget.</p>
-                
-            </td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-</div>
-    
-    </div>
-
-    
-
-    
-
-    
-
-     
-
-    
-
-    
-
-    
-        <h3 class="subsection-title">Methods</h3>
-
-        
-            
-<div class="section-method">
-
-    
-
-    <h4 class="name" id="create"><span class="type-signature"></span>create<span class="signature">(opt)</span><span class="type-signature"> &rarr; {undefined}</span></h4>
-
-    
-
-
-
-<div class="description">
-    <p>Create this widget.</p>
-</div>
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="lib_jquery-plugin_jquery.Z80-addr-spec.js.html">lib/jquery-plugin/jquery.Z80-addr-spec.js</a>, <a href="lib_jquery-plugin_jquery.Z80-addr-spec.js.html#line36">line 36</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>opt</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><code>object</code></span>
-|
-
-<span class="param-type"><code>undefined</code></span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last">
-                <p>An option for this widget.</p>
-                
-            </td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<div class="section-returns">
-<h5>Returns:</h5>
-
-        
-
-<dl class="param-type">
-    <dt>
-        Type:
-    </dt>
-    <dd>
-        
-<span class="param-type"><code>undefined</code></span>
-
-
-    </dd>
-</dl>
-
-
-    
-</div>
-
-
-
-</div>
-        
-    
-
-    
-
-    
-</article>
-
-</section>
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>"use strict";
+const jquery_plugin_class = require("./jquery_plugin_class");
+jquery_plugin_class("ToggleButton");
+
+/**
+ * Toggle button widget.
+ * @constructor
+ * @param {HTMLButtonElement} button A button element for the widget
+ */
+function ToggleButton(button) {
+    this._button = $(button);
+    this._opt = {
+        on: (/*button*/)=>{},
+        off: (/*button*/)=>{},
+        autoState: true,
+    }
+}
+// Export to window
+window.ToggleButton = ToggleButton;
+
+/**
+ * Create A ToggleButton.
+ * @param {object} opt options
+ * @returns {undefined}
+ */
+ToggleButton.prototype.create = function(opt) {
+
+    opt = opt || {};
+    Object.keys(this._opt).forEach( key => {
+        if(key in opt) {
+            this._opt[key] = opt[key];
+        }
+    });
+
+    this._button.attr("type", "button").addClass("toggle")
+        .click(event => {
+            event.stopPropagation();
+            if(this._button.hasClass("on")) {
+                this.off();
+            } else {
+                this.on();
+            }
+        });
+    if(this._opt.autoState) {
+        if(this._button.hasClass("on")) {
+            this.on();
+        } else {
+            this.off();
+        }
+    }
+};
+
+/**
+ * Set this widget style to 'on'.
+ * @returns {undefined}
+ */
+ToggleButton.prototype.setOn = function() {
+    this._button.addClass("on");
+    this._button.removeClass("off");
+};
+
+/**
+ * Push this button and perform its action.
+ * @returns {undefined}
+ */
+ToggleButton.prototype.on = function() {
+    if(this._opt.autoState) {
+        this.setOn();
+    }
+    this._opt.on(this._button);
+};
+
+/**
+ * Set this widget style to 'off'.
+ * @returns {undefined}
+ */
+ToggleButton.prototype.setOff = function() {
+    this._button.removeClass("on");
+    this._button.addClass("off");
+};
+
+/**
+ * Release this button and perform its action.
+ * @returns {undefined}
+ */
+ToggleButton.prototype.off = function() {
+    if(this._opt.autoState) {
+        this.setOff();
+    }
+    this._opt.off(this._button);
+};
+
+/**
+ * Current button state.
+ * @returns {boolean} true when the state is 'on', otherwise false.
+ */
+ToggleButton.prototype.state = function() {
+    return this._button.hasClass("on");
+};
+
+/**
+ * Toggle the button state.
+ * @returns {undefined}
+ */
+ToggleButton.prototype.toggle = function() {
+    if(this.state()) {
+        this.off();
+    } else {
+        this.on();
+    }
+};</code></pre>
+        </article>
+    </section>
 
 
 

@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>lib/jquery-plugin/jquery.mz-control-panel.js - Documentation</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav>
+    <li class="nav-link nav-home-link"><a href="index.html">Home</a></li><li class="nav-heading">Classes</li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="asmeditor.html">asmeditor</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmeditor.html#create">create</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmeditor.html#refresh">refresh</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmeditor.html#text">text</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="asmlist.html">asmlist</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmlist.html#clearCurrentAddr">clearCurrentAddr</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmlist.html#create">create</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmlist.html#indexOfAddr">indexOfAddr</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmlist.html#lastLineIndexOfAddr">lastLineIndexOfAddr</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmlist.html#setCurrentAddr">setCurrentAddr</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmlist.html#text">text</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmlist.html#writeList">writeList</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="AsmRow.html">AsmRow</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="AsmRow.html#.selectorByAddress">selectorByAddress</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="dumplist.html">dumplist</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="dumplist.html#init">init</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="dumplist.html#redraw">redraw</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="dumplist.html#topAddr">topAddr</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="tabview.html">tabview</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="tabview.html#.tabId">tabId</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="tabview.html#add">add</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="tabview.html#caption">caption</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="tabview.html#create">create</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="tabview.html#currentPage">currentPage</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="tabview.html#data">data</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="tabview.html#index">index</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="tabview.html#page">page</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="tabview.html#show">show</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="ToggleButton.html">ToggleButton</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="ToggleButton.html#create">create</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="ToggleButton.html#off">off</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="ToggleButton.html#on">on</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="ToggleButton.html#setOff">setOff</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="ToggleButton.html#setOn">setOn</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="ToggleButton.html#state">state</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="ToggleButton.html#toggle">toggle</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="vscrlist.html">vscrlist</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#_listTopIndex">_listTopIndex</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#countKeyRepeat">countKeyRepeat</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#create">create</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#createList">createList</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#empty">empty</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#flashBufferedKeys">flashBufferedKeys</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#isEmpty">isEmpty</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#items">items</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#listTopIndex">listTopIndex</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#reportKbEvent">reportKbEvent</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#scroll">scroll</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#scrollByKeyCode">scrollByKeyCode</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#setupKeyEventListener">setupKeyEventListener</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#syncScrollTop">syncScrollTop</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#visibleRows">visibleRows</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="Z80AddressSpecifier.html">Z80AddressSpecifier</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80AddressSpecifier.html#create">create</a></span></li><li class="nav-heading"><a href="global.html">Globals</a></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="global.html#getEventCode">getEventCode</a></span></li>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">lib/jquery-plugin/jquery.mz-control-panel.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>"use strict";
+require("./jquery.toggle-button.js");
+
+const jquery_plugin_class = require("./jquery_plugin_class");
+jquery_plugin_class("MZControlPanel");
+
+const BBox = require("b-box");
+
+const { getDeviceType } = require("../user-agent-util.js");
+const parseRequest = require("../parse-request");
+const requestJsonp = require("../jsonp");
+
+const MZ_TapeHeader = require('../mz-tape-header.js');
+const NumberUtil = require("../number-util.js");
+
+function MZControlPanel(element) {
+    this._element = element;
+    this._mz700jsContainer = $(element);
+    this._mz700ScreenElement = $(element).find(".screen").get(0);
+    this._mz700js = null;
+
+    this._controlPanel = $("&lt;div/>").attr("id", "control-panel");
+    this._keyboard = $("&lt;div/>").addClass("keyboard");
+    this._emulationPanel = $("&lt;div/>").addClass("emulation-panel");
+    this._dataRecorder = $("&lt;div/>").addClass("data-recorder");
+
+    this._mz700jsContainer
+        .append(this._controlPanel
+            .append(this._keyboard)
+            .append(this._emulationPanel)
+            .append(this._dataRecorder));
+
+    this._tidHide = null;
+    this._isRunning = false;
+}
+
+MZControlPanel.prototype.create = async function(mz700js, mzBeep, baseClock) {
+    this._mz700js = mz700js;
+    this._keyboard.mz700keyboard("create", this._mz700js);
+    this._emuSpeedControl = $("&lt;span/>").EmuSpeedControl("create", mz700js, baseClock);
+    this._emulationPanel
+        .append($("&lt;span/>").MZSoundControl("create", mzBeep))
+        .append(this.createStartButton())
+        .append(this.createResetButton())
+        .append(this.createStepInButton())
+        .append(this._emuSpeedControl)
+        .append(this.createScreenKeyboardButton())
+        .append(this.createFullScreenButton());
+
+    switch(getDeviceType()) {
+    case "tablet":
+        this._controlPanel.click( event => {
+            event.stopPropagation();
+            this.toggleVisibility();
+        });
+        break;
+    case "pc":
+        this._mz700jsContainer.mouseenter(() => {
+            this.acceptKey(true);
+        }).mouseleave(() => {
+            this.acceptKey(false);
+            this.hide();
+            this.cancelTimer();
+        });
+        this._controlPanel.mouseenter(event => {
+            event.stopPropagation();
+            this.acceptKey(true);
+            this.cancelTimer();
+            this._controlPanel.show(0, () => {
+                this.resize();
+            });
+        });
+        this.show();
+        break;
+    }
+    this.createDataRecorderControl();
+
+    const mztButtons = await this.createPublicMztLoadingButtons();
+    this._controlPanel.append(mztButtons);
+
+    this._mz700js.subscribe("start", () => {
+        this._isRunning = true;
+    });
+    this._mz700js.subscribe("stop", async () => {
+        this._isRunning = false;
+    });
+
+    // Handling events about the data recorder control
+    mz700js.subscribe("onStartDataRecorder", () => {
+        this.startDataRecorder();
+    });
+    mz700js.subscribe("onStopDataRecorder", ()=>{
+        this.stopDataRecorder();
+    });
+};
+
+MZControlPanel.prototype.createDataRecorderControl = function() {
+    this.cmtMessageArea = $("&lt;span/>").addClass("cmt-message").html("(EMPTY)");
+    const btnCmtRec = $("&lt;button/>").attr("type", "button").addClass("rec")
+        .html("&lt;span style='color:red'>●&lt;/span> RECPLAY").click( () => {
+            this.cmtMessageArea.empty().html("Recording ...");
+            this._mz700js.dataRecorder_pushRec();
+        });
+    const btnCmtPlay = $("&lt;button/>").attr("type", "button").addClass("play")
+        .html("&lt;span class='cmtPlayImage'>▼&lt;/span> PLAY").click( () => {
+            this._mz700js.dataRecorder_pushPlay();
+        });
+    const btnCmtStop = $("&lt;button/>").attr("type", "button").addClass("stop")
+        .html("&lt;span>■&lt;/span> STOP").click( () => {
+            this._mz700js.dataRecorder_pushStop();
+        });
+    const btnCmtEject = $("&lt;button/>").attr("type", "button").addClass("eject")
+        .html("&lt;span>▲&lt;/span>EJECT").click(async () => {
+            await this._mz700js.dataRecorder_ejectCmt();
+            await this.updateCmtSlot();
+        });
+    if (window.File &amp;&amp; window.FileReader &amp;&amp; window.FileList &amp;&amp; window.Blob) {
+        let el = this._dataRecorder.get(0);
+        el.addEventListener('dragover', event => {
+            event.stopPropagation();
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'copy'; // Explicitly show this is a copy.
+        }, false);
+        el.addEventListener('drop', event => {
+            event.stopPropagation();
+            event.preventDefault();
+            let files = event.dataTransfer.files; // FileList object.
+            if(files.length > 0) {
+                let f = files[0];
+                let reader = new FileReader();
+                reader.onload = async () => {
+                    const tapeData = new Uint8Array(reader.result);
+                    await this._mz700js.setCassetteTape(tapeData);
+                };
+                reader.readAsArrayBuffer(f);
+            }
+        }, false);
+    }
+    this._dataRecorder
+        .html("CMT: ")
+        .attr("title", "Drop MZT file here to load with 'L' command")
+        .append(this.cmtMessageArea)
+        .append(btnCmtRec)
+        .append(btnCmtPlay)
+        .append(btnCmtStop)
+        .append(btnCmtEject);
+
+};
+
+MZControlPanel.prototype.startDataRecorder = function() {
+    this._dataRecorder.find("button.rec").prop("disabled", true);
+    this._dataRecorder.find("button.play").prop("disabled", true);
+    this._dataRecorder.find("button.stop").prop("disabled", false);
+};
+
+MZControlPanel.prototype.stopDataRecorder = async function() {
+    await this.updateCmtSlot();
+    this._dataRecorder.find("button.rec").prop("disabled", false);
+    this._dataRecorder.find("button.play").prop("disabled", false);
+    this._dataRecorder.find("button.stop").prop("disabled", true);
+};
+
+MZControlPanel.prototype.updateCmtSlot = async function() {
+    const bytes = await this._mz700js.getCassetteTape();
+    this.createCmtDownloadLink(bytes);
+};
+
+MZControlPanel.prototype.createCmtDownloadLink = function(bytes) {
+    if(bytes == null || bytes.length &lt; 128) {
+        this.cmtMessageArea.empty().append("(EMPTY)");
+        return;
+    }
+    let header = new MZ_TapeHeader(bytes, 0);
+    let byteArr = new Uint8Array(bytes);
+    let blob = new Blob([byteArr], {'type': "application/octet-stream"});
+    this.cmtMessageArea.empty().html(header.filename).append(
+            $("&lt;a/>").addClass("download-link")
+                .attr("download", header.filename + ".MZT")
+                .attr("type", "application/octet-stream")
+                .attr("href", URL.createObjectURL(blob))
+                .html("")
+                .attr("title",
+                    "Download " + header.filename + ".MZT" +
+                    " (" + header.file_size + " bytes) " +
+                    " ADDR:(" + NumberUtil.HEX(header.addr_load, 4) + " - " +
+                    NumberUtil.HEX(header.addr_load + header.file_size - 1, 4) + ") EXEC:" +
+                    NumberUtil.HEX(header.addr_exec, 4))
+            );
+};
+
+/**
+ * Create the buttons to download and run the public MZT binary.
+ * @returns {Promise&lt;undefined>} The promise to synchronize
+ */
+MZControlPanel.prototype.createPublicMztLoadingButtons = function() {
+    const request = parseRequest();
+    return new Promise( resolve => {
+        requestJsonp("mztList",
+            "https://takamin.github.io/MZ-700/mzt/mzt-list.js",
+            files => {
+                const mztButtons = $("&lt;div/>");
+                files.forEach(mzt => {
+                    mztButtons.append(
+                        $("&lt;button/>").attr("type", "button")
+                        .css("padding", 0).css("height", "24px")
+                        .css("border", "solid 0px transparent")
+                        .css("padding", 0).css("margin", "4px 2px")
+                        .append($("&lt;span/>").addClass("mz700scrn")
+                            .attr("charSize", "8").attr("padding", "1")
+                            .attr("color", mzt.mz700_buttonStyle.color)
+                            .attr("bgColor", mzt.mz700_buttonStyle.bgColor)
+                            .html(mzt.name))
+                        .click(() => {
+                            window.location.href =
+                                request.path + "?mzt=" + mzt.path;
+                        }));
+                });
+                resolve(mztButtons);
+            });
+    });
+};
+
+MZControlPanel.prototype.acceptKey = function(state) {
+    if(state == null) {
+        return this._keyboard.mz700keyboard("acceptKey");
+    }
+    this._keyboard.mz700keyboard("acceptKey", state);
+};
+
+/**
+ * Show the panel to operate MZ-700.
+ * @returns {undefined}
+ */
+MZControlPanel.prototype.show = function() {
+    if(this._tidHide) {
+        clearTimeout(this._tidHide);
+    } else {
+        this._controlPanel.addClass("hover");
+        this._controlPanel.show(0, () => {
+            this.resize();
+        });
+    }
+    this._tidHide = setTimeout(() => {
+        this.hide();
+        this._tidHide = null;
+    }, 1000);
+};
+
+/**
+ * Hide the panel to operate MZ-700.
+ * @returns {undefined}
+ */
+MZControlPanel.prototype.hide = function() {
+    this._controlPanel.removeClass("hover");
+    this._controlPanel.hide();
+};
+
+/**
+ * Cancel the timeout timer of control panel showing.
+ * @returns {undefined}
+ */
+MZControlPanel.prototype.cancelTimer = function() {
+    if(this._tidHide) {
+        clearTimeout(this._tidHide);
+        this._tidHide = null;
+    }
+};
+
+MZControlPanel.prototype.resize = function() {
+    var bboxContainer = new BBox(this._mz700jsContainer.get(0));
+    var bboxScreen = new BBox(this._mz700ScreenElement);
+    var containerSize = bboxContainer.getSize();
+    containerSize._h -= bboxScreen.px("border-top-width");
+    containerSize._h -= bboxScreen.px("border-bottom-width");
+    var orgSize = new BBox.Size(320,200);
+    var innerSize = containerSize.getMaxInscribedSize(orgSize);
+
+    if(this._controlPanel.is(":visible")) {
+        var phifBBox = new BBox(this._controlPanel.get(0));
+        var phifSize = phifBBox.getSize();
+        var phifMargin = new BBox.Size(
+                (containerSize._w - phifSize._w) / 2,
+                innerSize._h - phifSize._h);
+        if(phifMargin._w &lt; 0) {
+            phifMargin._w = 0;
+        }
+        if(phifMargin._h &lt; 0) {
+            phifMargin._h = 0;
+        }
+        this._controlPanel.css("margin-left", phifMargin._w + "px")
+            .css("margin-top", phifMargin._h + "px");
+    }
+};
+
+/**
+ * Toggle the control panel visibility.
+ * @returns {undefined}
+ */
+MZControlPanel.prototype.toggleVisibility = function() {
+    if(this._controlPanel.css("display") !== "none") {
+        this._controlPanel.hide(0, () => {
+            this.resize();
+        });
+    } else {
+        this._controlPanel.show(0, () => {
+            this.resize();
+        });
+    }
+};
+
+//
+// Run/Stop Button
+//
+MZControlPanel.prototype.createStartButton = function() {
+    let btnStart = $("&lt;button/>")
+        .attr("type", "button")
+        .attr("title", "[F8]")
+        .addClass("imaged")
+        .click(() => {
+            if(this._isRunning) {
+                this._mz700js.stop();
+            } else {
+                this._mz700js.start();
+            }
+        });
+    let img = $("&lt;img/>");
+    btnStart.append(img);
+    let setImg = relURL => {
+        img.attr("src", `./${relURL}`);
+    };
+    let setAlt = caption => {
+        img.attr("title", caption).attr("alt", caption);
+    };
+    btnStart.hover( () => {
+        setImg(this._isRunning ?
+            "image/btnStop-on.png" :
+            "image/btnRun-on.png");
+    }, () => {
+        setImg(this._isRunning ?
+            "image/btnStop-off.png" :
+            "image/btnRun-off.png");
+    });
+    this._mz700js.subscribe("start", () => {
+        setImg("image/btnStop-off.png");
+        setAlt("Stop");
+    });
+    this._mz700js.subscribe("stop", async () => {
+        setImg("image/btnRun-off.png");
+        setAlt("Run");
+    });
+    window.addEventListener("keyup", async event => {
+        if(event.keyCode == 119) {//F8 - RUN/STOP
+            event.stopPropagation();
+            if(this._isRunning) {
+                this._mz700js.stop();
+            } else {
+                this._mz700js.start();
+            }
+            return;
+        }
+    });
+    setImg("image/btnRun-off.png");
+    setAlt("Run");
+    return btnStart;
+};
+
+//
+// Reset Button
+//
+MZControlPanel.prototype.createResetButton = function() {
+    const btnReset = $("&lt;button/>").attr("type", "button")
+        .addClass("imaged").append(
+            $("&lt;img/>").attr("title", "Reset").attr("alt", "Reset"))
+        .click(async () => {
+            await this._mz700js.stop();
+            await this._mz700js.reset();
+            await this._mz700js.start();
+            await this.updateCmtSlot();
+        });
+
+    const btnReset_hover = () => {
+        btnReset.find("img")
+            .attr("src", "./image/btnReset-on.png");
+    };
+
+    const btnReset_notHover = () => {
+        btnReset.find("img")
+            .attr("src", "./image/btnReset-off.png");
+    };
+
+    btnReset.hover(btnReset_hover, btnReset_notHover);
+    btnReset_notHover();
+    return btnReset;
+};
+
+//
+// Step-In Button
+//
+MZControlPanel.prototype.createStepInButton = function() {
+    const btnStep = $("&lt;button/>").attr("type", "button")
+        .attr("title", "[F9]").addClass("imaged")
+        .click( () => this._mz700js.step() );
+    const img = $("&lt;img/>")
+        .attr("title", "Step-In")
+        .attr("alt", "Step-In");
+    btnStep.append(img);
+    const setImg = relURL => {
+        img.attr("src", `./${relURL}`);
+    };
+    btnStep.hover(() => {
+        if(!this._isRunning) {
+            btnStep.prop('disabled', '');
+            setImg("image/btnStepIn-on.png");
+        }
+    }, () => {
+        if(!this._isRunning) {
+            btnStep.prop('disabled', '');
+            setImg("image/btnStepIn-off.png");
+        }
+    });
+    this._mz700js.subscribe("start", () => {
+        btnStep.prop('disabled', 'disabled')
+        setImg("image/btnStepIn-disabled.png");
+    });
+    this._mz700js.subscribe("stop", async () => {
+        btnStep.prop('disabled', '');
+        setImg("image/btnStepIn-off.png");
+    });
+    window.addEventListener("keyup", async event => {
+        if(event.keyCode == 120) {//F9 - STEP In
+            event.stopPropagation();
+            if(this._isRunning) {
+                this._mz700js.stop();
+            } else {
+                this._mz700js.step();
+            }
+            return;
+        }
+    });
+    setImg("image/btnStepIn-off.png");
+    return btnStep;
+};
+
+/**
+ * Create Screen keyboard button.
+ * @returns {ToggleButton} The ToggleButton widget.
+ */
+MZControlPanel.prototype.createScreenKeyboardButton = function() {
+    const button = $("&lt;button/>")
+        .addClass("imaged").attr("id", "btnToggleScreenKeyboard")
+        .append($("&lt;img/>")
+            .attr("src", "./image/btnKeyboard-off.png")
+            .attr("title", "Keyboard").attr("alt", "Keyboard"))
+        .ToggleButton("create", {
+            on: button => {
+                button.find("img")
+                    .attr("src", "./image/btnKeyboard-on.png");
+                $(".keyboard").show();
+                this.resize();
+            },
+            off: button => {
+                button.find("img")
+                    .attr("src", "./image/btnKeyboard-off.png");
+                $(".keyboard").hide();
+                this.resize();
+            },
+        });
+    switch(getDeviceType()) {
+        case "mobile":
+            button.ToggleButton("on");
+            break;
+        case "tablet":
+            button.ToggleButton("off");
+            break;
+        case "pc":
+            button.ToggleButton("off");
+            break;
+    }
+    return button;
+};
+
+/**
+ * Create Full screen button.
+ * @returns {ToggleButton} The ToggleButton widget.
+ */
+MZControlPanel.prototype.createFullScreenButton = function() {
+    const onclick = () => {
+        if(document.fullscreenElement === document.body) {
+            document.exitFullscreen();
+        } else {
+            document.body.requestFullscreen().then(() => {
+                this.acceptKey(true);
+            });
+        }
+    };
+    const button = $("&lt;button/>")
+        .attr("id", "fullscreenButton").addClass("imaged off")
+        .append($("&lt;img/>")
+            .attr("src", "./image/btnFullscreen-off.png")
+            .attr("title", "Fullscreen")
+            .attr("alt", "Fullscreen"))
+        .ToggleButton("create", {
+            autoState: false,
+            on: onclick,
+            off: onclick,
+        });
+
+    document.addEventListener("fullscreenchange", () => {
+        if(document.fullscreenElement == null) {
+            button.ToggleButton("setOff")
+                .find("img")
+                    .attr("src", "./image/btnFullscreen-off.png")
+                    .attr("title", "Fullscreen")
+                    .attr("alt", "Fullscreen");
+        } else {
+            button.ToggleButton("setOn")
+                .find("img")
+                    .attr("src", "./image/btnFullscreen-on.png")
+                    .attr("title", "Exit Fullscreen")
+                    .attr("alt", "Exit Fullscreen");
+        }
+    });
+    return button;
+};
+
+// Handle Key events
+MZControlPanel.prototype.updateKeyStates = function(strobe, bit, state) {
+    this._keyboard.mz700keyboard("setState", strobe, bit, state);
+};
+
+window.MZControlPanel = MZControlPanel;
+module.exports = MZControlPanel;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<br class="clear">
+
+<footer>
+    Generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.6.3</a> on Sun Dec 22 2019 16:13:27 GMT+0900 (GMT+09:00) using the Minami theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+</body>
+</html>
