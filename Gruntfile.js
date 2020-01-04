@@ -32,13 +32,15 @@ module.exports = function(grunt) {
             "debug": {
                 files: {
                     "./js/bundle-mz700-emu.js": ["./build/bundle-mz700-emu.js"],
-                    "./js/bundle-mz700-worker.js": ["./build/bundle-mz700-worker.js"]
+                    "./js/bundle-mz700-worker.js": ["./build/bundle-mz700-worker.js"],
+                    "./lib/codemirror.css": ["./node_modules/codemirror/lib/codemirror.css"]
                 }
             },
             "release": {
                 files: {
                     "./js/bundle-mz700-emu.js": ["./build/bundle-mz700-emu.min.js"],
-                    "./js/bundle-mz700-worker.js": ["./build/bundle-mz700-worker.min.js"]
+                    "./js/bundle-mz700-worker.js": ["./build/bundle-mz700-worker.min.js"],
+                    "./lib/codemirror.css": ["./node_modules/codemirror/lib/codemirror.css"]
                 }
             }
         },
