@@ -43,7 +43,7 @@
     "load-grunt-tasks": "^5.1.0",
     "node-getopt": "^0.3.2",
     "path": "^0.12.7",
-    "transworker": "^1.2.8",
+    "transworker": "^1.3.0",
     "typescript": "^3.7.4"
   },
   "devDependencies": {
