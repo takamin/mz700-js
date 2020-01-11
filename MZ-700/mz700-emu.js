@@ -103,28 +103,14 @@ const requestJsonp = require("../lib/jsonp");
                 pcg700.setupMMIO(mzMMIO);
             }
         } else {
+            //Transfer the offscreen canvas to the worker process.
+            //The screen and PCG-700 will be rendered on the worker side.
+            //So following notifications are not needed.
             mz700js.subscribe('onUpdateScreen', (/*updateData*/) => {/*none*/});
             mz700js.subscribe("onMmioRead", (/*param*/) => {/*none*/});
             mz700js.subscribe("onMmioWrite", (/*param*/) => {/*none*/});
-            const invokeMethod = (methodName, param, transferObjects) => {
-                return new Promise((resolve, reject) => {
-                    try {
-                        const queryId = mz700js.queryId++;
-                        mz700js.callbacks[queryId] = result => resolve(result);
-                        mz700js.messagePort.postMessage({
-                            method: methodName,
-                            param: param,
-                            uuid: mz700js._uuid,
-                            queryId: queryId
-                        }, transferObjects);
-                    } catch(err) {
-                        reject(err);
-                    }
-                });
-            };
             const offscreenCanvas = canvas.transferControlToOffscreen();
-            await invokeMethod("transferScreenCanvas", [offscreenCanvas],
-                [offscreenCanvas]);
+            mz700js.transferObject("offscreenCanvas", offscreenCanvas);
         }
     }
     mz700screen.hide();
