@@ -12,18 +12,7 @@ const MZMMIO = require("../lib/mz-mmio.js");
 
 const transworker = new TransWorker();
 
-MZ700.prototype.transferScreenCanvas = function(offscreenCanvas) {
-    transworker.mz700CanvasRenderer = new MZ700CanvasRenderer();
-    transworker.mz700CanvasRenderer.create({
-        canvas: offscreenCanvas,
-        CG: new MZ700CG(MZ700CG.ROM, 8, 8),
-    });
-    transworker.mz700CanvasRenderer.setupRendering();
-    transworker.mzMMIO = new MZMMIO();
-    const pcg700 = new PCG700(transworker.mz700CanvasRenderer);
-    pcg700.setupMMIO(transworker.mzMMIO);
-};
-
+//Create MZ700 and TransWorker.
 transworker.create(new MZ700({
     onClockFactorUpdate: param => {
         try {
@@ -69,3 +58,17 @@ transworker.create(new MZ700({
     onStartDataRecorder: () => transworker.postNotify("onStartDataRecorder"),
     onStopDataRecorder: () => transworker.postNotify("onStopDataRecorder"),
 }));
+
+//Receive offscreen canvas from the UI-thread
+//and create a renderer and MMIO for PCG-700.
+transworker.listenTransferableObject("offscreenCanvas", offscreenCanvas => {
+    transworker.mz700CanvasRenderer = new MZ700CanvasRenderer();
+    transworker.mz700CanvasRenderer.create({
+        canvas: offscreenCanvas,
+        CG: new MZ700CG(MZ700CG.ROM, 8, 8),
+    });
+    transworker.mz700CanvasRenderer.setupRendering();
+    transworker.mzMMIO = new MZMMIO();
+    const pcg700 = new PCG700(transworker.mz700CanvasRenderer);
+    pcg700.setupMMIO(transworker.mzMMIO);
+});
