@@ -7,8 +7,8 @@
     "start": "http-server .. -p 3000 -o mz700-js/emu.html",
     "test": "grunt lint && mocha && cd test && sh ./test.sh && cd ..",
     "postinstall": "grunt release",
-    "grunt": "grunt",
-    "build": "grunt",
+    "lint": "grunt lint",
+    "build": "grunt debug",
     "release": "grunt release",
     "generate-docs": "jsdoc --configure jsdoc.json --verbose"
   },

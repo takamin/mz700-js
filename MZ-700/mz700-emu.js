@@ -32,8 +32,6 @@ const requestJsonp = require("../lib/jsonp");
 
 ((async () => {
 
-    const liquidRoot = dock_n_liquid.select($("#liquid-panel-MZ-700").get(0));
-
     // Set module version to the page title
     const pageTitle = [
         packageJson.description,"(",
@@ -71,7 +69,7 @@ const requestJsonp = require("../lib/jsonp");
     mz700js.subscribe("stopSound", () => mzBeep.stopSound());
 
     // MZ-700 Screen
-    const mz700screen = $(".MZ-700-body .screen");
+    const mz700screen = $("#mz700screen");
     const canvas = document.createElement("CANVAS");
     mz700screen.get(0).appendChild(canvas);
     {
@@ -117,11 +115,12 @@ const requestJsonp = require("../lib/jsonp");
     mz700screen.find("canvas").css("height", "calc(100% - 1px)");
 
     // Control panel
-    const mz700container = $(".MZ-700-body");
+    const mz700container = $("#mz700container");
     await mz700container.MZControlPanel(
-        "create", mz700js, mzBeep, MZ700.Z80_CLOCK);
+        "create", mz700js, mz700screen, mzBeep, MZ700.Z80_CLOCK);
 
-    switch(getDeviceType()) {
+    const deviceType = getDeviceType();
+    switch(deviceType) {
     case "tablet":
         mz700screen.click(event => {
             event.stopPropagation();
@@ -138,25 +137,9 @@ const requestJsonp = require("../lib/jsonp");
     }
 
     const dockPanelRight = $("#dock-panel-right");
-    let disassemble = async ()=>{};
-
-    // Set a cassette tape to data recorder of MZ-700 and
-    // load the MZT to memory directly.
-    const setMztData = async function(tape_data) {
-        await mz700js.stop();
-        await mz700js.setCassetteTape(tape_data);
-        if(tape_data != null) {
-            const mztape_array = MZ_Tape.parseMZT(tape_data);
-            await mz700js.loadCassetteTape();
-            await disassemble(mztape_array);
-            await mz700js.setPC(mztape_array[0].header.addr_exec);
-            await mz700js.start();
-        }
-        await mz700container.MZControlPanel("updateCmtSlot");
-    };
-
-
-    if(getDeviceType() !== "pc") {
+    dockPanelRight.hide();
+    let showMztDisasm = ()=>{};
+    if(deviceType !== "pc") {
         dockPanelRight.remove();
     } else {
         document.addEventListener("fullscreenchange", () => {
@@ -169,11 +152,12 @@ const requestJsonp = require("../lib/jsonp");
         // Register View
         {
             const regview = $("<div/>").Z80RegView("init", mz700js);
-            $("#wndRegView")
+            const wndRegView = $("<div class='register-monitor tool-window open' title='REGISTER'/>");
+            wndRegView
                 .append($("<div/>").css("display", "inline-block").append(regview))
                 .on("show", () => regview.Z80RegView("visibility", true))
-                .on("hide", () => regview.Z80RegView("visibility", false))
-                .ToolWindow("create").ToolWindow("open");
+                .on("hide", () => regview.Z80RegView("visibility", false));
+            dockPanelRight.append(wndRegView);
 
             // Fire the events when the jquery elements was shown or hidden
             for(const ev of ["show", "hide"]) {
@@ -188,23 +172,28 @@ const requestJsonp = require("../lib/jsonp");
         // Create dump list
         {
             const dumplist = $("<div/>").dumplist("init", { mz700js: mz700js });
-            $("#wndDumpList")
+            const wndDumpList = $("<div class='tool-window memory open' title='MEMORY'/>");
+            wndDumpList
                 .append(dumplist.dumplist("addrSpecifier"))
-                .append(dumplist)
-                .ToolWindow("create").ToolWindow("open");
+                .append(dumplist);
+            dockPanelRight.append(wndDumpList);
         }
 
         // Create assemble list
         {
             const asmView = $("<div/>").asmview("create", mz700js);
-            $("#wndAsmList").append(asmView).ToolWindow("create").ToolWindow("open");
+            const wndAsmList = $("<div  class='tool-window open' title='Z80 ASM'/>");
+            wndAsmList.append(asmView);
+            dockPanelRight.append(wndAsmList);
 
             // Show a sample assemble source
             const asmlistMzt = asmView.asmview("newAsmList", "mzt", "PCG-700 sample");
-            await asmlistMzt.asmlist("assemble", $("textarea.default.source").val());
+            await asmlistMzt.asmlist("assemble", await new Promise(resolve => {
+                $.get("./MZ-700/pcg700-sample.asm", {}, resolve);
+            }));
 
             // Disassemble MZTape array
-            disassemble = async function(mztape_array) {
+            showMztDisasm = async function(mztape_array) {
                 const name = MZ_TapeHeader.get1stFilename(mztape_array) || "(empty)";
                 const result = MZ700.disassemble(mztape_array);
                 asmView.asmview("name", "mzt", name);
@@ -249,8 +238,8 @@ const requestJsonp = require("../lib/jsonp");
                 });
             mz700js.subscribe("start", () => btnExecImm.prop("disabled", true));
             mz700js.subscribe("stop", () => btnExecImm.prop("disabled", false));
-
-            $("#wndImmExec").append(
+            const wndImmExec = $("<div class='tool-window' title='IMM.EXEC.'/>");
+            wndImmExec.append(
                 $("<div/>").addClass("imm-exec")
                 .css("padding","15px 5px")
                 .append($("<label/>")
@@ -270,8 +259,10 @@ const requestJsonp = require("../lib/jsonp");
                         .addClass("mnemonic"))
                 .append(btnExecImm)
                 .append($("<br/>"))
-            ).ToolWindow("create").ToolWindow("close");
+            );
+            dockPanelRight.append(wndImmExec);
         }
+        $(".tool-window").ToolWindow("create");
     }
 
     // Convert MZ-700 character
@@ -280,6 +271,10 @@ const requestJsonp = require("../lib/jsonp");
     }
 
     // Layout
+    if(deviceType === "pc") {
+        dockPanelRight.show();
+    }
+    const liquidRoot = dock_n_liquid.select($("#liquid-panel-MZ-700").get(0));
     const resizeScreen = function() {
         liquidRoot.layout();
         const bboxContainer = new BBox(mz700container.get(0));
@@ -312,19 +307,32 @@ const requestJsonp = require("../lib/jsonp");
     await mz700js.start();
 
     {
+        // Set a cassette tape to data recorder of MZ-700 and
+        // load the MZT to memory directly.
+        const setMztData = async function(tape_data) {
+            await mz700js.stop();
+            await mz700js.setCassetteTape(tape_data);
+            if(tape_data != null) {
+                const mztape_array = MZ_Tape.parseMZT(tape_data);
+                await mz700js.loadCassetteTape();
+                await showMztDisasm(mztape_array);
+                await mz700js.setPC(mztape_array[0].header.addr_exec);
+                await mz700js.start();
+            }
+            await mz700container.MZControlPanel("updateCmtSlot");
+        };
+
         // Accept MZT file to drop to the MZ-700 screen
-        const mztLoader = document.querySelector(".MZ-700 .cmt-slot");
-        if(mztLoader &&
+        if(mz700screen &&
             window.File && window.FileReader &&
             window.FileList && window.Blob)
         {
-            const el = mztLoader;
-            el.addEventListener("dragover", event => {
+            mz700screen.get(0).addEventListener("dragover", event => {
                 event.stopPropagation();
                 event.preventDefault();
                 event.dataTransfer.dropEffect = "copy"; // Explicitly show this is a copy.
             }, false);
-            el.addEventListener("drop", event => {
+            mz700screen.get(0).addEventListener("drop", event => {
                 event.stopPropagation();
                 event.preventDefault();
                 const files = event.dataTransfer.files; // FileList object.
