@@ -4,12 +4,6 @@
     width:100%;
     height:100%;
 }
-.MZ-700 .screen {
-    border: solid 1px black;
-    background-color: black;
-    padding:0;
-    z-index: -1;
-}
 .MZ-700 button {
     background-color: blue;
     color: white;
@@ -29,12 +23,19 @@
     color: silver;
 }
 
+#mz700screen {
+    border: solid 1px black;
+    background-color: black;
+    padding:0;
+    z-index: -1;
+}
+
 #control-panel
 {
     overflow: auto;
     background-color: white;
 }
-.screen {
+#mz700screen {
     position:fixed;
 }
 
@@ -44,7 +45,7 @@
 }
 
 @media screen and (orientation: portrait) {
-    .screen {
+    #mz700screen {
         position:relative;
     }
     #control-panel
@@ -63,27 +64,6 @@
     background-color: white;
     min-width:690px;
 }
-.MZ-700 .emulation-panel > span.key-switcher {
-    margin:0px;
-    padding:5px;
-    border-style:solid;
-    border-color:blue;
-    border-width:3px;
-    background-color: blue;
-    color: white;
-    font-family: Arial;
-    font-weight: bold;
-}
-.MZ-700 .emulation-panel > span.key-switcher:hover {
-    background-color: white;
-    color: blue;
-}
-.MZ-700 .emulation-panel > span.key-switcher.on,
-.MZ-700 .emulation-panel > span.key-switcher.on:hover {
-    background-color: white;
-    color: blue;
-}
-
 .MZ-700 .data-recorder .cmt-message {
     font-weight: bold;
 }
@@ -106,8 +86,6 @@
     height:30px;
 }
 
-.imm-exec {
-}
 .imm-exec input.address {
     width:60px;
 }
@@ -181,4 +159,21 @@
     padding:0;
     margin:0;
     border-width: 0;
+}
+
+/* Layout */
+.dock.resizer {
+    background-color: white;
+}
+.dock.resizer:hover {
+    background-color: #ccc;
+}
+.dock.resizer.resizing {
+    background-color: blue;
+}
+.dock.horizontal.resizer {
+    cursor: ew-resize;
+}
+.dock.vertical.resizer {
+    cursor: ns-resize;
 }
