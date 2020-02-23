@@ -13,7 +13,7 @@ const Z80LineAssembler = require("../Z80/Z80-line-assembler");
 
 function MZ700() { }
 
-MZ700.prototype.create = async function(opt) {
+MZ700.prototype.create = function(opt) {
 
     // Screen update buffer
     this._screenUpdateData = {};
@@ -287,7 +287,8 @@ MZ700.prototype.create = async function(opt) {
         },
     };
 
-    this.memory = new MZ700_Memory({
+    this.memory = new MZ700_Memory();
+    this.memory.create({
         onVramUpdate: this.opt.onVramUpdate,
         onMappedIoRead: (address, value) => {
 
@@ -323,6 +324,10 @@ MZ700.prototype.create = async function(opt) {
 
 MZ700.Z80_CLOCK = 3.579545 * 1000000;// 3.58 MHz
 MZ700.DEFAULT_TIMER_INTERVAL = 1.0 / MZ700.Z80_CLOCK;
+
+MZ700.prototype.setMonitorRom = function(bin) {
+    this.memory.setMonitorRom(bin);
+};
 
 MZ700.prototype.writeAsmCode = function(assembled) {
     for(let i = 0; i < assembled.buffer.length; i++) {

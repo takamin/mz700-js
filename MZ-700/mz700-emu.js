@@ -2,14 +2,13 @@ require("fullscrn");
 const       NumberUtil = require("../lib/number-util.js");
 const      TransWorker = require("transworker");
 const     Z80_assemble = require("../Z80/assembler.js");
-const              Z80 = require("../Z80/Z80.js");
 const            MZ700 = require("./mz700.js");
-const MZ700_MonitorRom = require("./mz700-new-monitor.js");
 const          MZ_Tape = require("../lib/mz-tape.js");
 const    MZ_TapeHeader = require("../lib/mz-tape-header.js");
 const     parseAddress = require("../lib/parse-addr.js");
 const           PCG700 = require("../lib/PCG-700.js");
 const           MZMMIO = require("../lib/mz-mmio.js");
+const              Z80 = require("../Z80/Z80.js");
 require("../lib/jquery-plugin/jquery.mz700-kb.js");
 require("../lib/jquery-plugin/jquery.Z80-reg.js");
 require("../lib/jquery-plugin/jquery.asmview.js");
@@ -54,6 +53,22 @@ const requestJsonp = require("../lib/jsonp");
     const mz700js = TransWorker.createInterface(
         "./js/bundle-mz700-worker.js", MZ700,
         { syncType: TransWorker.SyncTypePromise });
+
+    const monitorRom = await new Promise(resolve => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("GET", "./mz_newmon/ROMS/NEWMON7.ROM", true);
+        xhr.responseType = "arraybuffer";
+        xhr.onload = function () {
+            const arrayBuffer = xhr.response;
+            if (arrayBuffer) {
+                const byteArray = Array.from(new Uint8Array(arrayBuffer));
+                resolve(byteArray);
+            }
+        };
+        xhr.send(null);
+    });
+
+    mz700js.setMonitorRom(monitorRom);
 
     mz700js.subscribe("start", () => {
         $(".MZ-700").addClass("running");
@@ -203,18 +218,34 @@ const requestJsonp = require("../lib/jsonp");
             };
 
             // Disassemble MONITOR ROM and show that source.
-            {
-                const monRom = asmView.asmview("newAsmList",
-                    "monitor-rom", "MZ-700 NEW MONITOR");
-                const dasmlist = Z80.dasm(MZ700_MonitorRom.Binary, 0x0000, 0x1000, 0x0000);
-                const dasmlines = Z80.dasmlines(dasmlist);
-                await monRom.asmlist("assemble", [
+            try {
+                const getText = url => {
+                    return new Promise(resolve => $.get(url, {}, resolve));
+                };
+                const readme = await getText("./mz_newmon/newmon_readme.txt");
+                console.log(readme);
+                const commandHelp = await getText("./mz_newmon/newmon_command.txt");
+                console.log(commandHelp);
+                const comment = [
                     ";;;",
                     ";;; This is a disassembled list of the MZ-NEW MONITOR",
                     ";;; provided from the Marukun's website 'MZ-Memories'",
                     ";;; ( http://retropc.net/mz-memories/mz700/ ).",
                     ";;; ",
-                ].join("\n") + "\n" + dasmlines.join("\n") + "\n");
+                    ";----",
+                    ...commandHelp.split(/\r*\n/).map(line => `;${line}`),
+                    ";----",
+                ].join("\n");
+
+                const source = comment +  "\n" + Z80.dasmlines(Z80.dasm(
+                    monitorRom, 0x0000, 0x1000, 0x0000
+                )).join("\n") + "\n";
+
+                const monRom = asmView.asmview("newAsmList",
+                    "monitor-rom", "MZ-700 NEW MONITOR");
+                await monRom.asmlist("assemble", source);
+            } catch(err) {
+                console.error(JSON.stringify(err));
             }
         }
 
