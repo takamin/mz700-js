@@ -10,10 +10,10 @@ const MZ700CG = require("../lib/mz700-cg.js");
 const PCG700 = require("../lib/PCG-700.js");
 const MZMMIO = require("../lib/mz-mmio.js");
 
-const transworker = new TransWorker();
-
 //Create MZ700 and TransWorker.
-transworker.create(new MZ700({
+const transworker = new TransWorker();
+const mz700 = new MZ700();
+mz700.create({
     onClockFactorUpdate: param => {
         try {
             transworker.postNotify("onClockFactorUpdate", param);
@@ -57,7 +57,8 @@ transworker.create(new MZ700({
     stopSound: () => transworker.postNotify("stopSound"),
     onStartDataRecorder: () => transworker.postNotify("onStartDataRecorder"),
     onStopDataRecorder: () => transworker.postNotify("onStopDataRecorder"),
-}));
+});
+transworker.create(mz700);
 
 //Receive offscreen canvas from the UI-thread
 //and create a renderer and MMIO for PCG-700.

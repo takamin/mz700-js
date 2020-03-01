@@ -1,10 +1,8 @@
-var MZ700_MonitorRom = require("./mz700-new-monitor.js");
+var MZ700_NewMonitor = require("./mz700-new-monitor.js");
 var MemoryBlock = require("../Z80/memory-block.js");
 var MemoryBank = require('../Z80/memory-bank.js');
 
-function MZ700_Memory(opt) {
-    this.create(opt);
-}
+function MZ700_Memory() { }
 MZ700_Memory.prototype = new MemoryBank();
 MZ700_Memory.prototype.create = function(opt) {
 
@@ -52,8 +50,11 @@ MZ700_Memory.prototype.create = function(opt) {
             }
         };
     }
+    const monitorRom = new MZ700_NewMonitor();
+    monitorRom.create();
+
     this.memblks = {
-        IPL_AREA_ROM: new MZ700_MonitorRom(),
+        IPL_AREA_ROM: monitorRom,
         IPL_AREA_RAM: new MemoryBlock({
             startAddr: 0x0000, size: 0x1000
         }),
@@ -92,6 +93,11 @@ MZ700_Memory.prototype.create = function(opt) {
         this.memblks.ATTR_VRAM.pokeByte(0xD800 + i, 0x71);
     }
 }
+
+MZ700_Memory.prototype.setMonitorRom = function(bin) {
+    this.memblks.IPL_AREA_ROM.setBinary(bin);
+};
+
 MZ700_Memory.prototype.clear = function() {
     MemoryBank.prototype.clear.call(this);
     for(var name in this.memblks) {
