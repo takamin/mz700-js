@@ -11,7 +11,9 @@ const MZ700_Memory    = require("./mz700-memory.js");
 const Z80             = require('../Z80/Z80.js');
 const Z80LineAssembler = require("../Z80/Z80-line-assembler");
 
-const MZ700 = function(opt) {
+function MZ700() { }
+
+MZ700.prototype.create = async function(opt) {
 
     // Screen update buffer
     this._screenUpdateData = {};
