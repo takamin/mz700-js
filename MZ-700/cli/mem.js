@@ -1,7 +1,8 @@
 (function(){
     "use strict";
     var CliCommand = require("./command");
-    var parseAddr = require("../../lib/parse-addr");
+    var { parseAddress } = require("../../lib/parse-addr");
+    var { HEX } = require("../../lib/number-util");
     module.exports = new CliCommand("mem", function(mz700, args) {
         var addr = null;
         switch(args[0]) {
@@ -10,10 +11,10 @@
                     console.log("Error: no address specified");
                     return false;
                 } else {
-                    addr = parseAddr(args[1]);
+                    addr = parseAddress(args[1]);
                     var data_list = args.slice(2);
                     data_list.forEach(function(data, i) {
-                        mz700.memory.poke(addr + i, parseAddr(data));
+                        mz700.memory.poke(addr + i, parseAddress(data));
                     });
                 }
                 break;
@@ -21,7 +22,7 @@
                 if(args.length < 2) {
                     console.log("Error: no address specified");
                 } else {
-                    addr = parseAddr(args[1]);
+                    addr = parseAddress(args[1]);
                     var len = 256;
                     var cols = 16;
                     var hexArr = [];
@@ -33,14 +34,14 @@
                     for(var i = 0; i < len; i++) {
                         var data = mz700.memory.peek(addr + i);
                         if(i % cols == 0) {
-                            hexArr.push((addr+i).HEX(4));
+                            hexArr.push(HEX(addr+i, 4));
                             hexArr.push(":");
                         }
                         if(i % cols != 0 && i % (cols / 2) == 0) {
                             hexArr.push(" -");
                         }
                         hexArr.push(" ");
-                        hexArr.push(data.HEX(2));
+                        hexArr.push(HEX(data, 2));
                         if(i % cols == cols - 1) {
                             put();
                         }

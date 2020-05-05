@@ -1,9 +1,23 @@
 #!/usr/bin/env node
 "use strict";
 
+const fs = require("fs");
+const path = require("path");
 const NumberUtil = require("../lib/number-util.js");
 const getPackageJson = require("./lib/get-package-json");
-const npmInfo = getPackageJson(__dirname + "/..");
+const npmInfo = getPackageJson(path.join(__dirname, ".."));
+
+/**
+ * Read NEWMON7.ROM
+ * @returns {UintA8Array} A NEWMON7 binary
+ */
+function readMzNewmon7Rom() {
+    const pathname = path.join(
+        __dirname, "../mz_newmon/ROMS/NEWMON7.ROM");
+    const buffer = fs.readFileSync(pathname);
+    return Uint8Array.from(buffer);
+}
+
 const Getopt = require('node-getopt');
 const getopt = new Getopt([
         ['c',   'set-cmt=FILENAME',  'set MZT file as cassette magnetic tape'],
@@ -67,7 +81,8 @@ commands.install([
 
 commands.install(require("../MZ-700/cli/conf.js"));
 
-const mz700 = new MZ700({
+const mz700 = new MZ700();
+mz700.create({
     "onExecutionParameterUpdate" : ()=> { },
     "started": ()=> { },
     "stopped": ()=> { },
@@ -102,6 +117,8 @@ const mz700 = new MZ700({
         //console.log("MOTOR: OFF");
     }
 });
+mz700.setMonitorRom(readMzNewmon7Rom());
+
 const mzMMIO = new MZMMIO(mz700);
 
 mz700.setClockFactor(1.0);
