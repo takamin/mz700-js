@@ -1,6 +1,6 @@
 {
   "name": "mz700-js",
-  "version": "1.2.22",
+  "version": "1.2.23",
   "description": "MZ-700 Full JavaScript Emulator",
   "private": false,
   "scripts": {
@@ -43,7 +43,7 @@
     "load-grunt-tasks": "^5.1.0",
     "node-getopt": "^0.3.2",
     "path": "^0.12.7",
-    "transworker": "^1.3.3",
+    "transworker": "^1.3.4",
     "typescript": "^3.8.3"
   },
   "devDependencies": {
