@@ -33,15 +33,15 @@
             }
             i++;
         }
-        var pushKeys = [];
-        inkey.forEach(function(strcode) {
-            if(strcode in MZ700KeyMatrix.Str2Key) {
-                var key = MZ700KeyMatrix.Str2Key[strcode];
+        const pushKeys = [];
+        for(const strcode of inkey) {
+            const key = MZ700KeyMatrix.Str2Key[strcode];
+            if(key) {
                 pushKeys.push(key);
             } else {
-                console.log("Not found" + strcode);
+                return Promise.reject(`Not found ${strcode}`);
             }
-        });
+        }
         var durationRelease = this._durationRelese;
         var durationMake = this._durationMake;
         var pushKey = function(key) {
