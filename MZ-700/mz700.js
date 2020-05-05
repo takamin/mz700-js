@@ -469,9 +469,7 @@ MZ700.prototype.addBreak = function(addr, size) {
 //
 MZ700.prototype.start = function() {
     if("tid" in this && this.tid != null) {
-        console.warn(
-                "MZ700.start(): already started, caller is ",
-                MZ700.prototype.start.caller);
+        console.warn("MZ700.start(): already started");
         return false;
     }
     this.startEmulation();

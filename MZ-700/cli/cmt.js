@@ -3,6 +3,7 @@
     var CliCommand = require("./command");
     var mztReadFile = require("./mzt-read-file");
     var MZ_TapeHeader = require('../../lib/mz-tape-header.js');
+    var { HEX } = require("../../lib/number-util");
 
     module.exports = new CliCommand("cmt", function(mz700, args) {
         switch(args[0]) {
@@ -18,10 +19,10 @@
                             if(mzt_list != null && mzt_list.length > 0) {
                                 mzt_list.forEach(function(mzt, i) {
                                     console.log("[" + (i + 1) + "/" + mzt_list.length + "] " +
-                                        mzt.header.addr_load.HEX(4) + "h --- " +
-                                        (mzt.header.addr_load + mzt.header.file_size - 1).HEX(4) + "h " +
+                                        HEX(mzt.header.addr_load, 4) + "h --- " +
+                                        HEX(mzt.header.addr_load + mzt.header.file_size - 1, 4) + "h " +
                                         "(" + mzt.header.file_size + " bytes), " +
-                                        mzt.header.addr_exec.HEX(4) + "h, " + mzt.header.filename);
+                                        HEX(mzt.header.addr_exec, 4) + "h, " + mzt.header.filename);
                                     if(!setCMT) {
                                         try {
                                             var bytes = mzt.header.buffer.concat(mzt.body.buffer);
@@ -56,10 +57,10 @@
                     }
                     var header = new MZ_TapeHeader(bytes, 0);
                     console.log("Tape data: " +
-                            header.addr_load.HEX(4) + "-" +
-                            (header.addr_load + header.file_size - 1).HEX(4) + "(" +
+                            HEX(header.addr_load, 4) + "-" +
+                            HEX(header.addr_load + header.file_size - 1, 4) + "(" +
                             header.file_size + " bytes), Start with" +
-                            header.addr_exec.HEX(4) + "," +
+                            HEX(header.addr_exec, 4) + "," +
                             header.filename);
                 }
                 break;

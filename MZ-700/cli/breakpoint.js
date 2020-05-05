@@ -1,7 +1,8 @@
 (function(){
     "use strict";
     var CliCommand = require("./command");
-    var parseAddr = require("../../lib/parse-addr");
+    var { parseAddress } = require("../../lib/parse-addr");
+    var { HEX } = require("../../lib/number-util");
     module.exports = new CliCommand("bp", function(mz700, args) {
         var bp = mz700.getBreakPoints();
         if(args.length > 0) {
@@ -20,7 +21,7 @@
             }
             var address_list = args.slice(1);
             address_list.forEach(function(addrTok) {
-                var addr = parseAddr(addrTok);
+                var addr = parseAddress(addrTok);
                 if(bp_cmd == "set") {
                     mz700.addBreak(addr, 1, null);
                 } else if(bp_cmd == "rm") {
@@ -31,7 +32,7 @@
         bp.forEach(function(state, addr) {
             if(state != null) {
                 console.log(
-                    "ADDR:" + parseInt(addr).HEX(4) + "H",
+                    "ADDR:" + HEX(parseInt(addr), 4) + "H",
                     state);
             }
         });
