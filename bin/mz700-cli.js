@@ -3,7 +3,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const NumberUtil = require("../lib/number-util.js");
+const { HEX } = require("../lib/number-util.js");
 const getPackageJson = require("./lib/get-package-json");
 const npmInfo = getPackageJson(path.join(__dirname, ".."));
 
@@ -46,41 +46,35 @@ if(cli.options.version) {
     return;
 }
 
-
 console.log(description);
 
-const readline = require("linebyline")(process.stdin);
-const MZ700 = require("../MZ-700/mz700.js");
-const MZMMIO = require("../lib/mz-mmio.js");
-const PCG700 = require("../lib/PCG-700");
-const mztReadFile = require("../MZ-700/cli/mzt-read-file");
-
-MZ700.prototype.subscribe = function(notify, handler) {
-    console.log(`subscribe ${notify} = ${handler}`);
-};
-const CliCommand = require("../MZ-700/cli/command.js");
+const CliCommand = require("./cli-command/command.js");
 const commands = new CliCommand();
 commands.install([
-    require("../MZ-700/cli/exit.js"),
-    require("../MZ-700/cli/register.js"),
-    require("../MZ-700/cli/run.js"),
-    require("../MZ-700/cli/stop.js"),
-    require("../MZ-700/cli/step.js"),
-    require("../MZ-700/cli/jump.js"),
-    require("../MZ-700/cli/breakpoint.js"),
-    require("../MZ-700/cli/mem.js")
+    require("./cli-command/exit.js"),
+    require("./cli-command/register.js"),
+    require("./cli-command/run.js"),
+    require("./cli-command/stop.js"),
+    require("./cli-command/step.js"),
+    require("./cli-command/jump.js"),
+    require("./cli-command/breakpoint.js"),
+    require("./cli-command/mem.js")
 ]);
-const cliCommandSendKey = require("../MZ-700/cli/sendkey.js");
-const cliCommandVram = require("../MZ-700/cli/vram.js");
-const cliCommandCmt = require("../MZ-700/cli/cmt.js");
+const cliCommandSendKey = require("./cli-command/sendkey.js");
+const cliCommandVram = require("./cli-command/vram.js");
+const cliCommandCmt = require("./cli-command/cmt.js");
 commands.install([
     cliCommandSendKey,
     cliCommandVram,
     cliCommandCmt
 ]);
 
-commands.install(require("../MZ-700/cli/conf.js"));
+commands.install(require("./cli-command/conf.js"));
 
+const MZ700 = require("../MZ-700/mz700.js");
+MZ700.prototype.subscribe = function(notify, handler) {
+    console.log(`subscribe ${notify} = ${handler}`);
+};
 const mz700 = new MZ700();
 mz700.create({
     "onExecutionParameterUpdate" : ()=> { },
@@ -99,10 +93,10 @@ mz700.create({
         mzMMIO.write(address, value);
     },
     "onPortRead": (/*port, value*/)=> {
-        //console.log("IN ", NumberUtil.HEX(port, 2) + "H", NumberUtil.HEX(value, 2) + "H");
+        //console.log("IN ", HEX(port, 2) + "H", HEX(value, 2) + "H");
     },
     "onPortWrite": (port, value)=>{
-        console.log("OUT ", NumberUtil.HEX(port, 2) + "H", NumberUtil.HEX(value, 2) + "H");
+        console.log("OUT ", HEX(port, 2) + "H", HEX(value, 2) + "H");
     },
     'startSound': (/*freq*/)=> {
         //console.log("bz:", freq, "Hz");
@@ -119,6 +113,7 @@ mz700.create({
 });
 mz700.setMonitorRom(readMzNewmon7Rom());
 
+const MZMMIO = require("../lib/mz-mmio.js");
 const mzMMIO = new MZMMIO(mz700);
 
 mz700.setClockFactor(1.0);
@@ -130,34 +125,39 @@ const memsetMZ = function(addr, buf, size) {
     }
 };
 
+const PCG700 = require("../lib/PCG-700");
 const pcg700 = new PCG700();
 pcg700.setupMMIO(mzMMIO);
 mz700.memory.poke(0xE010, 0x00);
 mz700.memory.poke(0xE011, 0x00);
 mz700.memory.poke(0xE012, 0x18);
 
-(async function() {
+const readline = require("linebyline")(process.stdin);
+readline.on("line", line => {
+    commands.executeCommandline(line, mz700, line);
+});
+
+const mztReadFile = require("./cli-command/mzt-read-file");
+
+(async () => {
     try {
         if(cli.options["set-cmt"]) {
             const filename = cli.options["set-cmt"];
             await cliCommandCmt.func.call(
                 cliCommandCmt, mz700, ["set", filename]);
         }
-        readline.on("line", function(line) {
-            commands.executeCommandline(line, mz700, line);
-        });
         //Input file
         if(!argv.input_filename) {
             commands.runCli();
         } else {
             const mzt_list = await mztReadFile(argv.input_filename);
             if(mzt_list != null && mzt_list.length > 0) {
-                mzt_list.forEach(function(mzt, i) {
+                mzt_list.forEach((mzt, i) => {
                     console.log("[" + (i + 1) + "/" + mzt_list.length + "] " +
-                        NumberUtil.HEX(mzt.header.addr_load, 4) + "h --- " +
-                        NumberUtil.HEX((mzt.header.addr_load + mzt.header.file_size - 1), 4) + "h " +
+                        HEX(mzt.header.addr_load, 4) + "h --- " +
+                        HEX((mzt.header.addr_load + mzt.header.file_size - 1), 4) + "h " +
                         "(" + mzt.header.file_size + " bytes), " +
-                        NumberUtil.HEX(mzt.header.addr_exec, 4) + "h, " + mzt.header.filename);
+                        HEX(mzt.header.addr_exec, 4) + "h, " + mzt.header.filename);
                     memsetMZ(
                         mzt.header.addr_load,
                         mzt.body.buffer,
@@ -169,4 +169,4 @@ mz700.memory.poke(0xE012, 0x18);
     } catch(err) {
         console.log(err);
     }
-}());
+})();
