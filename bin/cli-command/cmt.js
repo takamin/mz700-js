@@ -4,43 +4,30 @@ var mztReadFile = require("./mzt-read-file");
 var MZ_TapeHeader = require('../../lib/mz-tape-header.js');
 var { HEX } = require("../../lib/number-util");
 
-module.exports = new CliCommand("cmt", function(mz700, args) {
+module.exports = new CliCommand("cmt", (mz700, args) => {
     switch(args[0]) {
         case "set":
             if(args.length < 2) {
                 console.log("Blank CMT is set");
                 mz700.setCassetteTape([]);
             } else {
-                return new Promise(function(resolv, reject) {
-                    var filename = args.slice(1).join(' ');
-                    mztReadFile(filename).then(function(mzt_list) {
-                        var setCMT = false;
-                        if(mzt_list != null && mzt_list.length > 0) {
-                            mzt_list.forEach(function(mzt, i) {
-                                console.log("[" + (i + 1) + "/" + mzt_list.length + "] " +
-                                    HEX(mzt.header.addr_load, 4) + "h --- " +
-                                    HEX(mzt.header.addr_load + mzt.header.file_size - 1, 4) + "h " +
-                                    "(" + mzt.header.file_size + " bytes), " +
-                                    HEX(mzt.header.addr_exec, 4) + "h, " + mzt.header.filename);
-                                if(!setCMT) {
-                                    try {
-                                        var bytes = mzt.header.buffer.concat(mzt.body.buffer);
-                                        mz700.setCassetteTape(bytes);
-                                        setCMT = true;
-                                    } catch(err) {
-                                        console.log(err.message);
-                                        console.log(err.stack);
-                                        reject(err);
-                                    }
-                                }
-                            });
-                        }
-                        resolv();
-                    }).catch(function(err) {
-                        console.log(err.message);
-                        console.log(err.stack);
-                        reject(err);
-                    });
+                var filename = args.slice(1).join(' ');
+                return mztReadFile(filename).then(function(mzt_list) {
+                    var setCMT = false;
+                    if(mzt_list != null && mzt_list.length > 0) {
+                        mzt_list.forEach(function(mzt, i) {
+                            console.log("[" + (i + 1) + "/" + mzt_list.length + "] " +
+                                HEX(mzt.header.addr_load, 4) + "h --- " +
+                                HEX(mzt.header.addr_load + mzt.header.file_size - 1, 4) + "h " +
+                                "(" + mzt.header.file_size + " bytes), " +
+                                HEX(mzt.header.addr_exec, 4) + "h, " + mzt.header.filename);
+                            if(!setCMT) {
+                                var bytes = mzt.header.buffer.concat(mzt.body.buffer);
+                                mz700.setCassetteTape(bytes);
+                                setCMT = true;
+                            }
+                        });
+                    }
                 });
             }
             break;

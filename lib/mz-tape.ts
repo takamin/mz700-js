@@ -281,6 +281,9 @@ export default class MZ_Tape {
         while (offset + 128 <= buf.length) {
             var header = new MZ_TapeHeader(buf, offset);
             offset += 128;
+            if(offset + header.file_size > buf.length) {
+                return null;
+            }
             var body_buffer = [];
             for (var i = 0; i < header.file_size; i++) {
                 body_buffer.push(buf[offset + i]);

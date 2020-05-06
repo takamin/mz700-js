@@ -2,21 +2,18 @@
 const fs = require('fs');
 const MZ_Tape = require("../../lib/mz-tape.js");
 module.exports = function (filename) {
-    return new Promise(function(resolve, reject) {
-        if(!filename) {
-            resolve(null);
-            return;
-        }
-        console.log("Loading " + filename + " ... ");
-        fs.readFile(filename, function(err, data) {
+    return new Promise((resolve, reject) => {
+        fs.readFile(filename, (err, data) => {
             if(err) {
                 reject(err);
             } else {
+                console.log("Loading " + filename + " ... ");
                 const mzt_list = MZ_Tape.parseMZT(data);
                 if(mzt_list == null || !Array.isArray(mzt_list) || mzt_list.length == 0) {
-                    reject("Error could not read " + filename);
+                    reject(new Error(`No MZT header read.`));
+                } else {
+                    resolve(mzt_list);
                 }
-                resolve(mzt_list);
             }
         });
     });
