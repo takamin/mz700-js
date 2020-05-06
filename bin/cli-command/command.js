@@ -14,9 +14,9 @@ CliCommand.prototype.create = function(name, func) {
 };
 CliCommand.prototype.install = function(command) {
     if(Array.isArray(command)) {
-        command.forEach(function(item) {
+        command.forEach(item => {
             this.install(item);
-        }, this);
+        });
     } else {
         command.installTo(this);
     }
@@ -47,12 +47,11 @@ CliCommand.prototype.searchCommand = function(commandline) {
     var _commands = this._commands;
     var running = true;
     while(running) {
-        var command = commandline[0];
-        if(command === '') {
+        const [ command, ...args ] = commandline;
+        if(!command) {
             this.putPrompt(false);
             return { entry: null, func: null, args: null };
         }
-        var args = commandline.slice(1);
         if(command in _commands) {
             var def = _commands[command];
             if(def.constructor.name == "CliCommand" ||
@@ -76,12 +75,10 @@ CliCommand.prototype.searchCommand = function(commandline) {
 };
 CliCommand.prototype.executeCommand = function(command, mz700, commandline) {
     if(command != null && command.func != null) {
-        this.tasklist.push(function() {
-            return command.func.call(
-                command.entry, mz700, command.args);
-        });
+        this.tasklist.push(() => command.func.call(
+            command.entry, mz700, command.args));
     } else {
-        this.tasklist.push(function() {
+        this.tasklist.push(() => {
             console.log("Error: Unrecognized command: ", commandline);
             return false;
         });
@@ -99,33 +96,24 @@ CliCommand.prototype.executeSubCommand = function(args, mz700) {
     return false;
 };
 CliCommand.prototype.runCli = function() {
-    var command_returns = null;
-    this.putPrompt(true);
-    setInterval(function() {
-        if(command_returns == null && this.tasklist.length > 0) {
-            var task = this.tasklist[0];
-            this.tasklist = this.tasklist.slice(1);
-            command_returns = task();
-            if(command_returns != null
-            && typeof(command_returns) === "object"
-            && command_returns.constructor.name === "Promise")
-            {
-                command_returns.then(function() {
-                    command_returns = null;
-                    if(this.tasklist.length == 0) {
-                        this.putPrompt(true);
+    const procCommandLine = async () => {
+        if(this.tasklist.length > 0) {
+            while(this.tasklist.length > 0) {
+                const task = this.tasklist.shift();
+                const promise = task();
+                if(promise && promise.constructor === Promise) {
+                    try {
+                        await promise;
+                    } catch(err) {
+                        console.log(err);
                     }
-                }.bind(this)).catch(function(err) {
-                    command_returns = null;
-                    console.log(err);
-                });
-            } else {
-                if(this.tasklist.length == 0) {
-                    this.putPrompt(command_returns !== false);
                 }
-                command_returns = null;
             }
+            this.putPrompt(true);
         }
-    }.bind(this), 100);
+        setTimeout(procCommandLine, 50);
+    }
+    this.putPrompt(true);
+    procCommandLine();
 };
 module.exports = CliCommand;
