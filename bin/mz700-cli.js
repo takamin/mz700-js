@@ -53,33 +53,33 @@ const readline = require("linebyline")(process.stdin);
 const MZ700 = require("../MZ-700/mz700.js");
 const MZMMIO = require("../lib/mz-mmio.js");
 const PCG700 = require("../lib/PCG-700");
-const mztReadFile = require("../MZ-700/cli/mzt-read-file");
+const mztReadFile = require("./cli-command/mzt-read-file");
 
 MZ700.prototype.subscribe = function(notify, handler) {
     console.log(`subscribe ${notify} = ${handler}`);
 };
-const CliCommand = require("../MZ-700/cli/command.js");
+const CliCommand = require("./cli-command/command.js");
 const commands = new CliCommand();
 commands.install([
-    require("../MZ-700/cli/exit.js"),
-    require("../MZ-700/cli/register.js"),
-    require("../MZ-700/cli/run.js"),
-    require("../MZ-700/cli/stop.js"),
-    require("../MZ-700/cli/step.js"),
-    require("../MZ-700/cli/jump.js"),
-    require("../MZ-700/cli/breakpoint.js"),
-    require("../MZ-700/cli/mem.js")
+    require("./cli-command/exit.js"),
+    require("./cli-command/register.js"),
+    require("./cli-command/run.js"),
+    require("./cli-command/stop.js"),
+    require("./cli-command/step.js"),
+    require("./cli-command/jump.js"),
+    require("./cli-command/breakpoint.js"),
+    require("./cli-command/mem.js")
 ]);
-const cliCommandSendKey = require("../MZ-700/cli/sendkey.js");
-const cliCommandVram = require("../MZ-700/cli/vram.js");
-const cliCommandCmt = require("../MZ-700/cli/cmt.js");
+const cliCommandSendKey = require("./cli-command/sendkey.js");
+const cliCommandVram = require("./cli-command/vram.js");
+const cliCommandCmt = require("./cli-command/cmt.js");
 commands.install([
     cliCommandSendKey,
     cliCommandVram,
     cliCommandCmt
 ]);
 
-commands.install(require("../MZ-700/cli/conf.js"));
+commands.install(require("./cli-command/conf.js"));
 
 const mz700 = new MZ700();
 mz700.create({
