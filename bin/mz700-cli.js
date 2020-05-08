@@ -68,6 +68,7 @@ commands.install([
     cliCommandVram,
     cliCommandCmt
 ]);
+cliCommandSendKey.setMakeReleaseDurations(200,50);
 
 commands.install(require("./cli-command/conf.js"));
 
@@ -77,26 +78,11 @@ MZ700.prototype.subscribe = function(notify, handler) {
 };
 const mz700 = new MZ700();
 mz700.create({
-    "onExecutionParameterUpdate" : ()=> { },
     "started": ()=> { },
     "stopped": ()=> { },
-    "notifyClockFreq": ()=> { },
     "onBreak" : ()=> { },
-    "onUpdateScreen": (/*updateData*/)=> { },
     "onVramUpdate": (index, dispcode, attr)=>{
         cliCommandVram.setAt(index, dispcode, attr);
-    },
-    'onMmioRead': (address, value)=> {
-        mzMMIO.read(address, value);
-    },
-    'onMmioWrite': (address, value)=> {
-        mzMMIO.write(address, value);
-    },
-    "onPortRead": (/*port, value*/)=> {
-        //console.log("IN ", HEX(port, 2) + "H", HEX(value, 2) + "H");
-    },
-    "onPortWrite": (port, value)=>{
-        console.log("OUT ", HEX(port, 2) + "H", HEX(value, 2) + "H");
     },
     'startSound': (/*freq*/)=> {
         //console.log("bz:", freq, "Hz");
@@ -113,21 +99,9 @@ mz700.create({
 });
 mz700.setMonitorRom(readMzNewmon7Rom());
 
-const MZMMIO = require("../lib/mz-mmio.js");
-const mzMMIO = new MZMMIO(mz700);
-
-mz700.setClockFactor(1.0);
-cliCommandSendKey.setMakeReleaseDurations(200,50);
-
-const memsetMZ = function(addr, buf, size) {
-    for(let i = 0; i < size; i++) {
-        mz700.memory.poke(addr + i, buf[i]);
-    }
-};
-
 const PCG700 = require("../lib/PCG-700");
 const pcg700 = new PCG700();
-pcg700.setupMMIO(mzMMIO);
+pcg700.setupMMIO(mz700.mmio);
 mz700.memory.poke(0xE010, 0x00);
 mz700.memory.poke(0xE011, 0x00);
 mz700.memory.poke(0xE012, 0x18);
@@ -138,6 +112,14 @@ readline.on("line", line => {
 });
 
 const mztReadFile = require("./cli-command/mzt-read-file");
+const mztWriteMem = (mz700, mzt) => {
+    const addr = mzt.header.addr_load;
+    const buf = mzt.body.buffer;
+    const size = mzt.header.file_size;
+    for(let i = 0; i < size; i++) {
+        mz700.memory.poke(addr + i, buf[i]);
+    }
+};
 
 (async () => {
     try {
@@ -158,10 +140,7 @@ const mztReadFile = require("./cli-command/mzt-read-file");
                         HEX((mzt.header.addr_load + mzt.header.file_size - 1), 4) + "h " +
                         "(" + mzt.header.file_size + " bytes), " +
                         HEX(mzt.header.addr_exec, 4) + "h, " + mzt.header.filename);
-                    memsetMZ(
-                        mzt.header.addr_load,
-                        mzt.body.buffer,
-                        mzt.header.file_size);
+                    mztWriteMem(mz700, mzt);
                 });
             }
             commands.runCli();
