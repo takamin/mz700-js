@@ -8,50 +8,15 @@ MZ700_Memory.prototype.create = function(opt) {
 
     MemoryBank.prototype.create.call(this, opt);
 
-    var i;
+    const monitorRom = new MZ700_NewMonitor();
+    monitorRom.create();
+
     //
     // Create callbacks when the VRAMs are updated
     //
-
-    // callback for VRAM
-    var onUpdateTextVram = function(){};//text
-    var onUpdateAttrVram = function(){};//attributes
-
-    // Implement when the destination is given
-    if(opt.onVramUpdate) {
-        var onVramUpdate = opt.onVramUpdate;
-        var cache = new Array(0x10000);
-        var onUpdateTextVram_ = new Array(0x10000);
-        var onUpdateAttrVram_ = new Array(0x10000);
-        for(i = 0; i < 1000; i++) {
-            cache[0xD000 + i] = [ i, 0, 0x71 ];
-            cache[0xD800 + i] = [ i, 0, 0x71 ];
-            onUpdateTextVram_[0xD000 + i] = (function(textAddr, attrAddr) {
-                return function(dispcode) {
-                    attrAddr[1] = dispcode;
-                    onVramUpdate(textAddr[0], dispcode, textAddr[2]);
-                };
-            }(cache[0xD000 + i], cache[0xD800 + i]));
-            onUpdateAttrVram_[0xD800 + i] = (function(textAddr, attrAddr) {
-                return function(attr) {
-                    textAddr[2] = attr;
-                    onVramUpdate(attrAddr[0], attrAddr[1], attr);
-                };
-            }(cache[0xD000 + i], cache[0xD800 + i]));
-        }
-        onUpdateTextVram = function(addr, dispcode) {
-            if(0xD000 <= addr && addr < 0xD000 + 1000) {
-                onUpdateTextVram_[addr](dispcode);
-            }
-        };
-        onUpdateAttrVram = function(addr, attr) {
-            if(0xD800 <= addr && addr < 0xD800 + 1000) {
-                onUpdateAttrVram_[addr](attr);
-            }
-        };
-    }
-    const monitorRom = new MZ700_NewMonitor();
-    monitorRom.create();
+    const onVramUpdate = opt.onVramUpdate || (()=>{});
+    const cacheText = Array(1000).fill(0x00);
+    const cacheAttr = Array(1000).fill(0x71);
 
     this.memblks = {
         IPL_AREA_ROM: monitorRom,
@@ -63,11 +28,23 @@ MZ700_Memory.prototype.create = function(opt) {
         }),
         TEXT_VRAM: new MemoryBlock({
             startAddr: 0xD000, size: 0x0800,
-            onPoke: onUpdateTextVram
+            onPoke: (addr, dispcode) => {
+                if(0xD000 <= addr && addr < 0xD000 + 1000) {
+                    const i = addr - 0xD000;
+                    cacheText[i] = dispcode;
+                    onVramUpdate(i, dispcode, cacheAttr[i]);
+                }
+            },
         }),
         ATTR_VRAM: new MemoryBlock({
             startAddr: 0xD800, size: 0x0800,
-            onPoke: onUpdateAttrVram
+            onPoke: (addr, attr) => {
+                if(0xD800 <= addr && addr < 0xD800 + 1000) {
+                    const i = addr - 0xD800;
+                    cacheAttr[i] = attr;
+                    onVramUpdate(i, cacheText[i], attr);
+                }
+            },
         }),
         MMAPED_IO: new MemoryBlock({
             startAddr: 0xE000, size: 0x0800,
@@ -89,7 +66,7 @@ MZ700_Memory.prototype.create = function(opt) {
     this.changeBlock1_VRAM();
 
     // fill attribute VRAM by 71h foreground white and background blue
-    for(i = 0; i < 0x800; i++) {
+    for(let i = 0; i < 0x800; i++) {
         this.memblks.ATTR_VRAM.pokeByte(0xD800 + i, 0x71);
     }
 }
