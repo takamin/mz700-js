@@ -54,38 +54,72 @@ export default class PCG700 {
         }
         this._cg = new mz700cg(patternBuffer, 8, 8);
     }
-    setupMMIO(mmio) {
-        // Set CG pattern
-        mmio.onWrite(0xE010, value => {
-            this.pattern = value & 0xff;
-        });
-        // Set lower 8 bit address
-        mmio.onWrite(0xE011, value => {
-            this.addr = ((this.addr & 0x700) | ((value & 0xff) << 0));
-        });
-        // Set higher 3 bit address, flags and program the pattern or copy
-        mmio.onWrite(0xE012, value => {
-            this.addr = ((this.addr & 0x0FF) | ((value & PCG700.ADDR) << 8));
-            this.copy = ((value & PCG700.COPY) == 0) ? 0 : 1;
-            // Write data on negative edge of WE.
-            const we = this.we;
-            this.we = ((value & PCG700.WE) == 0) ? 0 : 1;
-            if (we && !this.we) {
-                this.write();
-            }
-            // Software switch
-            const ssw = this.ssw;
-            this.ssw = ((value & PCG700.SSW) == 0) ? 0 : 1;
-            if (ssw != this.ssw) {
-                this.applySSW();
-            }
-        });
+
+    /**
+     * Set scan line 8 bit pattern for character generator.
+     * @param pattern 8 bit CG pattern
+     */
+    setPattern(pattern:number):void {
+        this.pattern = pattern & 0xff;
+    }
+
+    /**
+     * Set lower 8 bit of address to operate.
+     * @param addr lower 8 bit address
+     */
+    setAddrLo(addr:number):void {
+        this.addr = ((this.addr & 0x700) | ((addr & 0xff) << 0));
+    }
+    /**
+     * Set higher 8 bit of address to operate.
+     * @param addr higher 8 bit address
+     */
+    setAddrHi(addr:number):void {
+        this.addr = ((this.addr & 0x0FF) | ((addr & PCG700.ADDR) << 8));
+    }
+    /**
+     * Set COPY flag.
+     * If this flag is zero, the programmed CG pattern will be written when
+     * the WE flag makes negative edge. Otherwise it is one, the preset CG
+     * pattern will be used.
+     * @param value the flag value.
+     *      A value of zero would clears the flag, otherwise set.
+     */
+    setCopy(value:number):void {
+        this.copy = (value == 0) ? 0 : 1;
+    }
+    /**
+     * Set WE(Write Edge) flag.
+     * When the flag makes negative edge, The CG pattern will be written.
+     * @param value the flag value.
+     *      A value of zero would clears the flag, otherwise set.
+     */
+    setWE(value:number):void {
+        const we = this.we;
+        this.we = (value == 0) ? 0 : 1;
+        if (we && !this.we) {
+            this.write();
+        }
+    }
+    /**
+     * Set SSW(Software Switch) flag.
+     * When this flag is changed to zero, PCG will be displayed to the screen.
+     * When it is changed to one, the original CG will be displayed.
+     * @param value the flag value.
+     *      A value of zero would clears the flag, otherwise set.
+     */
+    setSSW(value:number):void {
+        // Software switch
+        const ssw = this.ssw;
+        this.ssw = (value == 0) ? 0 : 1;
+        if (ssw != this.ssw) {
+            this.applySSW();
+        }
     }
     /**
      * Apply PCG or restore original CG to the screen.
-     * @returns {undefined}
      */
-    applySSW() {
+    applySSW():void {
         if (this.ssw == 0) {
             this._screen.changeCG(this._cg);
             this._screen.redraw();
@@ -98,9 +132,8 @@ export default class PCG700 {
     /**
      * Write the pattern buffer to the specific address.
      * Or copy original pattern.
-     * @returns {undefined}
      */
-    write() {
+    write():void {
         const atb = (this.addr >> 10) & 0x01;
         const dispCode = 0x80 + ((this.addr >> 3) & 0x7f);
         const cpos = atb * 256 + dispCode;

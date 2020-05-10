@@ -27,7 +27,14 @@ mz700.create({
     onStopDataRecorder: () => transworker.postNotify("onStopDataRecorder"),
 });
 const pcg700 = new PCG700(mz700CanvasRenderer);
-pcg700.setupMMIO(mz700.mmio);
+mz700.mmio.onWrite(0xE010, value => pcg700.setPattern(value & 0xff));
+mz700.mmio.onWrite(0xE011, value => pcg700.setAddrLo(value & 0xff));
+mz700.mmio.onWrite(0xE012, value => {
+    pcg700.setAddrHi(value & PCG700.ADDR);
+    pcg700.setCopy(value & PCG700.COPY);
+    pcg700.setWE(value & PCG700.WE);
+    pcg700.setSSW(value & PCG700.SSW);
+});
 
 transworker.create(mz700);
 
