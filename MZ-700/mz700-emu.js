@@ -6,8 +6,6 @@ const            MZ700 = require("./mz700.js");
 const          MZ_Tape = require("../lib/mz-tape.js");
 const    MZ_TapeHeader = require("../lib/mz-tape-header.js");
 const     parseAddress = require("../lib/parse-addr.js");
-const           PCG700 = require("../lib/PCG-700.js");
-const           MZMMIO = require("../lib/mz-mmio.js");
 const              Z80 = require("../Z80/Z80.js");
 require("../lib/jquery-plugin/jquery.mz700-kb.js");
 require("../lib/jquery-plugin/jquery.Z80-reg.js");
@@ -92,39 +90,8 @@ const requestJsonp = require("../lib/jsonp");
             canvas: canvas,
             CG: new MZ700CG(MZ700CG.ROM, 8, 8),
         });
-        if (!canvas.transferControlToOffscreen) {
-            mz700screen.mz700scrn("setupRendering");
-            mz700js.subscribe('onUpdateScreen', updateData => {
-                for (const addr of Object.keys(updateData)) {
-                    const chr = updateData[addr];
-                    mz700screen.mz700scrn("writeVram",
-                        parseInt(addr), chr.attr, chr.dispcode);
-                }
-            });
-            {
-                // Setup PCG-700
-                const mzMMIO = new MZMMIO();
-                const pcg700 = new PCG700(mz700screen);
-                mz700js.subscribe("onMmioRead", (param) => {
-                    const { address, value } = param;
-                    mzMMIO.read(address, value);
-                });
-                mz700js.subscribe("onMmioWrite", (param) => {
-                    const { address, value } = param;
-                    mzMMIO.write(address, value);
-                });
-                pcg700.setupMMIO(mzMMIO);
-            }
-        } else {
-            //Transfer the offscreen canvas to the worker process.
-            //The screen and PCG-700 will be rendered on the worker side.
-            //So following notifications are not needed.
-            mz700js.subscribe('onUpdateScreen', (/*updateData*/) => {/*none*/});
-            mz700js.subscribe("onMmioRead", (/*param*/) => {/*none*/});
-            mz700js.subscribe("onMmioWrite", (/*param*/) => {/*none*/});
-            const offscreenCanvas = canvas.transferControlToOffscreen();
-            mz700js.transferObject("offscreenCanvas", offscreenCanvas);
-        }
+        const offscreenCanvas = canvas.transferControlToOffscreen();
+        mz700js.transferObject("offscreenCanvas", offscreenCanvas);
     }
     mz700screen.hide();
     mz700screen.find("canvas").css("height", "calc(100% - 1px)");
