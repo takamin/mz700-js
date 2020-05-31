@@ -267,7 +267,10 @@ function loadImage(src, alt, width, height) {
     });
 
     // Emulation started
-    mz700js.subscribe("start", () => {
+    mz700js.subscribe("start", async () => {
+        if(!_isRunning && reg_visibility) {
+            await Z80RegViewAutoUpdate(true);
+        }
         btnExecImm.prop("disabled", true);
         $(".MZ-700").addClass("running");
         _isRunning = true;
@@ -278,6 +281,9 @@ function loadImage(src, alt, width, height) {
 
     // Emulation stopped
     mz700js.subscribe("stop", async () => {
+        if(_isRunning && reg_visibility) {
+            await Z80RegViewAutoUpdate(false);
+        }
         btnExecImm.prop("disabled", false);
         $(".MZ-700").removeClass("running");
         _isRunning = false;
@@ -390,14 +396,46 @@ function loadImage(src, alt, width, height) {
     const dockPanelRight = $("#dock-panel-right").css("display", "none");
 
     // Register View
-    const regview = $("<div/>").Z80RegView("init", mz700js);
-    const wndRegView = $("<div class='register-monitor tool-window open' title='REGISTER'/>");
+    const regview = $("<div/>").Z80RegView("create");
+    const wndRegView = $("<div class='register-monitor tool-window close' title='REGISTER'/>");
     dockPanelRight.append(wndRegView);
+
+    let reg_upd_tid = null;
+    let reg_visibility = false;
+    const Z80RegViewUpdateRegister = async () => {
+        const reg = await mz700js.getRegister();
+        regview.Z80RegView("updateRegister", reg);
+    }
+    const Z80RegViewAutoUpdate = async status => {
+        if(status) {
+            if(!reg_upd_tid) {
+                reg_upd_tid = setInterval(()=>Z80RegViewUpdateRegister(), 50);
+            }
+        } else {
+            if(reg_upd_tid) {
+                clearInterval(reg_upd_tid);
+                reg_upd_tid = null;
+            }
+            await Z80RegViewUpdateRegister();
+        }
+    };
+    const Z80RegViewVisibility = async status => {
+        if(reg_visibility != status) {
+            reg_visibility = status;
+            if(_isRunning) {
+                if(reg_visibility) {
+                    await Z80RegViewAutoUpdate(true);
+                } else {
+                    await Z80RegViewAutoUpdate(false);
+                }
+            }
+        }
+    };
     wndRegView
         .append($("<div/>").css("display", "inline-block").append(regview))
         .ToolWindow("create", {
-            onOpened: () => regview.Z80RegView("visibility", true),
-            onClosed: () => regview.Z80RegView("visibility", false),
+            onOpened: () => Z80RegViewVisibility(true),
+            onClosed: () => Z80RegViewVisibility(false),
         });
 
     // Create dump list
@@ -502,7 +540,7 @@ function loadImage(src, alt, width, height) {
                 await new Promise(
                     resolve => dockPanelRight.show(0, resolve));
                 if(wndRegView.ToolWindow("isOpen")) {
-                    regview.Z80RegView("visibility", true);
+                    await Z80RegViewVisibility(true);
                 }
             }
         } else {
@@ -512,7 +550,7 @@ function loadImage(src, alt, width, height) {
                 await new Promise(
                     resolve => dockPanelRight.hide(0, resolve));
                 if(wndRegView.ToolWindow("isOpen")) {
-                    regview.Z80RegView("visibility", false);
+                    await Z80RegViewVisibility(false);
                 }
             }
         }
