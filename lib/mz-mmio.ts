@@ -6,13 +6,16 @@
  */
 export default class MZMMIO {
     _map:Array<{
-        r:Array<(n:number)=>{}>,
-        w:Array<(n:number)=>{}>,
+        r:(n:number)=>{},
+        w:(n:number)=>{},
     }> = [];
 
     constructor() {
         for (let addr:number = 0xE000; addr < 0xE800; addr++) {
-            this._map.push({ "r": [], "w": [] });
+            this._map.push({
+                "r": (value:number) => value,
+                "w": (value:number) => value,
+            });
         }
     }
 
@@ -22,7 +25,7 @@ export default class MZMMIO {
      * @param handler invoked when the address is read.
      */
     onRead(address:number, handler:(n:number)=>{}):void {
-        this._map[address - 0xE000].r.push(handler);
+        this._map[address - 0xE000].r = handler;
     }
 
     /**
@@ -31,7 +34,7 @@ export default class MZMMIO {
      * @param handler invoked when the address is write.
      */
     onWrite(address:number, handler:(n:number)=>{}):void {
-        this._map[address - 0xE000].w.push(handler);
+        this._map[address - 0xE000].w = handler;
     }
 
     /**
@@ -40,13 +43,8 @@ export default class MZMMIO {
      * @param {number} value A value
      * @returns {undefined}
      */
-    read(address:number, value:number):void {
-        const handlers = this._map[address - 0xE000];
-        if (handlers) {
-            for (const handler of handlers.r) {
-                handler(value);
-            }
-        }
+    read(address:number, value:number) {
+        return this._map[address - 0xE000].r(value);
     }
 
     /**
@@ -55,15 +53,8 @@ export default class MZMMIO {
      * @param {number} value A value
      * @returns {undefined}
      */
-    write(address:number, value:number):void {
-        const handlers:{
-            r:Array<(n:number)=>{}>,
-            w:Array<(n:number)=>{}>} = this._map[address - 0xE000];
-        if (handlers) {
-            for (const handler of handlers.w) {
-                handler(value);
-            }
-        }
+    write(address:number, value:number) {
+        return this._map[address - 0xE000].w(value);
     }
 }
 

@@ -1,7 +1,4 @@
 "use strict";
-import MZMMIO from "./mz-mmio";
-import PCG700 from "./PCG-700";
-import mz700cg from "./mz700-cg";
 import MZ700CanvasRenderer from "./mz700-canvas-renderer";
 
 export default class mz700scrn extends MZ700CanvasRenderer {
@@ -21,7 +18,6 @@ export default class mz700scrn extends MZ700CanvasRenderer {
         canvas?:HTMLCanvasElement,
         cols?:number,
         rows?:number,
-        CG?:mz700cg,
         color?:number,
         backgroundColor?:number,
         width?:string,
