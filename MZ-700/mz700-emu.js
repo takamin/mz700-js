@@ -395,26 +395,10 @@ function loadImage(src, alt, width, height) {
     dockPanelRight.append(wndRegView);
     wndRegView
         .append($("<div/>").css("display", "inline-block").append(regview))
-        .on("show", () => regview.Z80RegView("visibility", true))
-        .on("hide", () => regview.Z80RegView("visibility", false));
-
-    // Override jquery show/hide to fire same name event
-    {
-        const originalShow = $.fn["show"];
-        $.fn["show"] = function() {
-            if(!this.is(":visible")) {
-                this.trigger("show");
-            }
-            return originalShow.apply(this, arguments);
-        };
-        const originalHide = $.fn["hide"];
-        $.fn["hide"] = function() {
-            if(this.is(":visible")) {
-                this.trigger("hide");
-            }
-            return originalHide.apply(this, arguments);
-        };
-    }
+        .ToolWindow("create", {
+            onOpened: () => regview.Z80RegView("visibility", true),
+            onClosed: () => regview.Z80RegView("visibility", false),
+        });
 
     // Create dump list
     const dumplist = $("<div/>").dumplist("init", { mz700js: mz700js });
@@ -422,13 +406,13 @@ function loadImage(src, alt, width, height) {
     dockPanelRight.append(wndDumpList);
     wndDumpList
         .append(dumplist.dumplist("addrSpecifier"))
-        .append(dumplist);
+        .append(dumplist).ToolWindow("create");
 
     // Create assemble list
     const asmView = $("<div/>").asmview("create", mz700js);
     const wndAsmList = $("<div  class='tool-window open' title='Z80 ASM'/>");
     dockPanelRight.append(wndAsmList);
-    wndAsmList.append(asmView);
+    wndAsmList.append(asmView).ToolWindow("create");
 
     // Show a sample assemble source
     const asmlistMzt = asmView.asmview("newAsmList", "mzt", "PCG-700 sample");
@@ -506,9 +490,7 @@ function loadImage(src, alt, width, height) {
                 .addClass("mnemonic"))
         .append(btnExecImm)
         .append($("<br/>"))
-    );
-
-    $(".tool-window").ToolWindow("create");
+    ).ToolWindow("create");
 
     // Layout
     window.addEventListener("resize", resizeScreen);
@@ -519,6 +501,9 @@ function loadImage(src, alt, width, height) {
             if(deviceType === "pc") {
                 await new Promise(
                     resolve => dockPanelRight.show(0, resolve));
+                if(wndRegView.ToolWindow("isOpen")) {
+                    regview.Z80RegView("visibility", true);
+                }
             }
         } else {
             dockPanelHeader.hide(0,
@@ -526,6 +511,9 @@ function loadImage(src, alt, width, height) {
             if(deviceType === "pc") {
                 await new Promise(
                     resolve => dockPanelRight.hide(0, resolve));
+                if(wndRegView.ToolWindow("isOpen")) {
+                    regview.Z80RegView("visibility", false);
+                }
             }
         }
         resizeScreen();
