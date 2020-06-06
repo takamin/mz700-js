@@ -53,7 +53,7 @@ function loadImage(src, alt, width, height) {
     });
 }
 
-((async () => {
+async function main() {
 
     // Set module version to the page title
     const pageTitle = [
@@ -459,35 +459,31 @@ function loadImage(src, alt, width, height) {
     }));
 
     // Disassemble MONITOR ROM and show that source.
-    try {
-        const getText = url => {
-            return new Promise(resolve => $.get(url, {}, resolve));
-        };
-        const readme = await getText("./mz_newmon/newmon_readme.txt");
-        console.log(readme);
-        const commandHelp = await getText("./mz_newmon/newmon_command.txt");
-        console.log(commandHelp);
-        const comment = [
-            ";;;",
-            ";;; This is a disassembled list of the MZ-NEW MONITOR",
-            ";;; provided from the Marukun's website 'MZ-Memories'",
-            ";;; ( http://retropc.net/mz-memories/mz700/ ).",
-            ";;; ",
-            ";----",
-            ...commandHelp.split(/\r*\n/).map(line => `;${line}`),
-            ";----",
-        ].join("\n");
+    const getText = url => {
+        return new Promise(resolve => $.get(url, {}, resolve));
+    };
+    const readme = await getText("./mz_newmon/newmon_readme.txt");
+    console.log(readme);
+    const commandHelp = await getText("./mz_newmon/newmon_command.txt");
+    console.log(commandHelp);
+    const comment = [
+        ";;;",
+        ";;; This is a disassembled list of the MZ-NEW MONITOR",
+        ";;; provided from the Marukun's website 'MZ-Memories'",
+        ";;; ( http://retropc.net/mz-memories/mz700/ ).",
+        ";;; ",
+        ";----",
+        ...commandHelp.split(/\r*\n/).map(line => `;${line}`),
+        ";----",
+    ].join("\n");
 
-        const source = comment +  "\n" + Z80.dasmlines(Z80.dasm(
-            monitorRom, 0x0000, 0x1000, 0x0000
-        )).join("\n") + "\n";
+    const source = comment +  "\n" + Z80.dasmlines(Z80.dasm(
+        monitorRom, 0x0000, 0x1000, 0x0000
+    )).join("\n") + "\n";
 
-        const monRom = asmView.asmview("newAsmList",
-            "monitor-rom", "MZ-700 NEW MONITOR");
-        await monRom.asmlist("assemble", source);
-    } catch(err) {
-        console.error(JSON.stringify(err));
-    }
+    const monRom = asmView.asmview("newAsmList",
+        "monitor-rom", "MZ-700 NEW MONITOR");
+    await monRom.asmlist("assemble", source);
 
     //直接実行ボタン
     const btnExecImm = $("<button/>").attr("type", "button").html("Execute")
@@ -557,6 +553,122 @@ function loadImage(src, alt, width, height) {
         resizeScreen();
     });
 
+    // Accept MZT file to drop to the data recorder and MZ-700 screen
+
+    const readBinFile = file => {
+        return new Promise((resolve, reject) => {
+            try {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    resolve(reader.result);
+                };
+                reader.readAsArrayBuffer(file);
+            } catch(err) {
+                reject(err);
+            }
+        });
+    };
+
+    const readTextFile = file => {
+        return new Promise((resolve, reject) => {
+            try {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.readAsText(file);
+            } catch(err) {
+                reject(err);
+            }
+        });
+    };
+
+    const getOnLoadHandler = (filename, onloadHandlers) => {
+        const ext = filename.replace(/^.*\./, "").toLowerCase();
+        const types = Object.keys(onloadHandlers);
+        const index = types.map(type => type.toLowerCase()).indexOf(ext);
+        if(index >= 0) {
+            const type = types[index];
+            return onloadHandlers[type];
+        }
+        return null;
+    };
+
+    // Set a cassette tape to data recorder of MZ-700 and
+    // load the MZT to memory directly.
+    const setMztData = async (mz700js, tapeData, execAddr) => {
+        await mz700js.stop();
+        await mz700js.setCassetteTape(tapeData);
+        await mz700js.loadCassetteTape();
+        await mz700js.setPC(execAddr);
+        await mz700js.start();
+    };
+
+    // Disassemble MZTape array
+    const showMztDisasm = async function(mztape_array) {
+        const name = MZ_TapeHeader.get1stFilename(mztape_array) || "(empty)";
+        const result = MZ700.disassemble(mztape_array);
+        asmView.asmview("name", "mzt", name);
+        asmlistMzt.asmlist("text", result.outbuf);
+        asmlistMzt.asmlist("writeList",
+            result.asmlist, await mz700js.getBreakPoints());
+        await dataRecorder.MZDataRecorder("updateCmtSlot");
+    };
+
+    const setMztAndRun = async tapeData => {
+        const mztape_array = MZ_Tape.parseMZT(tapeData);
+        await showMztDisasm(mztape_array);
+        await setMztData(mz700js, tapeData,
+            mztape_array[0].header.addr_exec);
+    };
+
+    const setupDragDrop = (element, onloadHandlers) => {
+        element.addEventListener("dragenter", async event => {
+            event.stopPropagation();
+            event.preventDefault();
+            event.dataTransfer.dropEffect = "copy";
+        }, false);
+        element.addEventListener('drop', async event => {
+            event.stopPropagation();
+            event.preventDefault();
+            try {
+                const file = Array.from(event.dataTransfer.files).shift();
+                if(file) {
+                    const onload = getOnLoadHandler(file.name, onloadHandlers);
+                    if(onload) {
+                        await onload(file);
+                    }
+                }
+            } catch(err) {
+                console.error(`Error: ${err.stack}`);
+            }
+        }, false);
+    };
+
+    if (window.File && window.FileReader && window.FileList && window.Blob) {
+        setupDragDrop(dataRecorder.get(0), {
+            "MZT": async tapeData => await mz700js.setCassetteTape(tapeData),
+        });
+        setupDragDrop(canvas, {
+            "MZT": async file => {
+                const arrayBuffer = await readBinFile(file);
+                if(arrayBuffer) {
+                    const mzt = new Uint8Array(arrayBuffer);
+                    setMztAndRun(mzt);
+                }
+            },
+            "ASM": async file => {
+                const src = await readTextFile(file);
+                const obj = Z80_assemble.assemble([src]);
+                const hdr = MZ_TapeHeader.createNew();
+                hdr.setFilename(file.name);
+                hdr.setAddrLoad(obj.min_addr);
+                hdr.setAddrExec(obj.min_addr);
+                hdr.setFilesize(obj.buffer.length);
+                const mzt = Buffer.from(hdr.buffer.concat(obj.buffer));
+                setMztAndRun(mzt);
+            },
+        });
+    }
+
     fullscreenButton.ToggleButton("off");
     switch(deviceType) {
     case "mobile":
@@ -605,85 +717,22 @@ function loadImage(src, alt, width, height) {
     await mz700js.reset();
     await mz700js.start();
 
-    // Disassemble MZTape array
-    const showMztDisasm = async function(mztape_array) {
-        const name = MZ_TapeHeader.get1stFilename(mztape_array) || "(empty)";
-        const result = MZ700.disassemble(mztape_array);
-        asmView.asmview("name", "mzt", name);
-        asmlistMzt.asmlist("text", result.outbuf);
-        asmlistMzt.asmlist("writeList",
-            result.asmlist, await mz700js.getBreakPoints());
-    };
-
-    // Set a cassette tape to data recorder of MZ-700 and
-    // load the MZT to memory directly.
-    const setMztData = async function(tape_data) {
-        await mz700js.stop();
-        await mz700js.setCassetteTape(tape_data);
-        if(tape_data != null) {
-            const mztape_array = MZ_Tape.parseMZT(tape_data);
-            await mz700js.loadCassetteTape();
-            await showMztDisasm(mztape_array);
-            await mz700js.setPC(mztape_array[0].header.addr_exec);
-            await mz700js.start();
-        }
-        await dataRecorder.MZDataRecorder("updateCmtSlot");
-    };
-
-    // Accept MZT file to drop to the data recorder and MZ-700 screen
-    if (window.File && window.FileReader && window.FileList && window.Blob) {
-        const el = dataRecorder.get(0);
-        el.addEventListener('dragover', event => {
-            event.stopPropagation();
-            event.preventDefault();
-            event.dataTransfer.dropEffect = 'copy'; // Explicitly show this is a copy.
-        }, false);
-        el.addEventListener('drop', event => {
-            event.stopPropagation();
-            event.preventDefault();
-            const files = event.dataTransfer.files; // FileList object.
-            if(files.length > 0) {
-                const f = files[0];
-                const reader = new FileReader();
-                reader.onload = async () => {
-                    const tapeData = new Uint8Array(reader.result);
-                    await mz700js.setCassetteTape(tapeData);
-                };
-                reader.readAsArrayBuffer(f);
-            }
-        }, false);
-        mz700screen.get(0).addEventListener("dragover", event => {
-            event.stopPropagation();
-            event.preventDefault();
-            event.dataTransfer.dropEffect = "copy"; // Explicitly show this is a copy.
-        }, false);
-        mz700screen.get(0).addEventListener("drop", event => {
-            event.stopPropagation();
-            event.preventDefault();
-            const files = event.dataTransfer.files; // FileList object.
-            if(files.length > 0) {
-                const f = files[0];
-                const reader = new FileReader();
-                reader.onload = () => {
-                    const tape_data = new Uint8Array(reader.result);
-                    setMztData(tape_data);
-                };
-                reader.readAsArrayBuffer(f);
-            }
-        }, false);
-    }
-
     // Load MZT file when the filename is included in URL
     const request = parseRequest();
     if("mzt" in request.parameters) {
         const filename = request.parameters.mzt;
         const url = `https://takamin.github.io/MZ-700/mzt/${filename}.js`;
-        try {
-            const tape_data = await requestJsonp("loadMZT", url);
-            await setMztData(tape_data);
-        } catch (err) {
-            console.warn(err.message);
-            console.warn(err.stack);
+        const tapeData = await requestJsonp("loadMZT", url);
+        if(tapeData) {
+            await setMztAndRun(tapeData);
         }
     }
-})());
+}
+
+(async ()=>{
+    try {
+        await main();
+    } catch (err) {
+        console.warn(err.message);
+    }
+})();
