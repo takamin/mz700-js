@@ -1,6 +1,16 @@
 CHANGES
 =======
 
+* v1.4.\*
+    * An assembly source file is available to run by dropping to the screen.
+* v1.3.\*
+    * Asynchronous problems on UI-widget is fixed.
+* v1.2.\*
+    * The emulation speed can be controlled by the slider.
+    * Fix some bugs.
+* v1.1.\*
+    * The emulation speed stability is increased.
+    * Fix some bugs.
 * v1.0.\*
     * An UI-logic was isolated. The emulation is stable for a year.
 * v0.9.\*
