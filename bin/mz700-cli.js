@@ -1,164 +1,158 @@
 #!/usr/bin/env node
-(function() {
-    "use strict";
+"use strict";
 
-    const NumberUtil = require("../lib/number-util.js");
-    var getPackageJson = require("../lib/get-package-json");
-    var npmInfo = getPackageJson(__dirname + "/..");
-    var Getopt = require('node-getopt');
-    var getopt = new Getopt([
-            ['c',   'set-cmt=FILENAME',  'set MZT file as cassette magnetic tape'],
-            ['h',   'help',     'display this help'],
-            ['v',   'version',  'show version']
-            ]);
-    var cli = getopt.parseSystem();
-    var argv = require("hash-arg").get(["input_filename"], cli.argv);
-    var description = "The Cli-Version MZ-700 Emulator. -- " + npmInfo.name + "@" + npmInfo.version;
-    getopt.setHelp(
-            "Usage: mz700-cli [OPTION] [MZT-filename]\n" +
-            description + "\n" +
-            "\n" +
-            "[[OPTIONS]]\n" +
-            "\n" +
-            "Installation: npm install -g mz700-js\n" +
-            "Repository: https://github.com/takamin/mz700-js");
+const fs = require("fs");
+const path = require("path");
+const { HEX } = require("../lib/number-util.js");
+const getPackageJson = require("./lib/get-package-json");
+const npmInfo = getPackageJson(path.join(__dirname, ".."));
 
-    if(cli.options.help) {
-        getopt.showHelp();
-        return;
-    }
+/**
+ * Read NEWMON7.ROM
+ * @returns {UintA8Array} A NEWMON7 binary
+ */
+function readMzNewmon7Rom() {
+    const pathname = path.join(
+        __dirname, "../mz_newmon/ROMS/NEWMON7.ROM");
+    const buffer = fs.readFileSync(pathname);
+    return Uint8Array.from(buffer);
+}
 
-    if(cli.options.version) {
-        console.log(description);
-        return;
-    }
+const Getopt = require('node-getopt');
+const getopt = new Getopt([
+        ['c',   'set-cmt=FILENAME',  'set MZT file as cassette magnetic tape'],
+        ['h',   'help',     'display this help'],
+        ['v',   'version',  'show version']
+        ]);
+const cli = getopt.parseSystem();
+const argv = require("hash-arg").get(["input_filename"], cli.argv);
+const description = "The Cli-Version MZ-700 Emulator. -- " + npmInfo.name + "@" + npmInfo.version;
+getopt.setHelp(
+        "Usage: mz700-cli [OPTION] [MZT-filename]\n" +
+        description + "\n" +
+        "\n" +
+        "[[OPTIONS]]\n" +
+        "\n" +
+        "Installation: npm install -g mz700-js\n" +
+        "Repository: https://github.com/takamin/mz700-js");
 
+if(cli.options.help) {
+    getopt.showHelp();
+    return;
+}
 
+if(cli.options.version) {
     console.log(description);
+    return;
+}
 
-    const readline = require("linebyline")(process.stdin);
-    require("../lib/context.js");
-    const MZ700 = require("../MZ-700/mz700.js");
-    const MZMMIO = require("../lib/mz-mmio.js");
-    const PCG700 = require("../lib/PCG-700");
-    const mztReadFile = require("../lib/mzt-read-file");
+console.log(description);
 
-    const CliCommand = require("../MZ-700/cli/command.js");
-    const commands = new CliCommand();
-    commands.install([
-        require("../MZ-700/cli/exit.js"),
-        require("../MZ-700/cli/register.js"),
-        require("../MZ-700/cli/run.js"),
-        require("../MZ-700/cli/stop.js"),
-        require("../MZ-700/cli/step.js"),
-        require("../MZ-700/cli/jump.js"),
-        require("../MZ-700/cli/breakpoint.js"),
-        require("../MZ-700/cli/mem.js")
-    ]);
-    const cliCommandSendKey = require("../MZ-700/cli/sendkey.js");
-    const cliCommandVram = require("../MZ-700/cli/vram.js");
-    const cliCommandCmt = require("../MZ-700/cli/cmt.js");
-    commands.install([
-        cliCommandSendKey,
-        cliCommandVram,
-        cliCommandCmt
-    ]);
+const CliCommand = require("./cli-command/command.js");
+const commands = new CliCommand();
+commands.install([
+    require("./cli-command/exit.js"),
+    require("./cli-command/register.js"),
+    require("./cli-command/run.js"),
+    require("./cli-command/stop.js"),
+    require("./cli-command/step.js"),
+    require("./cli-command/jump.js"),
+    require("./cli-command/breakpoint.js"),
+    require("./cli-command/mem.js")
+]);
+const cliCommandSendKey = require("./cli-command/sendkey.js");
+const cliCommandVram = require("./cli-command/vram.js");
+const cliCommandCmt = require("./cli-command/cmt.js");
+commands.install([
+    cliCommandSendKey,
+    cliCommandVram,
+    cliCommandCmt
+]);
+cliCommandSendKey.setMakeReleaseDurations(200,50);
 
-    commands.install(require("../MZ-700/cli/conf.js"));
+commands.install(require("./cli-command/conf.js"));
 
-    const mzMMIO = new MZMMIO();
-    const mz700 = new MZ700({
-        "onExecutionParameterUpdate" : function() { },
-        "started": function() { },
-        "stopped": function() { },
-        "notifyClockFreq": function() { },
-        "onBreak" : function() { },
-        "onUpdateScreen": function(/*updateData*/) { },
-        "onVramUpdate": function(index, dispcode, attr){
-            cliCommandVram.setAt(index, dispcode, attr);
-        },
-        'onMmioRead': function(address, value) {
-            mzMMIO.read(address, value);
-        },
-        'onMmioWrite': function(address, value) {
-            mzMMIO.write(address, value);
-        },
-        "onPortRead": function(/*port, value*/){
-            //console.log("IN ", NumberUtil.HEX(port, 2) + "H", NumberUtil.HEX(value, 2) + "H");
-        },
-        "onPortWrite": function(port, value){
-            console.log("OUT ", NumberUtil.HEX(port, 2) + "H", NumberUtil.HEX(value, 2) + "H");
-        },
-        'startSound': function(/*freq*/) {
-            //console.log("bz:", freq, "Hz");
-        },
-        'stopSound': function() {
-            //console.log("bz: off");
-        },
-        "onStartDataRecorder": function(){
-            //console.log("MOTOR: ON");
-        },
-        "onStopDataRecorder": function(){
-            //console.log("MOTOR: OFF");
-        }
-    });
+const MZ700 = require("../MZ-700/mz700.js");
+MZ700.prototype.subscribe = function(notify, handler) {
+    console.log(`subscribe ${notify} = ${handler}`);
+};
+const mz700 = new MZ700();
+mz700.create({
+    "started": ()=> { },
+    "stopped": ()=> { },
+    "onBreak" : ()=> { },
+    "onVramUpdate": (index, dispcode, attr)=>{
+        cliCommandVram.setAt(index, dispcode, attr);
+    },
+    'startSound': (/*freq*/)=> {
+        //console.log("bz:", freq, "Hz");
+    },
+    'stopSound': ()=> {
+        //console.log("bz: off");
+    },
+    "onStartDataRecorder": ()=>{
+        //console.log("MOTOR: ON");
+    },
+    "onStopDataRecorder": ()=>{
+        //console.log("MOTOR: OFF");
+    }
+});
+mz700.setMonitorRom(readMzNewmon7Rom());
 
-    mz700.setExecutionParameter(MZ700.DEFAULT_TIMER_INTERVAL);
-    cliCommandSendKey.setMakeReleaseDurations(200,50);
+const PCG700 = require("../lib/PCG-700");
+const pcg700 = new PCG700();
+mz700.mmio.onWrite(0xE010, value => pcg700.setPattern(value & 0xff));
+mz700.mmio.onWrite(0xE011, value => pcg700.setAddrLo(value & 0xff));
+mz700.mmio.onWrite(0xE012, value => {
+    pcg700.setAddrHi(value & PCG700.ADDR);
+    pcg700.setCopy(value & PCG700.COPY);
+    pcg700.setWE(value & PCG700.WE);
+    pcg700.setSSW(value & PCG700.SSW);
+});
+mz700.memory.poke(0xE010, 0x00);
+mz700.memory.poke(0xE011, 0x00);
+mz700.memory.poke(0xE012, 0x18);
 
-    var memsetMZ = function(addr, buf, size) {
-        for(var i = 0; i < size; i++) {
-            mz700.memory.poke(addr + i, buf[i]);
-        }
-    };
+const readline = require("linebyline")(process.stdin);
+readline.on("line", line => {
+    commands.executeCommandline(line, mz700, line);
+});
 
-    const pcg700 = new PCG700();
-    pcg700.setupMMIO(mzMMIO);
-    mz700.memory.poke(0xE010, 0x00);
-    mz700.memory.poke(0xE011, 0x00);
-    mz700.memory.poke(0xE012, 0x18);
+const mztReadFile = require("./cli-command/mzt-read-file");
+const mztWriteMem = (mz700, mzt) => {
+    const addr = mzt.header.addr_load;
+    const buf = mzt.body.buffer;
+    const size = mzt.header.file_size;
+    for(let i = 0; i < size; i++) {
+        mz700.memory.poke(addr + i, buf[i]);
+    }
+};
 
-    (new Promise(function(resolv, reject) {
+(async () => {
+    try {
         if(cli.options["set-cmt"]) {
-            var filename = cli.options["set-cmt"];
-            cliCommandCmt.func.call(
-                cliCommandCmt, mz700, ["set", filename]
-            ).then(function(){
-                resolv();
-            }).catch(function(err){
-                reject(err);
-            });
-        } else {
-            resolv();
+            const filename = cli.options["set-cmt"];
+            await cliCommandCmt.func.call(
+                cliCommandCmt, mz700, ["set", filename]);
         }
-    })).then(function() {
-        readline.on("line", function(line) {
-            commands.executeCommandline(line, mz700, line);
-        });
         //Input file
         if(!argv.input_filename) {
             commands.runCli();
         } else {
-            mztReadFile(argv.input_filename).then(function(mzt_list) {
-                if(mzt_list != null && mzt_list.length > 0) {
-                    mzt_list.forEach(function(mzt, i) {
-                        console.log("[" + (i + 1) + "/" + mzt_list.length + "] " +
-                            NumberUtil.HEX(mzt.header.addr_load, 4) + "h --- " +
-                            NumberUtil.HEX((mzt.header.addr_load + mzt.header.file_size - 1), 4) + "h " +
-                            "(" + mzt.header.file_size + " bytes), " +
-                            NumberUtil.HEX(mzt.header.addr_exec, 4) + "h, " + mzt.header.filename);
-                        memsetMZ(
-                            mzt.header.addr_load,
-                            mzt.body.buffer,
-                            mzt.header.file_size);
-                    });
-                }
-                commands.runCli();
-            }).catch(function(err) {
-                console.log(err);
-            });
+            const mzt_list = await mztReadFile(argv.input_filename);
+            if(mzt_list != null && mzt_list.length > 0) {
+                mzt_list.forEach((mzt, i) => {
+                    console.log("[" + (i + 1) + "/" + mzt_list.length + "] " +
+                        HEX(mzt.header.addr_load, 4) + "h --- " +
+                        HEX((mzt.header.addr_load + mzt.header.file_size - 1), 4) + "h " +
+                        "(" + mzt.header.file_size + " bytes), " +
+                        HEX(mzt.header.addr_exec, 4) + "h, " + mzt.header.filename);
+                    mztWriteMem(mz700, mzt);
+                });
+            }
+            commands.runCli();
         }
-    }).catch(function(err) {
+    } catch(err) {
         console.log(err);
-    });
-}());
+    }
+})();

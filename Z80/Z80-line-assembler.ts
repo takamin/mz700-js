@@ -277,6 +277,21 @@ export default class Z80LineAssembler {
     };
 
     /**
+     * Parse displacement value for index register.
+     * @param toks The token list to assemble.
+     * @param indexOfSign The index of toks that points a displacement operator.
+     * @returns a total evaluated displacement value.
+     */
+    static parseIndexDisplacer(toks:Array<string>, indexOfSign:number):number {
+        const index_d = indexOfSign + (toks[indexOfSign].match(/^[+-]$/) ? 1 : 0);
+        const d = parseAddress.parseNumLiteral(toks[index_d]);
+        if(index_d == indexOfSign + 1 && toks[indexOfSign] == '-') {
+            return NumberUtil.to8bitUnsigned(-d);
+        }
+        return d;
+    };
+
+    /**
      * Create Z80 assembler instruction code line.
      *
      * @param {string}          mnemonic    Mnemonic.
@@ -333,6 +348,9 @@ export default class Z80LineAssembler {
                 asmline.bytecode = asmline.assembleMnemonic(tokens, dictionary);
             } catch(e) {
                 asmline.comment += "*** ASSEMBLE ERROR - " + e;
+                console.error(`!!! Error !!! ${e.message}`);
+                console.error(`tokens: ${tokens.join(' ')}`);
+                console.error(e.stack);
             }
         }
         return asmline;
@@ -801,27 +819,20 @@ export default class Z80LineAssembler {
             }
             return [];
         }
-        if(match_token(toks,[/^(RLC|RL|RRC|RR|SLA|SRA|SRL)$/,'(',/^(IX|IY)$/,'+',null, ')'])
-        || match_token(toks,[/^(RLC|RL|RRC|RR|SLA|SRA|SRL)$/,'(',/^(IX|IY)$/,/^\+.*/, ')']))  {
-            return (function() {
-                var index_d = ((toks[3] == '+') ? 4 : 3);
-                var prefix = 0;
-                switch(toks[2]) {
-                    case 'IX': prefix = oct("0335"); break;
-                    case 'IY': prefix = oct("0375"); break;
-                }
-                var d = parseAddress.parseNumLiteral(toks[index_d]);
-                switch(toks[0]) {
-                    case 'RLC': return [prefix, oct("0313"), d, oct("0006")];
-                    case 'RL':  return [prefix, oct("0313"), d, oct("0026")];
-                    case 'RRC': return [prefix, oct("0313"), d, oct("0016")];
-                    case 'RR':  return [prefix, oct("0313"), d, oct("0036")];
-                    case 'SLA': return [prefix, oct("0313"), d, oct("0046")];
-                    case 'SRA': return [prefix, oct("0313"), d, oct("0056")];
-                    case 'SRL': return [prefix, oct("0313"), d, oct("0076")];
-                }
-                return [];
-            }());
+        if(match_token(toks,[/^(RLC|RL|RRC|RR|SLA|SRA|SRL)$/,'(',/^(IX|IY)$/,/^[+-]$/,null, ')'])
+        || match_token(toks,[/^(RLC|RL|RRC|RR|SLA|SRA|SRL)$/,'(',/^(IX|IY)$/,/^[+-].*/, ')']))  {
+            const prefix = getSubopeIXIY(toks[2]);
+            const d_u8 = Z80LineAssembler.parseIndexDisplacer(toks, 3);
+            switch(toks[0]) {
+                case 'RLC': return [prefix, oct("0313"), d_u8, oct("0006")];
+                case 'RL':  return [prefix, oct("0313"), d_u8, oct("0026")];
+                case 'RRC': return [prefix, oct("0313"), d_u8, oct("0016")];
+                case 'RR':  return [prefix, oct("0313"), d_u8, oct("0036")];
+                case 'SLA': return [prefix, oct("0313"), d_u8, oct("0046")];
+                case 'SRA': return [prefix, oct("0313"), d_u8, oct("0056")];
+                case 'SRL': return [prefix, oct("0313"), d_u8, oct("0076")];
+            }
+            return [];
         }
         if(match_token(toks,['RLD']))  { return [oct("0355"), oct("0157")]; }
         if(match_token(toks,['RRD']))  { return [oct("0355"), oct("0147")]; }
@@ -846,23 +857,16 @@ export default class Z80LineAssembler {
             }
             return [];
         }
-        if(match_token(toks,[/^(BIT|SET|RES)$/, /^[0-7]$/, ',', '(',/^(IX|IY)$/,'+',null,')'])
-        || match_token(toks,[/^(BIT|SET|RES)$/, /^[0-7]$/, ',', '(',/^(IX|IY)$/,/^\+.*$/,')'])) {
-            return (function() {
-                var index_d = ((toks[5] == '+') ? 6 : 5);
-                var prefix = 0;
-                switch(toks[4]) {
-                    case 'IX': prefix = oct("0335"); break;
-                    case 'IY': prefix = oct("0375"); break;
-                }
-                var d = parseAddress.parseNumLiteral(toks[index_d]);
-                switch(toks[0]) {
-                    case 'BIT': return [prefix, oct("0313"), d, oct("0106") | (toks[1] << 3)];
-                    case 'SET': return [prefix, oct("0313"), d, oct("0306") | (toks[1] << 3)];
-                    case 'RES': return [prefix, oct("0313"), d, oct("0206") | (toks[1] << 3)];
-                }
-                return [];
-            }());
+        if(match_token(toks,[/^(BIT|SET|RES)$/, /^[0-7]$/, ',', '(',/^(IX|IY)$/,/^[+-]$/,null,')'])
+        || match_token(toks,[/^(BIT|SET|RES)$/, /^[0-7]$/, ',', '(',/^(IX|IY)$/,/^[+-].*$/,')'])) {
+            const prefix = getSubopeIXIY(toks[4]);
+            const d_u8 = Z80LineAssembler.parseIndexDisplacer(toks, 5);
+            switch(toks[0]) {
+                case 'BIT': return [prefix, oct("0313"), d_u8, oct("0106") | (toks[1] << 3)];
+                case 'SET': return [prefix, oct("0313"), d_u8, oct("0306") | (toks[1] << 3)];
+                case 'RES': return [prefix, oct("0313"), d_u8, oct("0206") | (toks[1] << 3)];
+            }
+            return [];
         }
 
         //=================================================================================
@@ -1021,38 +1025,36 @@ export default class Z80LineAssembler {
         // IX/IY
         //
         //=================================================================================
-        if(match_token(toks,['LD', /^[BCDEHLA]$/, ',', '(', /^(IX|IY)$/, '+', null, ')'])
+
+        // LD r,(IX+d)
+        if(match_token(toks,['LD', /^[BCDEHLA]$/, ',', '(', /^(IX|IY)$/, /^[+-]$/, null, ')'])
         || match_token(toks,['LD', /^[BCDEHLA]$/, ',', '(', /^(IX|IY)$/, null, ')'])) {
-            return (function() {
-                var index_d = ((toks[5] == '+') ? 6 : 5);
-                var r = get8bitRegId(toks[1]);
-                var d = parseAddress.parseNumLiteral(toks[index_d]);
-                var subope = getSubopeIXIY(toks[4]);
-                return [subope, oct("0106") | (r << 3), d];
-            }());
+            const r = get8bitRegId(toks[1]);
+            const subope = getSubopeIXIY(toks[4]);
+            const d_u8 = Z80LineAssembler.parseIndexDisplacer(toks, 5);
+            return [subope, oct("0106") | (r << 3), d_u8];
         }
-        if(match_token(toks,['LD', '(', /^(IX|IY)$/, '+', null, ')', ',', /^[BCDEHLA]$/])
-        || match_token(toks,['LD', '(', /^(IX|IY)$/, /^\+.*$/, ')', ',', /^[BCDEHLA]$/])) {
-            return (function() {
-                var index_d = ((toks[3] == '+') ? 4 : 3);
-                var index_r = ((toks[3] == '+') ? 7 : 6);
-                var d = parseAddress.parseNumLiteral(toks[index_d]);
-                var r = get8bitRegId(toks[index_r]);
-                var subope = getSubopeIXIY(toks[2]);
-                return [subope, oct("0160") | r, d];
-            }());
+
+        // LD (IX+d),r
+        if(match_token(toks,['LD', '(', /^(IX|IY)$/, /^[+-]$/, null, ')', ',', /^[BCDEHLA]$/])
+        || match_token(toks,['LD', '(', /^(IX|IY)$/, /^[+-].*$/, ')', ',', /^[BCDEHLA]$/])) {
+            const subope = getSubopeIXIY(toks[2]);
+            const d_u8 = Z80LineAssembler.parseIndexDisplacer(toks, 3);
+            const index_r = ((toks[3] == '+' || toks[3] == '-') ? 7 : 6);
+            const r = get8bitRegId(toks[index_r]);
+            return [subope, oct("0160") | r, d_u8];
         }
-        if(match_token(toks,['LD', '(', /^(IX|IY)$/, '+', null, ')', ',', null])
-        || match_token(toks,['LD', '(', /^(IX|IY)$/, /^\+.*$/, ')', ',', null])) {
-            return (function() {
-                var index_d = ((toks[3] == '+') ? 4 : 3);
-                var index_n = ((toks[3] == '+') ? 7 : 6);
-                var d = parseAddress.parseNumLiteral(toks[index_d]);
-                var n = parseAddress.parseNumLiteral(toks[index_n]);
-                var subope = getSubopeIXIY(toks[2]);
-                return [subope, 0x36, d, n];
-            }());
+
+        // LD (IX+d),n
+        if(match_token(toks,['LD', '(', /^(IX|IY)$/, /^[+-]$/, null, ')', ',', null])
+        || match_token(toks,['LD', '(', /^(IX|IY)$/, /^[+-].*$/, ')', ',', null])) {
+            const subope = getSubopeIXIY(toks[2]);
+            const d_u8 = Z80LineAssembler.parseIndexDisplacer(toks, 3);
+            const index_n = ((toks[3] == '+' || toks[3] == '-') ? 7 : 6);
+            const n = parseAddress.parseNumLiteral(toks[index_n]);
+            return [subope, 0x36, d_u8, n];
         }
+
         if(match_token(toks,['LD', /^(IX|IY)$/, ',', null])) {
             return (function() {
                 var nn = parseAddress.parseNumLiteralPair(toks[3]);
@@ -1109,15 +1111,12 @@ export default class Z80LineAssembler {
                 return [oct("0206") | (subseq << 3)];
             }());
         }
-        if(match_token(toks,[/^(ADD|ADC|SUB|SBC)$/, 'A', ',', '(', /^(IX|IY)$/, '+', null,  ')'])
-        || match_token(toks,[/^(ADD|ADC|SUB|SBC)$/, 'A', ',', '(', /^(IX|IY)$/, /^\+.*/,  ')'])) {
-            return (function() {
-                var index_d = ((toks[5] == '+') ? 6 : 5);
-                var subseq = getArithmeticSubOpecode(toks[0]);
-                var d = parseAddress.parseNumLiteral(toks[index_d]);
-                var subope = getSubopeIXIY(toks[4]);
-                return [subope, oct("0206") | (subseq << 3), d];
-            }());
+        if(match_token(toks,[/^(ADD|ADC|SUB|SBC)$/, 'A', ',', '(', /^(IX|IY)$/, /^[+-]$/, null,  ')'])
+        || match_token(toks,[/^(ADD|ADC|SUB|SBC)$/, 'A', ',', '(', /^(IX|IY)$/, /^[+-].*/,  ')'])) {
+            const subseq = getArithmeticSubOpecode(toks[0]);
+            const subope = getSubopeIXIY(toks[4]);
+            const d_u8 = Z80LineAssembler.parseIndexDisplacer(toks, 5);
+            return [subope, oct("0206") | (subseq << 3), d_u8];
         }
         if(match_token(toks,[/^(AND|OR|XOR|CP)$/, /^[BCDEHLA]$/])) {
             return (function() {
@@ -1139,15 +1138,12 @@ export default class Z80LineAssembler {
                 return [oct("0206") | (subseq << 3)];
             }());
         }
-        if(match_token(toks,[/^(AND|OR|XOR|CP)$/, '(', /^(IX|IY)$/, '+', null,  ')'])
-        || match_token(toks,[/^(AND|OR|XOR|CP)$/, '(', /^(IX|IY)$/, /^\+.*$/,  ')'])) {
-            return (function() {
-                var index_d = ((toks[3] == '+') ? 4 : 3);
-                var subseq = getArithmeticSubOpecode(toks[0]);
-                var d = parseAddress.parseNumLiteral(toks[index_d]);
-                var subope = getSubopeIXIY(toks[2]);
-                return [subope, oct("0206") | (subseq << 3), d];
-            }());
+        if(match_token(toks,[/^(AND|OR|XOR|CP)$/, '(', /^(IX|IY)$/, /^[+-]$/, null,  ')'])
+        || match_token(toks,[/^(AND|OR|XOR|CP)$/, '(', /^(IX|IY)$/, /^[+-].*$/,  ')'])) {
+            const subseq = getArithmeticSubOpecode(toks[0]);
+            const subope = getSubopeIXIY(toks[2]);
+            const d_u8 = Z80LineAssembler.parseIndexDisplacer(toks, 3);
+            return [subope, oct("0206") | (subseq << 3), d_u8];
         }
         if(match_token(toks,[/^(INC|DEC)$/, /^[BCDEHLA]$/])) {
             return (function() {
@@ -1164,17 +1160,14 @@ export default class Z80LineAssembler {
                 case 'DEC': return [oct("0065")];
             }
         }
-        if(match_token(toks,[/^(INC|DEC)$/, '(', /^(IX|IY)$/, '+', null,  ')'])
-        || match_token(toks,[/^(INC|DEC)$/, '(', /^(IX|IY)$/, /^\+.*$/,  ')'])) {
-            return (function() {
-                var subope = getSubopeIXIY(toks[2]);
-                var index_d = ((toks[3] == '+') ? 4 : 3);
-                var d = parseAddress.parseNumLiteral(toks[index_d]);
-                switch(toks[0]) {
-                    case 'INC': return [subope, oct("0064"), d];
-                    case 'DEC': return [subope, oct("0065"), d];
-                }
-            }());
+        if(match_token(toks,[/^(INC|DEC)$/, '(', /^(IX|IY)$/, /^[+-]$/, null,  ')'])
+        || match_token(toks,[/^(INC|DEC)$/, '(', /^(IX|IY)$/, /^[+-].*$/,  ')'])) {
+            const subope = getSubopeIXIY(toks[2]);
+            const d_u8 = Z80LineAssembler.parseIndexDisplacer(toks, 3);
+            switch(toks[0]) {
+                case 'INC': return [subope, oct("0064"), d_u8];
+                case 'DEC': return [subope, oct("0065"), d_u8];
+            }
         }
         console.warn("**** ERROR: CANNOT ASSEMBLE:" + toks.join(" / "));
         return [];

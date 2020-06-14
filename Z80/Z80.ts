@@ -3,7 +3,7 @@ import oct from "../lib/oct";
 import MemoryBlock from "./memory-block";
 import Z80_Register from "./register";
 import BinUtil from "./bin-util";
-import Z80LineAssembler from "./z80-line-assembler";
+import Z80LineAssembler from "./Z80-line-assembler";
 import NumberUtil from "../lib/number-util";
 
 export default class Z80 {
@@ -145,15 +145,24 @@ export default class Z80 {
         }
     }
     /**
-     * Get a 8-bit value from memory pointed by PC.
+     * Get a 8-bit unsigned value from memory pointed by PC.
      * And the PC goes forward with 1 byte.
      * @returns {number} A 8-bit value.
      */
-    fetch() {
+    fetch():number {
         const PC = this.reg.PC;
         this.reg.PC = (PC + 1) & 0xffff;
         return this.memory.peek(PC);
     }
+    /**
+     * Get a 8-bit signed value from memory pointed by PC.
+     * And the PC goes forward with 1 byte.
+     * @returns {number} A 8-bit value.
+     */
+    fetchSigned():number {
+        return NumberUtil.to8bitSigned(this.fetch());
+    }
+
     /**
      * Get a 16-bit value from memory pointed by PC.
      * And the PC goes forward with 2 bytes.
@@ -311,6 +320,7 @@ export default class Z80 {
         var opeRotateIY = new Array(256);
         var opeMisc = new Array(256);
         const fetch = Z80.prototype.fetch.bind(this);
+        const fetchSigned = Z80.prototype.fetchSigned.bind(this);
         const fetchPair = Z80.prototype.fetchPair.bind(this);
         const peek = this.memory.peek.bind(this.memory);
         const peekPair = this.memory.peekPair.bind(this.memory);
@@ -814,15 +824,17 @@ export default class Z80 {
             };
         };
         var disasm_LD_idx_d_r = function (mem, addr, idx, r) {
-            var d = mem.peek(addr + 2);
+            const d = mem.peek(addr + 2);
+            const d8s = NumberUtil.to8bitSigned(d);
+            const displacement = `${d8s>=0?"+":""}${d8s}`;
             return {
                 code: [mem.peek(addr), mem.peek(addr + 1), d],
-                mnemonic: ["LD", "(" + idx + "+" + NumberUtil.HEX(d, 2) + "H)", r]
+                mnemonic: ["LD", `(${idx}${displacement})`, r]
             };
         };
         opeIX[oct("0106")] = {
             mnemonic: "LD B,(IX+d)",
-            proc: () => { setB(peek(reg.IX + fetch())); },
+            proc: () => { setB(peek(reg.IX + fetchSigned())); },
             "cycle": 19,
             disasm: function (mem, addr) {
                 return disasm_LD_r_idx_d(mem, addr, "B", "IX");
@@ -830,7 +842,7 @@ export default class Z80 {
         };
         opeIX[oct("0116")] = {
             mnemonic: "LD C,(IX+d)",
-            proc: () => { setC(peek(reg.IX + fetch())); },
+            proc: () => { setC(peek(reg.IX + fetchSigned())); },
             "cycle": 19,
             disasm: function (mem, addr) {
                 return disasm_LD_r_idx_d(mem, addr, "C", "IX");
@@ -838,7 +850,7 @@ export default class Z80 {
         };
         opeIX[oct("0126")] = {
             mnemonic: "LD D,(IX+d)",
-            proc: () => { setD(peek(reg.IX + fetch())); },
+            proc: () => { setD(peek(reg.IX + fetchSigned())); },
             "cycle": 19,
             disasm: function (mem, addr) {
                 return disasm_LD_r_idx_d(mem, addr, "D", "IX");
@@ -846,7 +858,7 @@ export default class Z80 {
         };
         opeIX[oct("0136")] = {
             mnemonic: "LD E,(IX+d)",
-            proc: () => { setE(peek(reg.IX + fetch())); },
+            proc: () => { setE(peek(reg.IX + fetchSigned())); },
             "cycle": 19,
             disasm: function (mem, addr) {
                 return disasm_LD_r_idx_d(mem, addr, "E", "IX");
@@ -854,7 +866,7 @@ export default class Z80 {
         };
         opeIX[oct("0146")] = {
             mnemonic: "LD H,(IX+d)",
-            proc: () => { setH(peek(reg.IX + fetch())); },
+            proc: () => { setH(peek(reg.IX + fetchSigned())); },
             "cycle": 19,
             disasm: function (mem, addr) {
                 return disasm_LD_r_idx_d(mem, addr, "H", "IX");
@@ -862,7 +874,7 @@ export default class Z80 {
         };
         opeIX[oct("0156")] = {
             mnemonic: "LD L,(IX+d)",
-            proc: () => { setL(peek(reg.IX + fetch())); },
+            proc: () => { setL(peek(reg.IX + fetchSigned())); },
             "cycle": 19,
             disasm: function (mem, addr) {
                 return disasm_LD_r_idx_d(mem, addr, "L", "IX");
@@ -870,7 +882,7 @@ export default class Z80 {
         };
         opeIX[oct("0176")] = {
             mnemonic: "LD A,(IX+d)",
-            proc: () => { setA(peek(reg.IX + fetch())); },
+            proc: () => { setA(peek(reg.IX + fetchSigned())); },
             "cycle": 19,
             disasm: function (mem, addr) {
                 return disasm_LD_r_idx_d(mem, addr, "A", "IX");
@@ -881,7 +893,7 @@ export default class Z80 {
         //---------------------------------------------------------------------------------
         opeIX[oct("0160")] = {
             mnemonic: "LD (IX+d),B",
-            proc: () => { poke(reg.IX + fetch(), getB()); },
+            proc: () => { poke(reg.IX + fetchSigned(), getB()); },
             "cycle": 19,
             disasm: function (mem, addr) {
                 return disasm_LD_idx_d_r(mem, addr, "IX", "B");
@@ -889,7 +901,7 @@ export default class Z80 {
         };
         opeIX[oct("0161")] = {
             mnemonic: "LD (IX+d),C",
-            proc: () => { poke(reg.IX + fetch(), getC()); },
+            proc: () => { poke(reg.IX + fetchSigned(), getC()); },
             "cycle": 19,
             disasm: function (mem, addr) {
                 return disasm_LD_idx_d_r(mem, addr, "IX", "C");
@@ -897,7 +909,7 @@ export default class Z80 {
         };
         opeIX[oct("0162")] = {
             mnemonic: "LD (IX+d),D",
-            proc: () => { poke(reg.IX + fetch(), getD()); },
+            proc: () => { poke(reg.IX + fetchSigned(), getD()); },
             "cycle": 19,
             disasm: function (mem, addr) {
                 return disasm_LD_idx_d_r(mem, addr, "IX", "D");
@@ -905,7 +917,7 @@ export default class Z80 {
         };
         opeIX[oct("0163")] = {
             mnemonic: "LD (IX+d),E",
-            proc: () => { poke(reg.IX + fetch(), getE()); },
+            proc: () => { poke(reg.IX + fetchSigned(), getE()); },
             "cycle": 19,
             disasm: function (mem, addr) {
                 return disasm_LD_idx_d_r(mem, addr, "IX", "E");
@@ -913,7 +925,7 @@ export default class Z80 {
         };
         opeIX[oct("0164")] = {
             mnemonic: "LD (IX+d),H",
-            proc: () => { poke(reg.IX + fetch(), getH()); },
+            proc: () => { poke(reg.IX + fetchSigned(), getH()); },
             "cycle": 19,
             disasm: function (mem, addr) {
                 return disasm_LD_idx_d_r(mem, addr, "IX", "H");
@@ -921,7 +933,7 @@ export default class Z80 {
         };
         opeIX[oct("0165")] = {
             mnemonic: "LD (IX+d),L",
-            proc: () => { poke(reg.IX + fetch(), getL()); },
+            proc: () => { poke(reg.IX + fetchSigned(), getL()); },
             "cycle": 19,
             disasm: function (mem, addr) {
                 return disasm_LD_idx_d_r(mem, addr, "IX", "L");
@@ -929,7 +941,7 @@ export default class Z80 {
         };
         opeIX[oct("0167")] = {
             mnemonic: "LD (IX+d),A",
-            proc: () => { poke(reg.IX + fetch(), getA()); },
+            proc: () => { poke(reg.IX + fetchSigned(), getA()); },
             "cycle": 19,
             disasm: function (mem, addr) {
                 return disasm_LD_idx_d_r(mem, addr, "IX", "A");
@@ -940,7 +952,7 @@ export default class Z80 {
         //---------------------------------------------------------------------------------
         opeIY[oct("0106")] = {
             mnemonic: "LD B,(IY+d)",
-            proc: () => { setB(peek(reg.IY + fetch())); },
+            proc: () => { setB(peek(reg.IY + fetchSigned())); },
             "cycle": 19,
             disasm: function (mem, addr) {
                 return disasm_LD_r_idx_d(mem, addr, "B", "IY");
@@ -948,7 +960,7 @@ export default class Z80 {
         };
         opeIY[oct("0116")] = {
             mnemonic: "LD C,(IY+d)",
-            proc: () => { setC(peek(reg.IY + fetch())); },
+            proc: () => { setC(peek(reg.IY + fetchSigned())); },
             "cycle": 19,
             disasm: function (mem, addr) {
                 return disasm_LD_r_idx_d(mem, addr, "C", "IY");
@@ -956,7 +968,7 @@ export default class Z80 {
         };
         opeIY[oct("0126")] = {
             mnemonic: "LD D,(IY+d)",
-            proc: () => { setD(peek(reg.IY + fetch())); },
+            proc: () => { setD(peek(reg.IY + fetchSigned())); },
             "cycle": 19,
             disasm: function (mem, addr) {
                 return disasm_LD_r_idx_d(mem, addr, "D", "IY");
@@ -964,7 +976,7 @@ export default class Z80 {
         };
         opeIY[oct("0136")] = {
             mnemonic: "LD E,(IY+d)",
-            proc: () => { setE(peek(reg.IY + fetch())); },
+            proc: () => { setE(peek(reg.IY + fetchSigned())); },
             "cycle": 19,
             disasm: function (mem, addr) {
                 return disasm_LD_r_idx_d(mem, addr, "E", "IY");
@@ -972,7 +984,7 @@ export default class Z80 {
         };
         opeIY[oct("0146")] = {
             mnemonic: "LD H,(IY+d)",
-            proc: () => { setH(peek(reg.IY + fetch())); },
+            proc: () => { setH(peek(reg.IY + fetchSigned())); },
             "cycle": 19,
             disasm: function (mem, addr) {
                 return disasm_LD_r_idx_d(mem, addr, "H", "IY");
@@ -980,7 +992,7 @@ export default class Z80 {
         };
         opeIY[oct("0156")] = {
             mnemonic: "LD L,(IY+d)",
-            proc: () => { setL(peek(reg.IY + fetch())); },
+            proc: () => { setL(peek(reg.IY + fetchSigned())); },
             "cycle": 19,
             disasm: function (mem, addr) {
                 return disasm_LD_r_idx_d(mem, addr, "L", "IY");
@@ -988,7 +1000,7 @@ export default class Z80 {
         };
         opeIY[oct("0176")] = {
             mnemonic: "LD A,(IY+d)",
-            proc: () => { setA(peek(reg.IY + fetch())); },
+            proc: () => { setA(peek(reg.IY + fetchSigned())); },
             "cycle": 19,
             disasm: function (mem, addr) {
                 return disasm_LD_r_idx_d(mem, addr, "A", "IY");
@@ -999,7 +1011,7 @@ export default class Z80 {
         //---------------------------------------------------------------------------------
         opeIY[oct("0160")] = {
             mnemonic: "LD (IY+d),B",
-            proc: () => { poke(reg.IY + fetch(), getB()); },
+            proc: () => { poke(reg.IY + fetchSigned(), getB()); },
             "cycle": 19,
             disasm: function (mem, addr) {
                 return disasm_LD_idx_d_r(mem, addr, "IY", "B");
@@ -1007,7 +1019,7 @@ export default class Z80 {
         };
         opeIY[oct("0161")] = {
             mnemonic: "LD (IY+d),C",
-            proc: () => { poke(reg.IY + fetch(), getC()); },
+            proc: () => { poke(reg.IY + fetchSigned(), getC()); },
             "cycle": 19,
             disasm: function (mem, addr) {
                 return disasm_LD_idx_d_r(mem, addr, "IY", "C");
@@ -1015,7 +1027,7 @@ export default class Z80 {
         };
         opeIY[oct("0162")] = {
             mnemonic: "LD (IY+d),D",
-            proc: () => { poke(reg.IY + fetch(), getD()); },
+            proc: () => { poke(reg.IY + fetchSigned(), getD()); },
             "cycle": 19,
             disasm: function (mem, addr) {
                 return disasm_LD_idx_d_r(mem, addr, "IY", "D");
@@ -1023,7 +1035,7 @@ export default class Z80 {
         };
         opeIY[oct("0163")] = {
             mnemonic: "LD (IY+d),E",
-            proc: () => { poke(reg.IY + fetch(), getE()); },
+            proc: () => { poke(reg.IY + fetchSigned(), getE()); },
             "cycle": 19,
             disasm: function (mem, addr) {
                 return disasm_LD_idx_d_r(mem, addr, "IY", "E");
@@ -1031,7 +1043,7 @@ export default class Z80 {
         };
         opeIY[oct("0164")] = {
             mnemonic: "LD (IY+d),H",
-            proc: () => { poke(reg.IY + fetch(), getH()); },
+            proc: () => { poke(reg.IY + fetchSigned(), getH()); },
             "cycle": 19,
             disasm: function (mem, addr) {
                 return disasm_LD_idx_d_r(mem, addr, "IY", "H");
@@ -1039,7 +1051,7 @@ export default class Z80 {
         };
         opeIY[oct("0165")] = {
             mnemonic: "LD (IY+d),L",
-            proc: () => { poke(reg.IY + fetch(), getL()); },
+            proc: () => { poke(reg.IY + fetchSigned(), getL()); },
             "cycle": 19,
             disasm: function (mem, addr) {
                 return disasm_LD_idx_d_r(mem, addr, "IY", "L");
@@ -1047,7 +1059,7 @@ export default class Z80 {
         };
         opeIY[oct("0167")] = {
             mnemonic: "LD (IY+d),A",
-            proc: () => { poke(reg.IY + fetch(), getA()); },
+            proc: () => { poke(reg.IY + fetchSigned(), getA()); },
             "cycle": 19,
             disasm: function (mem, addr) {
                 return disasm_LD_idx_d_r(mem, addr, "IY", "A");
@@ -1490,17 +1502,19 @@ export default class Z80 {
             mnemonic: "LD (IX+d),n",
             cycle: 19,
             proc: () => {
-                var d = fetch();
-                var n = fetch();
+                const d = fetchSigned();
+                const n = fetch();
                 poke(reg.IX + d, n);
             },
             disasm: function (mem, addr) {
-                var d = mem.peek(addr + 2);
-                var n = mem.peek(addr + 3);
+                const d = mem.peek(addr + 2);
+                const d8s = NumberUtil.to8bitSigned(d);
+                const displacement = `${d8s>=0?"+":""}${d8s}`;
+                const n = mem.peek(addr + 3);
                 return {
                     "code": [0xDD, 0x36, d, n],
                     "mnemonic": [
-                        "LD", "(IX + " + NumberUtil.HEX(d, 2) + "H)", NumberUtil.HEX(n, 2) + "H"
+                        "LD", `(IX${displacement})`, NumberUtil.HEX(n, 2) + "H"
                     ]
                 };
             }
@@ -1605,17 +1619,19 @@ export default class Z80 {
             mnemonic: "LD (IY+d),n",
             cycle: 19,
             proc: () => {
-                var d = fetch();
-                var n = fetch();
+                const d = fetchSigned();
+                const n = fetch();
                 poke(reg.IY + d, n);
             },
             disasm: function (mem, addr) {
-                var d = mem.peek(addr + 2);
-                var n = mem.peek(addr + 3);
+                const d = mem.peek(addr + 2);
+                const d8s = NumberUtil.to8bitSigned(d);
+                const displacement = `${d8s>=0?"+":""}${d8s}`;
+                const n = mem.peek(addr + 3);
                 return {
                     "code": [0xFD, 0x36, d, n],
                     "mnemonic": [
-                        "LD", "(IY + " + NumberUtil.HEX(d, 2) + "H)", NumberUtil.HEX(n, 2) + "H"
+                        "LD", `(IY${displacement})`, NumberUtil.HEX(n, 2) + "H"
                     ]
                 };
             }
@@ -2065,13 +2081,15 @@ export default class Z80 {
             mnemonic: "ADD A,(IX+d)",
             cycle: 19,
             proc: () => {
-                reg.addAcc(peek(reg.IX + fetch()));
+                reg.addAcc(peek(reg.IX + fetchSigned()));
             },
             disasm: function (mem, addr) {
-                var d = mem.peek(addr + 2);
+                const d = mem.peek(addr + 2);
+                const d8s = NumberUtil.to8bitSigned(d);
+                const displacement = `${d8s>=0?"+":""}${d8s}`;
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1), d],
-                    mnemonic: ["ADD", "A", "(IX+" + NumberUtil.HEX(d, 2) + "H)"]
+                    mnemonic: ["ADD", "A", `(IX${displacement})`]
                 };
             }
         };
@@ -2084,13 +2102,15 @@ export default class Z80 {
             mnemonic: "ADD A,(IY+d)",
             cycle: 19,
             proc: () => {
-                reg.addAcc(peek(reg.IY + fetch()));
+                reg.addAcc(peek(reg.IY + fetchSigned()));
             },
             disasm: function (mem, addr) {
-                var d = mem.peek(addr + 2);
+                const d = mem.peek(addr + 2);
+                const d8s = NumberUtil.to8bitSigned(d);
+                const displacement = `${d8s>=0?"+":""}${d8s}`;
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1), d],
-                    mnemonic: ["ADD", "A", "(IY+" + NumberUtil.HEX(d, 2) + "H)"]
+                    mnemonic: ["ADD", "A", `(IY${displacement})`]
                 };
             }
         };
@@ -2201,13 +2221,15 @@ export default class Z80 {
             mnemonic: "ADC A,(IX+d)",
             cycle: 19,
             proc: () => {
-                reg.addAccWithCarry(peek(reg.IX + fetch()));
+                reg.addAccWithCarry(peek(reg.IX + fetchSigned()));
             },
             disasm: function (mem, addr) {
-                var d = mem.peek(addr + 2);
+                const d = mem.peek(addr + 2);
+                const d8s = NumberUtil.to8bitSigned(d);
+                const displacement = `${d8s>=0?"+":""}${d8s}`;
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1), d],
-                    mnemonic: ["ADC", "A", "(IX+" + NumberUtil.HEX(d, 2) + "H)"]
+                    mnemonic: ["ADC", "A", `(IX${displacement})`]
                 };
             }
         };
@@ -2215,13 +2237,15 @@ export default class Z80 {
             mnemonic: "ADC A,(IY+d)",
             cycle: 19,
             proc: () => {
-                reg.addAccWithCarry(peek(reg.IY + fetch()));
+                reg.addAccWithCarry(peek(reg.IY + fetchSigned()));
             },
             disasm: function (mem, addr) {
-                var d = mem.peek(addr + 2);
+                const d = mem.peek(addr + 2);
+                const d8s = NumberUtil.to8bitSigned(d);
+                const displacement = `${d8s>=0?"+":""}${d8s}`;
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1), d],
-                    mnemonic: ["ADC", "A", "(IY+" + NumberUtil.HEX(d, 2) + "H)"]
+                    mnemonic: ["ADC", "A", `(IY${displacement})`]
                 };
             }
         };
@@ -2334,13 +2358,15 @@ export default class Z80 {
             mnemonic: "SUB A,(IX+d)",
             cycle: 19,
             proc: () => {
-                reg.subAcc(peek(reg.IX + fetch()));
+                reg.subAcc(peek(reg.IX + fetchSigned()));
             },
             disasm: function (mem, addr) {
-                var d = mem.peek(addr + 2);
+                const d = mem.peek(addr + 2);
+                const d8s = NumberUtil.to8bitSigned(d);
+                const displacement = `${d8s>=0?"+":""}${d8s}`;
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1), d],
-                    mnemonic: ["SUB", "A", "(IX+" + NumberUtil.HEX(d, 2) + "H)"]
+                    mnemonic: ["SUB", "A", `(IX${displacement})`]
                 };
             }
         };
@@ -2348,13 +2374,15 @@ export default class Z80 {
             mnemonic: "SUB A,(IY+d)",
             cycle: 19,
             proc: () => {
-                reg.subAcc(peek(reg.IY + fetch()));
+                reg.subAcc(peek(reg.IY + fetchSigned()));
             },
             disasm: function (mem, addr) {
-                var d = mem.peek(addr + 2);
+                const d = mem.peek(addr + 2);
+                const d8s = NumberUtil.to8bitSigned(d);
+                const displacement = `${d8s>=0?"+":""}${d8s}`;
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1), d],
-                    mnemonic: ["SUB", "A", "(IY+" + NumberUtil.HEX(d, 2) + "H)"]
+                    mnemonic: ["SUB", "A", `(IY${displacement})`]
                 };
             }
         };
@@ -2467,13 +2495,15 @@ export default class Z80 {
             mnemonic: "SBC A,(IX+d)",
             cycle: 19,
             proc: () => {
-                reg.subAccWithCarry(peek(reg.IX + fetch()));
+                reg.subAccWithCarry(peek(reg.IX + fetchSigned()));
             },
             disasm: function (mem, addr) {
-                var d = mem.peek(addr + 2);
+                const d = mem.peek(addr + 2);
+                const d8s = NumberUtil.to8bitSigned(d);
+                const displacement = `${d8s>=0?"+":""}${d8s}`;
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1), d],
-                    mnemonic: ["SBC", "A", "(IX+" + NumberUtil.HEX(d, 2) + "H)"]
+                    mnemonic: ["SBC", "A", `(IX${displacement})`]
                 };
             }
         };
@@ -2481,13 +2511,15 @@ export default class Z80 {
             mnemonic: "SBC A,(IY+d)",
             cycle: 19,
             proc: () => {
-                reg.subAccWithCarry(peek(reg.IY + fetch()));
+                reg.subAccWithCarry(peek(reg.IY + fetchSigned()));
             },
             disasm: function (mem, addr) {
-                var d = mem.peek(addr + 2);
+                const d = mem.peek(addr + 2);
+                const d8s = NumberUtil.to8bitSigned(d);
+                const displacement = `${d8s>=0?"+":""}${d8s}`;
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1), d],
-                    mnemonic: ["SBC", "A", "(IY+" + NumberUtil.HEX(d, 2) + "H)"]
+                    mnemonic: ["SBC", "A", `(IY${displacement})`]
                 };
             }
         };
@@ -2600,13 +2632,15 @@ export default class Z80 {
             mnemonic: "AND (IX+d)",
             cycle: 19,
             proc: () => {
-                reg.andAcc(peek(reg.IX + fetch()));
+                reg.andAcc(peek(reg.IX + fetchSigned()));
             },
             disasm: function (mem, addr) {
-                var d = mem.peek(addr + 2);
+                const d = mem.peek(addr + 2);
+                const d8s = NumberUtil.to8bitSigned(d);
+                const displacement = `${d8s>=0?"+":""}${d8s}`;
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1), d],
-                    mnemonic: ["AND", "(IX+" + NumberUtil.HEX(d, 2) + "H)"]
+                    mnemonic: ["AND", `(IX${displacement})`]
                 };
             }
         };
@@ -2614,13 +2648,15 @@ export default class Z80 {
             mnemonic: "AND (IY+d)",
             cycle: 19,
             proc: () => {
-                reg.andAcc(peek(reg.IY + fetch()));
+                reg.andAcc(peek(reg.IY + fetchSigned()));
             },
             disasm: function (mem, addr) {
-                var d = mem.peek(addr + 2);
+                const d = mem.peek(addr + 2);
+                const d8s = NumberUtil.to8bitSigned(d);
+                const displacement = `${d8s>=0?"+":""}${d8s}`;
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1), d],
-                    mnemonic: ["AND", "(IY+" + NumberUtil.HEX(d, 2) + "H)"]
+                    mnemonic: ["AND", `(IY${displacement})`]
                 };
             }
         };
@@ -2733,13 +2769,15 @@ export default class Z80 {
             mnemonic: "OR (IX+d)",
             cycle: 19,
             proc: () => {
-                reg.orAcc(peek(reg.IX + fetch()));
+                reg.orAcc(peek(reg.IX + fetchSigned()));
             },
             disasm: function (mem, addr) {
-                var d = mem.peek(addr + 2);
+                const d = mem.peek(addr + 2);
+                const d8s = NumberUtil.to8bitSigned(d);
+                const displacement = `${d8s>=0?"+":""}${d8s}`;
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1), d],
-                    mnemonic: ["OR", "(IX+" + NumberUtil.HEX(d, 2) + "H)"]
+                    mnemonic: ["OR", `(IX${displacement})`]
                 };
             }
         };
@@ -2747,13 +2785,15 @@ export default class Z80 {
             mnemonic: "OR (IY+d)",
             cycle: 19,
             proc: () => {
-                reg.orAcc(peek(reg.IY + fetch()));
+                reg.orAcc(peek(reg.IY + fetchSigned()));
             },
             disasm: function (mem, addr) {
-                var d = mem.peek(addr + 2);
+                const d = mem.peek(addr + 2);
+                const d8s = NumberUtil.to8bitSigned(d);
+                const displacement = `${d8s>=0?"+":""}${d8s}`;
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1), d],
-                    mnemonic: ["OR", "(IY+" + NumberUtil.HEX(d, 2) + "H)"]
+                    mnemonic: ["OR", `(IY${displacement})`]
                 };
             }
         };
@@ -2864,13 +2904,15 @@ export default class Z80 {
             mnemonic: "XOR (IX+d)",
             cycle: 19,
             proc: () => {
-                reg.xorAcc(peek(reg.IX + fetch()));
+                reg.xorAcc(peek(reg.IX + fetchSigned()));
             },
             disasm: function (mem, addr) {
-                var d = mem.peek(addr + 2);
+                const d = mem.peek(addr + 2);
+                const d8s = NumberUtil.to8bitSigned(d);
+                const displacement = `${d8s>=0?"+":""}${d8s}`;
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1), d],
-                    mnemonic: ["XOR", "(IX+" + NumberUtil.HEX(d, 2) + "H)"]
+                    mnemonic: ["XOR", `(IX${displacement})`]
                 };
             }
         };
@@ -2878,13 +2920,15 @@ export default class Z80 {
             mnemonic: "XOR (IY+d)",
             cycle: 19,
             proc: () => {
-                reg.xorAcc(peek(reg.IY + fetch()));
+                reg.xorAcc(peek(reg.IY + fetchSigned()));
             },
             disasm: function (mem, addr) {
-                var d = mem.peek(addr + 2);
+                const d = mem.peek(addr + 2);
+                const d8s = NumberUtil.to8bitSigned(d);
+                const displacement = `${d8s>=0?"+":""}${d8s}`;
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1), d],
-                    mnemonic: ["XOR", "(IY+" + NumberUtil.HEX(d, 2) + "H)"]
+                    mnemonic: ["XOR", `(IY${displacement})`]
                 };
             }
         };
@@ -2997,13 +3041,15 @@ export default class Z80 {
             mnemonic: "CP (IX+d)",
             cycle: 19,
             proc: () => {
-                reg.compareAcc(peek(reg.IX + fetch()));
+                reg.compareAcc(peek(reg.IX + fetchSigned()));
             },
             disasm: function (mem, addr) {
-                var d = mem.peek(addr + 2);
+                const d = mem.peek(addr + 2);
+                const d8s = NumberUtil.to8bitSigned(d);
+                const displacement = `${d8s>=0?"+":""}${d8s}`;
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1), d],
-                    mnemonic: ["CP", "(IX+" + NumberUtil.HEX(d, 2) + "H)"]
+                    mnemonic: ["CP", `(IX${displacement})`]
                 };
             }
         };
@@ -3011,13 +3057,15 @@ export default class Z80 {
             mnemonic: "CP (IY+d)",
             cycle: 19,
             proc: () => {
-                reg.compareAcc(peek(reg.IY + fetch()));
+                reg.compareAcc(peek(reg.IY + fetchSigned()));
             },
             disasm: function (mem, addr) {
-                var d = mem.peek(addr + 2);
+                const d = mem.peek(addr + 2);
+                const d8s = NumberUtil.to8bitSigned(d);
+                const displacement = `${d8s>=0?"+":""}${d8s}`;
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1), d],
-                    mnemonic: ["CP", "(IY+" + NumberUtil.HEX(d, 2) + "H)"]
+                    mnemonic: ["CP", `(IY${displacement})`]
                 };
             }
         };
@@ -3122,12 +3170,14 @@ export default class Z80 {
         opeIX[oct("0064")] = {
             mnemonic: "INC (IX+d)",
             "cycle": 23,
-            proc: () => { this.incrementAt(reg.IX + fetch()); },
+            proc: () => { this.incrementAt(reg.IX + fetchSigned()); },
             disasm: function (mem, addr) {
-                var d = mem.peek(addr + 2);
+                const d = mem.peek(addr + 2);
+                const d8s = NumberUtil.to8bitSigned(d);
+                const displacement = `${d8s>=0?"+":""}${d8s}`;
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1), d],
-                    mnemonic: ["INC", "(IX+ " + d + ")"]
+                    mnemonic: ["INC", `(IX${displacement})`]
                 };
             }
         };
@@ -3139,12 +3189,14 @@ export default class Z80 {
         opeIY[oct("0064")] = {
             mnemonic: "INC (IY+d)",
             "cycle": 23,
-            proc: () => { this.incrementAt(reg.IY + fetch()); },
+            proc: () => { this.incrementAt(reg.IY + fetchSigned()); },
             disasm: function (mem, addr) {
-                var d = mem.peek(addr + 2);
+                const d = mem.peek(addr + 2);
+                const d8s = NumberUtil.to8bitSigned(d);
+                const displacement = `${d8s>=0?"+":""}${d8s}`;
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1), d],
-                    mnemonic: ["INC", "(IY+ " + d + ")"]
+                    mnemonic: ["INC", `(IY${displacement})`]
                 };
             }
         };
@@ -3186,24 +3238,28 @@ export default class Z80 {
         opeIX[oct("0065")] = {
             mnemonic: "DEC (IX+d)",
             "cycle": 23,
-            proc: () => { this.decrementAt(reg.IX + fetch()); },
+            proc: () => { this.decrementAt(reg.IX + fetchSigned()); },
             disasm: function (mem, addr) {
-                var d = mem.peek(addr + 2);
+                const d = mem.peek(addr + 2);
+                const d8s = NumberUtil.to8bitSigned(d);
+                const displacement = `${d8s>=0?"+":""}${d8s}`;
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1), d],
-                    mnemonic: ["DEC", "(IX+ " + d + ")"]
+                    mnemonic: ["DEC", `(IX${displacement})`]
                 };
             }
         };
         opeIY[oct("0065")] = {
             mnemonic: "DEC (IY+d)",
             "cycle": 23,
-            proc: () => { this.decrementAt(reg.IY + fetch()); },
+            proc: () => { this.decrementAt(reg.IY + fetchSigned()); },
             disasm: function (mem, addr) {
-                var d = mem.peek(addr + 2);
+                const d = mem.peek(addr + 2);
+                const d8s = NumberUtil.to8bitSigned(d);
+                const displacement = `${d8s>=0?"+":""}${d8s}`;
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1), d],
-                    mnemonic: ["DEC", "(IY+ " + d + ")"]
+                    mnemonic: ["DEC", `(IY${displacement})`]
                 };
             }
         };
@@ -3843,8 +3899,8 @@ export default class Z80 {
         opeIX[oct("0313")] = {
             mnemonic: function () { return opeRotateIX; },
             proc: () => {
-                var d = fetch();
-                var feature = fetch();
+                const d = fetchSigned();
+                const feature = fetch();
                 opeRotateIX[feature].proc(d);
             },
             disasm: function (mem, addr) {
@@ -3855,8 +3911,8 @@ export default class Z80 {
         opeIY[oct("0313")] = {
             mnemonic: function () { return opeRotateIY; },
             proc: () => {
-                var d = fetch();
-                var feature = fetch();
+                const d = fetchSigned();
+                const feature = fetch();
                 opeRotateIY[feature].proc(d);
             },
             disasm: function (mem, addr) {
@@ -3977,9 +4033,12 @@ export default class Z80 {
                 poke(adr, reg.RLC(peek(adr)));
             },
             disasm: function (mem, addr) {
+                const d = mem.peek(addr + 2);
+                const d8s = NumberUtil.to8bitSigned(d);
+                const displacement = `${d8s>=0?"+":""}${d8s}`;
                 return {
-                    code: [mem.peek(addr), mem.peek(addr + 1), mem.peek(addr + 2), mem.peek(addr + 3)],
-                    mnemonic: ["RLC", "(IX+" + mem.peek(addr + 2) + ")"]
+                    code: [mem.peek(addr), mem.peek(addr + 1), d, mem.peek(addr + 3)],
+                    mnemonic: ["RLC", `(IX${displacement})`]
                 };
             }
         };
@@ -3991,9 +4050,12 @@ export default class Z80 {
                 poke(adr, reg.RLC(peek(adr)));
             },
             disasm: function (mem, addr) {
+                const d = mem.peek(addr + 2);
+                const d8s = NumberUtil.to8bitSigned(d);
+                const displacement = `${d8s>=0?"+":""}${d8s}`;
                 return {
-                    code: [mem.peek(addr), mem.peek(addr + 1), mem.peek(addr + 2), mem.peek(addr + 3)],
-                    mnemonic: ["RLC", "(IY+" + mem.peek(addr + 2) + ")"]
+                    code: [mem.peek(addr), mem.peek(addr + 1), d, mem.peek(addr + 3)],
+                    mnemonic: ["RLC", `(IY${displacement})`]
                 };
             }
         };
@@ -4050,9 +4112,12 @@ export default class Z80 {
             cycle: 23,
             proc: (d) => { var adr = reg.IX + d; poke(adr, reg.RL(peek(adr))); },
             disasm: function (mem, addr) {
+                const d = mem.peek(addr + 2);
+                const d8s = NumberUtil.to8bitSigned(d);
+                const displacement = `${d8s>=0?"+":""}${d8s}`;
                 return {
-                    code: [mem.peek(addr), mem.peek(addr + 1), mem.peek(addr + 2), mem.peek(addr + 3)],
-                    mnemonic: ["RL", "(IX+" + mem.peek(addr + 2) + ")"]
+                    code: [mem.peek(addr), mem.peek(addr + 1), d, mem.peek(addr + 3)],
+                    mnemonic: ["RL", `(IX${displacement})`]
                 };
             }
         };
@@ -4061,9 +4126,12 @@ export default class Z80 {
             cycle: 23,
             proc: (d) => { var adr = reg.IY + d; poke(adr, reg.RL(peek(adr))); },
             disasm: function (mem, addr) {
+                const d = mem.peek(addr + 2);
+                const d8s = NumberUtil.to8bitSigned(d);
+                const displacement = `${d8s>=0?"+":""}${d8s}`;
                 return {
-                    code: [mem.peek(addr), mem.peek(addr + 1), mem.peek(addr + 2), mem.peek(addr + 3)],
-                    mnemonic: ["RL", "(IY+" + mem.peek(addr + 2) + ")"]
+                    code: [mem.peek(addr), mem.peek(addr + 1), d, mem.peek(addr + 3)],
+                    mnemonic: ["RL", `(IY${displacement})`]
                 };
             }
         };
@@ -4120,9 +4188,12 @@ export default class Z80 {
             cycle: 23,
             proc: (d) => { var adr = reg.IX + d; poke(adr, reg.RRC(peek(adr))); },
             disasm: function (mem, addr) {
+                const d = mem.peek(addr + 2);
+                const d8s = NumberUtil.to8bitSigned(d);
+                const displacement = `${d8s>=0?"+":""}${d8s}`;
                 return {
-                    code: [mem.peek(addr), mem.peek(addr + 1), mem.peek(addr + 2), mem.peek(addr + 3)],
-                    mnemonic: ["RRC", "(IX+" + mem.peek(addr + 2) + ")"]
+                    code: [mem.peek(addr), mem.peek(addr + 1), d, mem.peek(addr + 3)],
+                    mnemonic: ["RRC", `(IX${displacement})`]
                 };
             }
         };
@@ -4131,9 +4202,12 @@ export default class Z80 {
             cycle: 23,
             proc: (d) => { var adr = reg.IY + d; poke(adr, reg.RRC(peek(adr))); },
             disasm: function (mem, addr) {
+                const d = mem.peek(addr + 2);
+                const d8s = NumberUtil.to8bitSigned(d);
+                const displacement = `${d8s>=0?"+":""}${d8s}`;
                 return {
-                    code: [mem.peek(addr), mem.peek(addr + 1), mem.peek(addr + 2), mem.peek(addr + 3)],
-                    mnemonic: ["RRC", "(IY+" + mem.peek(addr + 2) + ")"]
+                    code: [mem.peek(addr), mem.peek(addr + 1), d, mem.peek(addr + 3)],
+                    mnemonic: ["RRC", `(IY${displacement})`]
                 };
             }
         };
@@ -4400,9 +4474,12 @@ export default class Z80 {
             cycle: 23,
             proc: (d) => { var adr = reg.IX + d; poke(adr, reg.SRL(peek(adr))); },
             disasm: function (mem, addr) {
+                const d = mem.peek(addr + 2);
+                const d8s = NumberUtil.to8bitSigned(d);
+                const displacement = `${d8s>=0?"+":""}${d8s}`;
                 return {
-                    code: [mem.peek(addr), mem.peek(addr + 1), mem.peek(addr + 2), mem.peek(addr + 3)],
-                    mnemonic: ["SRL", "(IX+" + mem.peek(addr + 2) + ")"]
+                    code: [mem.peek(addr), mem.peek(addr + 1), d, mem.peek(addr + 3)],
+                    mnemonic: ["SRL", `(IX${displacement})`]
                 };
             }
         };
@@ -4411,9 +4488,12 @@ export default class Z80 {
             cycle: 23,
             proc: (d) => { var adr = reg.IY + d; poke(adr, reg.SRL(peek(adr))); },
             disasm: function (mem, addr) {
+                const d = mem.peek(addr + 2);
+                const d8s = NumberUtil.to8bitSigned(d);
+                const displacement = `${d8s>=0?"+":""}${d8s}`;
                 return {
-                    code: [mem.peek(addr), mem.peek(addr + 1), mem.peek(addr + 2), mem.peek(addr + 3)],
-                    mnemonic: ["SRL", "(IY+" + mem.peek(addr + 2) + ")"]
+                    code: [mem.peek(addr), mem.peek(addr + 1), d, mem.peek(addr + 3)],
+                    mnemonic: ["SRL", `(IY${displacement})`]
                 };
             }
         };
@@ -4510,7 +4590,9 @@ export default class Z80 {
             }
         }
         var disasm_bit_b_IDX_d = (mem, addr, b, idx) => {
-            var d = peek(addr + 2);
+            const d = mem.peek(addr + 2);
+            const d8s = NumberUtil.to8bitSigned(d);
+            const displacement = `${d8s>=0?"+":""}${d8s}`;
             return {
                 code: [
                     peek(addr),
@@ -4518,7 +4600,7 @@ export default class Z80 {
                     d,
                     peek(addr + 3),
                 ],
-                mnemonic: ["BIT", "" + b, "(" + idx + "+" + NumberUtil.HEX(d, 2) + "H)"]
+                mnemonic: ["BIT", "" + b, `(${idx}${displacement})`],
             };
         };
         opeRotateIX[oct("0106")] = {
@@ -4791,7 +4873,9 @@ export default class Z80 {
             }
         }
         var disasm_set_b_IDX_d = (mem, addr, b, idx) => {
-            var d = peek(addr + 2);
+            const d = mem.peek(addr + 2);
+            const d8s = NumberUtil.to8bitSigned(d);
+            const displacement = `${d8s>=0?"+":""}${d8s}`;
             return {
                 code: [
                     peek(addr + 0),
@@ -4799,7 +4883,7 @@ export default class Z80 {
                     d,
                     peek(addr + 3),
                 ],
-                mnemonic: ["SET", "" + b, "(" + idx + "+" + NumberUtil.HEX(d, 2) + "H)"]
+                mnemonic: ["SET", "" + b, `(${idx}${displacement})`],
             };
         };
         opeRotateIX[oct("0306")] = {
@@ -4996,15 +5080,17 @@ export default class Z80 {
             })(bits);
         };
         var disaRES_xIDXd = (b, IDX) => {
-            var bits = b << 3;
-            var opecode = { "IX": 0xDD, "IY": 0xFD }[IDX];
+            const bits = b << 3;
+            const opecode = { "IX": 0xDD, "IY": 0xFD }[IDX];
             return ((bits, opecode) => {
                 return (mem, addr) => {
-                    var d = mem.peek(addr + 2);
-                    var feature = mem.peek(addr + 3);
+                    const d = mem.peek(addr + 2);
+                    const d8s = NumberUtil.to8bitSigned(d);
+                    const displacement = `${d8s>=0?"+":""}${d8s}`;
+                    const feature = mem.peek(addr + 3);
                     return {
                         code: [opecode, 0xCB, d, feature],
-                        mnemonic: ["RES", b, "(" + IDX + "+" + NumberUtil.HEX(d, 2) + "H)"]
+                        mnemonic: ["RES", b, `(${IDX}${displacement})`],
                     };
                 };
             })(bits, opecode);

@@ -6,14 +6,5 @@
 /node_modules
 /sample
 /test
-/lib/number-util.js
-/lib/flip-flop-counter.js
-/lib/ic556.js
-/lib/intel-8253.js
-/lib/mz700-cg.js
-/lib/mz700-charcode.js
-/lib/oct.js
-/lib/parse-addr.js
-/lib/parse-request.js
-/lib/user-agent-util.js
+/lib/*.js
 /Z80/*.js

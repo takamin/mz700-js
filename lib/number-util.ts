@@ -16,6 +16,41 @@ export default class NumberUtil {
     static HEX(num:number, columns:number):string {
         return NumberUtil.zs(num, 16, columns).toUpperCase();
     }
+    /**
+     * Convert unsigned 8 bit integer to signed.
+     * @param i8u The input value
+     * @returns The converted 8 bit signed integer.
+     */
+    static to8bitSigned(i8u:number):number {
+        if((~0xff & i8u) != 0) {
+            throw new Error([
+                `Invalid input value ${i8u}`,
+                `(should be between 0 and 255)`,
+            ].join(" "));
+        }
+        if(i8u >= 128) {
+            return -( ~(i8u - 1) & 0xff );
+        }
+        return i8u|0;
+    }
+
+    /**
+     * Convert signed 8 bit integer to unsigned.
+     * @param i8u The input value
+     * @returns The converted 8 bit unsigned integer.
+     */
+    static to8bitUnsigned(i8s:number):number {
+        if(i8s < -128 || 127 < i8s) {
+            throw new Error([
+                `Invalid input value ${i8s}`,
+                `(should be between -128 and 127)`,
+            ].join(" "));
+        }
+        if(i8s < 0) {
+            return ~(-(i8s + 1)) & 0xff;
+        }
+        return i8s|0;
+    }
 
 }
 module.exports = NumberUtil;

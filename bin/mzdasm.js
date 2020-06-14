@@ -1,13 +1,13 @@
 #!/usr/bin/env node
-require("../lib/context.js");
 const NumberUtil = require("../lib/number-util.js");
 var Z80 = require("../Z80/Z80.js");
 var Z80BinUtil = require("../Z80/bin-util.js");
 const parseAddress = require("../lib/parse-addr.js");
 const MZ_Tape = require("../lib/mz-tape.js");
-var fnut = require("../lib/fnuts.js");
+var changeExt = require("../lib/change-ext.js");
 var fs = require('fs');
-var getPackageJson = require("../lib/get-package-json");
+var path = require("path");
+var getPackageJson = require("./lib/get-package-json");
 var npmInfo = getPackageJson(__dirname + "/..");
 var Getopt = require('node-getopt');
 var getopt = new Getopt([
@@ -49,9 +49,9 @@ if(cli.argv.length < 1) {
 
 var input_filename = args.input_filename;
 var input_mzt = cli.options['input-mzt'] ||
-    fnut.extensionOf(input_filename).toLowerCase() == ".mzt";
+    path.extname(input_filename).toLowerCase() == ".mzt";
 var output_filename = cli.options['output-file'] ||
-    fnut.exchangeExtension(input_filename, ".asm");
+    changeExt(input_filename, ".asm");
 var addr_load = (function(addr_tok) {
     if(addr_tok) {
         var a = parseAddress.parseNumLiteralPair(addr_tok);
