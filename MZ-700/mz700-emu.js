@@ -271,12 +271,17 @@ async function main() {
         if(!_isRunning && reg_visibility) {
             await Z80RegViewAutoUpdate(true);
         }
-        btnExecImm.prop("disabled", true);
-        $(".MZ-700").addClass("running");
         _isRunning = true;
+
+        $(".MZ-700").addClass("running");
+
         btnStart.MZ700ImgButton("setImg", imgBtnStopOff);
         btnStep.prop('disabled', 'disabled')
         btnStep.MZ700ImgButton("setImg", imgBtnStepDi);
+
+        asmView.asmview("clearCurrentLine");
+
+        btnExecImm.prop("disabled", true);
     });
 
     // Emulation stopped
@@ -284,12 +289,18 @@ async function main() {
         if(_isRunning && reg_visibility) {
             await Z80RegViewAutoUpdate(false);
         }
-        btnExecImm.prop("disabled", false);
-        $(".MZ-700").removeClass("running");
         _isRunning = false;
+
+        $(".MZ-700").removeClass("running");
+
         btnStart.MZ700ImgButton("setImg", imgBtnRunOff);
         btnStep.prop('disabled', '');
         btnStep.MZ700ImgButton("setImg", imgBtnStepOff);
+
+        const reg = await mz700js.getRegister();
+        asmView.asmview("currentLine", reg.PC);
+
+        btnExecImm.prop("disabled", false);
     });
 
     // Software keyboard
@@ -447,16 +458,38 @@ async function main() {
         .append(dumplist).ToolWindow("create");
 
     // Create assemble list
-    const asmView = $("<div/>").asmview("create", mz700js);
-    const wndAsmList = $("<div  class='tool-window open' title='Z80 ASM'/>");
+    const asmView = $("<div/>").asmview("create", {
+        onSetBreak: async (addr, size, state) =>
+            (state ?
+                await mz700js.addBreak(addr, size) :
+                await mz700js.removeBreak(addr, size))
+    });
+
+    const wndAsmList = $("<div class='tool-window open' title='Z80 ASM'/>");
     dockPanelRight.append(wndAsmList);
     wndAsmList.append(asmView).ToolWindow("create");
 
+    const asmlist_assemble = async (asmlistObj, asmsrc) => {
+        asmlistObj.asmlist("text", asmsrc);
+        const shouldBeResumed = _isRunning;
+        if(shouldBeResumed) {
+            await mz700js.stop();
+        }
+        const assembled = Z80_assemble.assemble([asmsrc]).obj[0];
+        await mz700js.writeAsmCode( assembled );
+        asmlistObj.asmlist("writeList",
+            assembled.list,
+            await mz700js.getBreakPoints());
+        if(shouldBeResumed) {
+            await mz700js.start();
+        }
+    };
+
     // Show a sample assemble source
     const asmlistMzt = asmView.asmview("newAsmList", "mzt", "PCG-700 sample");
-    await asmlistMzt.asmlist("assemble", await new Promise(resolve => {
-        $.get("./MZ-700/pcg700-sample.asm", {}, resolve);
-    }));
+    const asmlistSrc = await new Promise(resolve =>
+        $.get("./MZ-700/pcg700-sample.asm", {}, resolve));
+    await asmlist_assemble(asmlistMzt, asmlistSrc);
 
     // Disassemble MONITOR ROM and show that source.
     const getText = url => {
@@ -483,7 +516,7 @@ async function main() {
 
     const monRom = asmView.asmview("newAsmList",
         "monitor-rom", "MZ-700 NEW MONITOR");
-    await monRom.asmlist("assemble", source);
+    await asmlist_assemble(monRom, source);
 
     //直接実行ボタン
     const btnExecImm = $("<button/>").attr("type", "button").html("Execute")
