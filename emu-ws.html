@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="content-language" content="ja" />
+        <meta http-equiv="X-UA-Compatible" content="chrome=1">
+        <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no"/>
+        <meta name="description" content="This is the emulator of MZ-700 and Z80 running on the HTML5 browsers. MZ-700 is the Japanese historical 8 bits micro computer released  in Nov. 1982 from SHARP corp.">
+        <meta name="keywords" content="MZ-700,Z80,emulator,JavaScript,8 bit,micro computer">
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:site" content="@_takamin_">
+        <meta name="twitter:creator" content="@_takamin_">
+        <meta name="twitter:title" content="MZ-700 FULL JAVASCRIPT EMULATOR">
+        <meta name="twitter:description" content="This is the emulator of MZ-700 and Z80 running on the HTML5 browsers. MZ-700 is the Japanese historical 8 bits micro computer released  in Nov. 1982 from SHARP corp.">
+        <meta name="twitter:image" content="https://takamin.github.io/mz700-js/image/title.png">
+        <title>MZ-700 FULL JAVASCRIPT EMULATOR</title>
+        <link rel="stylesheet" type="text/css" href="https://code.jquery.com/ui/1.12.1/themes/smoothness/jquery-ui.css"/>
+        <link rel="stylesheet" type="text/css" href="./lib/jquery-plugin/jquery.soundctrl.css"/>
+        <link rel="stylesheet" type="text/css" href="./lib/jquery-plugin/jquery.Z80-reg.css"/>
+        <link rel="stylesheet" type="text/css" href="./lib/jquery-plugin/jquery.Z80-mem.css"/>
+        <link rel="stylesheet" type="text/css" href="./lib/jquery-plugin/jquery.mz700-kb.css"/>
+        <link rel="stylesheet" type="text/css" href="./MZ-700/mz700-emu.css"/>
+        <link rel="stylesheet" type="text/css" href="./lib/jquery-plugin/jquery.emu-speed-control.css"/>
+        <link rel="stylesheet" type="text/css" href="./lib/jquery-plugin/jquery.tabview.css"/>
+        <link rel="stylesheet" type="text/css" href="./lib/jquery-plugin/jquery.asmlist.css"/>
+        <link rel="stylesheet" type="text/css" href="./lib/jquery-plugin/jquery.tool-window.css"/>
+        <link rel="stylesheet" type="text/css" href="./lib/codemirror.css">
+
+        <link rel="icon" type="image/png" href="/mz700-js/image/favicon-16x16.png" sizes="16x16"/>
+        <link rel="icon" type="image/png" href="/mz700-js/image/favicon-32x32.png" sizes="32x32"/>
+        <link rel="icon" type="image/png" href="/mz700-js/image/favicon-48x48.png" sizes="48x48"/>
+        <link rel="icon" type="image/png" href="/mz700-js/image/favicon-96x96.png" sizes="96x96"/>
+    </head>
+    <body>
+        <div id="liquid-panel-MZ-700" class="dock MZ-700">
+            <div id="dock-panel-header" class="dock top" style="height:25px">
+                <h1><span class="mz700scrn" charSize="8" padding="1" color="0" bgColor="7"
+                    >MZ-700 FULL JAVASCRIPT EMULATOR</span></h1>
+            </div>
+            <div id="mz700container" class="dock">
+                <div id="mz700screen"></div>
+            </div>
+            <div id="dock-panel-right" class="dock right resizable" style="width:590px;">
+            </div>
+        </div>
+
+        <!-- jQuery CDN -->
+        <script
+          src="https://code.jquery.com/jquery-3.3.1.min.js"
+          integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+          crossorigin="anonymous"></script>
+
+        <!-- jQuery-UI CDN -->
+        <script
+          src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"
+          integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU="
+          crossorigin="anonymous"></script>
+
+        <!-- MZ700-JS -->
+        <script> localStorage.debug = ""; </script>
+        <script type="text/javascript" src="./js/bundle-mz700-emu-ws.js"></script>
+    </body>
+</html>
