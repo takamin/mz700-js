@@ -108,6 +108,22 @@ async function main() {
 
     const mzScrn = mz700screen.get(0).mz700scrn;
     mz700js.subscribe("onMmioRead", () => {});
+
+    let fps = 0;
+    mz700js.subscribe("onUpdateScrn", canvasData => {
+        const buffer = Buffer.from(canvasData, "base64");
+        const array = Uint8ClampedArray.from(buffer);
+        const imageData = new ImageData(array, 320, 200);
+        mzScrn._ctx.putImageData(imageData, 0, 0);
+        fps++;
+    });
+    const fpsRepoInt = 5000;
+    let lastFps = 0;
+    setInterval(()=>{
+        console.log(`canvas fps: ${(fps - lastFps)/(fpsRepoInt/1000.0)}`);
+        lastFps = fps;
+    }, fpsRepoInt);
+
     mz700js.subscribe("onVramUpdate", update => {
         const {index, attr, dispcode} = update;
         mzScrn.writeVram(index, attr, dispcode);

@@ -28,6 +28,7 @@
     "@types/node": "^14.0.25",
     "ansi-escape-sequences": "^5.1.2",
     "b-box": "^1.0.3",
+    "canvas": "^2.6.1",
     "codemirror": "^5.56.0",
     "debug": "^4.1.1",
     "dock-n-liquid": "^0.5.3",

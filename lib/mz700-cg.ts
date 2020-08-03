@@ -1,4 +1,8 @@
 "use strict";
+const global = Function("return this")();
+if(!global.ImageData) {
+    global.ImageData = require("canvas").ImageData;
+}
 
 /**
  * MZ-700 Character Generator.

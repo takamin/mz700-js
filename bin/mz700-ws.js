@@ -66,8 +66,23 @@ async function readMzNewmon7Rom() {
     return Uint8Array.from(buffer);
 }
 
+const {createCanvas} = require("canvas");
+const MZ700CanvasRenderer = require('../lib/mz700-canvas-renderer.js');
+const MZ700CG = require("../lib/mz700-cg.js");
+function createCanvasRenderer() {
+    const canvas = createCanvas(320, 200);
+    const mz700CanvasRenderer = new MZ700CanvasRenderer();
+    mz700CanvasRenderer.create({
+        canvas: canvas,
+        CG: new MZ700CG(MZ700CG.ROM, 8, 8),
+    });
+    mz700CanvasRenderer.setupRendering();
+    return mz700CanvasRenderer;
+}
+
 function createMZ700(transworker) {
     const mz700 = new MZ700();
+    const mz700CanvasRenderer = createCanvasRenderer();
     mz700.create({
         started: () =>
             transworker.postNotify("start"),
@@ -75,8 +90,10 @@ function createMZ700(transworker) {
             transworker.postNotify("stop"),
         onBreak: () =>
             transworker.postNotify("onBreak"),
-        onVramUpdate: (index, dispcode, attr) =>
-            transworker.postNotify("onVramUpdate", {index, dispcode, attr}),
+        onVramUpdate: (index, dispcode, attr) => {
+            // transworker.postNotify("onVramUpdate", {index, dispcode, attr});
+            mz700CanvasRenderer.writeVram(index, attr, dispcode);
+        },
         startSound: freq =>
             transworker.postNotify("startSound", [ freq ]),
         stopSound: () =>
@@ -90,6 +107,11 @@ function createMZ700(transworker) {
         onMmioWrite: (addr, value) =>
             transworker.postNotify("onMmioWrite", {addr, value}),
     });
+    setInterval(()=>{
+        const imageData = mz700CanvasRenderer._ctx.getImageData(0, 0, 320, 200);
+        const buffer = Buffer.from(imageData.data).toString("base64");
+        transworker.postNotify("onUpdateScrn", buffer);
+    }, 1000/24);
     return mz700;
 }
 
