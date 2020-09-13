@@ -6361,7 +6361,7 @@ export default class Z80 {
         return dasmlist.map(function (dis) {
             var addr;
             if (dis.referenced_count > 0) {
-                addr = "$" + NumberUtil.HEX(dis.address, 4) + "H:";
+                addr = "L" + NumberUtil.HEX(dis.address, 4) + "H:";
             }
             else {
                 addr = "       ";
