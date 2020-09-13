@@ -694,7 +694,7 @@ const test_pattern = [
     { code:[0367], mnemonic:"RST 30H" },
     { code:[0377], mnemonic:"RST 38H" },
 
-    { code:[0333,0x23], mnemonic:"IN A,(35)" },
+    { code:[0333,0x23], mnemonic:"IN A,(23H)" },
     { code:[0355,0100], mnemonic:"IN B,(C)" },
     { code:[0355,0110], mnemonic:"IN C,(C)" },
     { code:[0355,0120], mnemonic:"IN D,(C)" },
@@ -707,7 +707,7 @@ const test_pattern = [
     { code:[0355,0252], mnemonic:"IND" },
     { code:[0355,0272], mnemonic:"INDR" },
 
-    { code:[0323,0x23], mnemonic:"OUT (35),A" },
+    { code:[0323,0x23], mnemonic:"OUT (23H),A" },
     { code:[0355,0101], mnemonic:"OUT (C),B" },
     { code:[0355,0111], mnemonic:"OUT (C),C" },
     { code:[0355,0121], mnemonic:"OUT (C),D" },

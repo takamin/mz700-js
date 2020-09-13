@@ -5964,9 +5964,10 @@ export default class Z80 {
             cycle: 11,
             proc: () => { setA(this.readIoPort(fetch())); },
             disasm: function (mem, addr) {
+                const n = mem.peek(addr + 1);
                 return {
-                    code: [mem.peek(addr), mem.peek(addr + 1)],
-                    mnemonic: ["IN", "A", "(" + mem.peek(addr + 1) + ")"]
+                    code: [0xdb, n],
+                    mnemonic: ["IN", "A", `(${NumberUtil.HEX(n, 2)}H)`],
                 };
             }
         };
@@ -6120,9 +6121,10 @@ export default class Z80 {
             cycle: 11,
             proc: () => { this.writeIoPort(fetch(), getA()); },
             disasm: function (mem, addr) {
+                const n = mem.peek(addr + 1);
                 return {
-                    code: [mem.peek(addr), mem.peek(addr + 1)],
-                    mnemonic: ["OUT", "(" + mem.peek(addr + 1) + ")", "A"]
+                    code: [0xd3, n],
+                    mnemonic: ["OUT", `(${NumberUtil.HEX(n, 2)}H)`, "A"],
                 };
             }
         };
