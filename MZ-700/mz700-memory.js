@@ -1,5 +1,7 @@
 var MZ700_NewMonitor = require("./mz700-new-monitor.js");
 var MemoryBlock = require("../Z80/memory-block.js");
+const MemoryBlockCbw = require("../Z80/memory-block-cbw.js");
+const MemoryBlockCbrw = require("../Z80/memory-block-cbrw.js");
 var MemoryBank = require('../Z80/memory-bank.js');
 
 function MZ700_Memory() { }
@@ -26,7 +28,7 @@ MZ700_Memory.prototype.create = function(opt) {
         FREE_RAM: new MemoryBlock({
             startAddr: 0x1000, size: 0xC000
         }),
-        TEXT_VRAM: new MemoryBlock({
+        TEXT_VRAM: new MemoryBlockCbw({
             startAddr: 0xD000, size: 0x0800,
             onPoke: (addr, dispcode) => {
                 if(0xD000 <= addr && addr < 0xD000 + 1000) {
@@ -36,7 +38,7 @@ MZ700_Memory.prototype.create = function(opt) {
                 }
             },
         }),
-        ATTR_VRAM: new MemoryBlock({
+        ATTR_VRAM: new MemoryBlockCbw({
             startAddr: 0xD800, size: 0x0800,
             onPoke: (addr, attr) => {
                 if(0xD800 <= addr && addr < 0xD800 + 1000) {
@@ -46,7 +48,7 @@ MZ700_Memory.prototype.create = function(opt) {
                 }
             },
         }),
-        MMAPED_IO: new MemoryBlock({
+        MMAPED_IO: new MemoryBlockCbrw({
             startAddr: 0xE000, size: 0x0800,
             onPeek: opt.onMappedIoRead || function(){},
             onPoke: opt.onMappedIoUpdate || function(){}
