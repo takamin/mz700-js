@@ -6,8 +6,6 @@ import Z80BinUtil from "./bin-util.js";
  * @constructor
  */
 export default class IMem {
-    onPeek:Function = function(addr:number):number {return 0;};
-    onPoke:Function = function(addr:number, value:number):void {};
     size:number;
     startAddr:number;
     constructor() {
@@ -19,8 +17,6 @@ export default class IMem {
      */
     create(opt?:any):void {
         opt = opt || {};
-        this.onPeek = opt.onPeek || (( /*address, value*/) => { });
-        this.onPoke = opt.onPoke || (( /*address, value*/) => { });
         this.size = opt.size || 0x10000;
         this.startAddr = opt.startAddr || 0;
         if (this.startAddr < 0 || this.startAddr > 0xffff) {
@@ -74,12 +70,7 @@ export default class IMem {
      * @returns {number} the value in the memory.
      */
     peek(address:number):number {
-        const value:number = this.peekByte(address);
-        const override = this.onPeek(address, value);
-        if (override != null && override != undefined) {
-            return override;
-        }
-        return value;
+        return this.peekByte(address);
     }
     /**
      * Write a byte data.
@@ -89,7 +80,6 @@ export default class IMem {
      */
     poke(address:number, value:number) {
         this.pokeByte(address, value);
-        this.onPoke(address, this.peekByte(address));
     }
     /**
      * Read a 16bit data.
