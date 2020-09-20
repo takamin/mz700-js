@@ -1062,6 +1062,13 @@ export default class Z80LineAssembler {
                 return [subope, 0x21, nn[0], nn[1]];
             }());
         }
+        if(match_token(toks,['LD', '(', null, ')', ',', /^(IX|IY)$/])) {
+            return (function() {
+                var nn = parseAddress.parseNumLiteralPair(toks[2]);
+                var subope = getSubopeIXIY(toks[5]);
+                return [subope, 0x22, nn[0], nn[1]];
+            }());
+        }
         if(match_token(toks,['LD', /^(IX|IY)$/, ',', '(', null, ')'])) {
             return (function() {
                 var nn = parseAddress.parseNumLiteralPair(toks[4]);

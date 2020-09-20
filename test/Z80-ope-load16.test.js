@@ -134,6 +134,52 @@ var test_set = [
         report(cpu, "LD SP,(1234h) (7)", cpu.reg.IX == 0);
         report(cpu, "LD SP,(1234h) (8)", cpu.reg.IY == 0);
     }},
+    { name: "LD (1234h),IX", test: function() {
+        cpu.reg.setBC(0);
+        cpu.reg.setDE(0);
+        cpu.reg.setHL(0xCDEF);
+        cpu.reg.A = 0;
+        cpu.reg.F = 0;
+        cpu.reg.SP = 0xfffe;
+        cpu.reg.IX = 0x1234;
+        cpu.reg.IY = 0;
+        cpu.memory.poke(0x1234, 0xCD);
+        cpu.memory.poke(0x1235, 0xAB);
+        tester.runMnemonics(cpu, ["LD (1234h),IX"]);
+        report(cpu, "LD (1234h),IX (1)", cpu.reg.getBC() == 0);
+        report(cpu, "LD (1234h),IX (2)", cpu.reg.getDE() == 0);
+        report(cpu, "LD (1234h),IX (3)", cpu.reg.getHL() == 0xCDEF);
+        report(cpu, "LD (1234h),IX (4)", cpu.reg.A == 0);
+        report(cpu, "LD (1234h),IX (5)", cpu.reg.F == 0);
+        report(cpu, "LD (1234h),IX (6)", cpu.reg.SP == 0xfffe);
+        report(cpu, "LD (1234h),IX (7)", cpu.reg.IX == 0x1234);
+        report(cpu, "LD (1234h),IX (8)", cpu.reg.IY == 0);
+        report(cpu, "LD (1234h),IX (9)", cpu.memory.peek(0x1234) == 0x34);
+        report(cpu, "LD (1234h),IX (10)", cpu.memory.peek(0x1235) == 0x12);
+    }},
+    { name: "LD (1234h),IY", test: function() {
+        cpu.reg.setBC(0);
+        cpu.reg.setDE(0);
+        cpu.reg.setHL(0xCDEF);
+        cpu.reg.A = 0;
+        cpu.reg.F = 0;
+        cpu.reg.SP = 0xfffe;
+        cpu.reg.IX = 0;
+        cpu.reg.IY = 0x1234;
+        cpu.memory.poke(0x1234, 0xCD);
+        cpu.memory.poke(0x1235, 0xAB);
+        tester.runMnemonics(cpu, ["LD (1234h),IY"]);
+        report(cpu, "LD (1234h),IY (1)", cpu.reg.getBC() == 0);
+        report(cpu, "LD (1234h),IY (2)", cpu.reg.getDE() == 0);
+        report(cpu, "LD (1234h),IY (3)", cpu.reg.getHL() == 0xCDEF);
+        report(cpu, "LD (1234h),IY (4)", cpu.reg.A == 0);
+        report(cpu, "LD (1234h),IY (5)", cpu.reg.F == 0);
+        report(cpu, "LD (1234h),IY (6)", cpu.reg.SP == 0xfffe);
+        report(cpu, "LD (1234h),IY (7)", cpu.reg.IX == 0);
+        report(cpu, "LD (1234h),IY (8)", cpu.reg.IY == 0x1234);
+        report(cpu, "LD (1234h),IY (9)", cpu.memory.peek(0x1234) == 0x34);
+        report(cpu, "LD (1234h),IY (10)", cpu.memory.peek(0x1235) == 0x12);
+    }},
 ];
 UnitTest.test({
     name: "16 bit load group",

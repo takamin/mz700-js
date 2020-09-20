@@ -1479,6 +1479,29 @@ export default class Z80 {
                 };
             }
         };
+        opeIX[0x22] = {
+            mnemonic: "LD (nn),IX",
+            cycle: 20,
+            proc: () => {
+                const nn = fetchPair();
+                const IXL = reg.IX & 0xFF;
+                const IXH = (reg.IX >> 8) & 0xFF;
+                poke(nn, IXL);
+                poke(nn + 1, IXH);
+            },
+            disasm: function (mem, addr) {
+                return {
+                    "code": [
+                        0xDD, 0x22,
+                        mem.peek(addr + 2),
+                        mem.peek(addr + 3),
+                    ],
+                    "mnemonic": [
+                        "LD", "(" + NumberUtil.HEX(mem.peekPair(addr + 2), 4) + "H)", "IX"
+                    ]
+                };
+            }
+        };
         opeIX[0x2A] = {
             mnemonic: "LD IX,(nn)",
             cycle: 20,
@@ -1592,6 +1615,29 @@ export default class Z80 {
                     ],
                     "mnemonic": [
                         "LD", "IY", NumberUtil.HEX(mem.peekPair(addr + 2), 4) + "H"
+                    ]
+                };
+            }
+        };
+        opeIY[0x22] = {
+            mnemonic: "LD (nn),IY",
+            cycle: 20,
+            proc: () => {
+                const nn = fetchPair();
+                const IYL = reg.IY & 0xFF;
+                const IYH = (reg.IY >> 8) & 0xFF;
+                poke(nn, IYL);
+                poke(nn + 1, IYH);
+            },
+            disasm: function (mem, addr) {
+                return {
+                    "code": [
+                        0xFD, 0x22,
+                        mem.peek(addr + 2),
+                        mem.peek(addr + 3),
+                    ],
+                    "mnemonic": [
+                        "LD", "(" + NumberUtil.HEX(mem.peekPair(addr + 2), 4) + "H)", "IY"
                     ]
                 };
             }

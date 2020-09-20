@@ -469,6 +469,7 @@ DC          CALL C,nn         OK
 DD 09       ADD IX,BC         OK
 DD 19       ADD IX,DE         OK
 DD 21       LD IX,nn          OK
+DD 22       LD (nn),IX        OK
 DD 23       INC IX            OK
 DD 29       ADD IX,IX         OK
 DD 2A       LD IX,(nn)        OK
@@ -636,6 +637,7 @@ FC          CALL M,nn         OK
 FD 09       ADD IY,BC         OK
 FD 19       ADD IY,DE         OK
 FD 21       LD IY,nn          OK
+FD 22       LD (nn),IY        OK
 FD 23       INC IY            OK
 FD 29       ADD IY,IY         OK
 FD 2A       LD IY,(nn)        OK
@@ -705,7 +707,7 @@ FD F9       LD SP,IY          OK
 FE          CP n              OK
 FF          RST 38H           OK
 ----
-Total check count: 706
+Total check count: 708
 Not emulated: 0
 Disassembler:
   Not implemented: 0
