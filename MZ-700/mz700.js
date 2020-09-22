@@ -118,8 +118,10 @@ MZ700.prototype.create = function(opt) {
 
     this.mmio = new MZMMIO();
     for(let address = 0xE000; address < 0xE800; address++) {
-        this.mmio.onRead(address, this.opt.onMmioRead);
-        this.mmio.onWrite(address, this.opt.onMmioWrite);
+        this.mmio.onRead(address,
+            value=>this.opt.onMmioRead(address, value));
+        this.mmio.onWrite(address,
+            value=>this.opt.onMmioWrite(address, value));
     }
 
     //MMIO $E000
