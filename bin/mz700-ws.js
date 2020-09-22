@@ -7,8 +7,13 @@ const http = require("http");
 const Getopt = require('node-getopt');
 const HashArg = require("hash-arg");
 const {WebSocketServer} = require("transworker");
+const {createCanvas} = require("canvas");
 
 const MZ700 = require("../MZ-700/mz700.js");
+const MZ700CanvasRenderer = require('../lib/mz700-canvas-renderer.js');
+const MZ700CG = require("../lib/mz700-cg.js");
+const PCG700 = require("../lib/PCG-700.js");
+
 const { HEX } = require("../lib/number-util.js");
 const getPackageJson = require("./lib/get-package-json.js");
 const mztReadFile = require("./cli-command/mzt-read-file.js");
@@ -22,7 +27,7 @@ const getopt = new Getopt([
 ]);
 const npm = getPackageJson(path.join(__dirname, ".."));
 const description =
-    `The Cli-Version MZ-700 Emulator. -- ${npm.name}@${npm.version}`;
+    `The WebSocket-Version MZ-700 Emulator. -- ${npm.name}@${npm.version}`;
 getopt.setHelp([
     "Usage: mz700-cli [OPTION] [MZT-filename]",
     description,
@@ -66,9 +71,6 @@ async function readMzNewmon7Rom() {
     return Uint8Array.from(buffer);
 }
 
-const {createCanvas} = require("canvas");
-const MZ700CanvasRenderer = require('../lib/mz700-canvas-renderer.js');
-const MZ700CG = require("../lib/mz700-cg.js");
 function createCanvasRenderer() {
     const canvas = createCanvas(320, 200);
     const mz700CanvasRenderer = new MZ700CanvasRenderer();
@@ -80,9 +82,34 @@ function createCanvasRenderer() {
     return mz700CanvasRenderer;
 }
 
+function setupPCG700(mz700) {
+    mz700.memory.poke(0xE010, 0x00);
+    mz700.memory.poke(0xE011, 0x00);
+    mz700.memory.poke(0xE012, 0x18);
+}
+
 function createMZ700(transworker) {
     const mz700 = new MZ700();
     const mz700CanvasRenderer = createCanvasRenderer();
+    const pcg700 = new PCG700(mz700CanvasRenderer);
+    const onMmioWrite = mmio => {
+        const {addr, value} = mmio;
+        switch(addr) {
+        case 0xE010:
+            pcg700.setPattern(value & 0xff);
+            break;
+        case 0xE011:
+            pcg700.setAddrLo(value & 0xff);
+            break;
+        case 0xE012:
+            pcg700.setAddrHi(value & PCG700.ADDR);
+            pcg700.setCopy(value & PCG700.COPY);
+            pcg700.setWE(value & PCG700.WE);
+            pcg700.setSSW(value & PCG700.SSW);
+            break;
+        }
+    };
+    let vramUpdated = true;
     mz700.create({
         started: () =>
             transworker.postNotify("start"),
@@ -93,6 +120,7 @@ function createMZ700(transworker) {
         onVramUpdate: (index, dispcode, attr) => {
             // transworker.postNotify("onVramUpdate", {index, dispcode, attr});
             mz700CanvasRenderer.writeVram(index, attr, dispcode);
+            vramUpdated = true;
         },
         startSound: freq =>
             transworker.postNotify("startSound", [ freq ]),
@@ -102,23 +130,19 @@ function createMZ700(transworker) {
             transworker.postNotify("onStartDataRecorder"),
         onStopDataRecorder: () =>
             transworker.postNotify("onStopDataRecorder"),
-        onMmioRead: (addr, value) =>
-            transworker.postNotify("onMmioRead", {addr, value}),
+        onMmioRead: () => {},
         onMmioWrite: (addr, value) =>
-            transworker.postNotify("onMmioWrite", {addr, value}),
+            onMmioWrite({addr, value}),
     });
     setInterval(()=>{
-        const imageData = mz700CanvasRenderer._ctx.getImageData(0, 0, 320, 200);
-        const buffer = Buffer.from(imageData.data).toString("base64");
-        transworker.postNotify("onUpdateScrn", buffer);
+        if(vramUpdated) {
+            const imageData = mz700CanvasRenderer._ctx.getImageData(0, 0, 320, 200);
+            const buffer = Buffer.from(imageData.data).toString("base64");
+            transworker.postNotify("onUpdateScrn", buffer);
+            vramUpdated = false;
+        }
     }, 1000/24);
     return mz700;
-}
-
-function setupPCG700(mz700) {
-    mz700.memory.poke(0xE010, 0x00);
-    mz700.memory.poke(0xE011, 0x00);
-    mz700.memory.poke(0xE012, 0x18);
 }
 
 function writeMzt(mz700, mztList) {
@@ -158,8 +182,8 @@ async function main() {
     server.listen(5000, "localhost");
     WebSocketServer.listen(server, transworker=>{
         const mz700 = createMZ700(transworker);
-        mz700.setMonitorRom(newmon7);
         setupPCG700(mz700);
+        mz700.setMonitorRom(newmon7);
         if(cassetteTape) {
             mz700.setCassetteTape(cassetteTape);
         }
