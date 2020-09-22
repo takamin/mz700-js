@@ -687,7 +687,7 @@ async function createUI(mz700js, mz700screen, canvas) {
                 const arrayBuffer = await readBinFile(file);
                 if(arrayBuffer) {
                     const mzt = new Uint8Array(arrayBuffer);
-                    setMztAndRun(mzt);
+                    await setMztAndRun(Array.from(mzt));
                 }
             } catch(err) {
                 console.error(`Error: Loading file ${file.name} ${err.message}`);
@@ -703,7 +703,7 @@ async function createUI(mz700js, mz700screen, canvas) {
                 hdr.setAddrExec(obj.min_addr);
                 hdr.setFilesize(obj.buffer.length);
                 const mzt = Buffer.from(hdr.buffer.concat(obj.buffer));
-                setMztAndRun(mzt);
+                await setMztAndRun(Array.from(mzt));
             } catch(err) {
                 console.error(`Error: Loading file ${file.name} ${err.message}`);
             }
