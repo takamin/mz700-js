@@ -10,14 +10,6 @@ export default class MemoryBlock extends IMem {
     mem:Array<number>;
     constructor(opt?) {
         super();
-        this.create(opt);
-    }
-    /**
-     * Create
-     * @param {any} opt the options.
-     * @returns {undefined}
-     */
-    create(opt?:any):void {
         super.create(opt);
         this.mem = new Array(this.size);
     }
