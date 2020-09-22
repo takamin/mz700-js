@@ -254,12 +254,12 @@ async function createUI(mz700js, mz700screen, canvas) {
 
     // Operate the emulation state by key
     window.addEventListener("keyup", async event => {
-        switch(event.keyCode) {
-        case 119://F8 - RUN/STOP
+        switch(event.code) {
+        case 0x0042://F8 - RUN/STOP
             event.stopPropagation();
             _isRunning ? mz700js.stop() : mz700js.start();
             break;
-        case 120://F9 - STEP In
+        case 0x0043://F9 - STEP In
             event.stopPropagation();
             _isRunning ? mz700js.stop() : mz700js.step();
             break;
