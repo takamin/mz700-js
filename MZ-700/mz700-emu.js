@@ -680,15 +680,19 @@ async function main() {
         setupDragDrop(dataRecorder.get(0), {
             "MZT": async tapeData => await mz700js.setCassetteTape(tapeData),
         });
-        setupDragDrop(canvas, {
-            "MZT": async file => {
+        const mztFileLoader = async file => {
+            try {
                 const arrayBuffer = await readBinFile(file);
                 if(arrayBuffer) {
                     const mzt = new Uint8Array(arrayBuffer);
                     setMztAndRun(mzt);
                 }
-            },
-            "ASM": async file => {
+            } catch(err) {
+                console.error(`Error: Loading file ${file.name} ${err.message}`);
+            }
+        };
+        const asmFileLoader = async file => {
+            try {
                 const src = await readTextFile(file);
                 const obj = Z80_assemble.assemble([src]);
                 const hdr = MZ_TapeHeader.createNew();
@@ -698,7 +702,14 @@ async function main() {
                 hdr.setFilesize(obj.buffer.length);
                 const mzt = Buffer.from(hdr.buffer.concat(obj.buffer));
                 setMztAndRun(mzt);
-            },
+            } catch(err) {
+                console.error(`Error: Loading file ${file.name} ${err.message}`);
+            }
+        };
+        setupDragDrop(canvas, {
+            "MZT": mztFileLoader,
+            "M12": mztFileLoader,
+            "ASM": asmFileLoader,
         });
     }
 
