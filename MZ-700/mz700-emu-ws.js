@@ -6,8 +6,8 @@ require("../lib/jquery-plugin/jquery.mz700-scrn.js");
 
 async function main() {
     // Create MZ-700 Emulator
-    const mz700js = TransWorker.createInterface(
-        "./js/bundle-mz700-worker.js", MZ700,
+    const mz700js = await TransWorker.WebSocketClient.createInterface(
+        "ws://localhost:5000", MZ700,
         { syncType: TransWorker.SyncTypePromise });
 
     // MZ-700 Screen
@@ -18,8 +18,14 @@ async function main() {
     $(canvas).css("height", "calc(100% - 1px)");
 
     // Setup Rendering
-    mz700js.transferObject("offscreenCanvas",
-        canvas.transferControlToOffscreen());
+    mz700screen.mz700scrn("setupRendering");
+    const mzScrn = mz700screen.get(0).mz700scrn;
+    mz700js.subscribe("onUpdateScrn", canvasData => {
+        const buffer = Buffer.from(canvasData, "base64");
+        const array = Uint8ClampedArray.from(buffer);
+        const imageData = new ImageData(array, 320, 200);
+        mzScrn._ctx.putImageData(imageData, 0, 0);
+    });
 
     // Create user interface
     await MZ700WebUI.createUI(mz700js, mz700screen, canvas);

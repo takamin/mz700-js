@@ -86,6 +86,7 @@ MZ700.prototype.create = function(opt) {
         stopped: () => {},
         onBreak : () => {},
         onVramUpdate: (/*index, dispcode, attr*/) => {},
+        onUpdateScrn: (/*buffer*/) => {},
         onMmioRead: (/*address, value*/) => { },
         onMmioWrite: (/*address, value*/) => { },
         startSound: (/*freq*/) => { },
@@ -263,16 +264,7 @@ MZ700.prototype.create = function(opt) {
     this.memory = new MZ700_Memory();
     this.memory.create({
         onVramUpdate: (index, dispcode, attr) => {
-            this._screenUpdateData[index] = { dispcode, attr };
-            if(this._vramTxTid == null) {
-                this._vramTxTid = setTimeout(() => {
-                    this._screenUpdateData.forEach((chr, index) => {
-                        this.opt.onVramUpdate(index, chr.dispcode, chr.attr);
-                    });
-                    this._screenUpdateData = new Array(1000);
-                    this._vramTxTid = null;
-                }, 10);
-            }
+            this.opt.onVramUpdate(index, dispcode, attr);
         },
         onMappedIoRead: (address, value) => {
             //MMIO: Input from memory mapped peripherals

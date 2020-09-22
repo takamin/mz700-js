@@ -4,7 +4,11 @@
   "description": "MZ-700 Full JavaScript Emulator",
   "private": false,
   "scripts": {
-    "start": "http-server .. -p 3000 -o mz700-js/emu.html",
+    "start": "node bin/mz700-web.js",
+    "mz700-js": "node bin/mz700-web.js",
+    "mz700-ws": "node bin/mz700-ws.js",
+    "mz700-cli": "node bin/mz700-cli.js",
+    "http-server": "http-server",
     "test": "grunt lint && mocha && cd test && sh ./test.sh && cd ..",
     "postinstall": "grunt release",
     "lint": "grunt lint",
@@ -14,6 +18,7 @@
   },
   "bin": {
     "mz700-js": "./bin/mz700-web.js",
+    "mz700-ws": "./bin/mz700-ws.js",
     "mz700-cli": "./bin/mz700-cli.js",
     "mzasm": "./bin/mzasm.js",
     "mzdas": "./bin/mzdasm.js",
@@ -23,6 +28,7 @@
     "@types/node": "^14.0.25",
     "ansi-escape-sequences": "^5.1.2",
     "b-box": "^1.0.3",
+    "canvas": "^2.6.1",
     "codemirror": "^5.56.0",
     "debug": "^4.1.1",
     "dock-n-liquid": "^0.5.3",
@@ -69,8 +75,11 @@
   },
   "homepage": "https://takamin.github.io/mz700-js/emu.html",
   "engines": {
-    "node": ">=7.6"
+    "node": ">=10"
   },
+  "browserslist": [
+    "last 1 Chrome version"
+  ],
   "eslintConfig": {
     "parserOptions": {
       "ecmaVersion": 2017

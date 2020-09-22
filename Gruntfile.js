@@ -15,6 +15,7 @@ module.exports = function(grunt) {
         browserify: {
             build: {
                 files: {
+                    "./build/bundle-mz700-emu-ws.js": ["MZ-700/mz700-emu-ws.js"],
                     "./build/bundle-mz700-emu.js": ["MZ-700/mz700-emu.js"],
                     "./build/bundle-mz700-worker.js": ["MZ-700/mz700-worker.js"]
                 }
@@ -23,6 +24,7 @@ module.exports = function(grunt) {
         uglify: {
             build: {
                 files: {
+                    "./build/bundle-mz700-emu-ws.min.js": ["./build/bundle-mz700-emu-ws.js"],
                     "./build/bundle-mz700-emu.min.js": ["./build/bundle-mz700-emu.js"],
                     "./build/bundle-mz700-worker.min.js": ["./build/bundle-mz700-worker.js"]
                 }
@@ -31,6 +33,7 @@ module.exports = function(grunt) {
         copy: {
             "debug": {
                 files: {
+                    "./js/bundle-mz700-emu-ws.js": ["./build/bundle-mz700-emu-ws.js"],
                     "./js/bundle-mz700-emu.js": ["./build/bundle-mz700-emu.js"],
                     "./js/bundle-mz700-worker.js": ["./build/bundle-mz700-worker.js"],
                     "./lib/codemirror.css": ["./node_modules/codemirror/lib/codemirror.css"]
@@ -38,6 +41,7 @@ module.exports = function(grunt) {
             },
             "release": {
                 files: {
+                    "./js/bundle-mz700-emu-ws.js": ["./build/bundle-mz700-emu-ws.min.js"],
                     "./js/bundle-mz700-emu.js": ["./build/bundle-mz700-emu.min.js"],
                     "./js/bundle-mz700-worker.js": ["./build/bundle-mz700-worker.min.js"],
                     "./lib/codemirror.css": ["./node_modules/codemirror/lib/codemirror.css"]
