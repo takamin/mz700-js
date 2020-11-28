@@ -42,13 +42,13 @@ async function loadMzt(filename) {
     const mztList = await mztReadFile(filename);
     if(mztList != null && mztList.length > 0) {
         mztList.forEach((mzt, i) => {
-            const {addr_load, file_size, addr_exec, filename} = mzt.header;
+            const {addrLoad, fileSize, addrExec, filename} = mzt.header;
             console.log([
                 `[${i + 1}/${mztList.length}]`,
-                `${HEX(addr_load, 4)}h ---`,
-                `${HEX((addr_load + file_size - 1), 4)}h`,
-                `(${file_size} bytes),`,
-                `${HEX(addr_exec, 4)}h, ${filename}`,
+                `${HEX(addrLoad, 4)}h ---`,
+                `${HEX((addrLoad + fileSize - 1), 4)}h`,
+                `(${fileSize} bytes),`,
+                `${HEX(addrExec, 4)}h, ${filename}`,
             ].join(" "));
         });
     }
@@ -147,10 +147,10 @@ function createMZ700(transworker) {
 
 function writeMzt(mz700, mztList) {
     mztList.forEach(mzt => {
-        const {addr_load, file_size} = mzt.header;
+        const {addrLoad, fileSize} = mzt.header;
         const {buffer} = mzt.body;
-        for(let i = 0; i < file_size; i++) {
-            mz700.memory.poke(addr_load + i, buffer[i]);
+        for(let i = 0; i < fileSize; i++) {
+            mz700.memory.poke(addrLoad + i, buffer[i]);
         }
     });
 }

@@ -8,14 +8,14 @@ export default class FlipFlopCounter extends EventDispatcher {
     _handlers:object;
     _out:boolean;
     _counter:number;
-    _counter_max:number;
+    _counterMax:number;
 
     constructor(count:number) {
         super();
         this.declareEvent("change");
 
         this.initialize();
-        this._counter_max = count;
+        this._counterMax = count;
     }
 
     initialize():void {
@@ -29,7 +29,7 @@ export default class FlipFlopCounter extends EventDispatcher {
 
     count():boolean {
         this._counter++;
-        if(this._counter >= this._counter_max / 2) {
+        if(this._counter >= this._counterMax / 2) {
             this._out = !this._out;
             this._counter = 0;
             this.fireEvent("change");

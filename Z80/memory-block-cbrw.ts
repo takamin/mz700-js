@@ -1,18 +1,18 @@
 "use strict";
-import MemoryBlock from "./memory-block";
+import MemoryBlockCbw from "./memory-block-cbw";
 
 /**
  * MemoryBlock
  * @constructor
  * @param {object} opt the options.
  */
-export default class MemoryBlockCbrw extends MemoryBlock {
-    onPeek:Function = null;
-    onPoke:Function = null;
+export default class MemoryBlockCbrw extends MemoryBlockCbw {
+    onPeek = (addr:number, value:number):number => (0);
     constructor(opt) {
         super(opt);
-        this.onPeek = opt.onPeek;
-        this.onPoke = opt.onPoke;
+        if(opt.onPeek) {
+            this.onPeek = opt.onPeek;
+        }
     }
 
     /**
@@ -23,21 +23,10 @@ export default class MemoryBlockCbrw extends MemoryBlock {
     peek(address:number):number {
         const value:number = super.peekByte(address);
         const override = this.onPeek(address, value);
-        if (override != null && override != undefined) {
+        if (override != null && override !== undefined) {
             return override;
         }
         return value;
-    }
-
-    /**
-     * Write a byte data.
-     * @param {number} address an address.
-     * @param {number} value a data.
-     * @returns {undefined}
-     */
-    poke(address:number, value:number) {
-        super.pokeByte(address, value);
-        this.onPoke(address, super.peekByte(address));
     }
 }
 

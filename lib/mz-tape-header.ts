@@ -2,33 +2,35 @@
 import NumberUtil from "./number-util";
 const { HEX } = NumberUtil;
 
+/* tslint:disable: class-name no-bitwise */
+
 export default class MZ_TapeHeader {
     attr:number;
     filename:string;
-    file_size:number;
-    addr_load:number;
-    addr_exec:number;
-    buffer:Array<any>;
+    fileSize:number;
+    addrLoad:number;
+    addrExec:number;
+    buffer:any[];
     constructor(buf, offset) {
-        const arrayToString = function (arr:Array<number>, start:number, end:number):string {
+        const arrayToString = (arr:number[], start:number, end:number):string => {
             let s = "";
             for (let i = start; i < end; i++) {
                 // End by CR
-                if (arr[i] == 0x0d) {
+                if (arr[i] === 0x0d) {
                     break;
                 }
                 // Add char except null.
-                if (arr[i] != 0) {
+                if (arr[i] !== 0) {
                     s += String.fromCharCode(arr[i]);
                 }
             }
             return s;
         };
-        const readArrayUInt8 = function (arr:Array<number>, offset:number):number {
-            return (0xff & arr[offset]);
+        const readArrayUInt8 = (arr:number[], index:number):number => {
+            return (0xff & arr[index]);
         };
-        const readArrayUInt16LE = function (arr:Array<number>, offset:number):number {
-            return (0xff & arr[offset]) + (0xff & arr[offset + 1]) * 256;
+        const readArrayUInt16LE = (arr:number[], index:number):number => {
+            return (0xff & arr[index]) + (0xff & arr[index + 1]) * 256;
         };
         // header 128 bytes
         //      00h     attribute
@@ -40,14 +42,14 @@ export default class MZ_TapeHeader {
         this.attr = readArrayUInt8(buf, offset + 0);
         const filename = arrayToString(buf, offset + 0x01, offset + 0x12);
         this.filename = filename;
-        this.file_size = readArrayUInt16LE(buf, offset + 0x12);
-        this.addr_load = readArrayUInt16LE(buf, offset + 0x14);
-        this.addr_exec = readArrayUInt16LE(buf, offset + 0x16);
-        const header_buffer = [];
+        this.fileSize = readArrayUInt16LE(buf, offset + 0x12);
+        this.addrLoad = readArrayUInt16LE(buf, offset + 0x14);
+        this.addrExec = readArrayUInt16LE(buf, offset + 0x16);
+        const headerBuffer = [];
         for (let i = 0; i < 128; i++) {
-            header_buffer.push(buf[offset + i]);
+            headerBuffer.push(buf[offset + i]);
         }
-        this.buffer = header_buffer;
+        this.buffer = headerBuffer;
     }
     setFilename(filename:string):void {
         // Limit 16 char length
@@ -69,17 +71,17 @@ export default class MZ_TapeHeader {
         }
     }
     setFilesize(filesize:number):void {
-        this.file_size = filesize;
+        this.fileSize = filesize;
         this.buffer[0x12] = ((filesize >> 0) & 0xff);
         this.buffer[0x13] = ((filesize >> 8) & 0xff);
     }
     setAddrLoad(addr:number):void {
-        this.addr_load = addr;
+        this.addrLoad = addr;
         this.buffer[0x14] = ((addr >> 0) & 0xff);
         this.buffer[0x15] = ((addr >> 8) & 0xff);
     }
     setAddrExec(addr:number):void {
-        this.addr_exec = addr;
+        this.addrExec = addr;
         this.buffer[0x16] = ((addr >> 0) & 0xff);
         this.buffer[0x17] = ((addr >> 8) & 0xff);
     }
@@ -88,23 +90,23 @@ export default class MZ_TapeHeader {
             ";======================================================",
             "; attribute :   " + HEX(this.attr, 2) + "H",
             "; filename  :   '" + this.filename + "'",
-            "; filesize  :   " + this.file_size + " bytes",
-            "; load addr :   " + HEX(this.addr_load, 4) + "H",
-            "; start addr:   " + HEX(this.addr_exec, 4) + "H",
+            "; filesize  :   " + this.fileSize + " bytes",
+            "; load addr :   " + HEX(this.addrLoad, 4) + "H",
+            "; start addr:   " + HEX(this.addrExec, 4) + "H",
             ";======================================================"
         ].join("\n");
     }
     /**
      * Get first filename in MZT tape images.
      *
-     * @param {array} mzt_array
+     * @param {array} mztArray
      * the tape images. The each element has MZT header.
      *
      * @returns {string|null} The filename in the first MZT header.
      */
-    static get1stFilename(mzt_array):string|null {
-        if (mzt_array && Array.isArray(mzt_array) && mzt_array.length > 0) {
-            return mzt_array[0].header.filename;
+    static get1stFilename(mztArray):string|null {
+        if (mztArray && Array.isArray(mztArray) && mztArray.length > 0) {
+            return mztArray[0].header.filename;
         }
         return null;
     }

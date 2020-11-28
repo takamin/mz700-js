@@ -5,10 +5,7 @@
  * @class
  */
 export default class MZMMIO {
-    _map:Array<{
-        r:(n:number)=>{},
-        w:(n:number)=>{},
-    }> = [];
+    _map:{r:(n:number)=>{}, w:(n:number)=>{}}[] = [];
 
     constructor() {
         for (let addr:number = 0xE000; addr < 0xE800; addr++) {

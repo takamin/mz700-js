@@ -652,7 +652,7 @@ async function createUI(mz700js, mz700screen, canvas) {
         const mztape_array = MZ_Tape.parseMZT(tapeData);
         await showMztDisasm(mztape_array);
         await setMztData(mz700js, tapeData,
-            mztape_array[0].header.addr_exec);
+            mztape_array[0].header.addrExec);
     };
 
     const setupDragDrop = (element, onloadHandlers) => {
@@ -699,8 +699,8 @@ async function createUI(mz700js, mz700screen, canvas) {
                 const obj = Z80_assemble.assemble([src]);
                 const hdr = MZ_TapeHeader.createNew();
                 hdr.setFilename(file.name);
-                hdr.setAddrLoad(obj.min_addr);
-                hdr.setAddrExec(obj.min_addr);
+                hdr.setAddrLoad(obj.minAddr);
+                hdr.setAddrExec(obj.minAddr);
                 hdr.setFilesize(obj.buffer.length);
                 const mzt = Buffer.from(hdr.buffer.concat(obj.buffer));
                 await setMztAndRun(Array.from(mzt));

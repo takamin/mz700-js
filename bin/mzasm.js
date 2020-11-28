@@ -125,11 +125,11 @@ if('reuse-mzt-header' in cli.options) {
     //
     var mzt_header_buf = new Array();
     if(mzt_header != null) {
-        if(mzt_header.addr_load == 0) {
-            mzt_header.setAddrLoad(asm.min_addr);
+        if(mzt_header.addrLoad == 0) {
+            mzt_header.setAddrLoad(asm.minAddr);
         }
-        if(mzt_header.addr_exec == 0) {
-            mzt_header.setAddrExec(asm.min_addr);
+        if(mzt_header.addrExec == 0) {
+            mzt_header.setAddrExec(asm.minAddr);
         }
         mzt_header.setFilesize(asm.buffer.length);
         mzt_header_buf = mzt_header.buffer;

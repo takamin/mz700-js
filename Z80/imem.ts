@@ -1,6 +1,8 @@
 "use strict";
 import Z80BinUtil from "./bin-util.js";
 
+/* tslint:disable:no-console */
+
 /**
  * IMem - Z80 emulator's memory interface
  * @constructor
@@ -9,6 +11,7 @@ export default class IMem {
     size:number;
     startAddr:number;
     constructor() {
+        /* empty */
     }
     /**
      * Create
@@ -60,7 +63,7 @@ export default class IMem {
      * @returns {undefined}
      */
     clear() {
-        for (var i = 0; i < this.size; i++) {
+        for (let i = 0; i < this.size; i++) {
             this.pokeByte(i, 0);
         }
     }

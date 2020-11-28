@@ -3,6 +3,8 @@ import MZ_TapeHeader from './mz-tape-header';
 import NumberUtil from "./number-util";
 const { HEX } = NumberUtil;
 
+/* tslint:disable: class-name no-console no-bitwise no-string-throw */
+
 export default class MZ_Tape {
     _index:number;
     _tapeData;
@@ -11,8 +13,8 @@ export default class MZ_Tape {
         this._tapeData = tapeData;
     }
     isThereSignal(signal, n) {
-        for (var i = 0; i < n; i++) {
-            if (this._tapeData[this._index + i] != signal) {
+        for (let i = 0; i < n; i++) {
+            if (this._tapeData[this._index + i] !== signal) {
                 return false;
             }
         }
@@ -62,8 +64,8 @@ export default class MZ_Tape {
     }
     writeByte(data) {
         this.writeSignal(true);
-        for (var j = 0; j < 8; j++) {
-            if ((data & (0x01 << (7 - j))) != 0) {
+        for (let j = 0; j < 8; j++) {
+            if ((data & (0x01 << (7 - j))) !== 0) {
                 this.writeSignal(true);
             }
             else {
@@ -75,7 +77,7 @@ export default class MZ_Tape {
         data.forEach(function (d) {
             this.writeByte(d);
         }, this);
-        var cs = this.countOnBit(data);
+        const cs = this.countOnBit(data);
         this.writeByte((cs >> 8) & 0xff);
         this.writeByte((cs >> 0) & 0xff);
         this.writeSignal(true);
@@ -88,7 +90,7 @@ export default class MZ_Tape {
         this.writeBlock(data);
     }
     readByte() {
-        //fast forward to starting bit
+        // fast forward to starting bit
         let startBit = null;
         do {
             startBit = this.readSignal();
@@ -115,8 +117,8 @@ export default class MZ_Tape {
     }
     readBytes(n) {
         const buf = [];
-        for (var i = 0; i < n; i++) {
-            var data = this.readByte();
+        for (let i = 0; i < n; i++) {
+            const data = this.readByte();
             if (data == null) {
                 break;
             }
@@ -127,9 +129,9 @@ export default class MZ_Tape {
     countOnBit(blockBytes) {
         let onBitCount = 0;
         const bitno = [0, 1, 2, 3, 4, 5, 6, 7];
-        blockBytes.forEach(function (data) {
-            bitno.forEach(function (n) {
-                if ((data & (1 << n)) != 0) {
+        blockBytes.forEach((data) => {
+            bitno.forEach((n) => {
+                if ((data & (1 << n)) !== 0) {
                     onBitCount++;
                 }
             });
@@ -142,7 +144,7 @@ export default class MZ_Tape {
         const blockBytes = this.readBytes(n);
         // read 2 bytes of checksum
         const checkBytes = this.readBytes(2);
-        if (checkBytes.length != 2) {
+        if (checkBytes.length !== 2) {
             throw "NO BLOCK CHECKSUM";
         }
         const checksum = (checkBytes[0] * 256) + checkBytes[1];
@@ -151,7 +153,7 @@ export default class MZ_Tape {
             throw "NO BLOCK END BIT";
         }
         const onBitCount = this.countOnBit(blockBytes);
-        if (onBitCount != checksum) {
+        if (onBitCount !== checksum) {
             throw "CHECKSUM ERROR";
         }
         return blockBytes;
@@ -165,13 +167,13 @@ export default class MZ_Tape {
         if (!this.isThereSignal(false, 256)) {
             throw "NO DELIMITOR: Short x 256.";
         }
-        var bytes2 = this.readBlock(n);
+        const bytes2 = this.readBlock(n);
         if (bytes2 == null) {
             throw "FAIL TO READ BLOCK[2]";
         }
-        //Check each bytes
-        for (var i = 0; i < bytes.length; i++) {
-            if (bytes[i] != bytes2[i]) {
+        // Check each bytes
+        for (let i = 0; i < bytes.length; i++) {
+            if (bytes[i] !== bytes2[i]) {
                 throw "FAIL TO VERIFY BLOCK 1 and 2";
             }
         }
@@ -241,7 +243,7 @@ export default class MZ_Tape {
             if (header == null) {
                 throw "FAIL TO READ HEADER";
             }
-            const body = reader.readDataBlock(header.file_size);
+            const body = reader.readDataBlock(header.fileSize);
             if (body == null) {
                 throw "FAIL TO READ DATA";
             }
@@ -257,7 +259,7 @@ export default class MZ_Tape {
                     extra.push(extraByte);
                 }
             }
-            //MZT + body
+            // MZT + body
             return header.buffer.concat(body);
         }
         catch (err) {
@@ -279,20 +281,20 @@ export default class MZ_Tape {
         const sections = [];
         let offset = 0;
         while (offset + 128 <= buf.length) {
-            var header = new MZ_TapeHeader(buf, offset);
+            const header = new MZ_TapeHeader(buf, offset);
             offset += 128;
-            if(offset + header.file_size > buf.length) {
+            if(offset + header.fileSize > buf.length) {
                 return null;
             }
-            var body_buffer = [];
-            for (var i = 0; i < header.file_size; i++) {
-                body_buffer.push(buf[offset + i]);
+            const bodyBuffer = [];
+            for (let i = 0; i < header.fileSize; i++) {
+                bodyBuffer.push(buf[offset + i]);
             }
-            offset += header.file_size;
+            offset += header.fileSize;
             sections.push({
                 "header": header,
                 "body": {
-                    "buffer": body_buffer
+                    "buffer": bodyBuffer
                 }
             });
         }
