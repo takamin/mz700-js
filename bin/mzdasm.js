@@ -52,7 +52,7 @@ var input_mzt = cli.options['input-mzt'] ||
     path.extname(input_filename).toLowerCase() == ".mzt";
 var output_filename = cli.options['output-file'] ||
     changeExt(input_filename, ".asm");
-var addr_load = (function(addr_tok) {
+var addrLoad = (function(addr_tok) {
     if(addr_tok) {
         var a = parseAddress.parseNumLiteralPair(addr_tok);
         if(typeof(a[0]) === 'number') {
@@ -76,19 +76,19 @@ fs.readFile(input_filename, function(err, data) {
             outbuf.push(mzt.header.getHeadline());
             dasmlist = Z80.dasm(
                 mzt.body.buffer, 0,
-                mzt.header.file_size,
-                mzt.header.addr_load);
+                mzt.header.fileSize,
+                mzt.header.addrLoad);
         }
     } else {
         outbuf.push(
             ";======================================================",
             "; filename  :   '" + input_filename + "'",
-            "; loadaddr  :   " + NumberUtil.HEX(addr_load, 4) + "H",
+            "; loadaddr  :   " + NumberUtil.HEX(addrLoad, 4) + "H",
             "; filesize  :   " + buf.length + " bytes / " +
                                  NumberUtil.HEX(buf.length, 4) + "H bytes",
             ";======================================================"
             );
-        dasmlist = Z80.dasm(buf, 0, buf.length, addr_load);
+        dasmlist = Z80.dasm(buf, 0, buf.length, addrLoad);
     }
     var dasmlines = Z80.dasmlines(dasmlist);
     for(i = 0; i < dasmlines.length; i++) {

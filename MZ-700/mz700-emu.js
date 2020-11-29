@@ -7,7 +7,7 @@ require("../lib/jquery-plugin/jquery.mz700-scrn.js");
 async function main() {
     // Create MZ-700 Emulator
     const mz700js = TransWorker.createInterface(
-        "./js/bundle-mz700-worker.js", MZ700,
+        "./js/mz700-worker.min.js", MZ700,
         { syncType: TransWorker.SyncTypePromise });
 
     // MZ-700 Screen

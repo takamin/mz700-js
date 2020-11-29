@@ -7,10 +7,12 @@ import MemoryBlock from "./memory-block";
  * @param {object} opt the options.
  */
 export default class MemoryBlockCbw extends MemoryBlock {
-    onPoke:Function = function(addr:number, value:number):void {};
+    onPoke = (addr:number, value:number):void => { /* empty */ };
     constructor(opt) {
         super(opt);
-        this.onPoke = opt.onPoke;
+        if(opt.onPoke) {
+            this.onPoke = opt.onPoke;
+        }
     }
 
     /**

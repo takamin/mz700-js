@@ -1,4 +1,7 @@
 "use strict";
+
+/* tslint:disable: class-name no-var-requires no-console no-bitwise max-classes-per-file */
+
 const global = Function("return this")();
 if(!global.ImageData) {
     global.ImageData = require("canvas").ImageData;
@@ -20,10 +23,10 @@ if(!global.ImageData) {
  */
 export default class mz700cg {
     _fontTable = null;
-    _patternBuffer:Array<Array<number>>;
+    _patternBuffer:number[][];
     _width:number;
     _height:number;
-    constructor(patternBuffer:Array<Array<number>>, width:number, height:number) {
+    constructor(patternBuffer:number[][], width:number, height:number) {
         patternBuffer = patternBuffer;
         width = width;
         height = height;
@@ -72,10 +75,10 @@ export default class mz700cg {
      * @returns {undefined}
      */
     initFont(atb, dispCode) {
-        var pattern = this._patternBuffer[atb * 256 + dispCode];
-        for (var bg = 0; bg < 8; bg++) {
-            for (var fg = 0; fg < 8; fg++) {
-                var attr = (atb << 7) | (fg << 4) | bg;
+        const pattern = this._patternBuffer[atb * 256 + dispCode];
+        for (let bg = 0; bg < 8; bg++) {
+            for (let fg = 0; fg < 8; fg++) {
+                const attr = (atb << 7) | (fg << 4) | bg;
                 const index0 = mz700cg.tableIndex(attr | 0x00, dispCode);
                 const index1 = mz700cg.tableIndex(attr | 0x08, dispCode);
                 const font = new FontImage(pattern,
@@ -102,7 +105,7 @@ export default class mz700cg {
      * @returns {undefined}
      */
     setPattern(atb, dispCode, row, pattern) {
-        var cpos = atb * 256 + dispCode;
+        const cpos = atb * 256 + dispCode;
         this._patternBuffer[cpos][row] = pattern;
         this.initFont(atb, dispCode);
     }
@@ -141,7 +144,7 @@ export default class mz700cg {
     // Color table
     // [Black, Blue, Red, Magenta, Green, Cyan, Yellow, White]
     //
-    static Colors:Array<{R:number,G:number,B:number,A:number}> = [
+    static Colors:{R:number,G:number,B:number,A:number}[] = [
         {R:0x00, G:0x00, B:0x00, A: 0xff},
         {R:0x00, G:0x00, B:0xff, A: 0xff},
         {R:0xff, G:0x00, B:0x00, A: 0xff},
@@ -168,7 +171,7 @@ export default class mz700cg {
     // a MZ700WIN distribution downloaded from
     // http://www.retropc.net/mz-memories/mz700/
     //
-    static ROM:Array<Array<number>> = [
+    static ROM:number[][] = [
         [0,0,0,0,0,0,0,0],
         [24,36,66,126,66,66,66,0],
         [124,34,34,60,34,34,124,0],
@@ -705,21 +708,21 @@ export default class mz700cg {
  * @constructor
  */
 class FontImage {
-    getImageData:Function;
+    getImageData:() => ImageData;
     constructor(
-        pattern:Array<number>,
+        pattern:number[],
         fg:{R:number,G:number,B:number,A:number},
         bg:{R:number,G:number,B:number,A:number},
         width:number,
         height:number)
     {
         this.getImageData = () => {
-            const buf:Array<number> = Array(width * 4 * height).fill(0);
+            const buf:number[] = Array(width * 4 * height).fill(0);
             let index = 0;
             for(let row = 0; row < 8; row++) {
                 const bits = pattern[row];
                 for(let col = 0; col < 8; col++) {
-                    if((bits & (0x80 >> col)) != 0) {
+                    if((bits & (0x80 >> col)) !== 0) {
                         buf[index + 0] = fg.R;
                         buf[index + 1] = fg.G;
                         buf[index + 2] = fg.B;

@@ -1,10 +1,13 @@
 "use strict";
 import EventDispatcher from "./event-dispatcher";
+
+/* tslint:disable: no-bitwise max-classes-per-file */
+
 //
 // Intel 8253 Programmable Interval Timer
 //
 export default class Intel8253 {
-    private _counter: Array<Intel8253Counter>
+    private _counter: Intel8253Counter[];
     constructor() {
         this._counter = [
             new Intel8253Counter(),
@@ -81,7 +84,7 @@ class Intel8253Counter extends EventDispatcher {
     setCtrlWord(ctrlword:number):void {
         this.RL = (ctrlword & 0x30) >> 4;
         this.MODE = (ctrlword & 0x0e) >> 1;
-        this.BCD = (ctrlword & 0x01) != 0 ? 1 : 0;
+        this.BCD = (ctrlword & 0x01) !== 0 ? 1 : 0;
         this.value = 0;
         this.counter = 0;
         this._written = true;
@@ -90,7 +93,7 @@ class Intel8253Counter extends EventDispatcher {
         this.gate = false;
     }
 
-    initCount(counter:number, handler:Function):void {
+    initCount(counter:number, handler:()=>void):void {
         this.value = counter;
         this.counter = counter;
         this.addEventListener("timeup", handler);
@@ -98,37 +101,37 @@ class Intel8253Counter extends EventDispatcher {
 
     load(value:number):boolean {
         this.counter = 0;
-        let set_comp = false;
+        let setComp = false;
         switch(this.RL) {
-            case 0: //Counter latching operation
+            case 0: // Counter latching operation
                 break;
-            case 1: //Read/load LSB only
+            case 1: // Read/load LSB only
                 this.value = (value & 0x00ff);
                 this.counter = this.value;
                 this.out = false;
-                set_comp = true;
+                setComp = true;
                 break;
-            case 2: //Read/load MSB only
+            case 2: // Read/load MSB only
                 this.value = (value & 0x00ff) << 8;
                 this.counter = this.value;
-                set_comp = true;
+                setComp = true;
                 break;
-            case 3: //Read/load LSB first, then MSB
+            case 3: // Read/load LSB first, then MSB
                 if(this._written) {
                     this._written = false;
                     this.value = (this.value & 0xff00) | (value & 0x00ff);
                     this.counter = this.value;
-                    set_comp = false;
+                    setComp = false;
                 } else {
                     this._written = true;
                     this.value = (this.value & 0x00ff) | ((value & 0x00ff) << 8);
                     this.counter = this.value;
                     this.out = false;
-                    set_comp = true;
+                    setComp = true;
                 }
                 break;
         }
-        if(set_comp) {
+        if(setComp) {
             switch(this.MODE) {
                 case 0:
                     this.out = false;
@@ -147,18 +150,18 @@ class Intel8253Counter extends EventDispatcher {
                     break;
             }
         }
-        return set_comp;
+        return setComp;
     }
 
     read():number|null {
         switch(this.RL) {
-            case 0: //Counter latching operation
+            case 0: // Counter latching operation
                 break;
-            case 1: //Read/load LSB only
+            case 1: // Read/load LSB only
                 return (this.counter & 0x00ff);
-            case 2: //Read/load MSB only
+            case 2: // Read/load MSB only
                 return ((this.counter >> 8) & 0x00ff);
-            case 3: //Read/load LSB first, then MSB
+            case 3: // Read/load LSB first, then MSB
                 if(this._read) {
                     this._read = false;
                     return (this.counter & 0x00ff);
@@ -176,7 +179,7 @@ class Intel8253Counter extends EventDispatcher {
     }
 
     count(count:number):void {
-        var prevOut = this.out;
+        const prevOut = this.out;
         switch(this.MODE) {
             case 0:
                 if(this.counter > 0) {

@@ -6,28 +6,30 @@ import BinUtil from "./bin-util";
 import Z80LineAssembler from "./Z80-line-assembler";
 import NumberUtil from "../lib/number-util";
 
+/* tslint:disable:no-console no-bitwise no-string-throw */
+
 export default class Z80 {
     memory: MemoryBlock;
     IFF1:number = 0;
     IFF2:number = 0;
     IM:number = 0;
     HALT:number = 0;
-    ioPort:Array<number>;
+    ioPort:number[];
     reg:Z80_Register;
     regB:Z80_Register;
-    bpmap:Array<any>;
+    bpmap:any[];
     consumedTCycle:number = 0;
-    _onReadIoPort:Array<Function>;
-    _onWriteIoPort:Array<Function>;
+    _onReadIoPort:((value:number)=>void)[];
+    _onWriteIoPort:((value:number)=>void)[];
 
-    exec:Function = Z80.exec;
-    opecodeTable:Array<any>;
+    exec:()=>void = Z80.exec;
+    opecodeTable:any[];
 
     /**
      * Execute the instruction at current program counter.
      * @returns {undefined}
      */
-    static exec:Function = function():void {
+    static exec:()=>void = function():void {
         this.reg.R = (this.reg.R + 1) & 255;
         const instruction = this.opecodeTable[this.fetch()];
         const cycle = instruction.proc() || instruction.cycle || 4;
@@ -55,8 +57,8 @@ export default class Z80 {
         this.bpmap = new Array(0x10000);
         this.consumedTCycle = 0;
         this.createOpecodeTable();
-        this._onReadIoPort = (new Array(256)).fill(()=>{});
-        this._onWriteIoPort = (new Array(256)).fill(()=>{});
+        this._onReadIoPort = (new Array(256)).fill(()=>{ /* empty */ });
+        this._onWriteIoPort = (new Array(256)).fill(()=>{ /* empty */ });
     }
     /**
      * Read a value fron I/O port.
@@ -213,12 +215,12 @@ export default class Z80 {
      * Disassemble one operation code of Z80.
      *
      * @param {number} addr The starting address
-     * @param {number} last_addr    The last address to assemble.
+     * @param {number} lastAddr    The last address to assemble.
      * @returns {object} A disassembled result.
      */
-    disassemble(addr, last_addr) {
-        var disasm = null;
-        var errmsg = "";
+    disassemble(addr, lastAddr) {
+        let disasm = null;
+        let errmsg = "";
         const opecode = this.memory.peek(addr);
         try {
             const opecodeEntry = this.opecodeTable[opecode];
@@ -233,13 +235,13 @@ export default class Z80 {
                 if (dasmEntry == null) {
                     errmsg = "NULL RETURNED";
                 }
-                else if (addr + dasmEntry.code.length > last_addr) {
+                else if (addr + dasmEntry.code.length > lastAddr) {
                     disasm = null;
                 }
                 else {
                     disasm = Z80LineAssembler.create(dasmEntry.mnemonic[0], dasmEntry.mnemonic.slice(1).join(","), dasmEntry.code);
-                    if ("ref_addr_to" in dasmEntry) {
-                        disasm.setRefAddrTo(dasmEntry.ref_addr_to);
+                    if ("refAddrTo" in dasmEntry) {
+                        disasm.setRefAddrTo(dasmEntry.refAddrTo);
                     }
                 }
             }
@@ -271,7 +273,7 @@ export default class Z80 {
     OK * LD r,r'	r<-r'					01  r   r'
     OK * LD r,(HL)	r<-(HL)					01  r  110
     OK * LD (HL),r	(HL)<-r					01 110  r
-     
+
      * LD r,(IX+d)	r<-(IX+d)				11 011 101	01  r  110	<-  d   ->
      * LD (IX+d),r	(IX+d)<-r				11 011 101	01 110  r	<-  d   ->
      * LD (IX+d),n	(IX+d)<-n				11 011 101	00 110 110	<-  d   ->	<-  n   ->
@@ -294,7 +296,7 @@ export default class Z80 {
     OK * PUSH qq		(SP-2)<-qqL,(SP-1)<-qqH	11 qq0 101
     OK * POP qq			qqL<-(SP-2),qqH<-(SP-1)	11 qq0 001
     OK * LD SP,HL		SP<-HL					11 111 001
-    
+
      * LD IX,nn		IX<-nn					11 011 101	00 100 001	<-  n   ->	<-  n   ->
      * LD (nn),IX	(nn+1)<-IXH,(nn)<-IXL	11 011 101	00 100 010	<-  n   ->	<-  n   ->
      * LD IX,(nn)	IXH<-(nn+1),IXL<-(nn)	11 011 101	00 101 010	<-  n   ->	<-  n   ->
@@ -313,12 +315,12 @@ export default class Z80 {
      */
     createOpecodeTable() {
         this.opecodeTable = new Array(256);
-        var opeIX = new Array(256);
-        var opeIY = new Array(256);
-        var opeRotate = new Array(256);
-        var opeRotateIX = new Array(256);
-        var opeRotateIY = new Array(256);
-        var opeMisc = new Array(256);
+        const opeIX = new Array(256);
+        const opeIY = new Array(256);
+        const opeRotate = new Array(256);
+        const opeRotateIX = new Array(256);
+        const opeRotateIY = new Array(256);
+        const opeMisc = new Array(256);
         const fetch = Z80.prototype.fetch.bind(this);
         const fetchSigned = Z80.prototype.fetchSigned.bind(this);
         const fetchPair = Z80.prototype.fetchPair.bind(this);
@@ -327,74 +329,74 @@ export default class Z80 {
         const poke = this.memory.poke.bind(this.memory);
         const pushPair = Z80.prototype.pushPair.bind(this);
         const popPair = Z80.prototype.popPair.bind(this);
-        for (var i = 0; i < 256; i++) {
-            this.opecodeTable[i] = {
+        for (let ii = 0; ii < 256; ii++) {
+            this.opecodeTable[ii] = {
                 mnemonic: null,
                 proc: () => { throw "ILLEGAL OPCODE"; },
                 disasm: ((i) => (( /*mem, addr*/) => ({
                     code: [i],
                     mnemonic: ["DEFB", NumberUtil.HEX(i, 2) + "H; *** UNKNOWN OPCODE"]
-                })))(i)
+                })))(ii)
             };
-            opeIX[i] = {
+            opeIX[ii] = {
             mnemonic: null,
                 proc: ((i) => (() => {
                     throw "ILLEGAL OPCODE DD " + NumberUtil.HEX(i, 2) + " for IX command subset";
-                }))(i),
+                }))(ii),
                 disasm: ((i) => (( /*mem, addr*/) => ({
                     code: [0xDD],
                     mnemonic: ["DEFB", "DDh; *** UNKNOWN OPCODE " + NumberUtil.HEX(i, 2) + "H"]
-                })))(i)
+                })))(ii)
             };
-            opeIY[i] = {
+            opeIY[ii] = {
                 mnemonic: null,
                 proc: ((i) => (() => {
                     throw "ILLEGAL OPCODE FD " + NumberUtil.HEX(i, 2) + " for IY command subset";
-                }))(i),
+                }))(ii),
                 disasm: ((i) => (( /*mem, addr*/) => ({
                     code: [0xFD],
                     mnemonic: ["DEFB", "FDh; *** UNKNOWN OPCODE " + NumberUtil.HEX(i, 2) + "H"]
-                })))(i)
+                })))(ii)
             };
-            opeRotate[i] = {
+            opeRotate[ii] = {
                 mnemonic: null,
                 proc: ((i) => (() => {
                     throw "ILLEGAL OPCODE CB " + NumberUtil.HEX(i, 2) + " for Rotate command subset";
-                }))(i),
+                }))(ii),
                 disasm: ((i) => (( /*mem, addr*/) => ({
                     code: [0xCB],
                     mnemonic: ["DEFB", "CBh; *** UNKNOWN OPCODE " + NumberUtil.HEX(i, 2) + "H"]
-                })))(i)
+                })))(ii)
             };
-            opeRotateIX[i] = {
+            opeRotateIX[ii] = {
                 mnemonic: null,
                 proc: ((i) => (() => {
                     throw "ILLEGAL OPCODE DD CB " + NumberUtil.HEX(i, 2) + " for Rotate IX command subset";
-                }))(i),
+                }))(ii),
                 disasm: ((i) => (( /*mem, addr*/) => ({
                     code: [0xDD, 0xCB],
                     mnemonic: ["DEFW", "CBDDh; *** UNKNOWN OPCODE " + NumberUtil.HEX(i, 2) + "H"]
-                })))(i)
+                })))(ii)
             };
-            opeRotateIY[i] = {
+            opeRotateIY[ii] = {
             mnemonic: null,
                 proc: ((i) => (() => {
                     throw "ILLEGAL OPCODE FD CB " + NumberUtil.HEX(i, 2) + " for Rotate IY command subset";
-                }))(i),
+                }))(ii),
                 disasm: ((i) => (( /*mem, addr*/) => ({
                     code: [0xFD, 0xCB],
                     mnemonic: ["DEFW", "CBFDh; *** UNKNOWN OPCODE " + NumberUtil.HEX(i, 2) + "H"]
-                })))(i)
+                })))(ii)
             };
-            opeMisc[i] = {
+            opeMisc[ii] = {
                 mnemonic: null,
                 proc: ((i) => (() => {
                     throw "ILLEGAL OPCODE ED " + NumberUtil.HEX(i, 2) + " for Misc command subset";
-                }))(i),
+                }))(ii),
                 disasm: ((i) => (( /*mem, addr*/) => ({
                     code: [0xED],
                     mnemonic: ["DEFB", "EDh; *** UNKNOWN OPCODE " + NumberUtil.HEX(i, 2) + "H"]
-                })))(i)
+                })))(ii)
             };
         }
         // IX command
@@ -421,14 +423,14 @@ export default class Z80 {
             proc: () => { opeMisc[fetch()].proc(); },
             disasm: (mem, addr) => opeMisc[mem.peek(addr + 1)].disasm(mem, addr),
         };
-        //=================================================================================
+        // =================================================================================
         //
         // 8bit load group
         //
-        //=================================================================================
-        //---------------------------------------------------------------------------------
+        // =================================================================================
+        // ---------------------------------------------------------------------------------
         // LD r,r'		r<-r'					01  r   r'
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         const reg = this.reg;
         const getB = this.reg.getB.bind(this.reg);
         const getC = this.reg.getC.bind(this.reg);
@@ -447,7 +449,7 @@ export default class Z80 {
         const getHL = this.reg.getHL.bind(this.reg);
         const getBC = this.reg.getBC.bind(this.reg);
         const getDE = this.reg.getDE.bind(this.reg);
-        const procs_LD_rr = {
+        const procsLdRr = {
             "LD B,B": () => { setB(getB()); },
             "LD B,C": () => { setB(getC()); },
             "LD B,D": () => { setB(getD()); },
@@ -498,38 +500,38 @@ export default class Z80 {
             "LD A,L": () => { setA(getL()); },
             "LD A,A": () => { setA(getA()); },
         };
-        for (const dstRegId of Object.keys(Z80_Register.REG_r_ID2NAME)) {
-            const nDstRegId = parseInt(dstRegId);
-            const dstRegName = Z80_Register.REG_r_ID2NAME[nDstRegId];
-            for (const srcRegId of Object.keys(Z80_Register.REG_r_ID2NAME)) {
-                const srcRegName = Z80_Register.REG_r_ID2NAME[srcRegId];
-                const opecode = (0x01 << 6) | (nDstRegId << 3) | parseInt(srcRegId);
+        for (const dstRegId of Object.keys(Z80_Register.REG_R_ID2NAME)) {
+            const nDstRegId = parseInt(dstRegId, 10);
+            const dstRegName = Z80_Register.REG_R_ID2NAME[nDstRegId];
+            for (const srcRegId of Object.keys(Z80_Register.REG_R_ID2NAME)) {
+                const srcRegName = Z80_Register.REG_R_ID2NAME[srcRegId];
+                const opecode = (0x01 << 6) | (nDstRegId << 3) | parseInt(srcRegId, 10);
                 this.opecodeTable[opecode] = {
                     mnemonic: "LD " + dstRegName + "," + srcRegName,
-                    proc: procs_LD_rr[`LD ${dstRegName},${srcRegName}`],
+                    proc: procsLdRr[`LD ${dstRegName},${srcRegName}`],
                     "cycle": 4,
-                    disasm: ((opecode, dstRegName, srcRegName) => (( /*mem, addr*/) => ({
-                        code: [opecode],
-                        mnemonic: ["LD", dstRegName, srcRegName]
+                    disasm: ((oc, dst, src) => (( /*mem, addr*/) => ({
+                        code: [oc],
+                        mnemonic: ["LD", dst, src],
                     })))(opecode, dstRegName, srcRegName)
                 };
             }
         }
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // LD r,n		r<-n					00  r  110	<-  n   ->
         // LD r,(HL)	r<-(HL)					01  r  110
-        // LD (HL),r	(HL)<-r					01 110  r 
+        // LD (HL),r	(HL)<-r					01 110  r
         // LD (HL),n	(HL)<-n					00 110 110	<-  n   ->
-        //---------------------------------------------------------------------------------
-        var disa_0x_r_110 = (mem, addr) => {
-            var opecode = mem.peek(addr);
-            var code = [opecode];
-            var x = ((opecode & 0x40) != 0) ? 1 : 0;
-            var r1 = (opecode >> 3) & 0x07;
-            var r2 = (opecode >> 0) & 0x07;
-            var operand = ["???", "???"];
-            var n;
-            operand[0] = ((r1 == 6) ? "(HL)" : Z80_Register.REG_r_ID2NAME[r1]);
+        // ---------------------------------------------------------------------------------
+        const disasmLdReg8N = (mem, addr) => {
+            const opecode = mem.peek(addr);
+            const code = [opecode];
+            const x = ((opecode & 0x40) !== 0) ? 1 : 0;
+            const r1 = (opecode >> 3) & 0x07;
+            const r2 = (opecode >> 0) & 0x07;
+            const operand = ["???", "???"];
+            let n;
+            operand[0] = ((r1 === 6) ? "(HL)" : Z80_Register.REG_R_ID2NAME[r1]);
             switch (x) {
                 case 0:
                     n = mem.peek(addr + 1);
@@ -537,293 +539,288 @@ export default class Z80 {
                     operand[1] = NumberUtil.HEX(n, 2) + "H";
                     break;
                 case 1:
-                    operand[1] = ((r2 == 6) ? "(HL)" : Z80_Register.REG_r_ID2NAME[r2]);
+                    operand[1] = ((r2 === 6) ? "(HL)" : Z80_Register.REG_R_ID2NAME[r2]);
                     break;
             }
-            return {
-                code: code,
-                mnemonic: ["LD", operand[0], operand[1]]
-            };
+            return {code, mnemonic: ["LD", operand[0], operand[1]]};
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // LD r,n		r<-n					00  r  110	<-  n   ->
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         this.opecodeTable[oct("0006")] = {
             mnemonic: "LD B,n",
             proc: () => { setB(fetch()); },
             "cycle": 7,
-            disasm: disa_0x_r_110
+            disasm: disasmLdReg8N,
         };
         this.opecodeTable[oct("0016")] = {
             mnemonic: "LD C,n",
             proc: () => { setC(fetch()); },
             "cycle": 7,
-            disasm: disa_0x_r_110
+            disasm: disasmLdReg8N,
         };
         this.opecodeTable[oct("0026")] = {
             mnemonic: "LD D,n",
             proc: () => { setD(fetch()); },
             "cycle": 7,
-            disasm: disa_0x_r_110
+            disasm: disasmLdReg8N,
         };
         this.opecodeTable[oct("0036")] = {
             mnemonic: "LD E,n",
             proc: () => { setE(fetch()); },
             "cycle": 7,
-            disasm: disa_0x_r_110
+            disasm: disasmLdReg8N,
         };
         this.opecodeTable[oct("0046")] = {
             mnemonic: "LD H,n",
             proc: () => { setH(fetch()); },
             "cycle": 7,
-            disasm: disa_0x_r_110
+            disasm: disasmLdReg8N,
         };
         this.opecodeTable[oct("0056")] = {
             mnemonic: "LD L,n",
             proc: () => { setL(fetch()); },
             "cycle": 7,
-            disasm: disa_0x_r_110
+            disasm: disasmLdReg8N,
         };
         this.opecodeTable[oct("0076")] = {
             mnemonic: "LD A,n",
             proc: () => { setA(fetch()); },
             "cycle": 7,
-            disasm: disa_0x_r_110
+            disasm: disasmLdReg8N,
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // LD r,(HL)	r<-(HL)					01  r  110
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         this.opecodeTable[oct("0106")] = {
             mnemonic: "LD B,(HL)",
             proc: () => { setB(peek(getHL())); },
             "cycle": 7,
-            disasm: disa_0x_r_110
+            disasm: disasmLdReg8N,
         };
         this.opecodeTable[oct("0116")] = {
             mnemonic: "LD C,(HL)",
             proc: () => { setC(peek(getHL())); },
             "cycle": 7,
-            disasm: disa_0x_r_110
+            disasm: disasmLdReg8N,
         };
         this.opecodeTable[oct("0126")] = {
             mnemonic: "LD D,(HL)",
             proc: () => { setD(peek(getHL())); },
             "cycle": 7,
-            disasm: disa_0x_r_110
+            disasm: disasmLdReg8N,
         };
         this.opecodeTable[oct("0136")] = {
             mnemonic: "LD E,(HL)",
             proc: () => { setE(peek(getHL())); },
             "cycle": 7,
-            disasm: disa_0x_r_110
+            disasm: disasmLdReg8N,
         };
         this.opecodeTable[oct("0146")] = {
             mnemonic: "LD H,(HL)",
             proc: () => { setH(peek(getHL())); },
             "cycle": 7,
-            disasm: disa_0x_r_110
+            disasm: disasmLdReg8N,
         };
         this.opecodeTable[oct("0156")] = {
             mnemonic: "LD L,(HL)",
             proc: () => { setL(peek(getHL())); },
             "cycle": 7,
-            disasm: disa_0x_r_110
+            disasm: disasmLdReg8N,
         };
         this.opecodeTable[oct("0176")] = {
             mnemonic: "LD A,(HL)",
             proc: () => { setA(peek(getHL())); },
             "cycle": 7,
-            disasm: disa_0x_r_110
+            disasm: disasmLdReg8N,
         };
-        //---------------------------------------------------------------------------------
-        // LD (HL),r	(HL)<-r					01 110  r 
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
+        // LD (HL),r	(HL)<-r					01 110  r
+        // ---------------------------------------------------------------------------------
         this.opecodeTable[oct("0160")] = {
             mnemonic: "LD (HL),B",
             proc: () => { poke(getHL(), getB()); },
             "cycle": 10,
-            disasm: disa_0x_r_110
+            disasm: disasmLdReg8N,
         };
         this.opecodeTable[oct("0161")] = {
             mnemonic: "LD (HL),C",
             proc: () => { poke(getHL(), getC()); },
             "cycle": 10,
-            disasm: disa_0x_r_110
+            disasm: disasmLdReg8N,
         };
         this.opecodeTable[oct("0162")] = {
             mnemonic: "LD (HL),D",
             proc: () => { poke(getHL(), getD()); },
             "cycle": 10,
-            disasm: disa_0x_r_110
+            disasm: disasmLdReg8N,
         };
         this.opecodeTable[oct("0163")] = {
             mnemonic: "LD (HL),E",
             proc: () => { poke(getHL(), getE()); },
             "cycle": 10,
-            disasm: disa_0x_r_110
+            disasm: disasmLdReg8N,
         };
         this.opecodeTable[oct("0164")] = {
             mnemonic: "LD (HL),H",
             proc: () => { poke(getHL(), getH()); },
             "cycle": 10,
-            disasm: disa_0x_r_110
+            disasm: disasmLdReg8N,
         };
         this.opecodeTable[oct("0165")] = {
             mnemonic: "LD (HL),L",
             proc: () => { poke(getHL(), getL()); },
             "cycle": 10,
-            disasm: disa_0x_r_110
+            disasm: disasmLdReg8N,
         };
         this.opecodeTable[oct("0167")] = {
             mnemonic: "LD (HL),A",
             proc: () => { poke(getHL(), getA()); },
             "cycle": 10,
-            disasm: disa_0x_r_110
+            disasm: disasmLdReg8N,
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // LD (HL),n	(HL)<-n					00 110 110	<-  n   ->
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         this.opecodeTable[oct("0066")] = {
             mnemonic: "LD (HL),n",
             proc: () => { poke(getHL(), fetch()); },
             "cycle": 10,
-            disasm: disa_0x_r_110
+            disasm: disasmLdReg8N,
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // LD A,(BC)	A<-(BC)					00 001 010
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         this.opecodeTable[oct("0012")] = {
             mnemonic: "LD A,(BC)",
             proc: () => { setA(peek(getBC())); },
             "cycle": 7,
-            disasm: function (mem, addr) { return { code: [mem.peek(addr)], mnemonic: ["LD", "A", "(BC)"] }; }
+            disasm: (mem, addr) => ({code: [mem.peek(addr)], mnemonic: ["LD", "A", "(BC)"]}),
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // LD A,(DE)	A<-(DE)					00 011 010
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         this.opecodeTable[oct("0032")] = {
             mnemonic: "LD A,(DE)",
             proc: () => { setA(peek(getDE())); },
             "cycle": 7,
-            disasm: function (mem, addr) { return { code: [mem.peek(addr)], mnemonic: ["LD", "A", "(DE)"] }; }
+            disasm: (mem, addr) => ({code: [mem.peek(addr)], mnemonic: ["LD", "A", "(DE)"] }),
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // LD A,(nn)	A<-(nn)					00 111 010	<-  n   ->	<-  n   ->
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         this.opecodeTable[oct("0072")] = {
         mnemonic: "LD A,(nn)",
             proc: () => { setA(peek(fetchPair())); },
             "cycle": 13,
-            disasm: function (mem, addr) {
-                return {
-                    code: [mem.peek(addr), mem.peek(addr + 1), mem.peek(addr + 2)],
-                    mnemonic: ["LD", "A", "(" + NumberUtil.HEX(mem.peekPair(addr + 1), 4) + "H)"]
-                };
-            }
+            disasm: (mem, addr) => ({
+                code: [mem.peek(addr), mem.peek(addr + 1), mem.peek(addr + 2)],
+                mnemonic: ["LD", "A", "(" + NumberUtil.HEX(mem.peekPair(addr + 1), 4) + "H)"]
+            }),
         };
-        //--------------------------------------------------------------------------------
+        // --------------------------------------------------------------------------------
         // LD (BC),A	(BC)<-A					00 000 010
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         this.opecodeTable[oct("0002")] = {
         mnemonic: "LD (BC),A",
             proc: () => { poke(getBC(), getA()); },
             "cycle": 7,
-            disasm: function (mem, addr) { return { code: [mem.peek(addr)], mnemonic: ["LD", "(BC)", "A"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr)], mnemonic: ["LD", "(BC)", "A"] }; }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // LD (DE),A	(DE)<-A					00 010 010
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         this.opecodeTable[oct("0022")] = {
         mnemonic: "LD (DE),A",
             proc: () => { poke(getDE(), getA()); },
             "cycle": 7,
-            disasm: function (mem, addr) { return { code: [mem.peek(addr)], mnemonic: ["LD", "(DE)", "A"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr)], mnemonic: ["LD", "(DE)", "A"] }; }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // LD (nn),A	(nn)<-A					00 110 010	<-  n   ->	<-  n   ->
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         this.opecodeTable[oct("0062")] = {
         mnemonic: "LD (nn),A",
             proc: () => { poke(fetchPair(), getA()); },
             "cycle": 13,
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1), mem.peek(addr + 2)],
                     mnemonic: ["LD", "(" + NumberUtil.HEX(mem.peekPair(addr + 1), 4) + "H)", "A"]
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // LD A,I		A<-I					11 101 101	01 010 111          S,Z,H=0,P/V=IFF,N=0
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         opeMisc[oct("0127")] = {
             mnemonic: "LD A,I",
             proc: () => {
                 reg.LD_A_I(this.IFF2);
             },
             "cycle": 9,
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["LD", "A", "I"]
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // LD A,R		A<-R					11 101 101	01 011 111          S,Z,H=0,P/V=IFF,N=0
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         opeMisc[oct("0137")] = {
             mnemonic: "LD A,R",
             proc: () => {
                 reg.LD_A_R(this.IFF2, this.regB.R);
             },
             "cycle": 9,
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["LD", "A", "R"]
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // LD I,A		I<-A					11 101 101	01 000 111
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         opeMisc[oct("0107")] = {
             mnemonic: "LD I,A",
             proc: () => { reg.I = getA(); },
             "cycle": 9,
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["LD", "I", "A"]
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // LD R,A		R<-A					11 101 101	01 001 111
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         opeMisc[oct("0117")] = {
             mnemonic: "LD R,A",
             proc: () => { reg.R = this.regB.R = getA(); },
             "cycle": 9,
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["LD", "R", "A"]
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // LD r, (IX+d)
-        //---------------------------------------------------------------------------------
-        var disasm_LD_r_idx_d = function (mem, addr, r, idx) {
-            var d = mem.peek(addr + 2);
+        // ---------------------------------------------------------------------------------
+        const disasmLdRIdxD = (mem, addr, r, idx) => {
+            const d = mem.peek(addr + 2);
             return {
                 code: [mem.peek(addr), mem.peek(addr + 1), d],
                 mnemonic: ["LD", r, "(" + idx + "+" + NumberUtil.HEX(d, 2) + "H)"]
             };
         };
-        var disasm_LD_idx_d_r = function (mem, addr, idx, r) {
+        const disasmLdRIdxDR = (mem, addr, idx, r) => {
             const d = mem.peek(addr + 2);
             const d8s = NumberUtil.to8bitSigned(d);
             const displacement = `${d8s>=0?"+":""}${d8s}`;
@@ -836,249 +833,249 @@ export default class Z80 {
             mnemonic: "LD B,(IX+d)",
             proc: () => { setB(peek(reg.IX + fetchSigned())); },
             "cycle": 19,
-            disasm: function (mem, addr) {
-                return disasm_LD_r_idx_d(mem, addr, "B", "IX");
+            disasm: (mem, addr) => {
+                return disasmLdRIdxD(mem, addr, "B", "IX");
             }
         };
         opeIX[oct("0116")] = {
             mnemonic: "LD C,(IX+d)",
             proc: () => { setC(peek(reg.IX + fetchSigned())); },
             "cycle": 19,
-            disasm: function (mem, addr) {
-                return disasm_LD_r_idx_d(mem, addr, "C", "IX");
+            disasm: (mem, addr) => {
+                return disasmLdRIdxD(mem, addr, "C", "IX");
             }
         };
         opeIX[oct("0126")] = {
             mnemonic: "LD D,(IX+d)",
             proc: () => { setD(peek(reg.IX + fetchSigned())); },
             "cycle": 19,
-            disasm: function (mem, addr) {
-                return disasm_LD_r_idx_d(mem, addr, "D", "IX");
+            disasm: (mem, addr) => {
+                return disasmLdRIdxD(mem, addr, "D", "IX");
             }
         };
         opeIX[oct("0136")] = {
             mnemonic: "LD E,(IX+d)",
             proc: () => { setE(peek(reg.IX + fetchSigned())); },
             "cycle": 19,
-            disasm: function (mem, addr) {
-                return disasm_LD_r_idx_d(mem, addr, "E", "IX");
+            disasm: (mem, addr) => {
+                return disasmLdRIdxD(mem, addr, "E", "IX");
             }
         };
         opeIX[oct("0146")] = {
             mnemonic: "LD H,(IX+d)",
             proc: () => { setH(peek(reg.IX + fetchSigned())); },
             "cycle": 19,
-            disasm: function (mem, addr) {
-                return disasm_LD_r_idx_d(mem, addr, "H", "IX");
+            disasm: (mem, addr) => {
+                return disasmLdRIdxD(mem, addr, "H", "IX");
             }
         };
         opeIX[oct("0156")] = {
             mnemonic: "LD L,(IX+d)",
             proc: () => { setL(peek(reg.IX + fetchSigned())); },
             "cycle": 19,
-            disasm: function (mem, addr) {
-                return disasm_LD_r_idx_d(mem, addr, "L", "IX");
+            disasm: (mem, addr) => {
+                return disasmLdRIdxD(mem, addr, "L", "IX");
             }
         };
         opeIX[oct("0176")] = {
             mnemonic: "LD A,(IX+d)",
             proc: () => { setA(peek(reg.IX + fetchSigned())); },
             "cycle": 19,
-            disasm: function (mem, addr) {
-                return disasm_LD_r_idx_d(mem, addr, "A", "IX");
+            disasm: (mem, addr) => {
+                return disasmLdRIdxD(mem, addr, "A", "IX");
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // LD (IX+d), r
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         opeIX[oct("0160")] = {
             mnemonic: "LD (IX+d),B",
             proc: () => { poke(reg.IX + fetchSigned(), getB()); },
             "cycle": 19,
-            disasm: function (mem, addr) {
-                return disasm_LD_idx_d_r(mem, addr, "IX", "B");
+            disasm: (mem, addr) => {
+                return disasmLdRIdxDR(mem, addr, "IX", "B");
             }
         };
         opeIX[oct("0161")] = {
             mnemonic: "LD (IX+d),C",
             proc: () => { poke(reg.IX + fetchSigned(), getC()); },
             "cycle": 19,
-            disasm: function (mem, addr) {
-                return disasm_LD_idx_d_r(mem, addr, "IX", "C");
+            disasm: (mem, addr) => {
+                return disasmLdRIdxDR(mem, addr, "IX", "C");
             }
         };
         opeIX[oct("0162")] = {
             mnemonic: "LD (IX+d),D",
             proc: () => { poke(reg.IX + fetchSigned(), getD()); },
             "cycle": 19,
-            disasm: function (mem, addr) {
-                return disasm_LD_idx_d_r(mem, addr, "IX", "D");
+            disasm: (mem, addr) => {
+                return disasmLdRIdxDR(mem, addr, "IX", "D");
             }
         };
         opeIX[oct("0163")] = {
             mnemonic: "LD (IX+d),E",
             proc: () => { poke(reg.IX + fetchSigned(), getE()); },
             "cycle": 19,
-            disasm: function (mem, addr) {
-                return disasm_LD_idx_d_r(mem, addr, "IX", "E");
+            disasm: (mem, addr) => {
+                return disasmLdRIdxDR(mem, addr, "IX", "E");
             }
         };
         opeIX[oct("0164")] = {
             mnemonic: "LD (IX+d),H",
             proc: () => { poke(reg.IX + fetchSigned(), getH()); },
             "cycle": 19,
-            disasm: function (mem, addr) {
-                return disasm_LD_idx_d_r(mem, addr, "IX", "H");
+            disasm: (mem, addr) => {
+                return disasmLdRIdxDR(mem, addr, "IX", "H");
             }
         };
         opeIX[oct("0165")] = {
             mnemonic: "LD (IX+d),L",
             proc: () => { poke(reg.IX + fetchSigned(), getL()); },
             "cycle": 19,
-            disasm: function (mem, addr) {
-                return disasm_LD_idx_d_r(mem, addr, "IX", "L");
+            disasm: (mem, addr) => {
+                return disasmLdRIdxDR(mem, addr, "IX", "L");
             }
         };
         opeIX[oct("0167")] = {
             mnemonic: "LD (IX+d),A",
             proc: () => { poke(reg.IX + fetchSigned(), getA()); },
             "cycle": 19,
-            disasm: function (mem, addr) {
-                return disasm_LD_idx_d_r(mem, addr, "IX", "A");
+            disasm: (mem, addr) => {
+                return disasmLdRIdxDR(mem, addr, "IX", "A");
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // LD r, (IX+d)
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         opeIY[oct("0106")] = {
             mnemonic: "LD B,(IY+d)",
             proc: () => { setB(peek(reg.IY + fetchSigned())); },
             "cycle": 19,
-            disasm: function (mem, addr) {
-                return disasm_LD_r_idx_d(mem, addr, "B", "IY");
+            disasm: (mem, addr) => {
+                return disasmLdRIdxD(mem, addr, "B", "IY");
             }
         };
         opeIY[oct("0116")] = {
             mnemonic: "LD C,(IY+d)",
             proc: () => { setC(peek(reg.IY + fetchSigned())); },
             "cycle": 19,
-            disasm: function (mem, addr) {
-                return disasm_LD_r_idx_d(mem, addr, "C", "IY");
+            disasm: (mem, addr) => {
+                return disasmLdRIdxD(mem, addr, "C", "IY");
             }
         };
         opeIY[oct("0126")] = {
             mnemonic: "LD D,(IY+d)",
             proc: () => { setD(peek(reg.IY + fetchSigned())); },
             "cycle": 19,
-            disasm: function (mem, addr) {
-                return disasm_LD_r_idx_d(mem, addr, "D", "IY");
+            disasm: (mem, addr) => {
+                return disasmLdRIdxD(mem, addr, "D", "IY");
             }
         };
         opeIY[oct("0136")] = {
             mnemonic: "LD E,(IY+d)",
             proc: () => { setE(peek(reg.IY + fetchSigned())); },
             "cycle": 19,
-            disasm: function (mem, addr) {
-                return disasm_LD_r_idx_d(mem, addr, "E", "IY");
+            disasm: (mem, addr) => {
+                return disasmLdRIdxD(mem, addr, "E", "IY");
             }
         };
         opeIY[oct("0146")] = {
             mnemonic: "LD H,(IY+d)",
             proc: () => { setH(peek(reg.IY + fetchSigned())); },
             "cycle": 19,
-            disasm: function (mem, addr) {
-                return disasm_LD_r_idx_d(mem, addr, "H", "IY");
+            disasm: (mem, addr) => {
+                return disasmLdRIdxD(mem, addr, "H", "IY");
             }
         };
         opeIY[oct("0156")] = {
             mnemonic: "LD L,(IY+d)",
             proc: () => { setL(peek(reg.IY + fetchSigned())); },
             "cycle": 19,
-            disasm: function (mem, addr) {
-                return disasm_LD_r_idx_d(mem, addr, "L", "IY");
+            disasm: (mem, addr) => {
+                return disasmLdRIdxD(mem, addr, "L", "IY");
             }
         };
         opeIY[oct("0176")] = {
             mnemonic: "LD A,(IY+d)",
             proc: () => { setA(peek(reg.IY + fetchSigned())); },
             "cycle": 19,
-            disasm: function (mem, addr) {
-                return disasm_LD_r_idx_d(mem, addr, "A", "IY");
+            disasm: (mem, addr) => {
+                return disasmLdRIdxD(mem, addr, "A", "IY");
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // LD (IY+d), r
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         opeIY[oct("0160")] = {
             mnemonic: "LD (IY+d),B",
             proc: () => { poke(reg.IY + fetchSigned(), getB()); },
             "cycle": 19,
-            disasm: function (mem, addr) {
-                return disasm_LD_idx_d_r(mem, addr, "IY", "B");
+            disasm: (mem, addr) => {
+                return disasmLdRIdxDR(mem, addr, "IY", "B");
             }
         };
         opeIY[oct("0161")] = {
             mnemonic: "LD (IY+d),C",
             proc: () => { poke(reg.IY + fetchSigned(), getC()); },
             "cycle": 19,
-            disasm: function (mem, addr) {
-                return disasm_LD_idx_d_r(mem, addr, "IY", "C");
+            disasm: (mem, addr) => {
+                return disasmLdRIdxDR(mem, addr, "IY", "C");
             }
         };
         opeIY[oct("0162")] = {
             mnemonic: "LD (IY+d),D",
             proc: () => { poke(reg.IY + fetchSigned(), getD()); },
             "cycle": 19,
-            disasm: function (mem, addr) {
-                return disasm_LD_idx_d_r(mem, addr, "IY", "D");
+            disasm: (mem, addr) => {
+                return disasmLdRIdxDR(mem, addr, "IY", "D");
             }
         };
         opeIY[oct("0163")] = {
             mnemonic: "LD (IY+d),E",
             proc: () => { poke(reg.IY + fetchSigned(), getE()); },
             "cycle": 19,
-            disasm: function (mem, addr) {
-                return disasm_LD_idx_d_r(mem, addr, "IY", "E");
+            disasm: (mem, addr) => {
+                return disasmLdRIdxDR(mem, addr, "IY", "E");
             }
         };
         opeIY[oct("0164")] = {
             mnemonic: "LD (IY+d),H",
             proc: () => { poke(reg.IY + fetchSigned(), getH()); },
             "cycle": 19,
-            disasm: function (mem, addr) {
-                return disasm_LD_idx_d_r(mem, addr, "IY", "H");
+            disasm: (mem, addr) => {
+                return disasmLdRIdxDR(mem, addr, "IY", "H");
             }
         };
         opeIY[oct("0165")] = {
             mnemonic: "LD (IY+d),L",
             proc: () => { poke(reg.IY + fetchSigned(), getL()); },
             "cycle": 19,
-            disasm: function (mem, addr) {
-                return disasm_LD_idx_d_r(mem, addr, "IY", "L");
+            disasm: (mem, addr) => {
+                return disasmLdRIdxDR(mem, addr, "IY", "L");
             }
         };
         opeIY[oct("0167")] = {
             mnemonic: "LD (IY+d),A",
             proc: () => { poke(reg.IY + fetchSigned(), getA()); },
             "cycle": 19,
-            disasm: function (mem, addr) {
-                return disasm_LD_idx_d_r(mem, addr, "IY", "A");
+            disasm: (mem, addr) => {
+                return disasmLdRIdxDR(mem, addr, "IY", "A");
             }
         };
-        //=================================================================================
+        // =================================================================================
         //
         // 16bit load group
         //
-        //=================================================================================
-        //---------------------------------------------------------------------------------
+        // =================================================================================
+        // ---------------------------------------------------------------------------------
         // LD dd,nn		dd<-nn					00 dd0 001	<-  n   ->	<-  n   ->
-        //---------------------------------------------------------------------------------
-        var disasm_LD_dd_nn = function (mem, addr:number) {
-            var opcode = mem.peek(addr);
-            var nnL = mem.peek(addr + 1);
-            var nnH = mem.peek(addr + 2);
-            var nn = BinUtil.pair(nnH, nnL);
-            var ddIndex = ((opcode >> 4) & 0x03);
+        // ---------------------------------------------------------------------------------
+        const disasmLdDdNn = (mem, addr:number) => {
+            const opcode = mem.peek(addr);
+            const nnL = mem.peek(addr + 1);
+            const nnH = mem.peek(addr + 2);
+            const nn = BinUtil.pair(nnH, nnL);
+            const ddIndex = ((opcode >> 4) & 0x03);
             const reg16bitName = ["BC","DE","HL","SP"];
             if(ddIndex >= reg16bitName.length) {
                 throw "*** LD dd,nn; but unknown dd.";
@@ -1096,7 +1093,7 @@ export default class Z80 {
                 setC(fetch());
                 setB(fetch());
             },
-            disasm: disasm_LD_dd_nn
+            disasm: disasmLdDdNn
         };
         this.opecodeTable[oct("0021")] = {
             mnemonic: "LD DE,nn",
@@ -1105,7 +1102,7 @@ export default class Z80 {
                 setE(fetch());
                 setD(fetch());
             },
-            disasm: disasm_LD_dd_nn
+            disasm: disasmLdDdNn
         };
         this.opecodeTable[oct("0041")] = {
             mnemonic: "LD HL,nn",
@@ -1114,7 +1111,7 @@ export default class Z80 {
                 setL(fetch());
                 setH(fetch());
             },
-            disasm: disasm_LD_dd_nn
+            disasm: disasmLdDdNn
         };
         this.opecodeTable[oct("0061")] = {
             mnemonic: "LD SP,nn",
@@ -1122,24 +1119,24 @@ export default class Z80 {
             proc: () => {
                 reg.SP = fetchPair();
             },
-            disasm: disasm_LD_dd_nn
+            disasm: disasmLdDdNn
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // LD HL,(nn)	H<-(nn+1),L<-(nn)		00 101 010	<-  n   ->	<-  n   ->
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         this.opecodeTable[oct("0052")] = {
             mnemonic: "LD HL,(nn)",
             cycle: 16,
             proc: () => {
-                var nn = fetchPair();
+                const nn = fetchPair();
                 setL(peek(nn + 0));
                 setH(peek(nn + 1));
             },
-            disasm: function (mem, addr) {
-                var opcode = mem.peek(addr);
-                var nnL = mem.peek(addr + 1);
-                var nnH = mem.peek(addr + 2);
-                var nn = BinUtil.pair(nnH, nnL);
+            disasm: (mem, addr) => {
+                const opcode = mem.peek(addr);
+                const nnL = mem.peek(addr + 1);
+                const nnH = mem.peek(addr + 2);
+                const nn = BinUtil.pair(nnH, nnL);
                 return {
                     code: [opcode, nnL, nnH],
                     mnemonic: ["LD", "HL", "(" + NumberUtil.HEX(nn, 4) + "H)"]
@@ -1150,16 +1147,16 @@ export default class Z80 {
             mnemonic: "LD BC,(nn)",
             cycle: 20,
             proc: () => {
-                var nn = fetchPair();
+                const nn = fetchPair();
                 setC(peek(nn + 0));
                 setB(peek(nn + 1));
             },
-            disasm: function (mem, addr) {
-                var opcode = mem.peek(addr);
-                var operand = mem.peek(addr + 1);
-                var nnL = mem.peek(addr + 2);
-                var nnH = mem.peek(addr + 3);
-                var nn = BinUtil.pair(nnH, nnL);
+            disasm: (mem, addr) => {
+                const opcode = mem.peek(addr);
+                const operand = mem.peek(addr + 1);
+                const nnL = mem.peek(addr + 2);
+                const nnH = mem.peek(addr + 3);
+                const nn = BinUtil.pair(nnH, nnL);
                 return {
                     code: [opcode, operand, nnL, nnH],
                     mnemonic: ["LD", "BC", "(" + NumberUtil.HEX(nn, 4) + "H)"]
@@ -1170,16 +1167,16 @@ export default class Z80 {
             mnemonic: "LD DE,(nn)",
             cycle: 20,
             proc: () => {
-                var nn = fetchPair();
+                const nn = fetchPair();
                 setE(peek(nn + 0));
                 setD(peek(nn + 1));
             },
-            disasm: function (mem, addr) {
-                var opcode = mem.peek(addr);
-                var operand = mem.peek(addr + 1);
-                var nnL = mem.peek(addr + 2);
-                var nnH = mem.peek(addr + 3);
-                var nn = BinUtil.pair(nnH, nnL);
+            disasm: (mem, addr) => {
+                const opcode = mem.peek(addr);
+                const operand = mem.peek(addr + 1);
+                const nnL = mem.peek(addr + 2);
+                const nnH = mem.peek(addr + 3);
+                const nn = BinUtil.pair(nnH, nnL);
                 return {
                     code: [opcode, operand, nnL, nnH],
                     mnemonic: ["LD", "DE", "(" + NumberUtil.HEX(nn, 4) + "H)"]
@@ -1190,16 +1187,16 @@ export default class Z80 {
             mnemonic: "LD HL,(nn)",
             cycle: 20,
             proc: () => {
-                var nn = fetchPair();
+                const nn = fetchPair();
                 setL(peek(nn + 0));
                 setH(peek(nn + 1));
             },
-            disasm: function (mem, addr) {
-                var opcode = mem.peek(addr);
-                var operand = mem.peek(addr + 1);
-                var nnL = mem.peek(addr + 2);
-                var nnH = mem.peek(addr + 3);
-                var nn = BinUtil.pair(nnH, nnL);
+            disasm: (mem, addr) => {
+                const opcode = mem.peek(addr);
+                const operand = mem.peek(addr + 1);
+                const nnL = mem.peek(addr + 2);
+                const nnH = mem.peek(addr + 3);
+                const nn = BinUtil.pair(nnH, nnL);
                 return {
                     code: [opcode, operand, nnL, nnH],
                     mnemonic: ["LD", "HL", "(" + NumberUtil.HEX(nn, 4) + "H)"]
@@ -1212,34 +1209,34 @@ export default class Z80 {
             proc: () => {
                 reg.SP = peekPair(fetchPair());
             },
-            disasm: function (mem, addr) {
-                var opcode = mem.peek(addr);
-                var operand = mem.peek(addr + 1);
-                var nnL = mem.peek(addr + 2);
-                var nnH = mem.peek(addr + 3);
-                var nn = BinUtil.pair(nnH, nnL);
+            disasm: (mem, addr) => {
+                const opcode = mem.peek(addr);
+                const operand = mem.peek(addr + 1);
+                const nnL = mem.peek(addr + 2);
+                const nnH = mem.peek(addr + 3);
+                const nn = BinUtil.pair(nnH, nnL);
                 return {
                     code: [opcode, operand, nnL, nnH],
                     mnemonic: ["LD", "SP", "(" + NumberUtil.HEX(nn, 4) + "H)"]
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // LD (nn),HL	(nn+1)<-H,(nn)<-L		00 100 010	<-  n   ->	<-  n   ->
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         this.opecodeTable[oct("0042")] = {
             mnemonic: "LD (nn), HL",
             cycle: 16,
             proc: () => {
-                var nn = fetchPair();
+                const nn = fetchPair();
                 poke(nn + 0, getL());
                 poke(nn + 1, getH());
             },
-            disasm: function (mem, addr) {
-                var opcode = mem.peek(addr);
-                var nnL = mem.peek(addr + 1);
-                var nnH = mem.peek(addr + 2);
-                var nn = BinUtil.pair(nnH, nnL);
+            disasm: (mem, addr) => {
+                const opcode = mem.peek(addr);
+                const nnL = mem.peek(addr + 1);
+                const nnH = mem.peek(addr + 2);
+                const nn = BinUtil.pair(nnH, nnL);
                 return {
                     code: [opcode, nnL, nnH],
                     mnemonic: ["LD", "(" + NumberUtil.HEX(nn, 4) + "H)", "HL"]
@@ -1250,16 +1247,16 @@ export default class Z80 {
             mnemonic: "LD (nn),BC",
             cycle: 20,
             proc: () => {
-                var nn = fetchPair();
+                const nn = fetchPair();
                 poke(nn + 0, getC());
                 poke(nn + 1, getB());
             },
-            disasm: function (mem, addr) {
-                var opcode = mem.peek(addr);
-                var operand = mem.peek(addr + 1);
-                var nnL = mem.peek(addr + 2);
-                var nnH = mem.peek(addr + 3);
-                var nn = BinUtil.pair(nnH, nnL);
+            disasm: (mem, addr) => {
+                const opcode = mem.peek(addr);
+                const operand = mem.peek(addr + 1);
+                const nnL = mem.peek(addr + 2);
+                const nnH = mem.peek(addr + 3);
+                const nn = BinUtil.pair(nnH, nnL);
                 return {
                     code: [opcode, operand, nnL, nnH],
                     mnemonic: ["LD", "(" + NumberUtil.HEX(nn, 4) + "H)", "BC"]
@@ -1270,16 +1267,16 @@ export default class Z80 {
             mnemonic: "LD (nn),DE",
             cycle: 20,
             proc: () => {
-                var nn = fetchPair();
+                const nn = fetchPair();
                 poke(nn + 0, getE());
                 poke(nn + 1, getD());
             },
-            disasm: function (mem, addr) {
-                var opcode = mem.peek(addr);
-                var operand = mem.peek(addr + 1);
-                var nnL = mem.peek(addr + 2);
-                var nnH = mem.peek(addr + 3);
-                var nn = BinUtil.pair(nnH, nnL);
+            disasm: (mem, addr) => {
+                const opcode = mem.peek(addr);
+                const operand = mem.peek(addr + 1);
+                const nnL = mem.peek(addr + 2);
+                const nnH = mem.peek(addr + 3);
+                const nn = BinUtil.pair(nnH, nnL);
                 return {
                     code: [opcode, operand, nnL, nnH],
                     mnemonic: ["LD", "(" + NumberUtil.HEX(nn, 4) + "H)", "DE"]
@@ -1290,16 +1287,16 @@ export default class Z80 {
             mnemonic: "LD (nn),HL",
             cycle: 20,
             proc: () => {
-                var nn = fetchPair();
+                const nn = fetchPair();
                 poke(nn + 0, getL());
                 poke(nn + 1, getH());
             },
-            disasm: function (mem, addr) {
-                var opcode = mem.peek(addr);
-                var operand = mem.peek(addr + 1);
-                var nnL = mem.peek(addr + 2);
-                var nnH = mem.peek(addr + 3);
-                var nn = BinUtil.pair(nnH, nnL);
+            disasm: (mem, addr) => {
+                const opcode = mem.peek(addr);
+                const operand = mem.peek(addr + 1);
+                const nnL = mem.peek(addr + 2);
+                const nnH = mem.peek(addr + 3);
+                const nn = BinUtil.pair(nnH, nnL);
                 return {
                     code: [opcode, operand, nnL, nnH],
                     mnemonic: ["LD", "(" + NumberUtil.HEX(nn, 4) + "H)", "HL"]
@@ -1310,41 +1307,41 @@ export default class Z80 {
             mnemonic: "LD (nn),SP",
             cycle: 20,
             proc: () => {
-                var nn = fetchPair();
+                const nn = fetchPair();
                 poke(nn + 0, (reg.SP >> 0) & 0xff);
                 poke(nn + 1, (reg.SP >> 8) & 0xff);
             },
-            disasm: function (mem, addr) {
-                var opcode = mem.peek(addr);
-                var operand = mem.peek(addr + 1);
-                var nnL = mem.peek(addr + 2);
-                var nnH = mem.peek(addr + 3);
-                var nn = BinUtil.pair(nnH, nnL);
+            disasm: (mem, addr) => {
+                const opcode = mem.peek(addr);
+                const operand = mem.peek(addr + 1);
+                const nnL = mem.peek(addr + 2);
+                const nnH = mem.peek(addr + 3);
+                const nn = BinUtil.pair(nnH, nnL);
                 return {
                     code: [opcode, operand, nnL, nnH],
                     mnemonic: ["LD", "(" + NumberUtil.HEX(nn, 4) + "H)", "SP"]
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // LD SP,HL		SP<-HL					11 111 001
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         this.opecodeTable[oct("0371")] = {
             mnemonic: "LD SP,HL",
             cycle: 6,
             proc: () => {
                 reg.SP = getHL();
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["LD", "SP", "HL"]
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // PUSH qq		(SP-2)<-qqL,(SP-1)<-qqH	11 qq0 101
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         this.opecodeTable[0xc0 + (0 << 4) + 0x05] = {
             mnemonic: "PUSH BC",
             cycle: 11,
@@ -1352,7 +1349,7 @@ export default class Z80 {
                 poke(--reg.SP, getB());
                 poke(--reg.SP, getC());
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["PUSH", "BC"]
@@ -1366,7 +1363,7 @@ export default class Z80 {
                 poke(--reg.SP, getD());
                 poke(--reg.SP, getE());
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["PUSH", "DE"]
@@ -1380,7 +1377,7 @@ export default class Z80 {
                 poke(--reg.SP, getH());
                 poke(--reg.SP, getL());
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["PUSH", "HL"]
@@ -1394,16 +1391,16 @@ export default class Z80 {
                 poke(--reg.SP, getA());
                 poke(--reg.SP, reg.getF());
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["PUSH", "AF"]
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // POP qq		qqL<-(SP),qqH<-(SP+1)	11 qq0 001
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         this.opecodeTable[0xc0 + (0 << 4) + 0x01] = {
             mnemonic: "POP BC",
             cycle: 10,
@@ -1411,7 +1408,7 @@ export default class Z80 {
                 setC(peek(reg.SP++));
                 setB(peek(reg.SP++));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["POP", "BC"]
@@ -1425,7 +1422,7 @@ export default class Z80 {
                 setE(peek(reg.SP++));
                 setD(peek(reg.SP++));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["POP", "DE"]
@@ -1439,7 +1436,7 @@ export default class Z80 {
                 setL(peek(reg.SP++));
                 setH(peek(reg.SP++));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["POP", "HL"]
@@ -1453,7 +1450,7 @@ export default class Z80 {
                 reg.setF(peek(reg.SP++));
                 setA(peek(reg.SP++));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["POP", "AF"]
@@ -1466,7 +1463,7 @@ export default class Z80 {
             proc: () => {
                 reg.IX = fetchPair();
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     "code": [
                         0xDD, 0x21,
@@ -1489,7 +1486,7 @@ export default class Z80 {
                 poke(nn, IXL);
                 poke(nn + 1, IXH);
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     "code": [
                         0xDD, 0x22,
@@ -1508,7 +1505,7 @@ export default class Z80 {
             proc: () => {
                 reg.IX = peekPair(fetchPair());
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     "code": [
                         0xDD, 0x2A,
@@ -1529,7 +1526,7 @@ export default class Z80 {
                 const n = fetch();
                 poke(reg.IX + d, n);
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 const d = mem.peek(addr + 2);
                 const d8s = NumberUtil.to8bitSigned(d);
                 const displacement = `${d8s>=0?"+":""}${d8s}`;
@@ -1548,7 +1545,7 @@ export default class Z80 {
             proc: () => {
                 reg.SP = reg.IX;
             },
-            disasm: function ( /*mem, addr*/) {
+            disasm: ( /*mem, addr*/) => {
                 return {
                     "code": [0xDD, 0xF9],
                     "mnemonic": ["LD", "SP", "IX"]
@@ -1562,7 +1559,7 @@ export default class Z80 {
                 poke(--reg.SP, BinUtil.hibyte(reg.IX));
                 poke(--reg.SP, BinUtil.lobyte(reg.IX));
             },
-            disasm: function ( /*mem, addr*/) {
+            disasm: ( /*mem, addr*/) => {
                 return {
                     "code": [0xDD, 0xE5],
                     "mnemonic": ["PUSH", "IX"]
@@ -1576,7 +1573,7 @@ export default class Z80 {
                 reg.IX = peekPair(reg.SP);
                 reg.SP += 2;
             },
-            disasm: function ( /*mem, addr*/) {
+            disasm: ( /*mem, addr*/) => {
                 return {
                     "code": [0xDD, 0xE1],
                     "mnemonic": ["POP", "IX"]
@@ -1587,13 +1584,13 @@ export default class Z80 {
             mnemonic: "EX (SP),IX",
             cycle: 23,
             proc: () => {
-                var tmpH = peek(reg.SP + 1);
+                const tmpH = peek(reg.SP + 1);
                 poke(reg.SP + 1, BinUtil.hibyte(reg.IX));
-                var tmpL = peek(reg.SP);
+                const tmpL = peek(reg.SP);
                 poke(reg.SP, BinUtil.lobyte(reg.IX));
                 reg.IX = BinUtil.pair(tmpH, tmpL);
             },
-            disasm: function ( /*mem, addr*/) {
+            disasm: ( /*mem, addr*/) => {
                 return {
                     "code": [0xDD, 0xE3],
                     "mnemonic": ["EX", "(SP)", "IX"]
@@ -1606,7 +1603,7 @@ export default class Z80 {
             proc: () => {
                 reg.IY = fetchPair();
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     "code": [
                         0xFD, 0x21,
@@ -1629,7 +1626,7 @@ export default class Z80 {
                 poke(nn, IYL);
                 poke(nn + 1, IYH);
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     "code": [
                         0xFD, 0x22,
@@ -1648,7 +1645,7 @@ export default class Z80 {
             proc: () => {
                 reg.IY = peekPair(fetchPair());
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     "code": [
                         0xFD, 0x2A,
@@ -1669,7 +1666,7 @@ export default class Z80 {
                 const n = fetch();
                 poke(reg.IY + d, n);
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 const d = mem.peek(addr + 2);
                 const d8s = NumberUtil.to8bitSigned(d);
                 const displacement = `${d8s>=0?"+":""}${d8s}`;
@@ -1688,7 +1685,7 @@ export default class Z80 {
             proc: () => {
                 reg.SP = reg.IY;
             },
-            disasm: function ( /*mem, addr*/) {
+            disasm: ( /*mem, addr*/) => {
                 return { "code": [0xFD, 0xF9], "mnemonic": ["LD", "SP", "IY"] };
             }
         };
@@ -1699,7 +1696,7 @@ export default class Z80 {
                 poke(--reg.SP, BinUtil.hibyte(reg.IY));
                 poke(--reg.SP, BinUtil.lobyte(reg.IY));
             },
-            disasm: function ( /*mem, addr*/) {
+            disasm: ( /*mem, addr*/) => {
                 return { "code": [0xFD, 0xE5], "mnemonic": ["PUSH", "IY"] };
             }
         };
@@ -1710,7 +1707,7 @@ export default class Z80 {
                 reg.IY = peekPair(reg.SP);
                 reg.SP += 2;
             },
-            disasm: function ( /*mem, addr*/) {
+            disasm: ( /*mem, addr*/) => {
                 return { "code": [0xFD, 0xE1], "mnemonic": ["POP", "IY"] };
             }
         };
@@ -1718,71 +1715,71 @@ export default class Z80 {
             mnemonic: "EX (SP),IY",
             cycle: 23,
             proc: () => {
-                var tmpH = peek(reg.SP + 1);
+                const tmpH = peek(reg.SP + 1);
                 poke(reg.SP + 1, (reg.IY >> 8) & 0xff);
-                var tmpL = peek(reg.SP);
+                const tmpL = peek(reg.SP);
                 poke(reg.SP, (reg.IY >> 0) & 0xff);
                 reg.IY = (tmpH << 8) + tmpL;
             },
-            disasm: function ( /*mem, addr*/) {
+            disasm: ( /*mem, addr*/) => {
                 return { "code": [0xFD, 0xE3], "mnemonic": ["EX", "(SP)", "IY"] };
             }
         };
-        //=================================================================================
+        // =================================================================================
         //
         // エクスチェンジグループ、ブロック転送および、サーチグループ
         //
-        //=================================================================================
-        //---------------------------------------------------------------------------------
+        // =================================================================================
+        // ---------------------------------------------------------------------------------
         // EX DE,HL
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         this.opecodeTable[0xEB] = {
             mnemonic: "EX DE,HL ",
             cycle: 4,
             proc: () => {
-                var tmp = getD();
+                let tmp = getD();
                 setD(getH());
                 setH(tmp);
                 tmp = getE();
                 setE(getL());
                 setL(tmp);
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["EX", "DE", "HL"]
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // EX AF,AF'
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         this.opecodeTable[0x08] = {
             mnemonic: "EX AF,AF'",
             cycle: 4,
             proc: () => {
-                var tmp = getA();
+                let tmp = getA();
                 setA(this.regB.getA());
                 this.regB.setA(tmp);
                 tmp = reg.getF();
                 reg.setF(this.regB.getF());
                 this.regB.setF(tmp);
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["EX", "AF", "AF'"]
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // EXX
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         this.opecodeTable[0xD9] = {
             mnemonic: "EXX",
             cycle: 4,
             proc: () => {
-                var tmp = getB();
+                let tmp = getB();
                 setB(this.regB.getB());
                 this.regB.setB(tmp);
                 tmp = getC();
@@ -1801,40 +1798,40 @@ export default class Z80 {
                 setL(this.regB.getL());
                 this.regB.setL(tmp);
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["EXX"]
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         //  EX (SP),HL
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         this.opecodeTable[0xE3] = {
             mnemonic: "EX (SP),HL",
             cycle: 19,
             proc: () => {
-                var tmp = peek(reg.SP + 1);
+                let tmp = peek(reg.SP + 1);
                 poke(reg.SP + 1, getH());
                 setH(tmp);
                 tmp = peek(reg.SP);
                 poke(reg.SP, getL());
                 setL(tmp);
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["EX", "(SP)", "HL"]
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // LDI                  (DE) <- (HL)        11 101 101
         //                      DE <- DE + 1        10 100 000
         //                      HL <- HL + 1
         //                      BC <- BC - 1
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         opeMisc[oct("0240")] = {
             mnemonic: "LDI",
             cycle: 16,
@@ -1842,45 +1839,45 @@ export default class Z80 {
                 poke(getDE(), peek(getHL()));
                 reg.onLDI();
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["LDI"]
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // LDIR                 (DE) <- (HL)        11 101 101
         //                      DE <- DE + 1        10 110 000
         //                      HL <- HL + 1
         //                      BC <- BC - 1
         //                      BC=0まで繰り返す
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         opeMisc[oct("0260")] = {
             mnemonic: "LDIR",
             cycle: "BC≠0→21, BC=0→16",
             proc: () => {
                 poke(getDE(), peek(getHL()));
                 reg.onLDI();
-                if (getBC() != 0) {
+                if (getBC() !== 0) {
                     reg.PC -= 2;
                     return 21;
                 }
                 return 16;
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["LDIR"]
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // LDD                  (DE) <- (HL)        11 101 101
         //                      DE <- DE - 1        10 101 000
         //                      HL <- HL - 1
         //                      BC <- BC - 1
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         opeMisc[oct("0250")] = {
             mnemonic: "LDD",
             cycle: 16,
@@ -1888,134 +1885,134 @@ export default class Z80 {
                 poke(getDE(), peek(getHL()));
                 reg.onLDD();
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["LDD"]
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // LDDR                 (DE) <- (HL)        11 101 101
         //                      DE <- DE - 1        10 111 000
         //                      HL <- HL - 1
         //                      BC <- BC - 1
         //                      BC=0まで繰り返す
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         opeMisc[oct("0270")] = {
             mnemonic: "LDDR",
             cycle: "BC≠0→21, BC=0→16",
             proc: () => {
                 poke(getDE(), peek(getHL()));
                 reg.onLDD();
-                if (getBC() != 0) {
+                if (getBC() !== 0) {
                     reg.PC -= 2;
                     return 21;
                 }
                 return 16;
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["LDDR"]
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // CPI                  A-(HL)              11 101 101
         //                      HL <- HL + 1        10 100 001
         //                      BC <- BC - 1
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         opeMisc[oct("0241")] = {
             mnemonic: "CPI",
             cycle: 16,
             proc: () => {
                 reg.CPI(peek(getHL()));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["CPI"]
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // CPIR                 A-(HL)              11 101 101
         //                      HL <- HL + 1        10 110 001
         //                      BC <- BC - 1
         //                      BC=0まで繰り返す
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         opeMisc[oct("0261")] = {
             mnemonic: "CPIR",
             cycle: "{BC≠0 && A≠(HL)}→21, {BC=0 || A=(HL)}→16",
             proc: () => {
                 reg.CPI(peek(getHL()));
-                if (getBC() != 0 && !reg.flagZ()) {
+                if (getBC() !== 0 && !reg.flagZ()) {
                     reg.PC -= 2;
                     return 21;
                 }
                 return 16;
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["CPIR"]
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // CPD                  A-(HL)              11 101 101
         //                      HL <- HL - 1        10 101 001
         //                      BC <- BC - 1
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         opeMisc[oct("0251")] = {
             mnemonic: "CPD",
             cycle: 16,
             proc: () => {
                 reg.CPD(peek(getHL()));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["CPD"]
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // CPDR                 A-(HL)              11 101 101
         //                      HL <- HL - 1        10 111 001
         //                      BC <- BC - 1
         //                      BC=0まで繰り返す
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         opeMisc[oct("0271")] = {
             mnemonic: "CPDR",
             cycle: "{BC≠0 && A≠(HL)}→21, {BC=0 || A=(HL)}→16",
             proc: () => {
                 reg.CPD(peek(getHL()));
-                if (getBC() != 0 && !reg.flagZ()) {
+                if (getBC() !== 0 && !reg.flagZ()) {
                     reg.PC -= 2;
                     return 21;
                 }
                 return 16;
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["CPDR"]
                 };
             }
         };
-        //=================================================================================
+        // =================================================================================
         // 8ビット演算・論理グループ
-        //=================================================================================
-        //---------------------------------------------------------------------------------
+        // =================================================================================
+        // ---------------------------------------------------------------------------------
         // ADD A,r      A <- A + r          10[000]<r>
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         this.opecodeTable[oct("0200")] = {
             mnemonic: "ADD A,B",
             cycle: 4,
             proc: () => { reg.addAcc(getB()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["ADD", "A", "B"]
@@ -2026,7 +2023,7 @@ export default class Z80 {
             mnemonic: "ADD A,C",
             cycle: 4,
             proc: () => { reg.addAcc(getC()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["ADD", "A", "C"]
@@ -2037,7 +2034,7 @@ export default class Z80 {
             mnemonic: "ADD A,D",
             cycle: 4,
             proc: () => { reg.addAcc(getD()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["ADD", "A", "D"]
@@ -2048,7 +2045,7 @@ export default class Z80 {
             mnemonic: "ADD A,E",
             cycle: 4,
             proc: () => { reg.addAcc(getE()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["ADD", "A", "E"]
@@ -2059,7 +2056,7 @@ export default class Z80 {
             mnemonic: "ADD A,H",
             cycle: 4,
             proc: () => { reg.addAcc(getH()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["ADD", "A", "H"]
@@ -2070,7 +2067,7 @@ export default class Z80 {
             mnemonic: "ADD A,L",
             cycle: 4,
             proc: () => { reg.addAcc(getL()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["ADD", "A", "L"]
@@ -2081,55 +2078,55 @@ export default class Z80 {
             mnemonic: "ADD A,A",
             cycle: 4,
             proc: () => { reg.addAcc(getA()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["ADD", "A", "A"]
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // ADD A,n       A <- A + n         11[000]110
         //                                  <---n---->
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         this.opecodeTable[oct("0306")] = {
             mnemonic: "ADD A,n",
             cycle: 7,
             proc: () => { reg.addAcc(fetch()); },
-            disasm: function (mem, addr) {
-                var n = mem.peek(addr + 1);
+            disasm: (mem, addr) => {
+                const n = mem.peek(addr + 1);
                 return {
                     code: [mem.peek(addr), n],
                     mnemonic: ["ADD", "A", NumberUtil.HEX(n, 2) + "H"]
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // ADD A,(HL)    A <- A + (HL)      10[000]110
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         this.opecodeTable[oct("0206")] = {
             mnemonic: "ADD A,(HL)",
             cycle: 7,
             proc: () => { reg.addAcc(peek(getHL())); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["ADD", "A", "(HL)"]
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // ADD A,(IX+d)  A <- A + (IX+d)    11 011 101
         //                                  10[000]110
         //                                  <---d---->
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         opeIX[oct("0206")] = {
             mnemonic: "ADD A,(IX+d)",
             cycle: 19,
             proc: () => {
                 reg.addAcc(peek(reg.IX + fetchSigned()));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 const d = mem.peek(addr + 2);
                 const d8s = NumberUtil.to8bitSigned(d);
                 const displacement = `${d8s>=0?"+":""}${d8s}`;
@@ -2139,18 +2136,18 @@ export default class Z80 {
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // ADD A,(IY+d)  A <- A + (IY+d)    11 111 101
         //                                  10[000]110
         //                                  <---d---->
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         opeIY[oct("0206")] = {
             mnemonic: "ADD A,(IY+d)",
             cycle: 19,
             proc: () => {
                 reg.addAcc(peek(reg.IY + fetchSigned()));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 const d = mem.peek(addr + 2);
                 const d8s = NumberUtil.to8bitSigned(d);
                 const displacement = `${d8s>=0?"+":""}${d8s}`;
@@ -2160,14 +2157,14 @@ export default class Z80 {
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // ADC A,s      A <- A + s + CY       [001]
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         this.opecodeTable[oct("0210")] = {
             mnemonic: "ADC A,B",
             cycle: 4,
             proc: () => { reg.addAccWithCarry(getB()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["ADC", "A", "B"]
@@ -2178,7 +2175,7 @@ export default class Z80 {
             mnemonic: "ADC A,C",
             cycle: 4,
             proc: () => { reg.addAccWithCarry(getC()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["ADC", "A", "C"]
@@ -2189,7 +2186,7 @@ export default class Z80 {
             mnemonic: "ADC A,D",
             cycle: 4,
             proc: () => { reg.addAccWithCarry(getD()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["ADC", "A", "D"]
@@ -2200,7 +2197,7 @@ export default class Z80 {
             mnemonic: "ADC A,E",
             cycle: 4,
             proc: () => { reg.addAccWithCarry(getE()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["ADC", "A", "E"]
@@ -2211,7 +2208,7 @@ export default class Z80 {
             mnemonic: "ADC A,H",
             cycle: 4,
             proc: () => { reg.addAccWithCarry(getH()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["ADC", "A", "H"]
@@ -2222,7 +2219,7 @@ export default class Z80 {
             mnemonic: "ADC A,L",
             cycle: 4,
             proc: () => { reg.addAccWithCarry(getL()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["ADC", "A", "L"]
@@ -2233,7 +2230,7 @@ export default class Z80 {
             mnemonic: "ADC A,A",
             cycle: 4,
             proc: () => { reg.addAccWithCarry(getA()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["ADC", "A", "A"]
@@ -2244,8 +2241,8 @@ export default class Z80 {
             mnemonic: "ADC A,n",
             cycle: 7,
             proc: () => { reg.addAccWithCarry(fetch()); },
-            disasm: function (mem, addr) {
-                var n = mem.peek(addr + 1);
+            disasm: (mem, addr) => {
+                const n = mem.peek(addr + 1);
                 return {
                     code: [mem.peek(addr), n],
                     mnemonic: ["ADC", "A", NumberUtil.HEX(n, 2) + "H"]
@@ -2256,7 +2253,7 @@ export default class Z80 {
             mnemonic: "ADC A,(HL)",
             cycle: 7,
             proc: () => { reg.addAccWithCarry(peek(getHL())); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["ADC", "A", "(HL)"]
@@ -2269,7 +2266,7 @@ export default class Z80 {
             proc: () => {
                 reg.addAccWithCarry(peek(reg.IX + fetchSigned()));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 const d = mem.peek(addr + 2);
                 const d8s = NumberUtil.to8bitSigned(d);
                 const displacement = `${d8s>=0?"+":""}${d8s}`;
@@ -2285,7 +2282,7 @@ export default class Z80 {
             proc: () => {
                 reg.addAccWithCarry(peek(reg.IY + fetchSigned()));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 const d = mem.peek(addr + 2);
                 const d8s = NumberUtil.to8bitSigned(d);
                 const displacement = `${d8s>=0?"+":""}${d8s}`;
@@ -2295,14 +2292,14 @@ export default class Z80 {
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // SUB s        A <- A - s            [010]
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         this.opecodeTable[oct("0220")] = {
             mnemonic: "SUB A,B",
             cycle: 4,
             proc: () => { reg.subAcc(getB()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["SUB", "A", "B"]
@@ -2313,7 +2310,7 @@ export default class Z80 {
             mnemonic: "SUB A,C",
             cycle: 4,
             proc: () => { reg.subAcc(getC()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["SUB", "A", "C"]
@@ -2324,7 +2321,7 @@ export default class Z80 {
             mnemonic: "SUB A,D",
             cycle: 4,
             proc: () => { reg.subAcc(getD()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["SUB", "A", "D"]
@@ -2335,7 +2332,7 @@ export default class Z80 {
             mnemonic: "SUB A,E",
             cycle: 4,
             proc: () => { reg.subAcc(getE()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["SUB", "A", "E"]
@@ -2346,7 +2343,7 @@ export default class Z80 {
             mnemonic: "SUB A,H",
             cycle: 4,
             proc: () => { reg.subAcc(getH()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["SUB", "A", "H"]
@@ -2357,7 +2354,7 @@ export default class Z80 {
             mnemonic: "SUB A,L",
             cycle: 4,
             proc: () => { reg.subAcc(getL()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["SUB", "A", "L"]
@@ -2368,7 +2365,7 @@ export default class Z80 {
             mnemonic: "SUB A,A",
             cycle: 4,
             proc: () => { reg.subAcc(getA()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["SUB", "A", "A"]
@@ -2379,8 +2376,8 @@ export default class Z80 {
             mnemonic: "SUB A,n",
             cycle: 7,
             proc: () => { reg.subAcc(fetch()); },
-            disasm: function (mem, addr) {
-                var n = mem.peek(addr + 1);
+            disasm: (mem, addr) => {
+                const n = mem.peek(addr + 1);
                 return {
                     code: [mem.peek(addr), n],
                     mnemonic: ["SUB", "A", NumberUtil.HEX(n, 2) + "H"]
@@ -2393,7 +2390,7 @@ export default class Z80 {
             proc: () => {
                 reg.subAcc(peek(getHL()));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["SUB", "A", "(HL)"]
@@ -2406,7 +2403,7 @@ export default class Z80 {
             proc: () => {
                 reg.subAcc(peek(reg.IX + fetchSigned()));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 const d = mem.peek(addr + 2);
                 const d8s = NumberUtil.to8bitSigned(d);
                 const displacement = `${d8s>=0?"+":""}${d8s}`;
@@ -2422,7 +2419,7 @@ export default class Z80 {
             proc: () => {
                 reg.subAcc(peek(reg.IY + fetchSigned()));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 const d = mem.peek(addr + 2);
                 const d8s = NumberUtil.to8bitSigned(d);
                 const displacement = `${d8s>=0?"+":""}${d8s}`;
@@ -2432,14 +2429,14 @@ export default class Z80 {
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // SBC A,s      A <- A - s - CY       [011]
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         this.opecodeTable[oct("0230")] = {
             mnemonic: "SBC A,B",
             cycle: 4,
             proc: () => { reg.subAccWithCarry(getB()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["SBC", "A", "B"]
@@ -2450,7 +2447,7 @@ export default class Z80 {
             mnemonic: "SBC A,C",
             cycle: 4,
             proc: () => { reg.subAccWithCarry(getC()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["SBC", "A", "C"]
@@ -2461,7 +2458,7 @@ export default class Z80 {
             mnemonic: "SBC A,D",
             cycle: 4,
             proc: () => { reg.subAccWithCarry(getD()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["SBC", "A", "D"]
@@ -2472,7 +2469,7 @@ export default class Z80 {
             mnemonic: "SBC A,E",
             cycle: 4,
             proc: () => { reg.subAccWithCarry(getE()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["SBC", "A", "E"]
@@ -2483,7 +2480,7 @@ export default class Z80 {
             mnemonic: "SBC A,H",
             cycle: 4,
             proc: () => { reg.subAccWithCarry(getH()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["SBC", "A", "H"]
@@ -2494,7 +2491,7 @@ export default class Z80 {
             mnemonic: "SBC A,L",
             cycle: 4,
             proc: () => { reg.subAccWithCarry(getL()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["SBC", "A", "L"]
@@ -2505,7 +2502,7 @@ export default class Z80 {
             mnemonic: "SBC A,A",
             cycle: 4,
             proc: () => { reg.subAccWithCarry(getA()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["SBC", "A", "A"]
@@ -2516,8 +2513,8 @@ export default class Z80 {
             mnemonic: "SBC A,n",
             cycle: 7,
             proc: () => { reg.subAccWithCarry(fetch()); },
-            disasm: function (mem, addr) {
-                var n = mem.peek(addr + 1);
+            disasm: (mem, addr) => {
+                const n = mem.peek(addr + 1);
                 return {
                     code: [mem.peek(addr), n],
                     mnemonic: ["SBC", "A," + NumberUtil.HEX(n, 2) + "H"]
@@ -2530,7 +2527,7 @@ export default class Z80 {
             proc: () => {
                 reg.subAccWithCarry(peek(getHL()));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["SBC", "A", "(HL)"]
@@ -2543,7 +2540,7 @@ export default class Z80 {
             proc: () => {
                 reg.subAccWithCarry(peek(reg.IX + fetchSigned()));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 const d = mem.peek(addr + 2);
                 const d8s = NumberUtil.to8bitSigned(d);
                 const displacement = `${d8s>=0?"+":""}${d8s}`;
@@ -2559,7 +2556,7 @@ export default class Z80 {
             proc: () => {
                 reg.subAccWithCarry(peek(reg.IY + fetchSigned()));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 const d = mem.peek(addr + 2);
                 const d8s = NumberUtil.to8bitSigned(d);
                 const displacement = `${d8s>=0?"+":""}${d8s}`;
@@ -2569,14 +2566,14 @@ export default class Z80 {
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // AND s        A <- A & s            [100]
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         this.opecodeTable[oct("0240")] = {
             mnemonic: "AND B",
             cycle: 4,
             proc: () => { reg.andAcc(getB()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["AND", "B"]
@@ -2587,7 +2584,7 @@ export default class Z80 {
             mnemonic: "AND C",
             cycle: 4,
             proc: () => { reg.andAcc(getC()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["AND", "C"]
@@ -2598,7 +2595,7 @@ export default class Z80 {
             mnemonic: "AND D",
             cycle: 4,
             proc: () => { reg.andAcc(getD()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["AND", "D"]
@@ -2609,7 +2606,7 @@ export default class Z80 {
             mnemonic: "AND E",
             cycle: 4,
             proc: () => { reg.andAcc(getE()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["AND", "E"]
@@ -2620,7 +2617,7 @@ export default class Z80 {
             mnemonic: "AND H",
             cycle: 4,
             proc: () => { reg.andAcc(getH()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["AND", "H"]
@@ -2631,7 +2628,7 @@ export default class Z80 {
             mnemonic: "AND L",
             cycle: 4,
             proc: () => { reg.andAcc(getL()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["AND", "L"]
@@ -2642,7 +2639,7 @@ export default class Z80 {
             mnemonic: "AND A",
             cycle: 4,
             proc: () => { reg.andAcc(getA()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["AND", "A"]
@@ -2653,8 +2650,8 @@ export default class Z80 {
             mnemonic: "AND n",
             cycle: 7,
             proc: () => { reg.andAcc(fetch()); },
-            disasm: function (mem, addr) {
-                var n = mem.peek(addr + 1);
+            disasm: (mem, addr) => {
+                const n = mem.peek(addr + 1);
                 return {
                     code: [mem.peek(addr), n],
                     mnemonic: ["AND", NumberUtil.HEX(n, 2) + "H"]
@@ -2667,7 +2664,7 @@ export default class Z80 {
             proc: () => {
                 reg.andAcc(peek(getHL()));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["AND", "(HL)"]
@@ -2680,7 +2677,7 @@ export default class Z80 {
             proc: () => {
                 reg.andAcc(peek(reg.IX + fetchSigned()));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 const d = mem.peek(addr + 2);
                 const d8s = NumberUtil.to8bitSigned(d);
                 const displacement = `${d8s>=0?"+":""}${d8s}`;
@@ -2696,7 +2693,7 @@ export default class Z80 {
             proc: () => {
                 reg.andAcc(peek(reg.IY + fetchSigned()));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 const d = mem.peek(addr + 2);
                 const d8s = NumberUtil.to8bitSigned(d);
                 const displacement = `${d8s>=0?"+":""}${d8s}`;
@@ -2706,14 +2703,14 @@ export default class Z80 {
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // OR s         A <- A | s            [110]
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         this.opecodeTable[oct("0260")] = {
             mnemonic: "OR B",
             cycle: 4,
             proc: () => { reg.orAcc(getB()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["OR", "B"]
@@ -2724,7 +2721,7 @@ export default class Z80 {
             mnemonic: "OR C",
             cycle: 4,
             proc: () => { reg.orAcc(getC()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["OR", "C"]
@@ -2735,7 +2732,7 @@ export default class Z80 {
             mnemonic: "OR D",
             cycle: 4,
             proc: () => { reg.orAcc(getD()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["OR", "D"]
@@ -2746,7 +2743,7 @@ export default class Z80 {
             mnemonic: "OR E",
             cycle: 4,
             proc: () => { reg.orAcc(getE()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["OR", "E"]
@@ -2757,7 +2754,7 @@ export default class Z80 {
             mnemonic: "OR H",
             cycle: 4,
             proc: () => { reg.orAcc(getH()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["OR", "H"]
@@ -2768,7 +2765,7 @@ export default class Z80 {
             mnemonic: "OR L",
             cycle: 4,
             proc: () => { reg.orAcc(getL()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["OR", "L"]
@@ -2779,7 +2776,7 @@ export default class Z80 {
             mnemonic: "OR A",
             cycle: 4,
             proc: () => { reg.orAcc(getA()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["OR", "A"]
@@ -2790,8 +2787,8 @@ export default class Z80 {
             mnemonic: "OR n",
             cycle: 7,
             proc: () => { reg.orAcc(fetch()); },
-            disasm: function (mem, addr) {
-                var n = mem.peek(addr + 1);
+            disasm: (mem, addr) => {
+                const n = mem.peek(addr + 1);
                 return {
                     code: [mem.peek(addr), n],
                     mnemonic: ["OR", NumberUtil.HEX(n, 2) + "H"]
@@ -2804,7 +2801,7 @@ export default class Z80 {
             proc: () => {
                 reg.orAcc(peek(getHL()));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["OR", "(HL)"]
@@ -2817,7 +2814,7 @@ export default class Z80 {
             proc: () => {
                 reg.orAcc(peek(reg.IX + fetchSigned()));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 const d = mem.peek(addr + 2);
                 const d8s = NumberUtil.to8bitSigned(d);
                 const displacement = `${d8s>=0?"+":""}${d8s}`;
@@ -2833,7 +2830,7 @@ export default class Z80 {
             proc: () => {
                 reg.orAcc(peek(reg.IY + fetchSigned()));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 const d = mem.peek(addr + 2);
                 const d8s = NumberUtil.to8bitSigned(d);
                 const displacement = `${d8s>=0?"+":""}${d8s}`;
@@ -2843,14 +2840,14 @@ export default class Z80 {
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // XOR s        A <- A ~ s            [101]
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         this.opecodeTable[oct("0250")] = {
             mnemonic: "XOR B",
             cycle: 4,
             proc: () => { reg.xorAcc(getB()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["XOR", "B"]
@@ -2861,7 +2858,7 @@ export default class Z80 {
             mnemonic: "XOR C",
             cycle: 4,
             proc: () => { reg.xorAcc(getC()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["XOR", "C"]
@@ -2872,7 +2869,7 @@ export default class Z80 {
             mnemonic: "XOR D",
             cycle: 4,
             proc: () => { reg.xorAcc(getD()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["XOR", "D"]
@@ -2883,7 +2880,7 @@ export default class Z80 {
             mnemonic: "XOR E",
             cycle: 4,
             proc: () => { reg.xorAcc(getE()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["XOR", "E"]
@@ -2894,7 +2891,7 @@ export default class Z80 {
             mnemonic: "XOR H",
             cycle: 4,
             proc: () => { reg.xorAcc(getH()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["XOR", "H"]
@@ -2905,7 +2902,7 @@ export default class Z80 {
             mnemonic: "XOR L",
             cycle: 4,
             proc: () => { reg.xorAcc(getL()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["XOR", "L"]
@@ -2916,7 +2913,7 @@ export default class Z80 {
             mnemonic: "XOR A",
             cycle: 4,
             proc: () => { reg.xorAcc(getA()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["XOR", "A"]
@@ -2927,8 +2924,8 @@ export default class Z80 {
             mnemonic: "XOR n",
             cycle: 7,
             proc: () => { reg.xorAcc(fetch()); },
-            disasm: function (mem, addr) {
-                var n = mem.peek(addr + 1);
+            disasm: (mem, addr) => {
+                const n = mem.peek(addr + 1);
                 return {
                     code: [mem.peek(addr), n],
                     mnemonic: ["XOR", NumberUtil.HEX(n, 2) + "H"]
@@ -2939,7 +2936,7 @@ export default class Z80 {
             mnemonic: "XOR (HL)",
             cycle: 7,
             proc: () => { reg.xorAcc(peek(getHL())); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["XOR", "(HL)"]
@@ -2952,7 +2949,7 @@ export default class Z80 {
             proc: () => {
                 reg.xorAcc(peek(reg.IX + fetchSigned()));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 const d = mem.peek(addr + 2);
                 const d8s = NumberUtil.to8bitSigned(d);
                 const displacement = `${d8s>=0?"+":""}${d8s}`;
@@ -2968,7 +2965,7 @@ export default class Z80 {
             proc: () => {
                 reg.xorAcc(peek(reg.IY + fetchSigned()));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 const d = mem.peek(addr + 2);
                 const d8s = NumberUtil.to8bitSigned(d);
                 const displacement = `${d8s>=0?"+":""}${d8s}`;
@@ -2978,14 +2975,14 @@ export default class Z80 {
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // CP s         A - s                 [111]
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         this.opecodeTable[oct("0270")] = {
             mnemonic: "CP B",
             cycle: 4,
             proc: () => { reg.compareAcc(getB()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["CP", "B"]
@@ -2996,7 +2993,7 @@ export default class Z80 {
             mnemonic: "CP C",
             cycle: 4,
             proc: () => { reg.compareAcc(getC()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["CP", "C"]
@@ -3007,7 +3004,7 @@ export default class Z80 {
             mnemonic: "CP D",
             cycle: 4,
             proc: () => { reg.compareAcc(getD()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["CP", "D"]
@@ -3018,7 +3015,7 @@ export default class Z80 {
             mnemonic: "CP E",
             cycle: 4,
             proc: () => { reg.compareAcc(getE()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["CP", "E"]
@@ -3029,7 +3026,7 @@ export default class Z80 {
             mnemonic: "CP H",
             cycle: 4,
             proc: () => { reg.compareAcc(getH()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["CP", "H"]
@@ -3040,7 +3037,7 @@ export default class Z80 {
             mnemonic: "CP L",
             cycle: 4,
             proc: () => { reg.compareAcc(getL()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["CP", "L"]
@@ -3051,7 +3048,7 @@ export default class Z80 {
             mnemonic: "CP A",
             cycle: 4,
             proc: () => { reg.compareAcc(getA()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["CP", "A"]
@@ -3062,8 +3059,8 @@ export default class Z80 {
             mnemonic: "CP n",
             cycle: 7,
             proc: () => { reg.compareAcc(fetch()); },
-            disasm: function (mem, addr) {
-                var n = mem.peek(addr + 1);
+            disasm: (mem, addr) => {
+                const n = mem.peek(addr + 1);
                 return {
                     code: [mem.peek(addr), n],
                     mnemonic: ["CP", NumberUtil.HEX(n, 2) + "H"]
@@ -3076,7 +3073,7 @@ export default class Z80 {
             proc: () => {
                 reg.compareAcc(peek(getHL()));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["CP", "(HL)"]
@@ -3089,7 +3086,7 @@ export default class Z80 {
             proc: () => {
                 reg.compareAcc(peek(reg.IX + fetchSigned()));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 const d = mem.peek(addr + 2);
                 const d8s = NumberUtil.to8bitSigned(d);
                 const displacement = `${d8s>=0?"+":""}${d8s}`;
@@ -3105,7 +3102,7 @@ export default class Z80 {
             proc: () => {
                 reg.compareAcc(peek(reg.IY + fetchSigned()));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 const d = mem.peek(addr + 2);
                 const d8s = NumberUtil.to8bitSigned(d);
                 const displacement = `${d8s>=0?"+":""}${d8s}`;
@@ -3115,14 +3112,14 @@ export default class Z80 {
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // INC r        r <- r + 1          00 <r>[100]
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         this.opecodeTable[oct("0004")] = {
             mnemonic: "INC B",
             "cycle": 4,
             proc: () => { reg.increment("B"); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)], mnemonic: ["INC", "B"]
                 };
@@ -3132,7 +3129,7 @@ export default class Z80 {
             mnemonic: "INC C",
             "cycle": 4,
             proc: () => { reg.increment("C"); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["INC", "C"]
@@ -3143,7 +3140,7 @@ export default class Z80 {
             mnemonic: "INC D",
             "cycle": 4,
             proc: () => { reg.increment("D"); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["INC", "D"]
@@ -3154,7 +3151,7 @@ export default class Z80 {
             mnemonic: "INC E",
             "cycle": 4,
             proc: () => { reg.increment("E"); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["INC", "E"]
@@ -3165,7 +3162,7 @@ export default class Z80 {
             mnemonic: "INC H",
             "cycle": 4,
             proc: () => { reg.increment("H"); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["INC", "H"]
@@ -3176,7 +3173,7 @@ export default class Z80 {
             mnemonic: "INC L",
             "cycle": 4,
             proc: () => { reg.increment("L"); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["INC", "L"]
@@ -3187,37 +3184,37 @@ export default class Z80 {
             mnemonic: "INC A",
             "cycle": 4,
             proc: () => { reg.increment("A"); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["INC", "A"]
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // INC (HL)     (HL) <- (HL) + 1    00 110[100]
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         this.opecodeTable[oct("0064")] = {
             mnemonic: "INC (HL)",
             "cycle": 11,
             proc: () => { this.incrementAt(getHL()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["INC", "(HL)"]
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // INC (IX+d)   (IX+d) <- (IX+d)+1  11 011 101
         //                                  00 110[100]
         //                                  <---d---->
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         opeIX[oct("0064")] = {
             mnemonic: "INC (IX+d)",
             "cycle": 23,
             proc: () => { this.incrementAt(reg.IX + fetchSigned()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 const d = mem.peek(addr + 2);
                 const d8s = NumberUtil.to8bitSigned(d);
                 const displacement = `${d8s>=0?"+":""}${d8s}`;
@@ -3227,16 +3224,16 @@ export default class Z80 {
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // INC (IY+d)   (IY+d) <- (IY+d)+1  11 111 101
         //                                  00 110[100]
         //                                  <---d---->
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         opeIY[oct("0064")] = {
             mnemonic: "INC (IY+d)",
             "cycle": 23,
             proc: () => { this.incrementAt(reg.IY + fetchSigned()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 const d = mem.peek(addr + 2);
                 const d8s = NumberUtil.to8bitSigned(d);
                 const displacement = `${d8s>=0?"+":""}${d8s}`;
@@ -3246,46 +3243,46 @@ export default class Z80 {
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // DEC m        m <- m + 1                [100]
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         this.opecodeTable[oct("0005")] = {
             mnemonic: "DEC B", proc: () => { reg.decrement("B"); }, "cycle": 4,
-            disasm: function (mem, addr) { return { code: [mem.peek(addr)], mnemonic: ["DEC", "B"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr)], mnemonic: ["DEC", "B"] }; }
         };
         this.opecodeTable[oct("0015")] = {
             mnemonic: "DEC C", proc: () => { reg.decrement("C"); }, "cycle": 4,
-            disasm: function (mem, addr) { return { code: [mem.peek(addr)], mnemonic: ["DEC", "C"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr)], mnemonic: ["DEC", "C"] }; }
         };
         this.opecodeTable[oct("0025")] = {
             mnemonic: "DEC D", proc: () => { reg.decrement("D"); }, "cycle": 4,
-            disasm: function (mem, addr) { return { code: [mem.peek(addr)], mnemonic: ["DEC", "D"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr)], mnemonic: ["DEC", "D"] }; }
         };
         this.opecodeTable[oct("0035")] = {
             mnemonic: "DEC E", proc: () => { reg.decrement("E"); }, "cycle": 4,
-            disasm: function (mem, addr) { return { code: [mem.peek(addr)], mnemonic: ["DEC", "E"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr)], mnemonic: ["DEC", "E"] }; }
         };
         this.opecodeTable[oct("0045")] = {
             mnemonic: "DEC H", proc: () => { reg.decrement("H"); }, "cycle": 4,
-            disasm: function (mem, addr) { return { code: [mem.peek(addr)], mnemonic: ["DEC", "H"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr)], mnemonic: ["DEC", "H"] }; }
         };
         this.opecodeTable[oct("0055")] = {
             mnemonic: "DEC L", proc: () => { reg.decrement("L"); }, "cycle": 4,
-            disasm: function (mem, addr) { return { code: [mem.peek(addr)], mnemonic: ["DEC", "L"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr)], mnemonic: ["DEC", "L"] }; }
         };
         this.opecodeTable[oct("0075")] = {
             mnemonic: "DEC A", proc: () => { reg.decrement("A"); }, "cycle": 4,
-            disasm: function (mem, addr) { return { code: [mem.peek(addr)], mnemonic: ["DEC", "A"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr)], mnemonic: ["DEC", "A"] }; }
         };
         this.opecodeTable[oct("0065")] = {
             mnemonic: "DEC (HL)", proc: () => { this.decrementAt(getHL()); }, "cycle": 11,
-            disasm: function (mem, addr) { return { code: [mem.peek(addr)], mnemonic: ["DEC", "(HL)"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr)], mnemonic: ["DEC", "(HL)"] }; }
         };
         opeIX[oct("0065")] = {
             mnemonic: "DEC (IX+d)",
             "cycle": 23,
             proc: () => { this.decrementAt(reg.IX + fetchSigned()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 const d = mem.peek(addr + 2);
                 const d8s = NumberUtil.to8bitSigned(d);
                 const displacement = `${d8s>=0?"+":""}${d8s}`;
@@ -3299,7 +3296,7 @@ export default class Z80 {
             mnemonic: "DEC (IY+d)",
             "cycle": 23,
             proc: () => { this.decrementAt(reg.IY + fetchSigned()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 const d = mem.peek(addr + 2);
                 const d8s = NumberUtil.to8bitSigned(d);
                 const displacement = `${d8s>=0?"+":""}${d8s}`;
@@ -3309,23 +3306,23 @@ export default class Z80 {
                 };
             }
         };
-        //=================================================================================
+        // =================================================================================
         // 一般目的の演算、及びCPUコントロールグループ
-        //=================================================================================
-        //static void daa(void)
-        //{
+        // =================================================================================
+        // static void daa(void)
+        // {
         // int i;
         // i=R.AF.B.h;
         // if (R.AF.B.l&C_FLAG) i|=256;
         // if (R.AF.B.l&H_FLAG) i|=512;
         // if (R.AF.B.l&N_FLAG) i|=1024;
         // R.AF.W.l=DAATable[i];
-        //};
+        // };
         this.opecodeTable[oct("0047")] = {
             mnemonic: "DAA",
             cycle: 4,
             proc: () => { reg.DAA(); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["DAA"]
@@ -3336,7 +3333,7 @@ export default class Z80 {
             mnemonic: "CPL",
             cycle: 4,
             proc: () => { reg.CPL(); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["CPL"]
@@ -3354,7 +3351,7 @@ export default class Z80 {
                     reg.setFlagC();
                 }
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["CCF"]
@@ -3365,7 +3362,7 @@ export default class Z80 {
             mnemonic: "SCF",
             cycle: 4,
             proc: () => { reg.setFlagC(); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["SCF"]
@@ -3375,8 +3372,8 @@ export default class Z80 {
         this.opecodeTable[oct("0000")] = {
             mnemonic: "NOP",
             cycle: 4,
-            proc: () => { },
-            disasm: function (mem, addr) {
+            proc: () => { /* empty */ },
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["NOP"]
@@ -3395,7 +3392,7 @@ export default class Z80 {
                 };
                 throw "halt";
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["HALT"]
@@ -3406,7 +3403,7 @@ export default class Z80 {
             mnemonic: "DI",
             cycle: 4,
             proc: () => { this.IFF1 = this.IFF2 = 0; },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["DI"]
@@ -3426,7 +3423,7 @@ export default class Z80 {
                     this.IFF2 = 1;
                 }
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["EI"]
@@ -3437,7 +3434,7 @@ export default class Z80 {
             mnemonic: "NEG",
             cycle: 8,
             proc: () => { reg.NEG(); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["NEG"]
@@ -3448,7 +3445,7 @@ export default class Z80 {
             mnemonic: "IM0",
             cycle: 8,
             proc: () => { this.IM = 0; },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["IM0"]
@@ -3459,7 +3456,7 @@ export default class Z80 {
             mnemonic: "IM1",
             cycle: 8,
             proc: () => { this.IM = 1; },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["IM1"]
@@ -3470,24 +3467,24 @@ export default class Z80 {
             mnemonic: "IM2",
             cycle: 8,
             proc: () => { this.IM = 2; },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["IM2"]
                 };
             }
         };
-        //=================================================================================
+        // =================================================================================
         // 16ビット演算グループ
-        //=================================================================================
-        //---------------------------------------------------------------------------------
+        // =================================================================================
+        // ---------------------------------------------------------------------------------
         // ADD HL,ss    HL <- HL + ss       00 ss1 001
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         this.opecodeTable[oct("0011")] = {
             mnemonic: "ADD HL,BC",
             cycle: 11,
             proc: () => { reg.ADD_HL(getBC()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["ADD", "HL", "BC"]
@@ -3498,7 +3495,7 @@ export default class Z80 {
             mnemonic: "ADD HL,DE",
             cycle: 11,
             proc: () => { reg.ADD_HL(getDE()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["ADD", "HL", "DE"]
@@ -3509,7 +3506,7 @@ export default class Z80 {
             mnemonic: "ADD HL,HL",
             cycle: 11,
             proc: () => { reg.ADD_HL(getHL()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["ADD", "HL", "HL"]
@@ -3520,22 +3517,22 @@ export default class Z80 {
             mnemonic: "ADD HL,SP",
             cycle: 11,
             proc: () => { reg.ADD_HL(reg.SP); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["ADD", "HL", "SP"]
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // ADC HL,ss    HL <- HL + ss + CY  11 101 101
         //                                  01 ss1 010
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         opeMisc[oct("0112")] = {
             mnemonic: "ADC HL,BC",
             cycle: 15,
             proc: () => { reg.ADC_HL(getBC()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["ADC", "HL", "BC"]
@@ -3546,7 +3543,7 @@ export default class Z80 {
             mnemonic: "ADC HL,DE",
             cycle: 15,
             proc: () => { reg.ADC_HL(getDE()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["ADC", "HL", "DE"]
@@ -3557,7 +3554,7 @@ export default class Z80 {
             mnemonic: "ADC HL,HL",
             cycle: 15,
             proc: () => { reg.ADC_HL(getHL()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["ADC", "HL", "HL"]
@@ -3568,22 +3565,22 @@ export default class Z80 {
             mnemonic: "ADC HL,SP",
             cycle: 15,
             proc: () => { reg.ADC_HL(reg.SP); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["ADC", "HL", "SP"]
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // SBC HL,ss    HL <- HL - ss - CY  11 101 101
         //                                  01 ss0 010
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         opeMisc[oct("0102")] = {
             mnemonic: "SBC HL,BC",
             cycle: 15,
             proc: () => { reg.SBC_HL(getBC()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["SBC", "HL", "BC"]
@@ -3594,7 +3591,7 @@ export default class Z80 {
             mnemonic: "SBC HL,DE",
             cycle: 15,
             proc: () => { reg.SBC_HL(getDE()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["SBC", "HL", "DE"]
@@ -3605,7 +3602,7 @@ export default class Z80 {
             mnemonic: "SBC HL,HL",
             cycle: 15,
             proc: () => { reg.SBC_HL(getHL()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["SBC", "HL", "HL"]
@@ -3616,22 +3613,22 @@ export default class Z80 {
             mnemonic: "SBC HL,SP",
             cycle: 15,
             proc: () => { reg.SBC_HL(reg.SP); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["SBC", "HL", "SP"]
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // ADD IX,pp    IX <- IX + pp       11 011 101
         //                                  00 pp1 001
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         opeIX[oct("0011")] = {
             mnemonic: "ADD IX,BC",
             cycle: 15,
             proc: () => { reg.ADD_IX(getBC()); },
-            disasm: function ( /*mem, addr*/) {
+            disasm: ( /*mem, addr*/) => {
                 return {
                     code: [0xDD, 0x09],
                     mnemonic: ["ADD", "IX", "BC"]
@@ -3642,7 +3639,7 @@ export default class Z80 {
             mnemonic: "ADD IX,DE",
             cycle: 15,
             proc: () => { reg.ADD_IX(getDE()); },
-            disasm: function ( /*mem, addr*/) {
+            disasm: ( /*mem, addr*/) => {
                 return {
                     code: [0xDD, 0x19],
                     mnemonic: ["ADD", "IX", "DE"]
@@ -3653,7 +3650,7 @@ export default class Z80 {
             mnemonic: "ADD IX,IX",
             cycle: 15,
             proc: () => { reg.ADD_IX(reg.IX); },
-            disasm: function ( /*mem, addr*/) {
+            disasm: ( /*mem, addr*/) => {
                 return {
                     code: [0xDD, 0x29],
                     mnemonic: ["ADD", "IX", "IX"]
@@ -3664,22 +3661,22 @@ export default class Z80 {
             mnemonic: "ADD IX,SP",
             cycle: 15,
             proc: () => { reg.ADD_IX(reg.SP); },
-            disasm: function ( /*mem, addr*/) {
+            disasm: ( /*mem, addr*/) => {
                 return {
                     code: [0xDD, 0x39],
                     mnemonic: ["ADD", "IX", "SP"]
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // ADD IY,pp    IY <- IY + rr       11 111 101
         //                                  00 rr1 001
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         opeIY[oct("0011")] = {
             mnemonic: "ADD IY,BC",
             cycle: 15,
             proc: () => { reg.ADD_IY(getBC()); },
-            disasm: function ( /*mem, addr*/) {
+            disasm: ( /*mem, addr*/) => {
                 return {
                     code: [0xFD, 0x09],
                     mnemonic: ["ADD", "IY", "BC"]
@@ -3690,7 +3687,7 @@ export default class Z80 {
             mnemonic: "ADD IY,DE",
             cycle: 15,
             proc: () => { reg.ADD_IY(getDE()); },
-            disasm: function ( /*mem, addr*/) {
+            disasm: ( /*mem, addr*/) => {
                 return {
                     code: [0xFD, 0x19],
                     mnemonic: ["ADD", "IY", "DE"]
@@ -3701,7 +3698,7 @@ export default class Z80 {
             mnemonic: "ADD IY,IY",
             cycle: 15,
             proc: () => { reg.ADD_IY(reg.IY); },
-            disasm: function ( /*mem, addr*/) {
+            disasm: ( /*mem, addr*/) => {
                 return {
                     code: [0xFD, 0x29],
                     mnemonic: ["ADD", "IY", "IY"]
@@ -3712,23 +3709,23 @@ export default class Z80 {
             mnemonic: "ADD IY,SP",
             cycle: 15,
             proc: () => { reg.ADD_IY(reg.SP); },
-            disasm: function ( /*mem, addr*/) {
+            disasm: ( /*mem, addr*/) => {
                 return {
                     code: [0xFD, 0x39],
                     mnemonic: ["ADD", "IY", "SP"]
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // INC ss       ss <- ss + 1        00 ss0 011
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         this.opecodeTable[oct("0003")] = {
             mnemonic: "INC BC",
             cycle: 6,
             proc: () => {
                 reg.incBC();
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["INC", "BC"]
@@ -3741,7 +3738,7 @@ export default class Z80 {
             proc: () => {
                 reg.incDE();
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                 code: [mem.peek(addr)],
                     mnemonic: ["INC", "DE"]
@@ -3754,7 +3751,7 @@ export default class Z80 {
             proc: () => {
                 reg.incHL();
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["INC", "HL"]
@@ -3765,57 +3762,57 @@ export default class Z80 {
             mnemonic: "INC SP",
             cycle: 6,
             proc: () => { reg.SP = (reg.SP + 1) & 0xffff; },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["INC", "SP"]
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // INC IX       IX <- IX + 1        11 011 101
         //                                  00 100 011
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         opeIX[oct("0043")] = {
             mnemonic: "INC IX",
             cycle: 10,
             proc: () => {
                 reg.IX = (reg.IX + 1) & 0xffff;
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["INC", "IX"]
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // INC IY       IY <- IY + 1        11 111 101
         //                                  00 100 011
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         opeIY[oct("0043")] = {
             mnemonic: "INC IY",
             cycle: 10,
             proc: () => {
                 reg.IY = (reg.IY + 1) & 0xffff;
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["INC", "IY"]
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // DEC ss       ss <- ss + 1        00 ss1 011
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         this.opecodeTable[oct("0013")] = {
             mnemonic: "DEC BC",
             cycle: 6,
             proc: () => {
                 reg.decBC();
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["DEC", "BC"]
@@ -3828,7 +3825,7 @@ export default class Z80 {
             proc: () => {
                 reg.decDE();
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["DEC", "DE"]
@@ -3841,7 +3838,7 @@ export default class Z80 {
             proc: () => {
                 reg.decHL();
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["DEC", "HL"]
@@ -3854,55 +3851,55 @@ export default class Z80 {
             proc: () => {
                 reg.SP = (reg.SP - 1) & 0xffff;
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr)],
                     mnemonic: ["DEC", "SP"]
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // DEC IX       IX <- IX + 1        11 011 101
         //                                  00 101 011
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         opeIX[oct("0053")] = {
             mnemonic: "DEC IX",
             cycle: 10,
             proc: () => {
                 reg.IX = (reg.IX - 1) & 0xffff;
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["DEC", "IX"]
                 };
             }
         };
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         // DEC IY       IY <- IY + 1        11 111 101
         //                                  00 101 011
-        //---------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------
         opeIY[oct("0053")] = {
             mnemonic: "DEC IY",
             cycle: 10,
             proc: () => {
                 reg.IY = (reg.IY - 1) & 0xffff;
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["DEC", "IY"]
                 };
             }
         };
-        //=================================================================================
+        // =================================================================================
         // ローテイト・シフトグループ
-        //=================================================================================
+        // =================================================================================
         this.opecodeTable[oct("0007")] = {
             mnemonic: "RLCA",
             cycle: 4,
             proc: () => { reg.RLCA(); },
-            disasm: function ( /*mem,addr*/) {
+            disasm: ( /*mem,addr*/) => {
                 return {
                     code: [oct("0007")],
                     mnemonic: ["RLCA"]
@@ -3913,7 +3910,7 @@ export default class Z80 {
             mnemonic: "RLA",
             cycle: 4,
             proc: () => { reg.RLA(); },
-            disasm: function ( /*mem,addr*/) {
+            disasm: ( /*mem,addr*/) => {
                 return {
                     code: [oct("0027")],
                     mnemonic: ["RLA"]
@@ -3924,7 +3921,7 @@ export default class Z80 {
             mnemonic: "RRCA",
             cycle: 4,
             proc: () => { reg.RRCA(); },
-            disasm: function ( /*mem,addr*/) {
+            disasm: ( /*mem,addr*/) => {
                 return {
                     code: [oct("0017")],
                     mnemonic: ["RRCA"]
@@ -3935,7 +3932,7 @@ export default class Z80 {
             mnemonic: "RRA",
             cycle: 4,
             proc: () => { reg.RRA(); },
-            disasm: function ( /*mem,addr*/) {
+            disasm: ( /*mem,addr*/) => {
                 return {
                     code: [oct("0037")],
                     mnemonic: ["RRA"]
@@ -3943,26 +3940,26 @@ export default class Z80 {
             }
         };
         opeIX[oct("0313")] = {
-            mnemonic: function () { return opeRotateIX; },
+            mnemonic: () => { return opeRotateIX; },
             proc: () => {
                 const d = fetchSigned();
                 const feature = fetch();
                 opeRotateIX[feature].proc(d);
             },
-            disasm: function (mem, addr) {
-                var feature = mem.peek(addr + 3);
+            disasm: (mem, addr) => {
+                const feature = mem.peek(addr + 3);
                 return opeRotateIX[feature].disasm(mem, addr);
             }
         };
         opeIY[oct("0313")] = {
-            mnemonic: function () { return opeRotateIY; },
+            mnemonic: () => { return opeRotateIY; },
             proc: () => {
                 const d = fetchSigned();
                 const feature = fetch();
                 opeRotateIY[feature].proc(d);
             },
-            disasm: function (mem, addr) {
-                var feature = mem.peek(addr + 3);
+            disasm: (mem, addr) => {
+                const feature = mem.peek(addr + 3);
                 return opeRotateIY[feature].disasm(mem, addr);
             }
         };
@@ -3972,7 +3969,7 @@ export default class Z80 {
             proc: () => {
                 setB(reg.RLC(getB()));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["RLC", "B"]
@@ -3985,7 +3982,7 @@ export default class Z80 {
             proc: () => {
                 setC(reg.RLC(getC()));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["RLC", "C"]
@@ -3998,7 +3995,7 @@ export default class Z80 {
             proc: () => {
                 setD(reg.RLC(getD()));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["RLC", "D"]
@@ -4011,7 +4008,7 @@ export default class Z80 {
             proc: () => {
                 setE(reg.RLC(getE()));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["RLC", "E"]
@@ -4024,7 +4021,7 @@ export default class Z80 {
             proc: () => {
                 setH(reg.RLC(getH()));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["RLC", "H"]
@@ -4037,7 +4034,7 @@ export default class Z80 {
             proc: () => {
                 setL(reg.RLC(getL()));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["RLC", "L"]
@@ -4050,7 +4047,7 @@ export default class Z80 {
             proc: () => {
                 setA(reg.RLC(getA()));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["RLC", "A"]
@@ -4061,10 +4058,10 @@ export default class Z80 {
             mnemonic: "RLC (HL)",
             cycle: 15,
             proc: () => {
-                var adr = getHL();
+                const adr = getHL();
                 poke(adr, reg.RLC(peek(adr)));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["RLC", "(HL)"]
@@ -4075,10 +4072,10 @@ export default class Z80 {
             mnemonic: "RLC (IX+d)",
             cycle: 23,
             proc: (d) => {
-                var adr = reg.IX + d;
+                const adr = reg.IX + d;
                 poke(adr, reg.RLC(peek(adr)));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 const d = mem.peek(addr + 2);
                 const d8s = NumberUtil.to8bitSigned(d);
                 const displacement = `${d8s>=0?"+":""}${d8s}`;
@@ -4092,10 +4089,10 @@ export default class Z80 {
             mnemonic: "RLC (IY+d)",
             cycle: 23,
             proc: (d) => {
-                var adr = reg.IY + d;
+                const adr = reg.IY + d;
                 poke(adr, reg.RLC(peek(adr)));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 const d = mem.peek(addr + 2);
                 const d8s = NumberUtil.to8bitSigned(d);
                 const displacement = `${d8s>=0?"+":""}${d8s}`;
@@ -4109,55 +4106,55 @@ export default class Z80 {
             mnemonic: "RL B",
             cycle: 8,
             proc: () => { setB(reg.RL(getB())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RL", "B"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RL", "B"] }; }
         };
         opeRotate[oct("0021")] = {
             mnemonic: "RL C",
             cycle: 8,
             proc: () => { setC(reg.RL(getC())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RL", "C"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RL", "C"] }; }
         };
         opeRotate[oct("0022")] = {
             mnemonic: "RL D",
             cycle: 8,
             proc: () => { setD(reg.RL(getD())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RL", "D"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RL", "D"] }; }
         };
         opeRotate[oct("0023")] = {
             mnemonic: "RL E",
             cycle: 8,
             proc: () => { setE(reg.RL(getE())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RL", "E"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RL", "E"] }; }
         };
         opeRotate[oct("0024")] = {
             mnemonic: "RL H",
             cycle: 8,
             proc: () => { setH(reg.RL(getH())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RL", "H"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RL", "H"] }; }
         };
         opeRotate[oct("0025")] = {
             mnemonic: "RL L",
             cycle: 8,
             proc: () => { setL(reg.RL(getL())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RL", "L"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RL", "L"] }; }
         };
         opeRotate[oct("0026")] = {
             mnemonic: "RL (HL)",
             cycle: 15,
-            proc: () => { var adr = getHL(); poke(adr, reg.RL(peek(adr))); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RL", "(HL)"] }; }
+            proc: () => { const adr = getHL(); poke(adr, reg.RL(peek(adr))); },
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RL", "(HL)"] }; }
         };
         opeRotate[oct("0027")] = {
             mnemonic: "RL A",
             cycle: 8,
             proc: () => { setA(reg.RL(getA())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RL", "A"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RL", "A"] }; }
         };
         opeRotateIX[oct("0026")] = {
             mnemonic: "RL (IX+d)",
             cycle: 23,
-            proc: (d) => { var adr = reg.IX + d; poke(adr, reg.RL(peek(adr))); },
-            disasm: function (mem, addr) {
+            proc: (d) => { const adr = reg.IX + d; poke(adr, reg.RL(peek(adr))); },
+            disasm: (mem, addr) => {
                 const d = mem.peek(addr + 2);
                 const d8s = NumberUtil.to8bitSigned(d);
                 const displacement = `${d8s>=0?"+":""}${d8s}`;
@@ -4170,8 +4167,8 @@ export default class Z80 {
         opeRotateIY[oct("0026")] = {
             mnemonic: "RL (IY+d)",
             cycle: 23,
-            proc: (d) => { var adr = reg.IY + d; poke(adr, reg.RL(peek(adr))); },
-            disasm: function (mem, addr) {
+            proc: (d) => { const adr = reg.IY + d; poke(adr, reg.RL(peek(adr))); },
+            disasm: (mem, addr) => {
                 const d = mem.peek(addr + 2);
                 const d8s = NumberUtil.to8bitSigned(d);
                 const displacement = `${d8s>=0?"+":""}${d8s}`;
@@ -4185,55 +4182,55 @@ export default class Z80 {
             mnemonic: "RRC B",
             cycle: 4,
             proc: () => { setB(reg.RRC(getB())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RRC", "B"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RRC", "B"] }; }
         };
         opeRotate[oct("0011")] = {
             mnemonic: "RRC C",
             cycle: 4,
             proc: () => { setC(reg.RRC(getC())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RRC", "C"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RRC", "C"] }; }
         };
         opeRotate[oct("0012")] = {
             mnemonic: "RRC D",
             cycle: 4,
             proc: () => { setD(reg.RRC(getD())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RRC", "D"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RRC", "D"] }; }
         };
         opeRotate[oct("0013")] = {
             mnemonic: "RRC E",
             cycle: 4,
             proc: () => { setE(reg.RRC(getE())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RRC", "E"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RRC", "E"] }; }
         };
         opeRotate[oct("0014")] = {
             mnemonic: "RRC H",
             cycle: 4,
             proc: () => { setH(reg.RRC(getH())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RRC", "H"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RRC", "H"] }; }
         };
         opeRotate[oct("0015")] = {
             mnemonic: "RRC L",
             cycle: 4,
             proc: () => { setL(reg.RRC(getL())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RRC", "L"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RRC", "L"] }; }
         };
         opeRotate[oct("0017")] = {
             mnemonic: "RRC A",
             cycle: 4,
             proc: () => { setA(reg.RRC(getA())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RRC", "A"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RRC", "A"] }; }
         };
         opeRotate[oct("0016")] = {
             mnemonic: "RRC (HL)",
             cycle: 15,
-            proc: () => { var adr = getHL(); poke(adr, reg.RRC(peek(adr))); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RRC", "(HL)"] }; }
+            proc: () => { const adr = getHL(); poke(adr, reg.RRC(peek(adr))); },
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RRC", "(HL)"] }; }
         };
         opeRotateIX[oct("0016")] = {
             mnemonic: "RRC (IX+d)",
             cycle: 23,
-            proc: (d) => { var adr = reg.IX + d; poke(adr, reg.RRC(peek(adr))); },
-            disasm: function (mem, addr) {
+            proc: (d) => { const adr = reg.IX + d; poke(adr, reg.RRC(peek(adr))); },
+            disasm: (mem, addr) => {
                 const d = mem.peek(addr + 2);
                 const d8s = NumberUtil.to8bitSigned(d);
                 const displacement = `${d8s>=0?"+":""}${d8s}`;
@@ -4246,8 +4243,8 @@ export default class Z80 {
         opeRotateIY[oct("0016")] = {
             mnemonic: "RRC (IY+d)",
             cycle: 23,
-            proc: (d) => { var adr = reg.IY + d; poke(adr, reg.RRC(peek(adr))); },
-            disasm: function (mem, addr) {
+            proc: (d) => { const adr = reg.IY + d; poke(adr, reg.RRC(peek(adr))); },
+            disasm: (mem, addr) => {
                 const d = mem.peek(addr + 2);
                 const d8s = NumberUtil.to8bitSigned(d);
                 const displacement = `${d8s>=0?"+":""}${d8s}`;
@@ -4261,55 +4258,55 @@ export default class Z80 {
             mnemonic: "RR B",
             cycle: 8,
             proc: () => { setB(reg.RR(getB())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RR", "B"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RR", "B"] }; }
         };
         opeRotate[oct("0031")] = {
             mnemonic: "RR C",
             cycle: 8,
             proc: () => { setC(reg.RR(getC())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RR", "C"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RR", "C"] }; }
         };
         opeRotate[oct("0032")] = {
             mnemonic: "RR D",
             cycle: 8,
             proc: () => { setD(reg.RR(getD())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RR", "D"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RR", "D"] }; }
         };
         opeRotate[oct("0033")] = {
             mnemonic: "RR E",
             cycle: 8,
             proc: () => { setE(reg.RR(getE())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RR", "E"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RR", "E"] }; }
         };
         opeRotate[oct("0034")] = {
             mnemonic: "RR H",
             cycle: 8,
             proc: () => { setH(reg.RR(getH())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RR", "H"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RR", "H"] }; }
         };
         opeRotate[oct("0035")] = {
             mnemonic: "RR L",
             cycle: 8,
             proc: () => { setL(reg.RR(getL())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RR", "L"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RR", "L"] }; }
         };
         opeRotate[oct("0036")] = {
             mnemonic: "RR (HL)",
             cycle: 15,
-            proc: () => { var adr = getHL(); poke(adr, reg.RR(peek(adr))); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RR", "(HL)"] }; }
+            proc: () => { const adr = getHL(); poke(adr, reg.RR(peek(adr))); },
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RR", "(HL)"] }; }
         };
         opeRotate[oct("0037")] = {
             mnemonic: "RR A",
             cycle: 8,
             proc: () => { setA(reg.RR(getA())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RR", "A"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["RR", "A"] }; }
         };
         opeRotateIX[oct("0036")] = {
             mnemonic: "RR (IX+d)",
             cycle: 23,
-            proc: (d) => { var adr = reg.IX + d; poke(adr, reg.RR(peek(adr))); },
-            disasm: function (mem, addr) {
+            proc: (d) => { const adr = reg.IX + d; poke(adr, reg.RR(peek(adr))); },
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1), mem.peek(addr + 2), mem.peek(addr + 3)],
                     mnemonic: ["RR", "(IX+" + mem.peek(addr + 2) + ")"]
@@ -4319,8 +4316,8 @@ export default class Z80 {
         opeRotateIY[oct("0036")] = {
             mnemonic: "RR (IY+d)",
             cycle: 23,
-            proc: (d) => { var adr = reg.IY + d; poke(adr, reg.RR(peek(adr))); },
-            disasm: function (mem, addr) {
+            proc: (d) => { const adr = reg.IY + d; poke(adr, reg.RR(peek(adr))); },
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1), mem.peek(addr + 2), mem.peek(addr + 3)],
                     mnemonic: ["RR", "(IY+" + mem.peek(addr + 2) + ")"]
@@ -4331,55 +4328,55 @@ export default class Z80 {
             mnemonic: "SLA B",
             cycle: 8,
             proc: () => { setB(reg.SLA(getB())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SLA", "B"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SLA", "B"] }; }
         };
         opeRotate[oct("0041")] = {
             mnemonic: "SLA C",
             cycle: 8,
             proc: () => { setC(reg.SLA(getC())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SLA", "C"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SLA", "C"] }; }
         };
         opeRotate[oct("0042")] = {
             mnemonic: "SLA D",
             cycle: 8,
             proc: () => { setD(reg.SLA(getD())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SLA", "D"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SLA", "D"] }; }
         };
         opeRotate[oct("0043")] = {
             mnemonic: "SLA E",
             cycle: 8,
             proc: () => { setE(reg.SLA(getE())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SLA", "E"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SLA", "E"] }; }
         };
         opeRotate[oct("0044")] = {
             mnemonic: "SLA H",
             cycle: 8,
             proc: () => { setH(reg.SLA(getH())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SLA", "H"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SLA", "H"] }; }
         };
         opeRotate[oct("0045")] = {
             mnemonic: "SLA L",
             cycle: 8,
             proc: () => { setL(reg.SLA(getL())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SLA", "L"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SLA", "L"] }; }
         };
         opeRotate[oct("0047")] = {
             mnemonic: "SLA A",
             cycle: 8,
             proc: () => { setA(reg.SLA(getA())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SLA", "A"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SLA", "A"] }; }
         };
         opeRotate[oct("0046")] = {
             mnemonic: "SLA (HL)",
             cycle: 15,
-            proc: () => { var adr = getHL(); poke(adr, reg.SLA(peek(adr))); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SLA", "(HL)"] }; }
+            proc: () => { const adr = getHL(); poke(adr, reg.SLA(peek(adr))); },
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SLA", "(HL)"] }; }
         };
         opeRotateIX[oct("0046")] = {
             mnemonic: "SLA (IX+d)",
             cycle: 23,
-            proc: (d) => { var adr = reg.IX + d; poke(adr, reg.SLA(peek(adr))); },
-            disasm: function (mem, addr) {
+            proc: (d) => { const adr = reg.IX + d; poke(adr, reg.SLA(peek(adr))); },
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1), mem.peek(addr + 2), mem.peek(addr + 3)],
                     mnemonic: ["SLA", "(IX+" + mem.peek(addr + 2) + ")"]
@@ -4389,8 +4386,8 @@ export default class Z80 {
         opeRotateIY[oct("0046")] = {
             mnemonic: "SLA (IY+d)",
             cycle: 23,
-            proc: (d) => { var adr = reg.IY + d; poke(adr, reg.SLA(peek(adr))); },
-            disasm: function (mem, addr) {
+            proc: (d) => { const adr = reg.IY + d; poke(adr, reg.SLA(peek(adr))); },
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1), mem.peek(addr + 2), mem.peek(addr + 3)],
                     mnemonic: ["SLA", "(IY+" + mem.peek(addr + 2) + ")"]
@@ -4401,55 +4398,55 @@ export default class Z80 {
             mnemonic: "SRA B",
             cycle: 8,
             proc: () => { setB(reg.SRA(getB())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SRA", "B"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SRA", "B"] }; }
         };
         opeRotate[oct("0051")] = {
             mnemonic: "SRA C",
             cycle: 8,
             proc: () => { setC(reg.SRA(getC())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SRA", "C"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SRA", "C"] }; }
         };
         opeRotate[oct("0052")] = {
             mnemonic: "SRA D",
             cycle: 8,
             proc: () => { setD(reg.SRA(getD())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SRA", "D"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SRA", "D"] }; }
         };
         opeRotate[oct("0053")] = {
             mnemonic: "SRA E",
             cycle: 8,
             proc: () => { setE(reg.SRA(getE())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SRA", "E"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SRA", "E"] }; }
         };
         opeRotate[oct("0054")] = {
             mnemonic: "SRA H",
             cycle: 8,
             proc: () => { setH(reg.SRA(getH())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SRA", "H"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SRA", "H"] }; }
         };
         opeRotate[oct("0055")] = {
             mnemonic: "SRA L",
             cycle: 8,
             proc: () => { setL(reg.SRA(getL())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SRA", "L"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SRA", "L"] }; }
         };
         opeRotate[oct("0057")] = {
             mnemonic: "SRA A",
             cycle: 8,
             proc: () => { setA(reg.SRA(getA())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SRA", "A"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SRA", "A"] }; }
         };
         opeRotate[oct("0056")] = {
             mnemonic: "SRA (HL)",
             cycle: 15,
-            proc: () => { var adr = getHL(); poke(adr, reg.SRA(peek(adr))); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SRA", "(HL)"] }; }
+            proc: () => { const adr = getHL(); poke(adr, reg.SRA(peek(adr))); },
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SRA", "(HL)"] }; }
         };
         opeRotateIX[oct("0056")] = {
             mnemonic: "SRA (IX+d)",
             cycle: 23,
-            proc: (d) => { var adr = reg.IX + d; poke(adr, reg.SRA(peek(adr))); },
-            disasm: function (mem, addr) {
+            proc: (d) => { const adr = reg.IX + d; poke(adr, reg.SRA(peek(adr))); },
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1), mem.peek(addr + 2), mem.peek(addr + 3)],
                     mnemonic: ["SRA", "(IX+" + mem.peek(addr + 2) + ")"]
@@ -4459,8 +4456,8 @@ export default class Z80 {
         opeRotateIY[oct("0056")] = {
             mnemonic: "SRA (IY+d)",
             cycle: 23,
-            proc: (d) => { var adr = reg.IY + d; poke(adr, reg.SRA(peek(adr))); },
-            disasm: function (mem, addr) {
+            proc: (d) => { const adr = reg.IY + d; poke(adr, reg.SRA(peek(adr))); },
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1), mem.peek(addr + 2), mem.peek(addr + 3)],
                     mnemonic: ["SRA", "(IY+" + mem.peek(addr + 2) + ")"]
@@ -4471,55 +4468,55 @@ export default class Z80 {
             mnemonic: "SRL B",
             cycle: 8,
             proc: () => { setB(reg.SRL(getB())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SRL", "B"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SRL", "B"] }; }
         };
         opeRotate[oct("0071")] = {
             mnemonic: "SRL C",
             cycle: 8,
             proc: () => { setC(reg.SRL(getC())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SRL", "C"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SRL", "C"] }; }
         };
         opeRotate[oct("0072")] = {
             mnemonic: "SRL D",
             cycle: 8,
             proc: () => { setD(reg.SRL(getD())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SRL", "D"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SRL", "D"] }; }
         };
         opeRotate[oct("0073")] = {
             mnemonic: "SRL E",
             cycle: 8,
             proc: () => { setE(reg.SRL(getE())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SRL", "E"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SRL", "E"] }; }
         };
         opeRotate[oct("0074")] = {
             mnemonic: "SRL H",
             cycle: 8,
             proc: () => { setH(reg.SRL(getH())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SRL", "H"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SRL", "H"] }; }
         };
         opeRotate[oct("0075")] = {
             mnemonic: "SRL L",
             cycle: 8,
             proc: () => { setL(reg.SRL(getL())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SRL", "L"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SRL", "L"] }; }
         };
         opeRotate[oct("0077")] = {
             mnemonic: "SRL A",
             cycle: 8,
             proc: () => { setA(reg.SRL(getA())); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SRL", "A"] }; }
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SRL", "A"] }; }
         };
         opeRotate[oct("0076")] = {
             mnemonic: "SRL (HL)",
             cycle: 15,
-            proc: () => { var adr = getHL(); poke(adr, reg.SRL(peek(adr))); },
-            disasm: function (mem, addr) { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SRL", "(HL)"] }; }
+            proc: () => { const adr = getHL(); poke(adr, reg.SRL(peek(adr))); },
+            disasm: (mem, addr) => { return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ["SRL", "(HL)"] }; }
         };
         opeRotateIX[oct("0076")] = {
             mnemonic: "SRL (IX+d)",
             cycle: 23,
-            proc: (d) => { var adr = reg.IX + d; poke(adr, reg.SRL(peek(adr))); },
-            disasm: function (mem, addr) {
+            proc: (d) => { const adr = reg.IX + d; poke(adr, reg.SRL(peek(adr))); },
+            disasm: (mem, addr) => {
                 const d = mem.peek(addr + 2);
                 const d8s = NumberUtil.to8bitSigned(d);
                 const displacement = `${d8s>=0?"+":""}${d8s}`;
@@ -4532,8 +4529,8 @@ export default class Z80 {
         opeRotateIY[oct("0076")] = {
             mnemonic: "SRL (IY+d)",
             cycle: 23,
-            proc: (d) => { var adr = reg.IY + d; poke(adr, reg.SRL(peek(adr))); },
-            disasm: function (mem, addr) {
+            proc: (d) => { const adr = reg.IY + d; poke(adr, reg.SRL(peek(adr))); },
+            disasm: (mem, addr) => {
                 const d = mem.peek(addr + 2);
                 const d8s = NumberUtil.to8bitSigned(d);
                 const displacement = `${d8s>=0?"+":""}${d8s}`;
@@ -4547,17 +4544,17 @@ export default class Z80 {
             mnemonic: "RLD",
             cycle: 18,
             proc: () => {
-                var adr = getHL();
-                var n = peek(adr);
-                var AH = getA() & 0xf0;
-                var AL = getA() & 0x0f;
-                var nH = (n >> 4) & 0x0f;
-                var nL = (n >> 0) & 0x0f;
+                const adr = getHL();
+                let n = peek(adr);
+                const AH = getA() & 0xf0;
+                const AL = getA() & 0x0f;
+                const nH = (n >> 4) & 0x0f;
+                const nL = (n >> 0) & 0x0f;
                 setA(AH | nH);
                 n = (nL << 4) | AL;
                 poke(adr, n);
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["RLD"]
@@ -4568,38 +4565,37 @@ export default class Z80 {
             mnemonic: "RRD",
             cycle: 18,
             proc: () => {
-                var adr = getHL();
-                var n = peek(adr);
-                var AH = getA() & 0xf0;
-                var AL = getA() & 0x0F;
-                var nH = (n >> 4) & 0x0f;
-                var nL = (n >> 0) & 0x0f;
+                const adr = getHL();
+                let n = peek(adr);
+                const AH = getA() & 0xf0;
+                const AL = getA() & 0x0F;
+                const nH = (n >> 4) & 0x0f;
+                const nL = (n >> 0) & 0x0f;
                 setA(AH | nL);
                 n = (AL << 4) | nH;
                 poke(adr, n);
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["RRD"]
                 };
             }
         };
-        //=================================================================================
+        // =================================================================================
         // ビットセット・リセット及びテストグループ
-        //=================================================================================
-        var reg8 = ["B", "C", "D", "E", "H", "L", "(HL)", "A"];
-        var regI, bit;
-        for (regI = 0; regI < reg8.length; regI++) {
-            for (bit = 0; bit < 8; bit++) {
+        // =================================================================================
+        const reg8 = ["B", "C", "D", "E", "H", "L", "(HL)", "A"];
+        for (let regI = 0; regI < reg8.length; regI++) {
+            for (let bit = 0; bit < 8; bit++) {
                 opeRotate[oct("0100") | (bit << 3) | regI] = {
                     mnemonic: "BIT " + bit + "," + reg8[regI],
-                    cycle: (function (r) { return r != 6 ? 8 : 12; } (regI)),
+                    cycle: (r => (r !== 6 ? 8 : 12))(regI),
                     proc: ((b, r) => {
-                        if (r != 6) {
+                        if (r !== 6) {
                             return () => {
-                                var value = reg["get" + reg8[r]]();
-                                if ((value & (1 << b)) != 0) {
+                                const value = reg["get" + reg8[r]]();
+                                if ((value & (1 << b)) !== 0) {
                                     reg.clearFlagZ();
                                 }
                                 else {
@@ -4611,9 +4607,9 @@ export default class Z80 {
                         }
                         else {
                             return () => {
-                                var adr = getHL();
-                                var value = peek(adr);
-                                if ((value & (1 << b)) != 0) {
+                                const adr = getHL();
+                                const value = peek(adr);
+                                if ((value & (1 << b)) !== 0) {
                                     reg.clearFlagZ();
                                 }
                                 else {
@@ -4624,8 +4620,8 @@ export default class Z80 {
                             };
                         }
                     })(bit, regI),
-                    disasm: (function (b, n) {
-                        return function (mem, addr) {
+                    disasm: ((b, n) => {
+                        return (mem, addr) => {
                             return {
                                 code: [mem.peek(addr), mem.peek(addr + 1)],
                                 mnemonic: ["BIT", b, n]
@@ -4635,7 +4631,7 @@ export default class Z80 {
                 };
             }
         }
-        var disasm_bit_b_IDX_d = (mem, addr, b, idx) => {
+        const disasmBitBIdxD = (mem, addr, b, idx) => {
             const d = mem.peek(addr + 2);
             const d8s = NumberUtil.to8bitSigned(d);
             const displacement = `${d8s>=0?"+":""}${d8s}`;
@@ -4662,7 +4658,7 @@ export default class Z80 {
                 reg.setFlagH();
                 reg.clearFlagN();
             },
-            disasm: function (mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 0, "IX"); }
+            disasm: (mem, addr) => { return disasmBitBIdxD(mem, addr, 0, "IX"); }
         };
         opeRotateIX[oct("0116")] = {
             mnemonic: "BIT 1,(IX+d)",
@@ -4677,7 +4673,7 @@ export default class Z80 {
                 reg.setFlagH();
                 reg.clearFlagN();
             },
-            disasm: function (mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 1, "IX"); }
+            disasm: (mem, addr) => { return disasmBitBIdxD(mem, addr, 1, "IX"); }
         };
         opeRotateIX[oct("0126")] = {
             mnemonic: "BIT 2,(IX+d)",
@@ -4692,7 +4688,7 @@ export default class Z80 {
                 reg.setFlagH();
                 reg.clearFlagN();
             },
-            disasm: function (mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 2, "IX"); }
+            disasm: (mem, addr) => { return disasmBitBIdxD(mem, addr, 2, "IX"); }
         };
         opeRotateIX[oct("0136")] = {
             mnemonic: "BIT 3,(IX+d)",
@@ -4707,7 +4703,7 @@ export default class Z80 {
                 reg.setFlagH();
                 reg.clearFlagN();
             },
-            disasm: function (mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 3, "IX"); }
+            disasm: (mem, addr) => { return disasmBitBIdxD(mem, addr, 3, "IX"); }
         };
         opeRotateIX[oct("0146")] = {
             mnemonic: "BIT 4,(IX+d)",
@@ -4722,7 +4718,7 @@ export default class Z80 {
                 reg.setFlagH();
                 reg.clearFlagN();
             },
-            disasm: function (mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 4, "IX"); }
+            disasm: (mem, addr) => { return disasmBitBIdxD(mem, addr, 4, "IX"); }
         };
         opeRotateIX[oct("0156")] = {
             mnemonic: "BIT 5,(IX+d)",
@@ -4737,7 +4733,7 @@ export default class Z80 {
                 reg.setFlagH();
                 reg.clearFlagN();
             },
-            disasm: function (mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 5, "IX"); }
+            disasm: (mem, addr) => { return disasmBitBIdxD(mem, addr, 5, "IX"); }
         };
         opeRotateIX[oct("0166")] = {
             mnemonic: "BIT 6,(IX+d)",
@@ -4752,7 +4748,7 @@ export default class Z80 {
                 reg.setFlagH();
                 reg.clearFlagN();
             },
-            disasm: function (mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 6, "IX"); }
+            disasm: (mem, addr) => { return disasmBitBIdxD(mem, addr, 6, "IX"); }
         };
         opeRotateIX[oct("0176")] = {
             mnemonic: "BIT 7,(IX+d)",
@@ -4767,7 +4763,7 @@ export default class Z80 {
                 reg.setFlagH();
                 reg.clearFlagN();
             },
-            disasm: function (mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 7, "IX"); }
+            disasm: (mem, addr) => { return disasmBitBIdxD(mem, addr, 7, "IX"); }
         };
         opeRotateIY[oct("0106")] = {
             mnemonic: "BIT 0,(IY+d)",
@@ -4782,7 +4778,7 @@ export default class Z80 {
                 reg.setFlagH();
                 reg.clearFlagN();
             },
-            disasm: function (mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 0, "IY"); }
+            disasm: (mem, addr) => { return disasmBitBIdxD(mem, addr, 0, "IY"); }
         };
         opeRotateIY[oct("0116")] = {
             mnemonic: "BIT 1,(IY+d)",
@@ -4797,7 +4793,7 @@ export default class Z80 {
                 reg.setFlagH();
                 reg.clearFlagN();
             },
-            disasm: function (mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 1, "IY"); }
+            disasm: (mem, addr) => { return disasmBitBIdxD(mem, addr, 1, "IY"); }
         };
         opeRotateIY[oct("0126")] = {
             mnemonic: "BIT 2,(IY+d)",
@@ -4812,7 +4808,7 @@ export default class Z80 {
                 reg.setFlagH();
                 reg.clearFlagN();
             },
-            disasm: function (mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 2, "IY"); }
+            disasm: (mem, addr) => { return disasmBitBIdxD(mem, addr, 2, "IY"); }
         };
         opeRotateIY[oct("0136")] = {
             mnemonic: "BIT 3,(IY+d)",
@@ -4827,7 +4823,7 @@ export default class Z80 {
                 reg.setFlagH();
                 reg.clearFlagN();
             },
-            disasm: function (mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 3, "IY"); }
+            disasm: (mem, addr) => { return disasmBitBIdxD(mem, addr, 3, "IY"); }
         };
         opeRotateIY[oct("0146")] = {
             mnemonic: "BIT 4,(IY+d)",
@@ -4842,7 +4838,7 @@ export default class Z80 {
                 reg.setFlagH();
                 reg.clearFlagN();
             },
-            disasm: function (mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 4, "IY"); }
+            disasm: (mem, addr) => { return disasmBitBIdxD(mem, addr, 4, "IY"); }
         };
         opeRotateIY[oct("0156")] = {
             mnemonic: "BIT 5,(IY+d)",
@@ -4857,7 +4853,7 @@ export default class Z80 {
                 reg.setFlagH();
                 reg.clearFlagN();
             },
-            disasm: function (mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 5, "IY"); }
+            disasm: (mem, addr) => { return disasmBitBIdxD(mem, addr, 5, "IY"); }
         };
         opeRotateIY[oct("0166")] = {
             mnemonic: "BIT 6,(IY+d)",
@@ -4872,7 +4868,7 @@ export default class Z80 {
                 reg.setFlagH();
                 reg.clearFlagN();
             },
-            disasm: function (mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 6, "IY"); }
+            disasm: (mem, addr) => { return disasmBitBIdxD(mem, addr, 6, "IY"); }
         };
         opeRotateIY[oct("0176")] = {
             mnemonic: "BIT 7,(IY+d)",
@@ -4887,28 +4883,28 @@ export default class Z80 {
                 reg.setFlagH();
                 reg.clearFlagN();
             },
-            disasm: function (mem, addr) { return disasm_bit_b_IDX_d(mem, addr, 7, "IY"); }
+            disasm: (mem, addr) => { return disasmBitBIdxD(mem, addr, 7, "IY"); }
         };
-        for (regI = 0; regI < reg8.length; regI++) {
-            for (bit = 0; bit < 8; bit++) {
+        for (let regI = 0; regI < reg8.length; regI++) {
+            for (let bit = 0; bit < 8; bit++) {
                 opeRotate[oct("0300") | (bit << 3) | regI] = {
                     mnemonic: "SET " + bit + "," + reg8[regI],
-                    cycle: (function (r) { return r != 6 ? 4 : 15; } (regI)),
+                    cycle: ((r) => { return r !== 6 ? 4 : 15; })(regI),
                     proc: ((b, r) => {
-                        if (r != 6) {
+                        if (r !== 6) {
                             return () => {
                                 reg["set" + reg8[r]](reg["get" + reg8[r]]() | (1 << b));
                             };
                         }
                         else {
                             return () => {
-                                var adr = getHL();
+                                const adr = getHL();
                                 poke(adr, peek(adr) | (1 << b));
                             };
                         }
                     })(bit, regI),
-                    disasm: (function (b, n) {
-                        return function (mem, addr) {
+                    disasm: ((b, n) => {
+                        return (mem, addr) => {
                             return {
                                 code: [mem.peek(addr), mem.peek(addr + 1)],
                                 mnemonic: ["SET", b, n]
@@ -4918,7 +4914,7 @@ export default class Z80 {
                 };
             }
         }
-        var disasm_set_b_IDX_d = (mem, addr, b, idx) => {
+        const disasmSetBIdxD = (mem, addr, b, idx) => {
             const d = mem.peek(addr + 2);
             const d8s = NumberUtil.to8bitSigned(d);
             const displacement = `${d8s>=0?"+":""}${d8s}`;
@@ -4936,155 +4932,155 @@ export default class Z80 {
             mnemonic: "SET 0,(IX+d)",
             cycle: 23,
             proc: (d) => {
-                var adr = reg.IX + d;
+                const adr = reg.IX + d;
                 poke(adr, peek(adr) | (1 << 0));
             },
-            disasm: function (mem, addr) { return disasm_set_b_IDX_d(mem, addr, 0, "IX"); }
+            disasm: (mem, addr) => { return disasmSetBIdxD(mem, addr, 0, "IX"); }
         };
         opeRotateIX[oct("0316")] = {
             mnemonic: "SET 1,(IX+d)",
             cycle: 23,
             proc: (d) => {
-                var adr = reg.IX + d;
+                const adr = reg.IX + d;
                 poke(adr, peek(adr) | (1 << 1));
             },
-            disasm: function (mem, addr) { return disasm_set_b_IDX_d(mem, addr, 1, "IX"); }
+            disasm: (mem, addr) => { return disasmSetBIdxD(mem, addr, 1, "IX"); }
         };
         opeRotateIX[oct("0326")] = {
             mnemonic: "SET 2,(IX+d)",
             cycle: 23,
             proc: (d) => {
-                var adr = reg.IX + d;
+                const adr = reg.IX + d;
                 poke(adr, peek(adr) | (1 << 2));
             },
-            disasm: function (mem, addr) { return disasm_set_b_IDX_d(mem, addr, 2, "IX"); }
+            disasm: (mem, addr) => { return disasmSetBIdxD(mem, addr, 2, "IX"); }
         };
         opeRotateIX[oct("0336")] = {
             mnemonic: "SET 3,(IX+d)",
             cycle: 23,
             proc: (d) => {
-                var adr = reg.IX + d;
+                const adr = reg.IX + d;
                 poke(adr, peek(adr) | (1 << 3));
             },
-            disasm: function (mem, addr) { return disasm_set_b_IDX_d(mem, addr, 3, "IX"); }
+            disasm: (mem, addr) => { return disasmSetBIdxD(mem, addr, 3, "IX"); }
         };
         opeRotateIX[oct("0346")] = {
             mnemonic: "SET 4,(IX+d)",
             cycle: 23,
             proc: (d) => {
-                var adr = reg.IX + d;
+                const adr = reg.IX + d;
                 poke(adr, peek(adr) | (1 << 4));
             },
-            disasm: function (mem, addr) { return disasm_set_b_IDX_d(mem, addr, 4, "IX"); }
+            disasm: (mem, addr) => { return disasmSetBIdxD(mem, addr, 4, "IX"); }
         };
         opeRotateIX[oct("0356")] = {
             mnemonic: "SET 5,(IX+d)",
             cycle: 23,
             proc: (d) => {
-                var adr = reg.IX + d;
+                const adr = reg.IX + d;
                 poke(adr, peek(adr) | (1 << 5));
             },
-            disasm: function (mem, addr) { return disasm_set_b_IDX_d(mem, addr, 5, "IX"); }
+            disasm: (mem, addr) => { return disasmSetBIdxD(mem, addr, 5, "IX"); }
         };
         opeRotateIX[oct("0366")] = {
             mnemonic: "SET 6,(IX+d)",
             cycle: 23,
             proc: (d) => {
-                var adr = reg.IX + d;
+                const adr = reg.IX + d;
                 poke(adr, peek(adr) | (1 << 6));
             },
-            disasm: function (mem, addr) { return disasm_set_b_IDX_d(mem, addr, 6, "IX"); }
+            disasm: (mem, addr) => { return disasmSetBIdxD(mem, addr, 6, "IX"); }
         };
         opeRotateIX[oct("0376")] = {
             mnemonic: "SET 7,(IX+d)",
             cycle: 23,
             proc: (d) => {
-                var adr = reg.IX + d;
+                const adr = reg.IX + d;
                 poke(adr, peek(adr) | (1 << 7));
             },
-            disasm: function (mem, addr) { return disasm_set_b_IDX_d(mem, addr, 7, "IX"); }
+            disasm: (mem, addr) => { return disasmSetBIdxD(mem, addr, 7, "IX"); }
         };
         opeRotateIY[oct("0306")] = {
             mnemonic: "SET 0,(IY+d)",
             cycle: 23,
             proc: (d) => {
-                var adr = reg.IY + d;
+                const adr = reg.IY + d;
                 poke(adr, peek(adr) | (1 << 0));
             },
-            disasm: function (mem, addr) { return disasm_set_b_IDX_d(mem, addr, 0, "IY"); }
+            disasm: (mem, addr) => { return disasmSetBIdxD(mem, addr, 0, "IY"); }
         };
         opeRotateIY[oct("0316")] = {
             mnemonic: "SET 1,(IY+d)",
             cycle: 23,
             proc: (d) => {
-                var adr = reg.IY + d;
+                const adr = reg.IY + d;
                 poke(adr, peek(adr) | (1 << 1));
             },
-            disasm: function (mem, addr) { return disasm_set_b_IDX_d(mem, addr, 1, "IY"); }
+            disasm: (mem, addr) => { return disasmSetBIdxD(mem, addr, 1, "IY"); }
         };
         opeRotateIY[oct("0326")] = {
             mnemonic: "SET 2,(IY+d)",
             cycle: 23,
             proc: (d) => {
-                var adr = reg.IY + d;
+                const adr = reg.IY + d;
                 poke(adr, peek(adr) | (1 << 2));
             },
-            disasm: function (mem, addr) { return disasm_set_b_IDX_d(mem, addr, 2, "IY"); }
+            disasm: (mem, addr) => { return disasmSetBIdxD(mem, addr, 2, "IY"); }
         };
         opeRotateIY[oct("0336")] = {
             mnemonic: "SET 3,(IY+d)",
             cycle: 23,
             proc: (d) => {
-                var adr = reg.IY + d;
+                const adr = reg.IY + d;
                 poke(adr, peek(adr) | (1 << 3));
             },
-            disasm: function (mem, addr) { return disasm_set_b_IDX_d(mem, addr, 3, "IY"); }
+            disasm: (mem, addr) => { return disasmSetBIdxD(mem, addr, 3, "IY"); }
         };
         opeRotateIY[oct("0346")] = {
             mnemonic: "SET 4,(IY+d)",
             cycle: 23,
             proc: (d) => {
-                var adr = reg.IY + d;
+                const adr = reg.IY + d;
                 poke(adr, peek(adr) | (1 << 4));
             },
-            disasm: function (mem, addr) { return disasm_set_b_IDX_d(mem, addr, 4, "IY"); }
+            disasm: (mem, addr) => { return disasmSetBIdxD(mem, addr, 4, "IY"); }
         };
         opeRotateIY[oct("0356")] = {
             mnemonic: "SET 5,(IY+d)",
             cycle: 23,
             proc: (d) => {
-                var adr = reg.IY + d;
+                const adr = reg.IY + d;
                 poke(adr, peek(adr) | (1 << 5));
             },
-            disasm: function (mem, addr) { return disasm_set_b_IDX_d(mem, addr, 5, "IY"); }
+            disasm: (mem, addr) => { return disasmSetBIdxD(mem, addr, 5, "IY"); }
         };
         opeRotateIY[oct("0366")] = {
             mnemonic: "SET 6,(IY+d)",
             cycle: 23,
             proc: (d) => {
-                var adr = reg.IY + d;
+                const adr = reg.IY + d;
                 poke(adr, peek(adr) | (1 << 6));
             },
-            disasm: function (mem, addr) { return disasm_set_b_IDX_d(mem, addr, 6, "IY"); }
+            disasm: (mem, addr) => { return disasmSetBIdxD(mem, addr, 6, "IY"); }
         };
         opeRotateIY[oct("0376")] = {
             mnemonic: "SET 7,(IY+d)",
             cycle: 23,
             proc: (d) => {
-                var adr = reg.IY + d;
+                const adr = reg.IY + d;
                 poke(adr, peek(adr) | (1 << 7));
             },
-            disasm: function (mem, addr) { return disasm_set_b_IDX_d(mem, addr, 7, "IY"); }
+            disasm: (mem, addr) => { return disasmSetBIdxD(mem, addr, 7, "IY"); }
         };
-        var procRES_8bit = (b, r) => {
-            var bits = ~(1 << b);
+        const procRes8bit = (b, r) => {
+            const bits = ~(1 << b);
             return () => {
                 reg["set" + r](reg["get" + r]() & bits);
             };
         };
-        var disaRES_8bit = (b, r) => {
-            var regidx = "BCDEHL A".indexOf(r);
-            var bits = b << 3;
+        const disaRes8bit = (b, r) => {
+            const regidx = "BCDEHL A".indexOf(r);
+            const bits = b << 3;
             return ( /*mem, addr*/) => {
                 return {
                     code: [0xCB, oct("0200") | bits | regidx],
@@ -5092,150 +5088,151 @@ export default class Z80 {
                 };
             };
         };
-        var procRES_xHL = (b) => {
-            var bits = (~(1 << b) & 0xff);
-            return ((bits) => {
+        const procResXHl = (b) => {
+            const bits = (~(1 << b) & 0xff);
+            return ((mask) => {
                 return () => {
-                    var adr = getHL();
-                    var v0 = peek(adr);
-                    var v1 = v0 & bits;
+                    const adr = getHL();
+                    const v0 = peek(adr);
+                    const v1 = v0 & mask;
                     poke(adr, v1);
                 };
             })(bits);
         };
-        var disaRES_xHL = (b) => {
-            var bits = b << 3;
-            return ((bits) => {
+        const disaResXHl = (b) => {
+            const bits = b << 3;
+            return ((mask) => {
                 return ( /*mem, addr*/) => {
                     return {
-                        code: [0xCB, oct("0200") | bits | 6],
+                        code: [0xCB, oct("0200") | mask | 6],
                         mnemonic: ["RES", b, "(HL)"]
                     };
                 };
             })(bits);
         };
-        var procRES_xIDXd = (b, IDX) => {
-            var bits = 0xff & ~(1 << b);
-            return ((bits) => {
+        const procResXIdxD = (b, IDX) => {
+            const bits = 0xff & ~(1 << b);
+            return ((mask) => {
                 return (d) => {
-                    var adr = reg[IDX] + d;
-                    var v0 = peek(adr);
-                    var v1 = v0 & bits;
+                    const adr = reg[IDX] + d;
+                    const v0 = peek(adr);
+                    const v1 = v0 & mask;
                     poke(adr, v1);
                 };
             })(bits);
         };
-        var disaRES_xIDXd = (b, IDX) => {
-            const bits = b << 3;
+        const disaResXIdsD = (b, IDX) => {
             const opecode = { "IX": 0xDD, "IY": 0xFD }[IDX];
-            return ((bits, opecode) => {
+            return ((inst) => {
                 return (mem, addr) => {
                     const d = mem.peek(addr + 2);
                     const d8s = NumberUtil.to8bitSigned(d);
                     const displacement = `${d8s>=0?"+":""}${d8s}`;
                     const feature = mem.peek(addr + 3);
                     return {
-                        code: [opecode, 0xCB, d, feature],
+                        code: [inst, 0xCB, d, feature],
                         mnemonic: ["RES", b, `(${IDX}${displacement})`],
                     };
                 };
-            })(bits, opecode);
+            })(opecode);
         };
-        opeRotate[oct("0200")] = { mnemonic: "RES 0,B", cycle: 8, proc: procRES_8bit(0, "B"), disasm: disaRES_8bit(0, "B") };
-        opeRotate[oct("0210")] = { mnemonic: "RES 1,B", cycle: 8, proc: procRES_8bit(1, "B"), disasm: disaRES_8bit(1, "B") };
-        opeRotate[oct("0220")] = { mnemonic: "RES 2,B", cycle: 8, proc: procRES_8bit(2, "B"), disasm: disaRES_8bit(2, "B") };
-        opeRotate[oct("0230")] = { mnemonic: "RES 3,B", cycle: 8, proc: procRES_8bit(3, "B"), disasm: disaRES_8bit(3, "B") };
-        opeRotate[oct("0240")] = { mnemonic: "RES 4,B", cycle: 8, proc: procRES_8bit(4, "B"), disasm: disaRES_8bit(4, "B") };
-        opeRotate[oct("0250")] = { mnemonic: "RES 5,B", cycle: 8, proc: procRES_8bit(5, "B"), disasm: disaRES_8bit(5, "B") };
-        opeRotate[oct("0260")] = { mnemonic: "RES 6,B", cycle: 8, proc: procRES_8bit(6, "B"), disasm: disaRES_8bit(6, "B") };
-        opeRotate[oct("0270")] = { mnemonic: "RES 7,B", cycle: 8, proc: procRES_8bit(7, "B"), disasm: disaRES_8bit(7, "B") };
-        opeRotate[oct("0201")] = { mnemonic: "RES 0,C", cycle: 8, proc: procRES_8bit(0, "C"), disasm: disaRES_8bit(0, "C") };
-        opeRotate[oct("0211")] = { mnemonic: "RES 1,C", cycle: 8, proc: procRES_8bit(1, "C"), disasm: disaRES_8bit(1, "C") };
-        opeRotate[oct("0221")] = { mnemonic: "RES 2,C", cycle: 8, proc: procRES_8bit(2, "C"), disasm: disaRES_8bit(2, "C") };
-        opeRotate[oct("0231")] = { mnemonic: "RES 3,C", cycle: 8, proc: procRES_8bit(3, "C"), disasm: disaRES_8bit(3, "C") };
-        opeRotate[oct("0241")] = { mnemonic: "RES 4,C", cycle: 8, proc: procRES_8bit(4, "C"), disasm: disaRES_8bit(4, "C") };
-        opeRotate[oct("0251")] = { mnemonic: "RES 5,C", cycle: 8, proc: procRES_8bit(5, "C"), disasm: disaRES_8bit(5, "C") };
-        opeRotate[oct("0261")] = { mnemonic: "RES 6,C", cycle: 8, proc: procRES_8bit(6, "C"), disasm: disaRES_8bit(6, "C") };
-        opeRotate[oct("0271")] = { mnemonic: "RES 7,C", cycle: 8, proc: procRES_8bit(7, "C"), disasm: disaRES_8bit(7, "C") };
-        opeRotate[oct("0202")] = { mnemonic: "RES 0,D", cycle: 8, proc: procRES_8bit(0, "D"), disasm: disaRES_8bit(0, "D") };
-        opeRotate[oct("0212")] = { mnemonic: "RES 1,D", cycle: 8, proc: procRES_8bit(1, "D"), disasm: disaRES_8bit(1, "D") };
-        opeRotate[oct("0222")] = { mnemonic: "RES 2,D", cycle: 8, proc: procRES_8bit(2, "D"), disasm: disaRES_8bit(2, "D") };
-        opeRotate[oct("0232")] = { mnemonic: "RES 3,D", cycle: 8, proc: procRES_8bit(3, "D"), disasm: disaRES_8bit(3, "D") };
-        opeRotate[oct("0242")] = { mnemonic: "RES 4,D", cycle: 8, proc: procRES_8bit(4, "D"), disasm: disaRES_8bit(4, "D") };
-        opeRotate[oct("0252")] = { mnemonic: "RES 5,D", cycle: 8, proc: procRES_8bit(5, "D"), disasm: disaRES_8bit(5, "D") };
-        opeRotate[oct("0262")] = { mnemonic: "RES 6,D", cycle: 8, proc: procRES_8bit(6, "D"), disasm: disaRES_8bit(6, "D") };
-        opeRotate[oct("0272")] = { mnemonic: "RES 7,D", cycle: 8, proc: procRES_8bit(7, "D"), disasm: disaRES_8bit(7, "D") };
-        opeRotate[oct("0203")] = { mnemonic: "RES 0,E", cycle: 8, proc: procRES_8bit(0, "E"), disasm: disaRES_8bit(0, "E") };
-        opeRotate[oct("0213")] = { mnemonic: "RES 1,E", cycle: 8, proc: procRES_8bit(1, "E"), disasm: disaRES_8bit(1, "E") };
-        opeRotate[oct("0223")] = { mnemonic: "RES 2,E", cycle: 8, proc: procRES_8bit(2, "E"), disasm: disaRES_8bit(2, "E") };
-        opeRotate[oct("0233")] = { mnemonic: "RES 3,E", cycle: 8, proc: procRES_8bit(3, "E"), disasm: disaRES_8bit(3, "E") };
-        opeRotate[oct("0243")] = { mnemonic: "RES 4,E", cycle: 8, proc: procRES_8bit(4, "E"), disasm: disaRES_8bit(4, "E") };
-        opeRotate[oct("0253")] = { mnemonic: "RES 5,E", cycle: 8, proc: procRES_8bit(5, "E"), disasm: disaRES_8bit(5, "E") };
-        opeRotate[oct("0263")] = { mnemonic: "RES 6,E", cycle: 8, proc: procRES_8bit(6, "E"), disasm: disaRES_8bit(6, "E") };
-        opeRotate[oct("0273")] = { mnemonic: "RES 7,E", cycle: 8, proc: procRES_8bit(7, "E"), disasm: disaRES_8bit(7, "E") };
-        opeRotate[oct("0204")] = { mnemonic: "RES 0,H", cycle: 8, proc: procRES_8bit(0, "H"), disasm: disaRES_8bit(0, "H") };
-        opeRotate[oct("0214")] = { mnemonic: "RES 1,H", cycle: 8, proc: procRES_8bit(1, "H"), disasm: disaRES_8bit(1, "H") };
-        opeRotate[oct("0224")] = { mnemonic: "RES 2,H", cycle: 8, proc: procRES_8bit(2, "H"), disasm: disaRES_8bit(2, "H") };
-        opeRotate[oct("0234")] = { mnemonic: "RES 3,H", cycle: 8, proc: procRES_8bit(3, "H"), disasm: disaRES_8bit(3, "H") };
-        opeRotate[oct("0244")] = { mnemonic: "RES 4,H", cycle: 8, proc: procRES_8bit(4, "H"), disasm: disaRES_8bit(4, "H") };
-        opeRotate[oct("0254")] = { mnemonic: "RES 5,H", cycle: 8, proc: procRES_8bit(5, "H"), disasm: disaRES_8bit(5, "H") };
-        opeRotate[oct("0264")] = { mnemonic: "RES 6,H", cycle: 8, proc: procRES_8bit(6, "H"), disasm: disaRES_8bit(6, "H") };
-        opeRotate[oct("0274")] = { mnemonic: "RES 7,H", cycle: 8, proc: procRES_8bit(7, "H"), disasm: disaRES_8bit(7, "H") };
-        opeRotate[oct("0205")] = { mnemonic: "RES 0,L", cycle: 8, proc: procRES_8bit(0, "L"), disasm: disaRES_8bit(0, "L") };
-        opeRotate[oct("0215")] = { mnemonic: "RES 1,L", cycle: 8, proc: procRES_8bit(1, "L"), disasm: disaRES_8bit(1, "L") };
-        opeRotate[oct("0225")] = { mnemonic: "RES 2,L", cycle: 8, proc: procRES_8bit(2, "L"), disasm: disaRES_8bit(2, "L") };
-        opeRotate[oct("0235")] = { mnemonic: "RES 3,L", cycle: 8, proc: procRES_8bit(3, "L"), disasm: disaRES_8bit(3, "L") };
-        opeRotate[oct("0245")] = { mnemonic: "RES 4,L", cycle: 8, proc: procRES_8bit(4, "L"), disasm: disaRES_8bit(4, "L") };
-        opeRotate[oct("0255")] = { mnemonic: "RES 5,L", cycle: 8, proc: procRES_8bit(5, "L"), disasm: disaRES_8bit(5, "L") };
-        opeRotate[oct("0265")] = { mnemonic: "RES 6,L", cycle: 8, proc: procRES_8bit(6, "L"), disasm: disaRES_8bit(6, "L") };
-        opeRotate[oct("0275")] = { mnemonic: "RES 7,L", cycle: 8, proc: procRES_8bit(7, "L"), disasm: disaRES_8bit(7, "L") };
-        opeRotate[oct("0207")] = { mnemonic: "RES 0,A", cycle: 8, proc: procRES_8bit(0, "A"), disasm: disaRES_8bit(0, "A") };
-        opeRotate[oct("0217")] = { mnemonic: "RES 1,A", cycle: 8, proc: procRES_8bit(1, "A"), disasm: disaRES_8bit(1, "A") };
-        opeRotate[oct("0227")] = { mnemonic: "RES 2,A", cycle: 8, proc: procRES_8bit(2, "A"), disasm: disaRES_8bit(2, "A") };
-        opeRotate[oct("0237")] = { mnemonic: "RES 3,A", cycle: 8, proc: procRES_8bit(3, "A"), disasm: disaRES_8bit(3, "A") };
-        opeRotate[oct("0247")] = { mnemonic: "RES 4,A", cycle: 8, proc: procRES_8bit(4, "A"), disasm: disaRES_8bit(4, "A") };
-        opeRotate[oct("0257")] = { mnemonic: "RES 5,A", cycle: 8, proc: procRES_8bit(5, "A"), disasm: disaRES_8bit(5, "A") };
-        opeRotate[oct("0267")] = { mnemonic: "RES 6,A", cycle: 8, proc: procRES_8bit(6, "A"), disasm: disaRES_8bit(6, "A") };
-        opeRotate[oct("0277")] = { mnemonic: "RES 7,A", cycle: 8, proc: procRES_8bit(7, "A"), disasm: disaRES_8bit(7, "A") };
-        opeRotate[oct("0206")] = { mnemonic: "RES 0,(HL)", cycle: 15, proc: procRES_xHL(0), disasm: disaRES_xHL(0) };
-        opeRotate[oct("0216")] = { mnemonic: "RES 1,(HL)", cycle: 15, proc: procRES_xHL(1), disasm: disaRES_xHL(1) };
-        opeRotate[oct("0226")] = { mnemonic: "RES 2,(HL)", cycle: 15, proc: procRES_xHL(2), disasm: disaRES_xHL(2) };
-        opeRotate[oct("0236")] = { mnemonic: "RES 3,(HL)", cycle: 15, proc: procRES_xHL(3), disasm: disaRES_xHL(3) };
-        opeRotate[oct("0246")] = { mnemonic: "RES 4,(HL)", cycle: 15, proc: procRES_xHL(4), disasm: disaRES_xHL(4) };
-        opeRotate[oct("0256")] = { mnemonic: "RES 5,(HL)", cycle: 15, proc: procRES_xHL(5), disasm: disaRES_xHL(5) };
-        opeRotate[oct("0266")] = { mnemonic: "RES 6,(HL)", cycle: 15, proc: procRES_xHL(6), disasm: disaRES_xHL(6) };
-        opeRotate[oct("0276")] = { mnemonic: "RES 7,(HL)", cycle: 15, proc: procRES_xHL(7), disasm: disaRES_xHL(7) };
+        opeRotate[oct("0200")] = { mnemonic: "RES 0,B", cycle: 8, proc: procRes8bit(0, "B"), disasm: disaRes8bit(0, "B") };
+        opeRotate[oct("0210")] = { mnemonic: "RES 1,B", cycle: 8, proc: procRes8bit(1, "B"), disasm: disaRes8bit(1, "B") };
+        opeRotate[oct("0220")] = { mnemonic: "RES 2,B", cycle: 8, proc: procRes8bit(2, "B"), disasm: disaRes8bit(2, "B") };
+        opeRotate[oct("0230")] = { mnemonic: "RES 3,B", cycle: 8, proc: procRes8bit(3, "B"), disasm: disaRes8bit(3, "B") };
+        opeRotate[oct("0240")] = { mnemonic: "RES 4,B", cycle: 8, proc: procRes8bit(4, "B"), disasm: disaRes8bit(4, "B") };
+        opeRotate[oct("0250")] = { mnemonic: "RES 5,B", cycle: 8, proc: procRes8bit(5, "B"), disasm: disaRes8bit(5, "B") };
+        opeRotate[oct("0260")] = { mnemonic: "RES 6,B", cycle: 8, proc: procRes8bit(6, "B"), disasm: disaRes8bit(6, "B") };
+        opeRotate[oct("0270")] = { mnemonic: "RES 7,B", cycle: 8, proc: procRes8bit(7, "B"), disasm: disaRes8bit(7, "B") };
+        opeRotate[oct("0201")] = { mnemonic: "RES 0,C", cycle: 8, proc: procRes8bit(0, "C"), disasm: disaRes8bit(0, "C") };
+        opeRotate[oct("0211")] = { mnemonic: "RES 1,C", cycle: 8, proc: procRes8bit(1, "C"), disasm: disaRes8bit(1, "C") };
+        opeRotate[oct("0221")] = { mnemonic: "RES 2,C", cycle: 8, proc: procRes8bit(2, "C"), disasm: disaRes8bit(2, "C") };
+        opeRotate[oct("0231")] = { mnemonic: "RES 3,C", cycle: 8, proc: procRes8bit(3, "C"), disasm: disaRes8bit(3, "C") };
+        opeRotate[oct("0241")] = { mnemonic: "RES 4,C", cycle: 8, proc: procRes8bit(4, "C"), disasm: disaRes8bit(4, "C") };
+        opeRotate[oct("0251")] = { mnemonic: "RES 5,C", cycle: 8, proc: procRes8bit(5, "C"), disasm: disaRes8bit(5, "C") };
+        opeRotate[oct("0261")] = { mnemonic: "RES 6,C", cycle: 8, proc: procRes8bit(6, "C"), disasm: disaRes8bit(6, "C") };
+        opeRotate[oct("0271")] = { mnemonic: "RES 7,C", cycle: 8, proc: procRes8bit(7, "C"), disasm: disaRes8bit(7, "C") };
+        opeRotate[oct("0202")] = { mnemonic: "RES 0,D", cycle: 8, proc: procRes8bit(0, "D"), disasm: disaRes8bit(0, "D") };
+        opeRotate[oct("0212")] = { mnemonic: "RES 1,D", cycle: 8, proc: procRes8bit(1, "D"), disasm: disaRes8bit(1, "D") };
+        opeRotate[oct("0222")] = { mnemonic: "RES 2,D", cycle: 8, proc: procRes8bit(2, "D"), disasm: disaRes8bit(2, "D") };
+        opeRotate[oct("0232")] = { mnemonic: "RES 3,D", cycle: 8, proc: procRes8bit(3, "D"), disasm: disaRes8bit(3, "D") };
+        opeRotate[oct("0242")] = { mnemonic: "RES 4,D", cycle: 8, proc: procRes8bit(4, "D"), disasm: disaRes8bit(4, "D") };
+        opeRotate[oct("0252")] = { mnemonic: "RES 5,D", cycle: 8, proc: procRes8bit(5, "D"), disasm: disaRes8bit(5, "D") };
+        opeRotate[oct("0262")] = { mnemonic: "RES 6,D", cycle: 8, proc: procRes8bit(6, "D"), disasm: disaRes8bit(6, "D") };
+        opeRotate[oct("0272")] = { mnemonic: "RES 7,D", cycle: 8, proc: procRes8bit(7, "D"), disasm: disaRes8bit(7, "D") };
+        opeRotate[oct("0203")] = { mnemonic: "RES 0,E", cycle: 8, proc: procRes8bit(0, "E"), disasm: disaRes8bit(0, "E") };
+        opeRotate[oct("0213")] = { mnemonic: "RES 1,E", cycle: 8, proc: procRes8bit(1, "E"), disasm: disaRes8bit(1, "E") };
+        opeRotate[oct("0223")] = { mnemonic: "RES 2,E", cycle: 8, proc: procRes8bit(2, "E"), disasm: disaRes8bit(2, "E") };
+        opeRotate[oct("0233")] = { mnemonic: "RES 3,E", cycle: 8, proc: procRes8bit(3, "E"), disasm: disaRes8bit(3, "E") };
+        opeRotate[oct("0243")] = { mnemonic: "RES 4,E", cycle: 8, proc: procRes8bit(4, "E"), disasm: disaRes8bit(4, "E") };
+        opeRotate[oct("0253")] = { mnemonic: "RES 5,E", cycle: 8, proc: procRes8bit(5, "E"), disasm: disaRes8bit(5, "E") };
+        opeRotate[oct("0263")] = { mnemonic: "RES 6,E", cycle: 8, proc: procRes8bit(6, "E"), disasm: disaRes8bit(6, "E") };
+        opeRotate[oct("0273")] = { mnemonic: "RES 7,E", cycle: 8, proc: procRes8bit(7, "E"), disasm: disaRes8bit(7, "E") };
+        opeRotate[oct("0204")] = { mnemonic: "RES 0,H", cycle: 8, proc: procRes8bit(0, "H"), disasm: disaRes8bit(0, "H") };
+        opeRotate[oct("0214")] = { mnemonic: "RES 1,H", cycle: 8, proc: procRes8bit(1, "H"), disasm: disaRes8bit(1, "H") };
+        opeRotate[oct("0224")] = { mnemonic: "RES 2,H", cycle: 8, proc: procRes8bit(2, "H"), disasm: disaRes8bit(2, "H") };
+        opeRotate[oct("0234")] = { mnemonic: "RES 3,H", cycle: 8, proc: procRes8bit(3, "H"), disasm: disaRes8bit(3, "H") };
+        opeRotate[oct("0244")] = { mnemonic: "RES 4,H", cycle: 8, proc: procRes8bit(4, "H"), disasm: disaRes8bit(4, "H") };
+        opeRotate[oct("0254")] = { mnemonic: "RES 5,H", cycle: 8, proc: procRes8bit(5, "H"), disasm: disaRes8bit(5, "H") };
+        opeRotate[oct("0264")] = { mnemonic: "RES 6,H", cycle: 8, proc: procRes8bit(6, "H"), disasm: disaRes8bit(6, "H") };
+        opeRotate[oct("0274")] = { mnemonic: "RES 7,H", cycle: 8, proc: procRes8bit(7, "H"), disasm: disaRes8bit(7, "H") };
+        opeRotate[oct("0205")] = { mnemonic: "RES 0,L", cycle: 8, proc: procRes8bit(0, "L"), disasm: disaRes8bit(0, "L") };
+        opeRotate[oct("0215")] = { mnemonic: "RES 1,L", cycle: 8, proc: procRes8bit(1, "L"), disasm: disaRes8bit(1, "L") };
+        opeRotate[oct("0225")] = { mnemonic: "RES 2,L", cycle: 8, proc: procRes8bit(2, "L"), disasm: disaRes8bit(2, "L") };
+        opeRotate[oct("0235")] = { mnemonic: "RES 3,L", cycle: 8, proc: procRes8bit(3, "L"), disasm: disaRes8bit(3, "L") };
+        opeRotate[oct("0245")] = { mnemonic: "RES 4,L", cycle: 8, proc: procRes8bit(4, "L"), disasm: disaRes8bit(4, "L") };
+        opeRotate[oct("0255")] = { mnemonic: "RES 5,L", cycle: 8, proc: procRes8bit(5, "L"), disasm: disaRes8bit(5, "L") };
+        opeRotate[oct("0265")] = { mnemonic: "RES 6,L", cycle: 8, proc: procRes8bit(6, "L"), disasm: disaRes8bit(6, "L") };
+        opeRotate[oct("0275")] = { mnemonic: "RES 7,L", cycle: 8, proc: procRes8bit(7, "L"), disasm: disaRes8bit(7, "L") };
+        opeRotate[oct("0207")] = { mnemonic: "RES 0,A", cycle: 8, proc: procRes8bit(0, "A"), disasm: disaRes8bit(0, "A") };
+        opeRotate[oct("0217")] = { mnemonic: "RES 1,A", cycle: 8, proc: procRes8bit(1, "A"), disasm: disaRes8bit(1, "A") };
+        opeRotate[oct("0227")] = { mnemonic: "RES 2,A", cycle: 8, proc: procRes8bit(2, "A"), disasm: disaRes8bit(2, "A") };
+        opeRotate[oct("0237")] = { mnemonic: "RES 3,A", cycle: 8, proc: procRes8bit(3, "A"), disasm: disaRes8bit(3, "A") };
+        opeRotate[oct("0247")] = { mnemonic: "RES 4,A", cycle: 8, proc: procRes8bit(4, "A"), disasm: disaRes8bit(4, "A") };
+        opeRotate[oct("0257")] = { mnemonic: "RES 5,A", cycle: 8, proc: procRes8bit(5, "A"), disasm: disaRes8bit(5, "A") };
+        opeRotate[oct("0267")] = { mnemonic: "RES 6,A", cycle: 8, proc: procRes8bit(6, "A"), disasm: disaRes8bit(6, "A") };
+        opeRotate[oct("0277")] = { mnemonic: "RES 7,A", cycle: 8, proc: procRes8bit(7, "A"), disasm: disaRes8bit(7, "A") };
+        opeRotate[oct("0206")] = { mnemonic: "RES 0,(HL)", cycle: 15, proc: procResXHl(0), disasm: disaResXHl(0) };
+        opeRotate[oct("0216")] = { mnemonic: "RES 1,(HL)", cycle: 15, proc: procResXHl(1), disasm: disaResXHl(1) };
+        opeRotate[oct("0226")] = { mnemonic: "RES 2,(HL)", cycle: 15, proc: procResXHl(2), disasm: disaResXHl(2) };
+        opeRotate[oct("0236")] = { mnemonic: "RES 3,(HL)", cycle: 15, proc: procResXHl(3), disasm: disaResXHl(3) };
+        opeRotate[oct("0246")] = { mnemonic: "RES 4,(HL)", cycle: 15, proc: procResXHl(4), disasm: disaResXHl(4) };
+        opeRotate[oct("0256")] = { mnemonic: "RES 5,(HL)", cycle: 15, proc: procResXHl(5), disasm: disaResXHl(5) };
+        opeRotate[oct("0266")] = { mnemonic: "RES 6,(HL)", cycle: 15, proc: procResXHl(6), disasm: disaResXHl(6) };
+        opeRotate[oct("0276")] = { mnemonic: "RES 7,(HL)", cycle: 15, proc: procResXHl(7), disasm: disaResXHl(7) };
         // 10 000 110
-        opeRotateIX[oct("0206")] = { mnemonic: "RES 0,(IX+d)", cycle: 23, proc: procRES_xIDXd(0, "IX"), disasm: disaRES_xIDXd(0, "IX") };
-        opeRotateIX[oct("0216")] = { mnemonic: "RES 1,(IX+d)", cycle: 23, proc: procRES_xIDXd(1, "IX"), disasm: disaRES_xIDXd(1, "IX") };
-        opeRotateIX[oct("0226")] = { mnemonic: "RES 2,(IX+d)", cycle: 23, proc: procRES_xIDXd(2, "IX"), disasm: disaRES_xIDXd(2, "IX") };
-        opeRotateIX[oct("0236")] = { mnemonic: "RES 3,(IX+d)", cycle: 23, proc: procRES_xIDXd(3, "IX"), disasm: disaRES_xIDXd(3, "IX") };
-        opeRotateIX[oct("0246")] = { mnemonic: "RES 4,(IX+d)", cycle: 23, proc: procRES_xIDXd(4, "IX"), disasm: disaRES_xIDXd(4, "IX") };
-        opeRotateIX[oct("0256")] = { mnemonic: "RES 5,(IX+d)", cycle: 23, proc: procRES_xIDXd(5, "IX"), disasm: disaRES_xIDXd(5, "IX") };
-        opeRotateIX[oct("0266")] = { mnemonic: "RES 6,(IX+d)", cycle: 23, proc: procRES_xIDXd(6, "IX"), disasm: disaRES_xIDXd(6, "IX") };
-        opeRotateIX[oct("0276")] = { mnemonic: "RES 7,(IX+d)", cycle: 23, proc: procRES_xIDXd(7, "IX"), disasm: disaRES_xIDXd(7, "IX") };
-        opeRotateIY[oct("0206")] = { mnemonic: "RES 0,(IY+d)", cycle: 23, proc: procRES_xIDXd(0, "IY"), disasm: disaRES_xIDXd(0, "IY") };
-        opeRotateIY[oct("0216")] = { mnemonic: "RES 1,(IY+d)", cycle: 23, proc: procRES_xIDXd(1, "IY"), disasm: disaRES_xIDXd(1, "IY") };
-        opeRotateIY[oct("0226")] = { mnemonic: "RES 2,(IY+d)", cycle: 23, proc: procRES_xIDXd(2, "IY"), disasm: disaRES_xIDXd(2, "IY") };
-        opeRotateIY[oct("0236")] = { mnemonic: "RES 3,(IY+d)", cycle: 23, proc: procRES_xIDXd(3, "IY"), disasm: disaRES_xIDXd(3, "IY") };
-        opeRotateIY[oct("0246")] = { mnemonic: "RES 4,(IY+d)", cycle: 23, proc: procRES_xIDXd(4, "IY"), disasm: disaRES_xIDXd(4, "IY") };
-        opeRotateIY[oct("0256")] = { mnemonic: "RES 5,(IY+d)", cycle: 23, proc: procRES_xIDXd(5, "IY"), disasm: disaRES_xIDXd(5, "IY") };
-        opeRotateIY[oct("0266")] = { mnemonic: "RES 6,(IY+d)", cycle: 23, proc: procRES_xIDXd(6, "IY"), disasm: disaRES_xIDXd(6, "IY") };
-        opeRotateIY[oct("0276")] = { mnemonic: "RES 7,(IY+d)", cycle: 23, proc: procRES_xIDXd(7, "IY"), disasm: disaRES_xIDXd(7, "IY") };
-        //=================================================================================
+        opeRotateIX[oct("0206")] = { mnemonic: "RES 0,(IX+d)", cycle: 23, proc: procResXIdxD(0, "IX"), disasm: disaResXIdsD(0, "IX") };
+        opeRotateIX[oct("0216")] = { mnemonic: "RES 1,(IX+d)", cycle: 23, proc: procResXIdxD(1, "IX"), disasm: disaResXIdsD(1, "IX") };
+        opeRotateIX[oct("0226")] = { mnemonic: "RES 2,(IX+d)", cycle: 23, proc: procResXIdxD(2, "IX"), disasm: disaResXIdsD(2, "IX") };
+        opeRotateIX[oct("0236")] = { mnemonic: "RES 3,(IX+d)", cycle: 23, proc: procResXIdxD(3, "IX"), disasm: disaResXIdsD(3, "IX") };
+        opeRotateIX[oct("0246")] = { mnemonic: "RES 4,(IX+d)", cycle: 23, proc: procResXIdxD(4, "IX"), disasm: disaResXIdsD(4, "IX") };
+        opeRotateIX[oct("0256")] = { mnemonic: "RES 5,(IX+d)", cycle: 23, proc: procResXIdxD(5, "IX"), disasm: disaResXIdsD(5, "IX") };
+        opeRotateIX[oct("0266")] = { mnemonic: "RES 6,(IX+d)", cycle: 23, proc: procResXIdxD(6, "IX"), disasm: disaResXIdsD(6, "IX") };
+        opeRotateIX[oct("0276")] = { mnemonic: "RES 7,(IX+d)", cycle: 23, proc: procResXIdxD(7, "IX"), disasm: disaResXIdsD(7, "IX") };
+        opeRotateIY[oct("0206")] = { mnemonic: "RES 0,(IY+d)", cycle: 23, proc: procResXIdxD(0, "IY"), disasm: disaResXIdsD(0, "IY") };
+        opeRotateIY[oct("0216")] = { mnemonic: "RES 1,(IY+d)", cycle: 23, proc: procResXIdxD(1, "IY"), disasm: disaResXIdsD(1, "IY") };
+        opeRotateIY[oct("0226")] = { mnemonic: "RES 2,(IY+d)", cycle: 23, proc: procResXIdxD(2, "IY"), disasm: disaResXIdsD(2, "IY") };
+        opeRotateIY[oct("0236")] = { mnemonic: "RES 3,(IY+d)", cycle: 23, proc: procResXIdxD(3, "IY"), disasm: disaResXIdsD(3, "IY") };
+        opeRotateIY[oct("0246")] = { mnemonic: "RES 4,(IY+d)", cycle: 23, proc: procResXIdxD(4, "IY"), disasm: disaResXIdsD(4, "IY") };
+        opeRotateIY[oct("0256")] = { mnemonic: "RES 5,(IY+d)", cycle: 23, proc: procResXIdxD(5, "IY"), disasm: disaResXIdsD(5, "IY") };
+        opeRotateIY[oct("0266")] = { mnemonic: "RES 6,(IY+d)", cycle: 23, proc: procResXIdxD(6, "IY"), disasm: disaResXIdsD(6, "IY") };
+        opeRotateIY[oct("0276")] = { mnemonic: "RES 7,(IY+d)", cycle: 23, proc: procResXIdxD(7, "IY"), disasm: disaResXIdsD(7, "IY") };
+        // =================================================================================
         // ジャンプグループ
-        //=================================================================================
-        var disaJumpGroup = (mem, addr) => {
-            var opecode = mem.peek(addr);
-            var code = [opecode];
-            var mnemonic = [];
-            var e, n0, n1;
-            var ref_addr_to = null;
+        // =================================================================================
+        const disaJumpGroup = (mem, addr) => {
+            const opecode = mem.peek(addr);
+            const code = [opecode];
+            const mnemonic = [];
+            let e;
+            let n0;
+            let n1;
+            let refAddrTo = null;
             switch (opecode & oct("0300")) {
                 case oct("0000"):
                     mnemonic.push("JR");
                     e = BinUtil.getSignedByte(mem.peek(addr + 1));
-                    ref_addr_to = addr + e + 2;
+                    refAddrTo = addr + e + 2;
                     code.push(e & 0xff);
                     if (e + 2 >= 0) {
                         e = "+" + (e + 2);
@@ -5260,7 +5257,7 @@ export default class Z80 {
                         default:
                             throw "UNKNOWN OPCODE";
                     }
-                    mnemonic.push(NumberUtil.HEX(ref_addr_to, 4) + 'H;(' + e + ')');
+                    mnemonic.push(NumberUtil.HEX(refAddrTo, 4) + 'H;(' + e + ')');
                     break;
                 case oct("0300"):
                     mnemonic.push("JP");
@@ -5271,7 +5268,7 @@ export default class Z80 {
                         case 2:
                             n0 = mem.peek(addr + 1);
                             n1 = mem.peek(addr + 2);
-                            ref_addr_to = BinUtil.pair(n1, n0);
+                            refAddrTo = BinUtil.pair(n1, n0);
                             code.push(n0);
                             code.push(n1);
                             switch (opecode & oct("0070")) {
@@ -5305,7 +5302,7 @@ export default class Z80 {
                         case 3:
                             n0 = mem.peek(addr + 1);
                             n1 = mem.peek(addr + 2);
-                            ref_addr_to = BinUtil.pair(n1, n0);
+                            refAddrTo = BinUtil.pair(n1, n0);
                             code.push(n0);
                             code.push(n1);
                             mnemonic.push(NumberUtil.HEX(n1, 2) + NumberUtil.HEX(n0, 2) + 'H');
@@ -5315,21 +5312,22 @@ export default class Z80 {
                 default:
                     throw "UNKNOWN OPCODE";
             }
-            return { code: code, mnemonic: mnemonic, ref_addr_to: ref_addr_to };
+            return {code, mnemonic, refAddrTo};
         };
         this.opecodeTable[oct("0303")] = {
             mnemonic: "JP nn",
             "cycle": 10,
-            proc: () => { var nn = fetchPair(); reg.PC = nn; },
+            proc: () => { const nn = fetchPair(); reg.PC = nn; },
             disasm: disaJumpGroup
         };
         this.opecodeTable[oct("0302")] = {
             mnemonic: "JP NZ,nn",
             "cycle": 10,
             proc: () => {
-            var nn = fetchPair(); if (!reg.flagZ()) {
-                reg.PC = nn;
-            }
+                const nn = fetchPair();
+                if (!reg.flagZ()) {
+                    reg.PC = nn;
+                }
             },
             disasm: disaJumpGroup
         };
@@ -5337,9 +5335,10 @@ export default class Z80 {
             mnemonic: "JP Z,nn",
             "cycle": 10,
             proc: () => {
-            var nn = fetchPair(); if (reg.flagZ()) {
-                reg.PC = nn;
-            }
+                const nn = fetchPair();
+                if (reg.flagZ()) {
+                    reg.PC = nn;
+                }
             },
             disasm: disaJumpGroup
         };
@@ -5347,9 +5346,10 @@ export default class Z80 {
             mnemonic: "JP NC,nn",
             "cycle": 10,
             proc: () => {
-            var nn = fetchPair(); if (!reg.flagC()) {
-                reg.PC = nn;
-            }
+                const nn = fetchPair();
+                if (!reg.flagC()) {
+                    reg.PC = nn;
+                }
             },
             disasm: disaJumpGroup
         };
@@ -5357,9 +5357,10 @@ export default class Z80 {
             mnemonic: "JP C,nn",
             "cycle": 10,
             proc: () => {
-            var nn = fetchPair(); if (reg.flagC()) {
-                reg.PC = nn;
-            }
+                const nn = fetchPair();
+                if (reg.flagC()) {
+                    reg.PC = nn;
+                }
             },
             disasm: disaJumpGroup
         };
@@ -5367,9 +5368,10 @@ export default class Z80 {
             mnemonic: "JP PO,nn",
             "cycle": 10,
             proc: () => {
-            var nn = fetchPair(); if (!reg.flagP()) {
-                reg.PC = nn;
-            }
+                const nn = fetchPair();
+                if (!reg.flagP()) {
+                    reg.PC = nn;
+                }
             },
             disasm: disaJumpGroup
         };
@@ -5377,9 +5379,10 @@ export default class Z80 {
             mnemonic: "JP PE,nn",
             "cycle": 10,
             proc: () => {
-            var nn = fetchPair(); if (reg.flagP()) {
-                reg.PC = nn;
-            }
+                const nn = fetchPair();
+                if (reg.flagP()) {
+                    reg.PC = nn;
+                }
             },
             disasm: disaJumpGroup
         };
@@ -5387,9 +5390,10 @@ export default class Z80 {
             mnemonic: "JP P,nn",
             "cycle": 10,
             proc: () => {
-            var nn = fetchPair(); if (!reg.flagS()) {
-                reg.PC = nn;
-            }
+                const nn = fetchPair();
+                if (!reg.flagS()) {
+                    reg.PC = nn;
+                }
             },
             disasm: disaJumpGroup
         };
@@ -5397,25 +5401,27 @@ export default class Z80 {
             mnemonic: "JP M,nn",
             "cycle": 10,
             proc: () => {
-            var nn = fetchPair(); if (reg.flagS()) {
-                reg.PC = nn;
-            }
+                const nn = fetchPair();
+                if (reg.flagS()) {
+                    reg.PC = nn;
+                }
             },
             disasm: disaJumpGroup
         };
         this.opecodeTable[oct("0030")] = {
             mnemonic: "JR e",
             "cycle": 12,
-            proc: () => { var e = fetch(); reg.jumpRel(e); },
+            proc: () => { const e = fetch(); reg.jumpRel(e); },
             disasm: disaJumpGroup
         };
         this.opecodeTable[oct("0070")] = {
             mnemonic: "JR C,e",
             "cycle": 12,
             proc: () => {
-            var e = fetch(); if (reg.flagC()) {
-                reg.jumpRel(e);
-            }
+                const e = fetch();
+                if (reg.flagC()) {
+                    reg.jumpRel(e);
+                }
             },
             disasm: disaJumpGroup
         };
@@ -5423,9 +5429,10 @@ export default class Z80 {
             mnemonic: "JR Z,e",
             "cycle": 12,
             proc: () => {
-            var e = fetch(); if (reg.flagZ()) {
-                reg.jumpRel(e);
-            }
+                const e = fetch();
+                if (reg.flagZ()) {
+                    reg.jumpRel(e);
+                }
             },
             disasm: disaJumpGroup
         };
@@ -5433,18 +5440,20 @@ export default class Z80 {
             mnemonic: "JR NC,e",
             "cycle": 12,
             proc: () => {
-            var e = fetch(); if (!reg.flagC()) {
-                reg.jumpRel(e);
-            }
+                const e = fetch();
+                if (!reg.flagC()) {
+                    reg.jumpRel(e);
+                }
             },
             disasm: disaJumpGroup
         };
         this.opecodeTable[oct("0040")] = {
             mnemonic: "JR NZ,e",
             proc: () => {
-            var e = fetch(); if (!reg.flagZ()) {
-                reg.jumpRel(e);
-            }
+                const e = fetch();
+                if (!reg.flagZ()) {
+                    reg.jumpRel(e);
+                }
             },
             "cycle": 12,
             disasm: disaJumpGroup
@@ -5459,7 +5468,7 @@ export default class Z80 {
             mnemonic: "JP (IX)",
             "cycle": 8,
             proc: () => { reg.PC = reg.IX; },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return { code: [mem.peek(addr), mem.peek(addr + 1)], mnemonic: ['JP', '(IX)'] };
             }
         };
@@ -5467,9 +5476,9 @@ export default class Z80 {
             mnemonic: "JP (IY)",
             "cycle": 8,
             proc: () => { reg.PC = reg.IY; },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
-                code: [mem.peek(addr), mem.peek(addr + 1)],
+                    code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ['JP', '(IY)']
                 };
             }
@@ -5482,7 +5491,7 @@ export default class Z80 {
             proc: () => {
                 setB(((reg.IX >> 8) & 0xff));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["LD", "B", "IXH"]
@@ -5494,7 +5503,7 @@ export default class Z80 {
             proc: () => {
                 setC((reg.IX & 0xff));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["LD", "C", "IXL"]
@@ -5506,7 +5515,7 @@ export default class Z80 {
             proc: () => {
                 reg.IX = (0xff00 & (getB() << 8)) | (reg.IX & 0xff);
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["LD", "IXH", "B"]
@@ -5518,7 +5527,7 @@ export default class Z80 {
             proc: () => {
                 reg.IX = (0xff00 & (getA() << 8)) | (reg.IX & 0xff);
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["LD", "IXH", "A"]
@@ -5530,7 +5539,7 @@ export default class Z80 {
             proc: () => {
                 reg.IX = (0xff00 & reg.IX) | (getC() & 0xff);
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["LD", "IXL", "C"]
@@ -5542,7 +5551,7 @@ export default class Z80 {
             proc: () => {
                 reg.IX = (0xff00 & reg.IX) | (getA() & 0xff);
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["LD", "IXL", "A"]
@@ -5554,7 +5563,7 @@ export default class Z80 {
             proc: () => {
                 setA((reg.IX & 0xff));
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["LD", "A", "IXL"]
@@ -5566,7 +5575,7 @@ export default class Z80 {
             proc: () => {
                 reg.addAcc((reg.IX >> 8) & 0xff);
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["ADD", "A", "IXH"]
@@ -5578,7 +5587,7 @@ export default class Z80 {
             proc: () => {
                 reg.addAcc(reg.IX & 0xff);
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["ADD", "A", "IXL"]
@@ -5590,7 +5599,7 @@ export default class Z80 {
             proc: () => {
                 reg.compareAcc(reg.IX & 0xff);
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["CP", "IXL"]
@@ -5601,40 +5610,41 @@ export default class Z80 {
             mnemonic: "DJNZ",
             "cycle": 13,
             proc: () => {
-                var e = fetch();
+                const e = fetch();
                 reg.decrement("B");
                 if (getB()) {
                     reg.jumpRel(e);
                 }
             },
-            disasm: function (mem, addr) {
-                var e = BinUtil.getSignedByte(mem.peek(addr + 1));
-                var ref_addr_to = addr + e + 2;
+            disasm: (mem, addr) => {
+                const e = BinUtil.getSignedByte(mem.peek(addr + 1));
+                const refAddrTo = addr + e + 2;
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
-                    mnemonic: ['DJNZ', NumberUtil.HEX(ref_addr_to, 4) + 'H;(' + (((e + 2 >= 0) ? "+" : "") + (e + 2)) + ')'],
-                    ref_addr_to: ref_addr_to
+                    mnemonic: ['DJNZ', NumberUtil.HEX(refAddrTo, 4) + 'H;(' + (((e + 2 >= 0) ? "+" : "") + (e + 2)) + ')'],
+                    refAddrTo,
                 };
             }
         };
-        //=================================================================================
+        // =================================================================================
         // コールリターングループ
-        //=================================================================================
+        // =================================================================================
         this.opecodeTable[oct("0315")] = {
             mnemonic: "CALL nn",
             cycle: 17,
             proc: () => {
-                var nn = fetchPair();
+                const nn = fetchPair();
                 pushPair(reg.PC);
                 reg.PC = nn;
             },
-            disasm: function (m, a) {
-                var l = m.peek(a + 1), h = m.peek(a + 2);
-                var addr = BinUtil.pair(h, l);
+            disasm: (m, a) => {
+                const l = m.peek(a + 1);
+                const h = m.peek(a + 2);
+                const addr = BinUtil.pair(h, l);
                 return {
                     code: [m.peek(a), l, h],
                     mnemonic: ["CALL", "" + NumberUtil.HEX(addr, 4) + "H"],
-                    ref_addr_to: addr
+                    refAddrTo: addr
                 };
             }
         };
@@ -5642,7 +5652,7 @@ export default class Z80 {
             mnemonic: "CALL NZ,nn",
             cycle: "NZ→17,Z→10",
             proc: () => {
-                var nn = fetchPair();
+                const nn = fetchPair();
                 if (!reg.flagZ()) {
                     pushPair(reg.PC);
                     reg.PC = nn;
@@ -5650,13 +5660,14 @@ export default class Z80 {
                 }
                 return 10;
             },
-            disasm: function (m, a) {
-                var l = m.peek(a + 1), h = m.peek(a + 2);
-                var addr = BinUtil.pair(h, l);
+            disasm: (m, a) => {
+                const l = m.peek(a + 1);
+                const h = m.peek(a + 2);
+                const addr = BinUtil.pair(h, l);
                 return {
                     code: [m.peek(a), l, h],
                     mnemonic: ["CALL", "NZ", NumberUtil.HEX(addr, 4) + "H"],
-                    ref_addr_to: addr
+                    refAddrTo: addr
                 };
             }
         };
@@ -5664,7 +5675,7 @@ export default class Z80 {
             mnemonic: "CALL Z,nn",
             cycle: "Z→17,NZ→10",
             proc: () => {
-                var nn = fetchPair();
+                const nn = fetchPair();
                 if (reg.flagZ()) {
                     pushPair(reg.PC);
                     reg.PC = nn;
@@ -5672,13 +5683,14 @@ export default class Z80 {
                 }
                 return 10;
             },
-            disasm: function (m, a) {
-                var l = m.peek(a + 1), h = m.peek(a + 2);
-                var addr = BinUtil.pair(h, l);
+            disasm: (m, a) => {
+                const l = m.peek(a + 1);
+                const h = m.peek(a + 2);
+                const addr = BinUtil.pair(h, l);
                 return {
                     code: [m.peek(a), l, h],
                     mnemonic: ["CALL", "Z", NumberUtil.HEX(addr, 4) + "H"],
-                    ref_addr_to: addr
+                    refAddrTo: addr
                 };
             }
         };
@@ -5686,7 +5698,7 @@ export default class Z80 {
             mnemonic: "CALL NC,nn",
             cycle: "NC→17, C→10",
             proc: () => {
-                var nn = fetchPair();
+                const nn = fetchPair();
                 if (!reg.flagC()) {
                     pushPair(reg.PC);
                     reg.PC = nn;
@@ -5694,13 +5706,14 @@ export default class Z80 {
                 }
                 return 10;
             },
-            disasm: function (m, a) {
-                var l = m.peek(a + 1), h = m.peek(a + 2);
-                var addr = BinUtil.pair(h, l);
+            disasm: (m, a) => {
+                const l = m.peek(a + 1);
+                const h = m.peek(a + 2);
+                const addr = BinUtil.pair(h, l);
                 return {
                     code: [m.peek(a), l, h],
                     mnemonic: ["CALL", "NC", NumberUtil.HEX(addr, 4) + "H"],
-                    ref_addr_to: addr
+                    refAddrTo: addr
                 };
             }
         };
@@ -5708,7 +5721,7 @@ export default class Z80 {
             mnemonic: "CALL C,nn",
             cycle: "C→17, NC→10",
             proc: () => {
-                var nn = fetchPair();
+                const nn = fetchPair();
                 if (reg.flagC()) {
                     pushPair(reg.PC);
                     reg.PC = nn;
@@ -5716,13 +5729,14 @@ export default class Z80 {
                 }
                 return 10;
             },
-            disasm: function (m, a) {
-                var l = m.peek(a + 1), h = m.peek(a + 2);
-                var addr = BinUtil.pair(h, l);
+            disasm: (m, a) => {
+                const l = m.peek(a + 1);
+                const h = m.peek(a + 2);
+                const addr = BinUtil.pair(h, l);
                 return {
                     code: [m.peek(a), l, h],
                     mnemonic: ["CALL", "C", NumberUtil.HEX(addr, 4) + "H"],
-                    ref_addr_to: addr
+                    refAddrTo: addr
                 };
             }
         };
@@ -5730,7 +5744,7 @@ export default class Z80 {
             mnemonic: "CALL PO,nn",
             cycle: "Parity Odd→17, Even→10",
             proc: () => {
-                var nn = fetchPair();
+                const nn = fetchPair();
                 if (!reg.flagP()) {
                     pushPair(reg.PC);
                     reg.PC = nn;
@@ -5738,13 +5752,14 @@ export default class Z80 {
                 }
                 return 10;
             },
-            disasm: function (m, a) {
-                var l = m.peek(a + 1), h = m.peek(a + 2);
-                var addr = BinUtil.pair(h, l);
+            disasm: (m, a) => {
+                const l = m.peek(a + 1);
+                const h = m.peek(a + 2);
+                const addr = BinUtil.pair(h, l);
                 return {
                     code: [m.peek(a), l, h],
                     mnemonic: ["CALL", "PO", NumberUtil.HEX(addr, 4) + "H"],
-                    ref_addr_to: addr
+                    refAddrTo: addr
                 };
             }
         };
@@ -5752,7 +5767,7 @@ export default class Z80 {
             mnemonic: "CALL PE,nn",
             cycle: "Parity Even→17, Odd→10",
             proc: () => {
-                var nn = fetchPair();
+                const nn = fetchPair();
                 if (reg.flagP()) {
                     pushPair(reg.PC);
                     reg.PC = nn;
@@ -5760,13 +5775,14 @@ export default class Z80 {
                 }
                 return 10;
             },
-            disasm: function (m, a) {
-                var l = m.peek(a + 1), h = m.peek(a + 2);
-                var addr = BinUtil.pair(h, l);
+            disasm: (m, a) => {
+                const l = m.peek(a + 1);
+                const h = m.peek(a + 2);
+                const addr = BinUtil.pair(h, l);
                 return {
                     code: [m.peek(a), l, h],
                     mnemonic: ["CALL", "PE", NumberUtil.HEX(addr, 4) + "H"],
-                    ref_addr_to: addr
+                    refAddrTo: addr
                 };
             }
         };
@@ -5774,7 +5790,7 @@ export default class Z80 {
             mnemonic: "CALL P,nn",
             cycle: "P→17, M→10",
             proc: () => {
-                var nn = fetchPair();
+                const nn = fetchPair();
                 if (!reg.flagS()) {
                     pushPair(reg.PC);
                     reg.PC = nn;
@@ -5782,13 +5798,14 @@ export default class Z80 {
                 }
                 return 10;
             },
-            disasm: function (m, a) {
-                var l = m.peek(a + 1), h = m.peek(a + 2);
-                var addr = BinUtil.pair(h, l);
+            disasm: (m, a) => {
+                const l = m.peek(a + 1);
+                const h = m.peek(a + 2);
+                const addr = BinUtil.pair(h, l);
                 return {
                     code: [m.peek(a), l, h],
                     mnemonic: ["CALL", "P", NumberUtil.HEX(addr, 4) + "H"],
-                    ref_addr_to: addr
+                    refAddrTo: addr
                 };
             }
         };
@@ -5796,7 +5813,7 @@ export default class Z80 {
             mnemonic: "CALL M,nn",
             cycle: "M→17, P→10",
             proc: () => {
-                var nn = fetchPair();
+                const nn = fetchPair();
                 if (reg.flagS()) {
                     pushPair(reg.PC);
                     reg.PC = nn;
@@ -5804,13 +5821,14 @@ export default class Z80 {
                 }
                 return 10;
             },
-            disasm: function (m, a) {
-                var l = m.peek(a + 1), h = m.peek(a + 2);
-                var addr = BinUtil.pair(h, l);
+            disasm: (m, a) => {
+                const l = m.peek(a + 1);
+                const h = m.peek(a + 2);
+                const addr = BinUtil.pair(h, l);
                 return {
                     code: [m.peek(a), l, h],
                     mnemonic: ["CALL", "M", NumberUtil.HEX(addr, 4) + "H"],
-                    ref_addr_to: addr
+                    refAddrTo: addr
                 };
             }
         };
@@ -5818,7 +5836,7 @@ export default class Z80 {
             mnemonic: "RET",
             "cycle": 10,
             proc: () => { reg.PC = popPair(); },
-            disasm: function (m, a) {
+            disasm: (m, a) => {
                 return {
                     code: [m.peek(a)],
                     mnemonic: ["RET"]
@@ -5829,12 +5847,12 @@ export default class Z80 {
             mnemonic: "RET NZ",
             "cycle": "NZ→11, Z→5",
             proc: () => {
-            if (!reg.flagZ()) {
-                reg.PC = popPair();
-                return 11;
-            } return 5;
+                if (!reg.flagZ()) {
+                    reg.PC = popPair();
+                    return 11;
+                } return 5;
             },
-            disasm: function (m, a) {
+            disasm: (m, a) => {
                 return {
                     code: [m.peek(a)],
                     mnemonic: ["RET", "NZ"]
@@ -5845,12 +5863,12 @@ export default class Z80 {
             mnemonic: "RET Z",
             "cycle": "Z→5, NZ→11",
             proc: () => {
-            if (reg.flagZ()) {
-                reg.PC = popPair();
-                return 11;
-            } return 5;
+                if (reg.flagZ()) {
+                    reg.PC = popPair();
+                    return 11;
+                } return 5;
             },
-            disasm: function (m, a) {
+            disasm: (m, a) => {
                 return {
                     code: [m.peek(a)],
                     mnemonic: ["RET", "Z"]
@@ -5861,12 +5879,12 @@ export default class Z80 {
             mnemonic: "RET NC",
             "cycle": "NC→11,C→5",
             proc: () => {
-            if (!reg.flagC()) {
-                reg.PC = popPair();
-                return 11;
-            } return 5;
+                if (!reg.flagC()) {
+                    reg.PC = popPair();
+                    return 11;
+                } return 5;
             },
-            disasm: function (m, a) {
+            disasm: (m, a) => {
                 return {
                     code: [m.peek(a)],
                     mnemonic: ["RET", "NC"]
@@ -5877,12 +5895,12 @@ export default class Z80 {
             mnemonic: "RET C",
             "cycle": "C→11,NC→5",
             proc: () => {
-            if (reg.flagC()) {
-                reg.PC = popPair();
-                return 11;
-            } return 5;
+                if (reg.flagC()) {
+                    reg.PC = popPair();
+                    return 11;
+                } return 5;
             },
-            disasm: function (m, a) {
+            disasm: (m, a) => {
                 return {
                     code: [m.peek(a)],
                     mnemonic: ["RET", "C"]
@@ -5893,12 +5911,12 @@ export default class Z80 {
             mnemonic: "RET PO",
             "cycle": "Parity Odd→11, Parity Even→5",
             proc: () => {
-            if (!reg.flagP()) {
-                reg.PC = popPair();
-                return 11;
-            } return 5;
+                if (!reg.flagP()) {
+                    reg.PC = popPair();
+                    return 11;
+                } return 5;
             },
-            disasm: function (m, a) {
+            disasm: (m, a) => {
                 return {
                     code: [m.peek(a)],
                     mnemonic: ["RET", "PO"]
@@ -5909,12 +5927,12 @@ export default class Z80 {
             mnemonic: "RET PE",
             "cycle": "Parity Even→11, Parity Odd→5",
             proc: () => {
-            if (reg.flagP()) {
-                reg.PC = popPair();
-                return 11;
-            } return 5;
+                if (reg.flagP()) {
+                    reg.PC = popPair();
+                    return 11;
+                } return 5;
             },
-            disasm: function (m, a) {
+            disasm: (m, a) => {
                 return {
                     code: [m.peek(a)],
                     mnemonic: ["RET", "PE"]
@@ -5925,12 +5943,12 @@ export default class Z80 {
             mnemonic: "RET P",
             "cycle": "P→11, M→5",
             proc: () => {
-            if (!reg.flagS()) {
-                reg.PC = popPair();
-                return 11;
-            } return 5;
+                if (!reg.flagS()) {
+                    reg.PC = popPair();
+                    return 11;
+                } return 5;
             },
-            disasm: function (m, a) {
+            disasm: (m, a) => {
                 return {
                     code: [m.peek(a)],
                     mnemonic: ["RET", "P"]
@@ -5941,12 +5959,12 @@ export default class Z80 {
             mnemonic: "RET M",
             "cycle": "M→11, P→5",
             proc: () => {
-            if (reg.flagS()) {
-                reg.PC = popPair();
-                return 11;
-            } return 5;
+                if (reg.flagS()) {
+                    reg.PC = popPair();
+                    return 11;
+                } return 5;
             },
-            disasm: function (m, a) {
+            disasm: (m, a) => {
                 return {
                     code: [m.peek(a)],
                     mnemonic: ["RET", "M"]
@@ -5960,7 +5978,7 @@ export default class Z80 {
                 reg.PC = popPair();
                 this.IFF1 = this.IFF2;
             },
-            disasm: function (m, a) {
+            disasm: (m, a) => {
                 return {
                     code: [m.peek(a), m.peek(a + 1)],
                     mnemonic: ["RETI"]
@@ -5974,15 +5992,15 @@ export default class Z80 {
                 reg.PC = popPair();
                 this.IFF1 = this.IFF2;
             },
-            disasm: function (m, a) {
+            disasm: (m, a) => {
                 return {
                     code: [m.peek(a), m.peek(a + 1)],
                     mnemonic: ["RETN"]
                 };
             }
         };
-        var rstVt = [0x00, 0x08, 0x10, 0x18, 0x20, 0x28, 0x30, 0x38];
-        for (var rstI = 0; rstI < rstVt.length; rstI++) {
+        const rstVt = [0x00, 0x08, 0x10, 0x18, 0x20, 0x28, 0x30, 0x38];
+        for (let rstI = 0; rstI < rstVt.length; rstI++) {
             this.opecodeTable[oct("0307") | (rstI << 3)] = {
                 mnemonic: "RST " + NumberUtil.HEX(rstVt[rstI], 2) + "H",
                 proc: ((vec) => {
@@ -5992,8 +6010,8 @@ export default class Z80 {
                     };
                 })(rstVt[rstI]),
                 "cycle": 12,
-                disasm: (function (vect) {
-                    return function (mem, addr) {
+                disasm: ((vect) => {
+                    return (mem, addr) => {
                         return {
                             code: [mem.peek(addr)],
                             mnemonic: ["RST", NumberUtil.HEX(vect, 2) + "H"]
@@ -6002,14 +6020,14 @@ export default class Z80 {
                 })(rstVt[rstI])
             };
         }
-        //=================================================================================
+        // =================================================================================
         // 入力・出力グループ
-        //=================================================================================
+        // =================================================================================
         this.opecodeTable[oct("0333")] = {
             mnemonic: "IN A,(n)",
             cycle: 11,
             proc: () => { setA(this.readIoPort(fetch())); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 const n = mem.peek(addr + 1);
                 return {
                     code: [0xdb, n],
@@ -6021,7 +6039,7 @@ export default class Z80 {
             mnemonic: "IN B,(C)",
             cycle: 12,
             proc: () => { setB(this.readIoPort(getC())); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["IN", "B", "(C)"]
@@ -6032,7 +6050,7 @@ export default class Z80 {
             mnemonic: "IN C,(C)",
             cycle: 12,
             proc: () => { setC(this.readIoPort(getC())); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["IN", "C", "(C)"]
@@ -6043,7 +6061,7 @@ export default class Z80 {
             mnemonic: "IN D,(C)",
             cycle: 12,
             proc: () => { setD(this.readIoPort(getC())); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["IN", "D", "(C)"]
@@ -6054,7 +6072,7 @@ export default class Z80 {
             mnemonic: "IN E,(C)",
             cycle: 12,
             proc: () => { setE(this.readIoPort(getC())); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["IN", "E", "(C)"]
@@ -6065,7 +6083,7 @@ export default class Z80 {
             mnemonic: "IN H,(C)",
             cycle: 12,
             proc: () => { setH(this.readIoPort(getC())); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["IN", "H", "(C)"]
@@ -6076,7 +6094,7 @@ export default class Z80 {
             mnemonic: "IN L,(C)",
             cycle: 12,
             proc: () => { setL(this.readIoPort(getC())); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["IN", "L", "(C)"]
@@ -6087,7 +6105,7 @@ export default class Z80 {
             mnemonic: "IN A,(C)",
             cycle: 12,
             proc: () => { setA(this.readIoPort(getC())); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["IN", "A", "(C)"]
@@ -6102,7 +6120,7 @@ export default class Z80 {
                 poke(getHL(), this.readIoPort(getC()));
                 reg.postINI();
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["INI"]
@@ -6116,12 +6134,12 @@ export default class Z80 {
                 setB((getB() - 1) & 0xff);
                 poke(getHL(), this.readIoPort(getC()));
                 reg.postINI();
-                if (getB() != 0) {
+                if (getB() !== 0) {
                     reg.PC -= 2;
                 }
                 return 21;
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["INIR"]
@@ -6136,7 +6154,7 @@ export default class Z80 {
                 poke(getHL(), this.readIoPort(getC()));
                 reg.postIND();
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["IND"]
@@ -6150,12 +6168,12 @@ export default class Z80 {
                 setB((getB() - 1) & 0xff);
                 poke(getHL(), this.readIoPort(getC()));
                 reg.postIND();
-                if (getB() != 0) {
+                if (getB() !== 0) {
                     reg.PC -= 2;
                 }
                 return 21;
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["INDR"]
@@ -6166,7 +6184,7 @@ export default class Z80 {
             mnemonic: "OUT (n),A",
             cycle: 11,
             proc: () => { this.writeIoPort(fetch(), getA()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 const n = mem.peek(addr + 1);
                 return {
                     code: [0xd3, n],
@@ -6178,7 +6196,7 @@ export default class Z80 {
             mnemonic: "OUT (C),B",
             cycle: 12,
             proc: () => { this.writeIoPort(getC(), getB()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["OUT", "(C)", "B"]
@@ -6189,7 +6207,7 @@ export default class Z80 {
             mnemonic: "OUT (C),C",
             cycle: 12,
             proc: () => { this.writeIoPort(getC(), getC()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["OUT", "(C)", "C"]
@@ -6200,7 +6218,7 @@ export default class Z80 {
             mnemonic: "OUT (C),D",
             cycle: 12,
             proc: () => { this.writeIoPort(getC(), getD()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["OUT", "(C)", "D"]
@@ -6211,7 +6229,7 @@ export default class Z80 {
             mnemonic: "OUT (C),E",
             cycle: 12,
             proc: () => { this.writeIoPort(getC(), getE()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["OUT", "(C)", "E"]
@@ -6222,7 +6240,7 @@ export default class Z80 {
             mnemonic: "OUT (C),H",
             cycle: 12,
             proc: () => { this.writeIoPort(getC(), getH()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["OUT", "(C)", "H"]
@@ -6233,7 +6251,7 @@ export default class Z80 {
             mnemonic: "OUT (C),L",
             cycle: 12,
             proc: () => { this.writeIoPort(getC(), getL()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["OUT", "(C)", "L"]
@@ -6244,7 +6262,7 @@ export default class Z80 {
             mnemonic: "OUT (C),A",
             cycle: 12,
             proc: () => { this.writeIoPort(getC(), getA()); },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["OUT", "(C)", "A"]
@@ -6259,7 +6277,7 @@ export default class Z80 {
                 this.writeIoPort(getC(), peek(getHL()));
                 reg.postOUTI();
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["OUTI"]
@@ -6273,12 +6291,12 @@ export default class Z80 {
                 setB((getB() - 1) & 0xff);
                 this.writeIoPort(getC(), peek(getHL()));
                 reg.postOUTI();
-                if (getB() != 0) {
+                if (getB() !== 0) {
                     reg.PC -= 2;
                 }
                 return 21;
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["OTIR"]
@@ -6293,7 +6311,7 @@ export default class Z80 {
                 this.writeIoPort(getC(), peek(getHL()));
                 reg.postOUTD();
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["OUTD"]
@@ -6307,12 +6325,12 @@ export default class Z80 {
                 setB((getB() - 1) & 0xff);
                 this.writeIoPort(getC(), peek(getHL()));
                 reg.postOUTD();
-                if (getB() != 0) {
+                if (getB() !== 0) {
                     reg.PC -= 2;
                 }
                 return 21;
             },
-            disasm: function (mem, addr) {
+            disasm: (mem, addr) => {
                 return {
                     code: [mem.peek(addr), mem.peek(addr + 1)],
                     mnemonic: ["OTDR"]
@@ -6320,10 +6338,10 @@ export default class Z80 {
             }
         };
     }
-    onReadIoPort(port:number, handler:Function) {
+    onReadIoPort(port:number, handler:(value:number)=>void) {
         this._onReadIoPort[port] = handler;
     }
-    onWriteIoPort(port:number, handler:Function) {
+    onWriteIoPort(port:number, handler:(value:number)=>void) {
         this._onWriteIoPort[port] = handler;
     }
     /**
@@ -6331,11 +6349,11 @@ export default class Z80 {
      *
      * fields of result element of array:
      *
-     *    * addr                number
-     *    * referenced_count    number
-     *    * code                number[]
-     *    * mnemonic            string[]
-     *    * ref_addr_to         number
+     *    * addr        number
+     *    * refCount    number
+     *    * code        number[]
+     *    * mnemonic    string[]
+     *    * refAddrTo   number
      *
      * @param {Buffer}  buf     machine code byte buffer
      * @param {number}  offset  start index of the buffer
@@ -6357,21 +6375,21 @@ export default class Z80 {
             return;
         }
         const dasmlist = [];
-        const memory_block = new MemoryBlock();
-        memory_block.create({ startAddr: addr - offset, size: size });
-        memory_block.mem = buf;
-        const cpu = new Z80({ memory: memory_block });
-        cpu.reg.PC = memory_block.startAddr;
+        const memoryBlock = new MemoryBlock();
+        memoryBlock.create({startAddr: addr - offset, size});
+        memoryBlock.mem = buf;
+        const cpu = new Z80({ memory: memoryBlock });
+        cpu.reg.PC = memoryBlock.startAddr;
         const orgInst = Z80LineAssembler.create(
-            "ORG", NumberUtil.HEX(memory_block.startAddr, 4) + "H");
-        orgInst.setAddress(memory_block.startAddr),
+            "ORG", NumberUtil.HEX(memoryBlock.startAddr, 4) + "H");
+        orgInst.setAddress(memoryBlock.startAddr),
             dasmlist.push(orgInst);
-        while (cpu.reg.PC < memory_block.startAddr + memory_block.size) {
+        while (cpu.reg.PC < memoryBlock.startAddr + memoryBlock.size) {
             const dis = cpu.disassemble(cpu.reg.PC, addr - offset + size);
             dis.setAddress(cpu.reg.PC);
             if (dis.bytecode.length > 0) {
                 dis.setComment('; ' + NumberUtil.HEX(dis.address, 4) + "H " +
-                    dis.bytecode.map(function (b) {
+                    dis.bytecode.map((b) => {
                         return NumberUtil.HEX(b, 2);
                     }).join(" "));
             }
@@ -6391,43 +6409,43 @@ export default class Z80 {
             addr2line[dis.address] = lineno;
         });
         dasmlist.forEach((dis, i, arr) => {
-            if (dis.ref_addr_to != null && dis.ref_addr_to in addr2line) {
-                const lineno = addr2line[dis.ref_addr_to];
-                arr[lineno].referenced_count++;
+            if (dis.refAddrTo != null && dis.refAddrTo in addr2line) {
+                const lineno = addr2line[dis.refAddrTo];
+                arr[lineno].refCount++;
             }
         });
         dasmlist.forEach((dis, i, arr) => {
-            if (dis.referenced_count > 0) {
+            if (dis.refCount > 0) {
                 arr[i].setLabel("$" + NumberUtil.HEX(dis.address, 4) + "H");
             }
         });
         return dasmlist;
     }
     static dasmlines(dasmlist) {
-        return dasmlist.map(function (dis) {
-            var addr;
-            if (dis.referenced_count > 0) {
+        return dasmlist.map((dis) => {
+            let addr;
+            if (dis.refCount > 0) {
                 addr = "L" + NumberUtil.HEX(dis.address, 4) + "H:";
             }
             else {
                 addr = "       ";
             }
             addr += "   ";
-            var mne = dis.mnemonic || "";
-            let operand = dis.operand || "";
+            let mne = dis.mnemonic || "";
+            const operand = dis.operand || "";
             if (mne && operand) {
                 while (mne.length < 8) {
                     mne += " ";
                 }
             }
-            var line = addr + '      ' + mne + operand;
+            let line = addr + '      ' + mne + operand;
             if (mne || operand) {
                 while (line.length < 40) {
                     line += ' ';
                 }
             }
-            if (dis.comment != "") {
-                if (dis.referenced_count == 0 && !mne && !operand) {
+            if (dis.comment !== "") {
+                if (dis.refCount === 0 && !mne && !operand) {
                     line = dis.comment;
                 }
                 else {

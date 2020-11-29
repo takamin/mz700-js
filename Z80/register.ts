@@ -2,6 +2,8 @@
 import NumberUtil from "../lib/number-util";
 import Z80BinUtil from "./bin-util";
 
+/* tslint:disable:no-bitwise no-console class-name */
+
 export default class Z80_Register {
 
     /* FLAG MASK BIT CONSTANT */
@@ -26,16 +28,14 @@ export default class Z80_Register {
     _A: number;
     _F: number;
 
-    PC: number;	//プログラムカウンタ
-    SP: number;	//スタックポインタ
-    IX: number;	//インデックスレジスタX
-    IY: number;	//インデックスレジスタY
-    R: number;	//リフレッシュレジスタ
-    I: number;	//割り込みベクタ
+    PC: number;	// プログラムカウンタ
+    SP: number;	// スタックポインタ
+    IX: number;	// インデックスレジスタX
+    IY: number;	// インデックスレジスタY
+    R: number;	// リフレッシュレジスタ
+    I: number;	// 割り込みベクタ
 
     constructor() {
-        var stdlib = (Function("return this;")());
-
         const heap = new ArrayBuffer(64 * 1024);
         this._flagTable = new Uint8Array(heap);
         this._PTableIndex = 0;
@@ -54,24 +54,36 @@ export default class Z80_Register {
         this._A = 0;
         this._F = 0;
 
-        //16bit register
-        this.PC = 0;	//プログラムカウンタ
-        this.SP = 0;	//スタックポインタ
-        this.IX = 0;	//インデックスレジスタX
-        this.IY = 0;	//インデックスレジスタY
-        
-        this.R = 0;	//リフレッシュレジスタ
-        this.I = 0;	//割り込みベクタ
+        // 16bit register
+        this.PC = 0;	// プログラムカウンタ
+        this.SP = 0;	// スタックポインタ
+        this.IX = 0;	// インデックスレジスタX
+        this.IY = 0;	// インデックスレジスタY
+
+        this.R = 0;	// リフレッシュレジスタ
+        this.I = 0;	// 割り込みベクタ
 
     };
 
     initTable(): void {
+        const setPTable = (idx:number, value:number):void => {
+            this._flagTable[this._PTableIndex + idx] = value;
+        };
+        const getPTable = (idx:number):number => {
+            return this._flagTable[this._PTableIndex + idx];
+        }
+        const setZSTable = (idx:number, value:number):void => {
+            this._flagTable[this._ZSTableIndex + idx] = value;
+        };
+        const setZSPTable = (idx:number, value:number):void => {
+            this._flagTable[this._ZSPTableIndex + idx] = value;
+        };
         let i:number = 0;
         let zs:number = 0;
         let p:number = 0;
         for (i = 0; i < 256; i++) {
             zs = 0;
-            if (i == 0) {
+            if (i === 0) {
                 zs = zs|Z80_Register.Z_FLAG;
             }
             if (i & 0x80) {
@@ -79,23 +91,23 @@ export default class Z80_Register {
             }
 
             p = 0;
-            if ((i & 1) != 0) { p = p + 1; }
-            if ((i & 2) != 0) { p = p + 1; }
-            if ((i & 4)!= 0) { p = p + 1; }
-            if ((i & 8) != 0) { p = p + 1; }
-            if ((i & 16) != 0) { p = p + 1; }
-            if ((i & 32) != 0) { p = p + 1; }
-            if ((i & 64) != 0) { p = p + 1; }
-            if ((i & 128) != 0) { p = p + 1; }
+            if ((i & 1) !== 0) { p = p + 1; }
+            if ((i & 2) !== 0) { p = p + 1; }
+            if ((i & 4)!== 0) { p = p + 1; }
+            if ((i & 8) !== 0) { p = p + 1; }
+            if ((i & 16) !== 0) { p = p + 1; }
+            if ((i & 32) !== 0) { p = p + 1; }
+            if ((i & 64) !== 0) { p = p + 1; }
+            if ((i & 128) !== 0) { p = p + 1; }
 
-            this.setPTable(i, ((p & 1) ? 0 : Z80_Register.V_FLAG));
-            this.setZSTable(i,  zs );
-            this.setZSPTable(i, zs | this.getPTable(i));
+            setPTable(i, ((p & 1) ? 0 : Z80_Register.V_FLAG));
+            setZSTable(i,  zs);
+            setZSPTable(i, zs | getPTable(i));
         }
         for (i = 0; (i) < 256; i = ((i) + 1)) {
-            this.setZSTable(  i + 256,  this.getZSTable(i) | Z80_Register.C_FLAG );
-            this.setZSPTable( i + 256, this.getZSPTable(i) | Z80_Register.C_FLAG );
-            this.setPTable(   i + 256,   this.getPTable(i) | Z80_Register.C_FLAG );
+            setZSTable(i + 256, this.getZSTable(i) | Z80_Register.C_FLAG);
+            setZSPTable(i + 256, this.getZSPTable(i) | Z80_Register.C_FLAG);
+            setPTable(i + 256, getPTable(i) | Z80_Register.C_FLAG);
         }
     }
 
@@ -161,15 +173,15 @@ export default class Z80_Register {
     clearFlagN(): void { this._F = this._F & (~Z80_Register.N_FLAG & 0xff); }
     clearFlagC(): void { this._F = this._F & (~Z80_Register.C_FLAG & 0xff); }
 
-    //#define M_ADDW(Reg1,Reg2)                              \
-    //{                                                      \
+    // #define M_ADDW(Reg1,Reg2)                              \
+    // {                                                      \
     // int q;                                                \
     // q=R.Reg1.D+R.Reg2.D;                                  \
     // R.AF.B.l=(R.AF.B.l&(S_FLAG|Z_FLAG|V_FLAG))|           \
     //          (((R.Reg1.D^q^R.Reg2.D)&0x1000)>>8)|         \
     //          ((q>>16)&1);                                 \
     // R.Reg1.W.l=q;                                         \
-    //}
+    // }
     ADDW(a:number, b:number): number
     {
         const q = a + b;
@@ -184,8 +196,8 @@ export default class Z80_Register {
     {
         this.setHL(this.ADDW(this.getHL(), n));
     }
-    //#define M_ADCW(Reg)                                            \
-    //{                                                              \
+    // #define M_ADCW(Reg)                                            \
+    // {                                                              \
     // int q;                                                        \
     // q=R.HL.D+R.Reg.D+(R.AF.D&1);                                  \
     // R.AF.B.l=(((R.HL.D^q^R.Reg.D)&0x1000)>>8)|                    \
@@ -194,7 +206,7 @@ export default class Z80_Register {
     //          ((q&65535)?0:Z_FLAG)|                                \
     //          (((R.Reg.D^R.HL.D^0x8000)&(R.Reg.D^q)&0x8000)>>13);  \
     // R.HL.W.l=q;                                                   \
-    //}
+    // }
     ADC_HL(n:number): void
     {
         const HL = this.getHL();
@@ -207,8 +219,8 @@ export default class Z80_Register {
         this.setHL(q);
     }
 
-    //#define M_SBCW(Reg)                                    \
-    //{                                                      \
+    // #define M_SBCW(Reg)                                    \
+    // {                                                      \
     // int q;                                                \
     // q=R.HL.D-R.Reg.D-(R.AF.D&1);                          \
     // R.AF.B.l=(((R.HL.D^q^R.Reg.D)&0x1000)>>8)|            \
@@ -218,7 +230,7 @@ export default class Z80_Register {
     //          (((R.Reg.D^R.HL.D)&(R.Reg.D^q)&0x8000)>>13)| \
     //          N_FLAG;                                      \
     // R.HL.W.l=q;                                           \
-    //}
+    // }
     SBC_HL(n:number): void
     {
         const HL = this.getHL();
@@ -239,7 +251,7 @@ export default class Z80_Register {
     incDE():void { this.setDE(this.getDE() + 1); }
     decDE():void { this.setDE(this.getDE() - 1); }
 
-    //#define M_RLCA
+    // #define M_RLCA
     // R.AF.B.h=(R.AF.B.h<<1)|((R.AF.B.h&0x80)>>7);
     // R.AF.B.l=(R.AF.B.l&0xEC)|(R.AF.B.h&C_FLAG)
     RLCA(): void {
@@ -247,20 +259,20 @@ export default class Z80_Register {
         this.setA(((acc << 1) | ((acc & 0x80) >> 7)) & 255);
         this.setF((this.getF() & 0xEC) | (this.getA() & 0x01));
     }
-    //#define M_RLA               \
-    //{                           \
+    // #define M_RLA               \
+    // {                           \
     // int i;                     \
     // i=R.AF.B.l&C_FLAG;         \
     // R.AF.B.l=(R.AF.B.l&0xEC)|((R.AF.B.h&0x80)>>7); \
     // R.AF.B.h=(R.AF.B.h<<1)|i;  \
-    //}
+    // }
     RLA(): void {
         const i = this.getF() & Z80_Register.C_FLAG;
         const acc = this.getA();
         this.setF((this.getF() & 0xEC) | ((acc & 0x80) >> 7));
         this.setA(((acc << 1) | i) & 255);
     }
-    //#define M_RRCA              \
+    // #define M_RRCA              \
     // R.AF.B.l=(R.AF.B.l&0xEC)|(R.AF.B.h&0x01); \
     // R.AF.B.h=(R.AF.B.h>>1)|(R.AF.B.h<<7)
     RRCA(): void {
@@ -268,86 +280,86 @@ export default class Z80_Register {
         this.setF((this.getF() & 0xEC) | (acc & 0x01));
         this.setA((acc >> 1) | ((acc << 7) & 255));
     }
-    //#define M_RRA               \
-    //{                           \
+    // #define M_RRA               \
+    // {                           \
     // int i;                     \
     // i=R.AF.B.l&C_FLAG;         \
     // R.AF.B.l=(R.AF.B.l&0xEC)|(R.AF.B.h&0x01); \
     // R.AF.B.h=(R.AF.B.h>>1)|(i<<7);            \
-    //}
+    // }
     RRA():void {
         const i = this.getF() & Z80_Register.C_FLAG;
         const acc = this.getA();
         this.setF((this.getF() & 0xEC) | (acc & 0x01));
         this.setA((acc >> 1) | (i << 7));
     }
-    //static void ind(void)
-    //{
+    // static void ind(void)
+    // {
     // --R.BC.B.h;
     // M_WRMEM(R.HL.D,DoIn(R.BC.B.l,R.BC.B.h));
     // --R.HL.W.l;
     // R.AF.B.l=(R.BC.B.h)? N_FLAG:(N_FLAG|Z_FLAG);
-    //}
+    // }
     postIND():void {
         this.decHL();
         this.setF(this.getB() ? Z80_Register.N_FLAG : Z80_Register.N_FLAG | Z80_Register.Z_FLAG);
     }
-    //static void ini(void)
-    //{
+    // static void ini(void)
+    // {
     // --R.BC.B.h;
     // M_WRMEM(R.HL.D,DoIn(R.BC.B.l,R.BC.B.h));
     // ++R.HL.W.l;
     // R.AF.B.l=(R.BC.B.h)? N_FLAG:(N_FLAG|Z_FLAG);
-    //}
+    // }
     postINI(): void {
         this.incHL();
         this.setF(this.getB() ? Z80_Register.N_FLAG : Z80_Register.N_FLAG | Z80_Register.Z_FLAG);
     }
-    //static void outd(void)
-    //{
+    // static void outd(void)
+    // {
     // --R.BC.B.h;
     // DoOut (R.BC.B.l,R.BC.B.h,(word)M_RDMEM(R.HL.D));
     // --R.HL.W.l;
     // R.AF.B.l=(R.BC.B.h)? N_FLAG:(Z_FLAG|N_FLAG);
-    //}
+    // }
     postOUTD(): void {
         this.decHL();
         this.setF(this.getB() ? Z80_Register.N_FLAG : Z80_Register.N_FLAG | Z80_Register.Z_FLAG);
     }
-    //static void outi(void)
-    //{
+    // static void outi(void)
+    // {
     // --R.BC.B.h;
     // DoOut (R.BC.B.l,R.BC.B.h,(word)M_RDMEM(R.HL.D));
     // ++R.HL.W.l;
     // R.AF.B.l=(R.BC.B.h)? N_FLAG:(Z_FLAG|N_FLAG);
-    //}
+    // }
     postOUTI(): void {
         this.incHL();
         this.setF(this.getB() ? Z80_Register.N_FLAG : Z80_Register.N_FLAG | Z80_Register.Z_FLAG);
     }
 
-    //static void ldd(void)
-    //{
+    // static void ldd(void)
+    // {
     // M_WRMEM(R.DE.D,M_RDMEM(R.HL.D));
     // --R.DE.W.l;
     // --R.HL.W.l;
     // --R.BC.W.l;
     // R.AF.B.l=(R.AF.B.l&0xE9)|(R.BC.D? V_FLAG:0);
-    //}
+    // }
     onLDD(): void {
         this.decDE();
         this.decHL();
         this.decBC();
         this.setF((this.getF() & 0xE9) | (this.getBC() ? Z80_Register.V_FLAG : 0));
     }
-    //static void ldi(void)
-    //{
+    // static void ldi(void)
+    // {
     // M_WRMEM(R.DE.D,M_RDMEM(R.HL.D));
     // ++R.DE.W.l;
     // ++R.HL.W.l;
     // --R.BC.W.l;
     // R.AF.B.l=(R.AF.B.l&0xE9)|(R.BC.D? V_FLAG:0);
-    //}
+    // }
     onLDI(): void {
         this.incDE();
         this.incHL();
@@ -420,49 +432,49 @@ export default class Z80_Register {
             (((n ^ this.getA() ^ 0x80) & (n ^ q) & 0x80) >> 5));
         this.setA( q & 255 );
     }
-    //#define M_AND(Reg)
+    // #define M_AND(Reg)
     //  R.AF.B.h &= Reg;
     //  R.AF.B.l = ZSPTable[R.AF.B.h] | H_FLAG
     andAcc(n:number): void {
         this.setA( this.getA() & (n & 0xff) );
         this.setF( this.getZSPTable(this.getA()) | Z80_Register.H_FLAG );
     }
-    //#define M_OR(Reg)
+    // #define M_OR(Reg)
     //  R.AF.B.h |= Reg;
     //  R.AF.B.l = ZSPTable[R.AF.B.h]
     orAcc(n:number): void {
         this.setA( (this.getA()) | (n & 0xff) );
         this.setF( this.getZSPTable(this.getA()) );
     }
-    //#define M_XOR(Reg)
+    // #define M_XOR(Reg)
     //  R.AF.B.h ^= Reg;
     //  R.AF.B. l= ZSPTable[R.AF.B.h]
     xorAcc(n:number): void {
         this.setA( (this.getA()) ^ (n & 0xff) );
         this.setF( this.getZSPTable(this.getA()) );
     }
-    //static void cpl(void) {
+    // static void cpl(void) {
     //  R.AF.B.h^=0xFF;
     //  R.AF.B.l|=(H_FLAG|N_FLAG);
-    //}
+    // }
     CPL(): void {
         this.setA((this.getA() ^ 0xff) & 255);
         this.setF(Z80_Register.H_FLAG | Z80_Register.N_FLAG);
     }
 
-    //static void neg(void)
-    //{
+    // static void neg(void)
+    // {
     // byte i;
     // i=R.AF.B.h;
     // R.AF.B.h=0;
     // M_SUB(i);
-    //}
+    // }
     NEG(): void {
         const i = this.getA();
         this.setA(0);
         this.subAcc(i);
     }
-    //#define M_INC(Reg)
+    // #define M_INC(Reg)
     // ++Reg;
     // R.AF.B.l=(R.AF.B.l&C_FLAG)|ZSTable[Reg]|
     //          ((Reg==0x80)?V_FLAG:0)|((Reg&0x0F)?0:H_FLAG)
@@ -470,38 +482,38 @@ export default class Z80_Register {
         n = (n + 1) & 255;
         this.setF( (this.getF() & Z80_Register.C_FLAG) |
             this.getZSTable(n) |
-            (n == 0x80 ? Z80_Register.V_FLAG : 0) |
+            (n === 0x80 ? Z80_Register.V_FLAG : 0) |
             ((n & 0x0F) ? 0 : Z80_Register.H_FLAG) );
         return n;
     }
-    //#define M_DEC(Reg)
+    // #define M_DEC(Reg)
     //  R.AF.B.l=(R.AF.B.l&C_FLAG)|N_FLAG|
     //           ((Reg==0x80)?V_FLAG:0)|((Reg&0x0F)?0:H_FLAG);
     //  R.AF.B.l|=ZSTable[--Reg]
     getDECValue(n:number): number {
         this.setF( (this.getF() & Z80_Register.C_FLAG) | Z80_Register.N_FLAG |
-            (n == 0x80 ? Z80_Register.V_FLAG : 0) |
+            (n === 0x80 ? Z80_Register.V_FLAG : 0) |
             ((n & 0x0F) ? 0 : Z80_Register.H_FLAG) );
         n = (n - 1) & 255;
         this.setF( this.getF() | this.getZSTable(n) );
         return n;
     }
-    //#define M_CP(Reg)
-    //{
+    // #define M_CP(Reg)
+    // {
     // int q;
     // q=R.AF.B.h-Reg;
     // R.AF.B.l=ZSTable[q&255]|((q&256)>>8)|N_FLAG|
     //          ((R.AF.B.h^q^Reg)&H_FLAG)|
     //          (((Reg^R.AF.B.h)&(Reg^q)&0x80)>>5);
-    //}
+    // }
     compareAcc(n:number): void {
         const q = ((this.getA()) - n);
         this.setF( (this.getZSTable(q & 255)) | ((q & 256) >> 8) | Z80_Register.N_FLAG |
             ((this.getA() ^ q ^ n) & Z80_Register.H_FLAG) |
             (((n ^ this.getA()) & (n ^ q) & 0x80) >> 5) );
     }
-    //static void cpi(void)
-    //{
+    // static void cpi(void)
+    // {
     // byte i,j;
     // i=M_RDMEM(R.HL.D);
     // j=R.AF.B.h-i;
@@ -509,7 +521,7 @@ export default class Z80_Register {
     // --R.BC.W.l;
     // R.AF.B.l=(R.AF.B.l&C_FLAG)|ZSTable[j]|
     //          ((R.AF.B.h^i^j)&H_FLAG)|(R.BC.D? V_FLAG:0)|N_FLAG;
-    //}
+    // }
     CPI(n:number) {
         const q = ((this.getA()) - n);
         this.incHL();
@@ -518,8 +530,8 @@ export default class Z80_Register {
                 ((this.getA() ^ n ^ q) & Z80_Register.H_FLAG) |
                 (this.getBC() ? Z80_Register.V_FLAG : 0) | Z80_Register.N_FLAG );
     }
-    //static void cpd(void)
-    //{
+    // static void cpd(void)
+    // {
     // byte i,j;
     // i=M_RDMEM(R.HL.D);
     // j=R.AF.B.h-i;
@@ -527,7 +539,7 @@ export default class Z80_Register {
     // --R.BC.W.l;
     // R.AF.B.l=(R.AF.B.l&C_FLAG)|ZSTable[j]|
     //          ((R.AF.B.h^i^j)&H_FLAG)|(R.BC.D? V_FLAG:0)|N_FLAG;
-    //}
+    // }
     CPD(n:number) {
         const q = this.getA() - n;
         this.decHL();
@@ -536,118 +548,118 @@ export default class Z80_Register {
                 ((this.getA() ^ n ^ q) & Z80_Register.H_FLAG) |
                 (this.getBC() ? Z80_Register.V_FLAG : 0) | Z80_Register.N_FLAG );
     }
-    //#define M_RLC(Reg)
-    //{
+    // #define M_RLC(Reg)
+    // {
     // int q;
     // q=Reg>>7;
     // Reg=(Reg<<1)|q;
     // R.AF.B.l=ZSPTable[Reg]|q;
-    //}
+    // }
     RLC(x:number) {
         const q = x >> 7;
         x = ((x << 1) | q) & 255;
         this.setF( this.getZSPTable(x) | q );
         return x;
     }
-    //#define M_RL(Reg)            \
-    //{                            \
+    // #define M_RL(Reg)            \
+    // {                            \
     // int q;                      \
     // q=Reg>>7;                   \
     // Reg=(Reg<<1)|(R.AF.B.l&1);  \
     // R.AF.B.l=ZSPTable[Reg]|q;   \
-    //}
+    // }
     RL(x:number) {
         const q = x >> 7;
         x = ((x << 1) | (this.getF() & 1)) & 255;
         this.setF( this.getZSPTable(x) | q );
         return x;
     }
-    //#define M_RRC(Reg)         \
-    //{                          \
+    // #define M_RRC(Reg)         \
+    // {                          \
     // int q;                    \
     // q=Reg&1;                  \
     // Reg=(Reg>>1)|(q<<7);      \
     // R.AF.B.l=ZSPTable[Reg]|q; \
-    //}
+    // }
     RRC(x:number) {
         const q = x & 1;
         x = (x >> 1) | ((q << 7) & 255);
         this.setF( this.getZSPTable(x) | q );
         return x;
     }
-    //#define M_RR(Reg)            \
-    //{                            \
+    // #define M_RR(Reg)            \
+    // {                            \
     // int q;                      \
     // q=Reg&1;                    \
     // Reg=(Reg>>1)|(R.AF.B.l<<7); \
     // R.AF.B.l=ZSPTable[Reg]|q;   \
-    //}
+    // }
     RR(x:number) {
         const q = x & 1;
         x = (x >> 1) | ((this.getF() << 7) & 255);
         this.setF( this.getZSPTable(x) | q );
         return x;
     }
-    //#define M_SLA(Reg)           \
-    //{                            \
+    // #define M_SLA(Reg)           \
+    // {                            \
     // int q;                      \
     // q=Reg>>7;                   \
     // Reg<<=1;                    \
     // R.AF.B.l=ZSPTable[Reg]|q;   \
-    //}
+    // }
     SLA(x:number) {
         const q = x >> 7;
         x = (x << 1) & 255;
         this.setF( this.getZSPTable(x) | q );
         return x;
     }
-    //#define M_SRA(Reg)           \
-    //{                            \
+    // #define M_SRA(Reg)           \
+    // {                            \
     // int q;                      \
     // q=Reg&1;                    \
     // Reg=(Reg>>1)|(Reg&0x80);    \
     // R.AF.B.l=ZSPTable[Reg]|q;   \
-    //}
+    // }
     SRA(x:number) {
         const q = x & 1;
         x = (x >> 1) | (x & 0x80);
         this.setF( this.getZSPTable(x) | q );
         return x;
     }
-    //#define M_SRL(Reg)           \
-    //{                            \
+    // #define M_SRL(Reg)           \
+    // {                            \
     // int q;                      \
     // q=Reg&1;                    \
     // Reg>>=1;                    \
     // R.AF.B.l=ZSPTable[Reg]|q;   \
-    //}
+    // }
     SRL(x:number) {
         const q = x & 1;
         x = x >> 1;
         this.setF( this.getZSPTable(x) | q );
         return x;
     }
-    //#define DoIn(lo,hi)     Z80_In( (word) ((lo)|((word) ((hi)<<8) )))
-    //#define M_IN(Reg)           \
+    // #define DoIn(lo,hi)     Z80_In( (word) ((lo)|((word) ((hi)<<8) )))
+    // #define M_IN(Reg)           \
     //        Reg=DoIn(R.BC.B.l,R.BC.B.h); \
     //        R.AF.B.l=(R.AF.B.l&C_FLAG)|ZSPTable[Reg]
     onReadIoPort(Reg:number) {
         this.setF( (this.getF() & Z80_Register.C_FLAG) | this.getZSPTable(Reg) );
     }
-    //static void ld_a_i(void)
-    //{
+    // static void ld_a_i(void)
+    // {
     // R.AF.B.h=R.I;
     // R.AF.B.l=(R.AF.B.l&C_FLAG)|ZSTable[R.I]|(R.IFF2<<2);
-    //}
+    // }
     LD_A_I(iff2:number) {
         this.setA(this.I);
         this.setF( (this.getF() & Z80_Register.C_FLAG) | this.getZSTable(this.I) | (iff2 << 2) );
     }
-    //static void ld_a_r(void)
-    //{
+    // static void ld_a_r(void)
+    // {
     // R.AF.B.h=(R.R&127)|(R.R2&128);
     // R.AF.B.l=(R.AF.B.l&C_FLAG)|ZSTable[R.AF.B.h]|(R.IFF2<<2);
-    //}
+    // }
     LD_A_R(iff2:number,r2:number) {
         this.setA((this.R & 127) | (r2 & 128));
         this.setF( (this.getF() & Z80_Register.C_FLAG) | (this.getZSTable(this.getA())) | (iff2 << 2) );
@@ -781,7 +793,7 @@ export default class Z80_Register {
      * 10		HL
      * 11		AF
      */
-   static REG_r_ID2NAME = {0:"B",1:"C",2:"D",3:"E",4:"H",5:"L",7:"A"};
+   static REG_R_ID2NAME = {0:"B",1:"C",2:"D",3:"E",4:"H",5:"L",7:"A"};
 
     /* -------------------
      * pp		ペアレジスタ
@@ -839,37 +851,16 @@ export default class Z80_Register {
      * 111		38H
      */
 
-    getPTable(idx:number): number {
-        idx = idx | 0;
-        return this._flagTable[this._PTableIndex + idx];
-    }
-    setPTable(idx:number, value:number): void {
-        idx = idx | 0;
-        value = value | 0;
-        this._flagTable[this._PTableIndex + idx] = value;
-    }
     getZSTable(idx:number): number {
-        idx = idx | 0;
         return this._flagTable[this._ZSTableIndex + idx];
     }
-    setZSTable(idx:number, value:number): void {
-        idx = idx | 0;
-        value = value | 0;
-        this._flagTable[this._ZSTableIndex + idx] = value;
-    }
     getZSPTable(idx:number): number {
-        idx = idx | 0;
         return this._flagTable[this._ZSPTableIndex + idx];
-    }
-    setZSPTable(idx:number, value:number): void {
-        idx = idx | 0;
-        value = value | 0;
-        this._flagTable[this._ZSPTableIndex + idx] = value;
     }
 
     DAA(): void {
-        var i = this.getA();
-        var f = this.getF();
+        let i = this.getA();
+        const f = this.getF();
         if(f & Z80_Register.C_FLAG) { i |= 0x100; }
         if(f & Z80_Register.H_FLAG) { i |= 0x200; }
         if(f & Z80_Register.N_FLAG) { i |= 0x400; }

@@ -25,12 +25,12 @@ export default class EventDispatcher {
      * @param eventName An event name
      * @param handler An event handler
      */
-    addEventListener(eventName:string, handler:Function):void {
+    addEventListener(eventName:string, handler:()=>void):void {
         this._handlers[eventName].push(handler);
     }
 
     /**
-     * @param eventName 
+     * @param eventName event name
      */
     fireEvent(eventName:string):void {
         this._handlers[eventName].forEach(handler => handler());

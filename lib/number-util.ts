@@ -1,4 +1,7 @@
 "use strict";
+
+/* tslint:disable: no-bitwise */
+
 export default class NumberUtil {
     static zs(num:number, base:number, columns:number):string {
         const s = num.toString(base);
@@ -22,7 +25,7 @@ export default class NumberUtil {
      * @returns The converted 8 bit signed integer.
      */
     static to8bitSigned(i8u:number):number {
-        if((~0xff & i8u) != 0) {
+        if((~0xff & i8u) !== 0) {
             throw new Error([
                 `Invalid input value ${i8u}`,
                 `(should be between 0 and 255)`,

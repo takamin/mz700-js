@@ -304,10 +304,10 @@ MZ700.prototype.setMonitorRom = function(bin) {
 MZ700.prototype.writeAsmCode = function(assembled) {
     for(let i = 0; i < assembled.buffer.length; i++) {
         this.memory.poke(
-                assembled.min_addr + i,
+                assembled.minAddr + i,
                 assembled.buffer[i]);
     }
-    return assembled.min_addr;
+    return assembled.minAddr;
 };
 
 MZ700.prototype.exec = function(execCount) {
@@ -368,8 +368,8 @@ MZ700.prototype.getCassetteTape = function() {
 MZ700.prototype.loadCassetteTape = function() {
     for(let i = 0; i < this.mzt_array.length; i++) {
         const mzt = this.mzt_array[i];
-        for(let j = 0; j < mzt.header.file_size; j++) {
-            this.memory.poke(mzt.header.addr_load + j, mzt.body.buffer[j]);
+        for(let j = 0; j < mzt.header.fileSize; j++) {
+            this.memory.poke(mzt.header.addrLoad + j, mzt.body.buffer[j]);
         }
     }
 };
@@ -503,8 +503,8 @@ MZ700.disassemble = function(mztape_array) {
         }));
         Array.prototype.push.apply(dasmlist, Z80.dasm(
             mzt.body.buffer, 0,
-            mzt.header.file_size,
-            mzt.header.addr_load));
+            mzt.header.fileSize,
+            mzt.header.addrLoad));
     });
 
     let dasmlines = Z80.dasmlines(dasmlist);

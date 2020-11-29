@@ -17,10 +17,10 @@ module.exports = new CliCommand("cmt", (mz700, args) => {
                     if(mzt_list != null && mzt_list.length > 0) {
                         mzt_list.forEach(function(mzt, i) {
                             console.log("[" + (i + 1) + "/" + mzt_list.length + "] " +
-                                HEX(mzt.header.addr_load, 4) + "h --- " +
-                                HEX(mzt.header.addr_load + mzt.header.file_size - 1, 4) + "h " +
-                                "(" + mzt.header.file_size + " bytes), " +
-                                HEX(mzt.header.addr_exec, 4) + "h, " + mzt.header.filename);
+                                HEX(mzt.header.addrLoad, 4) + "h --- " +
+                                HEX(mzt.header.addrLoad + mzt.header.fileSize - 1, 4) + "h " +
+                                "(" + mzt.header.fileSize + " bytes), " +
+                                HEX(mzt.header.addrExec, 4) + "h, " + mzt.header.filename);
                             if(!setCMT) {
                                 var bytes = mzt.header.buffer.concat(mzt.body.buffer);
                                 mz700.setCassetteTape(bytes);
@@ -43,10 +43,10 @@ module.exports = new CliCommand("cmt", (mz700, args) => {
                 }
                 var header = new MZ_TapeHeader(bytes, 0);
                 console.log("Tape data: " +
-                        HEX(header.addr_load, 4) + "-" +
-                        HEX(header.addr_load + header.file_size - 1, 4) + "(" +
-                        header.file_size + " bytes), Start with" +
-                        HEX(header.addr_exec, 4) + "," +
+                        HEX(header.addrLoad, 4) + "-" +
+                        HEX(header.addrLoad + header.fileSize - 1, 4) + "(" +
+                        header.fileSize + " bytes), Start with" +
+                        HEX(header.addrExec, 4) + "," +
                         header.filename);
             }
             break;

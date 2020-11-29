@@ -1,6 +1,8 @@
 "use strict";
 import mz700cg from "./mz700-cg";
 
+/* tslint:disable: no-bitwise */
+
 export default class MZ700CanvasRenderer {
 
     static colors = {
@@ -23,9 +25,9 @@ export default class MZ700CanvasRenderer {
     // Dot size of a character
     //
     static charSize = {"dotWidth":8, "dotHeight":8};
-    //A canvas element
+    // A canvas element
     _canvas:HTMLCanvasElement;
-    //A canvas context to draw
+    // A canvas context to draw
     _ctx = null;
 
     opt:{
@@ -46,12 +48,12 @@ export default class MZ700CanvasRenderer {
         color: MZ700CanvasRenderer.colors.white,
         backgroundColor: MZ700CanvasRenderer.colors.blue,
     };
-    vramText:Array<number> = [];
-    vramAttr:Array<number> = [];
+    vramText:number[] = [];
+    vramAttr:number[] = [];
     _font;
-    idxloc:Array<{x:number, y:number}>;
+    idxloc:{x:number, y:number}[];
 
-    constructor() { }
+    constructor() { /* empty */ }
 
     //
     // Create screen
@@ -90,7 +92,7 @@ export default class MZ700CanvasRenderer {
         // A translation table to convert an address index on the VRAM
         // to the X-Y pixel position where a character shown.
         //
-        this.idxloc = (function (idxloc, cols, rows) {
+        this.idxloc = ((idxloc, cols, rows) => {
             for (let y = 0; y < rows; y++) {
                 for (let x = 0; x < cols; x++) {
                     idxloc.push({
@@ -100,10 +102,10 @@ export default class MZ700CanvasRenderer {
                 }
             }
             return idxloc;
-        } ([], this.opt.cols, this.opt.rows));
+        })([], this.opt.cols, this.opt.rows);
     }
     setupRendering():void {
-        //Save canvas context
+        // Save canvas context
         this._ctx = this._canvas.getContext('2d');
         this._ctx.mozImageSmoothingEnabled = false;
         this._ctx.webkitImageSmoothingEnabled = false;
@@ -121,7 +123,7 @@ export default class MZ700CanvasRenderer {
         const n = this.opt.cols * this.opt.rows;
         for (let i = 0; i < n; i++) {
             const attr = this.vramAttr[i];
-            if (this.vramText[i] == dispCode && (attr & 0x80) == abit) {
+            if (this.vramText[i] === dispCode && (attr & 0x80) === abit) {
                 this.writeVram(i, attr, dispCode);
             }
         }
@@ -168,7 +170,7 @@ export default class MZ700CanvasRenderer {
      */
     clear():void {
         const limit:number = this.opt.rows * this.opt.cols;
-        const chars:Array<string> = MZ700CanvasRenderer.str2chars(' ');
+        const chars:string[] = MZ700CanvasRenderer.str2chars(' ');
         for (let relAddr = 0; relAddr < limit; relAddr++) {
             this.putChars(chars, relAddr, 0);
         }
@@ -184,7 +186,7 @@ export default class MZ700CanvasRenderer {
         const chars = MZ700CanvasRenderer.str2chars(s);
         return this.putChars(chars, x, y);
     }
-    putChars(chars:Array<string>, x:number, y:number):number {
+    putChars(chars:string[], x:number, y:number):number {
         const limit = this.opt.rows * this.opt.cols;
         const colorSpec = this.opt.color << 4 | this.opt.backgroundColor;
         let n = 0;
@@ -200,7 +202,7 @@ export default class MZ700CanvasRenderer {
         return n;
     }
 
-    private static TableDispCode2Char:Array<Array<Array<string>>> = [
+    private static TableDispCode2Char:string[][][] = [
         [
             [" ","A","B","C","D","E","F","G","H","I","J","K","L","M","N","O"],
             ["P","Q","R","S","T","U","V","W","X","Y","Z","┼","└","┘","├","┴"],
@@ -255,13 +257,13 @@ export default class MZ700CanvasRenderer {
      * A dummy field like a static constructor
      */
     static initializer = (() => {
-        MZ700CanvasRenderer.TableDispCode2Char.forEach(function(table, attr) {
-            table.forEach(function(line, upper) {
-                line.forEach(function(c, lower) {
+        MZ700CanvasRenderer.TableDispCode2Char.forEach((table, attr) => {
+            table.forEach((line, upper) => {
+                line.forEach((c, lower) => {
                     if(!(c in MZ700CanvasRenderer.MapChar2DispCode)) {
                         MZ700CanvasRenderer.MapChar2DispCode[c] = {
                             "attr": attr,
-                            "dispcode" : upper << 4 | lower
+                            "dispcode" : upper << 4 | lower,
                         };
                     }
                 });
@@ -277,21 +279,21 @@ export default class MZ700CanvasRenderer {
         return charData;
     }
 
-    static str2chars(s:string):Array<string> {
+    static str2chars(s:string):string[] {
         const chars = s.split('');
         const entities = [];
         let entityRef = false;
         let entity = "";
-        chars.forEach(function(c) {
+        chars.forEach((c) => {
             if(!entityRef) {
-                if(c == '&') {
+                if(c === '&') {
                     entityRef = true;
                     entity = '';
                 } else {
                     entities.push(c);
                 }
             } else {
-                if(c == ';') {
+                if(c === ';') {
                     entities.push(entity.toUpperCase());
                     entityRef = false;
                     entity = '';

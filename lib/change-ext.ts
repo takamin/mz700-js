@@ -1,11 +1,11 @@
 "use strict";
-const path = require("path");
+import path = require("path");
 export default function changeExt(filename:string, ext:string):string {
     if(!/^\./.test(ext)) {
         ext = '.' + ext;
     }
-    const old_ext:string = path.extname(filename);
-    const re = new RegExp(`${old_ext}$`);
+    const oldExt:string = path.extname(filename);
+    const re = new RegExp(`${oldExt}$`);
     return filename.replace(re, ext);
 }
 module.exports = changeExt;

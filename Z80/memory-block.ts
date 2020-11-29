@@ -7,7 +7,7 @@ import IMem from "./imem";
  * @param {object} opt the options.
  */
 export default class MemoryBlock extends IMem {
-    mem:Array<number>;
+    mem:number[];
     constructor(opt?) {
         super();
         super.create(opt);
