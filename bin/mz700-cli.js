@@ -120,9 +120,9 @@ readline.on("line", line => {
 
 const mztReadFile = require("./cli-command/mzt-read-file");
 const mztWriteMem = (mz700, mzt) => {
-    const addr = mzt.header.addr_load;
+    const addr = mzt.header.addrLoad;
     const buf = mzt.body.buffer;
-    const size = mzt.header.file_size;
+    const size = mzt.header.fileSize;
     for(let i = 0; i < size; i++) {
         mz700.memory.poke(addr + i, buf[i]);
     }
@@ -143,10 +143,10 @@ const mztWriteMem = (mz700, mzt) => {
             if(mzt_list != null && mzt_list.length > 0) {
                 mzt_list.forEach((mzt, i) => {
                     console.log("[" + (i + 1) + "/" + mzt_list.length + "] " +
-                        HEX(mzt.header.addr_load, 4) + "h --- " +
-                        HEX((mzt.header.addr_load + mzt.header.file_size - 1), 4) + "h " +
-                        "(" + mzt.header.file_size + " bytes), " +
-                        HEX(mzt.header.addr_exec, 4) + "h, " + mzt.header.filename);
+                        HEX(mzt.header.addrLoad, 4) + "h --- " +
+                        HEX((mzt.header.addrLoad + mzt.header.fileSize - 1), 4) + "h " +
+                        "(" + mzt.header.fileSize + " bytes), " +
+                        HEX(mzt.header.addrExec, 4) + "h, " + mzt.header.filename);
                     mztWriteMem(mz700, mzt);
                 });
             }

@@ -1,5 +1,7 @@
 "use strict";
 
+/* tslint:disable: no-string-literal no-console */
+
 /**
  * The beep-sound emulator for Sharp MZ-Serias.
  * @constructor
@@ -28,8 +30,8 @@ export default class MZBeep {
     gain:number = 0;
     poly:number = 128;
     indexOsc:number = 0;
-    oscNodes:Array<OscillatorNode> = null;
-    oscGainNodes:Array<GainNode> = null;
+    oscNodes:OscillatorNode[] = null;
+    oscGainNodes:GainNode[] = null;
 
     constructor() {
         window.AudioContext = window.AudioContext || window["webkitAudioContext"];
@@ -45,9 +47,9 @@ export default class MZBeep {
             this.totalGainNode.connect(this.audio.destination);
         } else {
             console.warn("NO AudioContext API supported by this browser.");
-            this.setGain = function(){};
-            this.startSound = function(){};
-            this.stopSound = function(){};
+            this.setGain = ()=>{ /* empty */ };
+            this.startSound = ()=>{ /* empty */ };
+            this.stopSound = ()=>{ /* empty */ };
         }
     }
 
@@ -117,13 +119,13 @@ export default class MZBeep {
                 this.audio.currentTime + this.attackTime + this.decayTime);
         oscGainNode.connect(this.totalGainNode);
 
-        var oscNode = this.oscNodes[indexOsc];
-        if(oscNode != null) {
-            oscNode.stop();
-            oscNode.disconnect();
+        const lastOscNode = this.oscNodes[indexOsc];
+        if(lastOscNode != null) {
+            lastOscNode.stop();
+            lastOscNode.disconnect();
         }
         this.oscNodes[indexOsc] = this.audio.createOscillator();
-        oscNode = this.oscNodes[indexOsc];
+        const oscNode = this.oscNodes[indexOsc];
         oscNode.type = "square";
         if(isFinite(freq)) {
             if(freq < MZBeep.FREQ_MIN) {

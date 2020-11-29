@@ -12,8 +12,8 @@ describe("Z80/assembler", () => {
                     "XOR A",
                 ].join("\n"),
             ]);
-            assert.equal(result.min_addr, 0);
-            assert.equal(result.max_addr, 3);
+            assert.equal(result.minAddr, 0);
+            assert.equal(result.maxAddr, 3);
             assert.deepEqual(result.buffer, [0x21, 0x34, 0x12, 0xAF]);
         });
         it("should link when the only first aseembly specify the origin", () => {
@@ -26,8 +26,8 @@ describe("Z80/assembler", () => {
                     "XOR A",
                 ].join("\n"),
             ]);
-            assert.equal(result.min_addr, 0x1200);
-            assert.equal(result.max_addr, 0x1203);
+            assert.equal(result.minAddr, 0x1200);
+            assert.equal(result.maxAddr, 0x1203);
             assert.deepEqual(result.buffer, [0x21, 0x34, 0x12, 0xAF]);
         });
         it("should link when the only second aseembly specify the origin", () => {
@@ -40,8 +40,8 @@ describe("Z80/assembler", () => {
                     "XOR A",
                 ].join("\n"),
             ]);
-            assert.equal(result.min_addr, 0x0000);
-            assert.equal(result.max_addr, 0x0004);
+            assert.equal(result.minAddr, 0x0000);
+            assert.equal(result.maxAddr, 0x0004);
             assert.deepEqual(result.buffer,
                 [0x21, 0x34, 0x12, 0x00, 0xAF]);
         });
@@ -56,8 +56,8 @@ describe("Z80/assembler", () => {
                     "XOR A",
                 ].join("\n"),
             ]);
-            assert.equal(result.min_addr, 0x0010);
-            assert.equal(result.max_addr, 0x0014);
+            assert.equal(result.minAddr, 0x0010);
+            assert.equal(result.maxAddr, 0x0014);
             assert.deepEqual(result.buffer,
                 [0x21, 0x34, 0x12, 0x00, 0xAF]);
         });
@@ -72,8 +72,8 @@ describe("Z80/assembler", () => {
                     "XOR A",
                 ].join("\n"),
             ]);
-            assert.equal(result.min_addr, 0x0010);
-            assert.equal(result.max_addr, 0x0014);
+            assert.equal(result.minAddr, 0x0010);
+            assert.equal(result.maxAddr, 0x0014);
             assert.deepEqual(result.buffer,
                 [0xAF, 0x00, 0x00, 0x00, 0x21, 0x34, 0x12, ]);
         });

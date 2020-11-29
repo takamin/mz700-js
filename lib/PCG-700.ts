@@ -1,5 +1,7 @@
 "use strict";
 
+/* tslint:disable:no-bitwise */
+
 import mz700cg from "./mz700-cg";
 import MZ700CanvasRenderer from "./mz700-canvas-renderer";
 
@@ -44,11 +46,11 @@ export default class PCG700 {
     constructor(screen:MZ700CanvasRenderer) {
         this._screen = screen;
 
-        //Copy original CGROM
+        // Copy original CGROM
         const patternBuffer = [];
-        for (var code = 0; code < 512; code++) {
+        for (let code = 0; code < 512; code++) {
             patternBuffer.push([0, 0, 0, 0, 0, 0, 0, 0]);
-            for (var row = 0; row < 8; row++) {
+            for (let row = 0; row < 8; row++) {
                 patternBuffer[code][row] = mz700cg.ROM[code][row];
             }
         }
@@ -86,7 +88,7 @@ export default class PCG700 {
      *      A value of zero would clears the flag, otherwise set.
      */
     setCopy(value:number):void {
-        this.copy = (value == 0) ? 0 : 1;
+        this.copy = (value === 0) ? 0 : 1;
     }
     /**
      * Set WE(Write Edge) flag.
@@ -96,7 +98,7 @@ export default class PCG700 {
      */
     setWE(value:number):void {
         const we = this.we;
-        this.we = (value == 0) ? 0 : 1;
+        this.we = (value === 0) ? 0 : 1;
         if (we && !this.we) {
             this.write();
         }
@@ -111,8 +113,8 @@ export default class PCG700 {
     setSSW(value:number):void {
         // Software switch
         const ssw = this.ssw;
-        this.ssw = (value == 0) ? 0 : 1;
-        if (ssw != this.ssw) {
+        this.ssw = (value === 0) ? 0 : 1;
+        if (ssw !== this.ssw) {
             this.applySSW();
         }
     }
@@ -120,7 +122,7 @@ export default class PCG700 {
      * Apply PCG or restore original CG to the screen.
      */
     applySSW():void {
-        if (this.ssw == 0) {
+        if (this.ssw === 0) {
             this._screen.changeCG(this._cg);
             this._screen.redraw();
         }
@@ -138,9 +140,9 @@ export default class PCG700 {
         const dispCode = 0x80 + ((this.addr >> 3) & 0x7f);
         const cpos = atb * 256 + dispCode;
         const row = (this.addr >> 0) & 0x07;
-        const pattern = ((this.copy == 0) ? this.pattern : mz700cg.ROM[cpos][row]);
+        const pattern = ((this.copy === 0) ? this.pattern : mz700cg.ROM[cpos][row]);
         this._cg.setPattern(atb, dispCode, row, pattern);
-        if (this.ssw == 0) {
+        if (this.ssw === 0) {
             this._screen.redrawChar(atb, dispCode);
         }
     }

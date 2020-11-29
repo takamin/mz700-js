@@ -1,5 +1,6 @@
 "use strict";
 
+/* tslint:disable:no-console */
 /**
  * Run the job after only once even if invoked frequentry short intervals.
  *
@@ -7,11 +8,9 @@
  * this invoke only last one once.
  *
  * This is useful to run heavy process in a scroll or mouse event handler.
- * 
- * @param {function} job
- * the process to invoked once
- * @param {number} duration
- * duration in milliseconds.
+ *
+ * @param {()=>void} job the process to invoked once
+ * @param {number} duration duration in milliseconds.
  * @returns {undefined}
  *
  * @author K.Takami
@@ -21,7 +20,7 @@ function doLater(job, duration) {
     if(job in doLater.TID) {
         clearTimeout(doLater.TID[job]);
     }
-    doLater.TID[job] = setTimeout(function() {
+    doLater.TID[job] = setTimeout(() => {
         delete doLater.TID[job];
         try {
             job.call();

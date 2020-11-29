@@ -1,4 +1,7 @@
 "use strict";
+
+/* tslint:disable:no-bitwise */
+
 export default class Z80BinUtil {
     static pair(h:number, l:number):number {
         return ((0xff & h) << 8) + (0xff & l);

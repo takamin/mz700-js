@@ -1,5 +1,7 @@
 "use strict"
 
+/* tslint:disable: class-name no-console */
+
 class MZ_DataRecorder {
 
     static RDATA_TOP_BLANK_LEN = 1;
@@ -7,7 +9,7 @@ class MZ_DataRecorder {
     static RDATA_CYCLE_HI_SHORT = 700;
     static RDATA_CYCLE_LO = 700;
 
-    _m_on:boolean = false;
+    _mOn:boolean = false;
     _play:boolean = false;
     _rec:boolean = false;
     _motor:boolean = false;
@@ -17,10 +19,10 @@ class MZ_DataRecorder {
     _trdata = null;
     _cmt = null;
     _pos:number = 0;
-    _motorCallback:Function = null;
+    _motorCallback:(driveState:boolean)=>void = null;
     _readTopBlank:number = 0;
 
-    constructor(motorCallback:Function) {
+    constructor(motorCallback:(driveState:boolean)=>void) {
         this._motorCallback = motorCallback;
     }
     isCmtSet() {
@@ -34,7 +36,7 @@ class MZ_DataRecorder {
         return this._cmt;
     }
     setCmt(cmt) {
-        var m = this.motor();
+        const m = this.motor();
         if (m) {
             this.stop();
         }
@@ -46,7 +48,7 @@ class MZ_DataRecorder {
         this._readTopBlank = 0;
     }
     play() {
-        var m = this.motor();
+        const m = this.motor();
         if (this._cmt != null) {
             this._play = true;
         }
@@ -55,7 +57,7 @@ class MZ_DataRecorder {
         }
     }
     rec() {
-        var m = this.motor();
+        const m = this.motor();
         if (this._cmt != null) {
             this._play = true;
             this._rec = true;
@@ -65,7 +67,7 @@ class MZ_DataRecorder {
         }
     }
     stop() {
-        var m = this.motor();
+        const m = this.motor();
         this._play = false;
         this._rec = false;
         if (m && !this.motor()) {
@@ -74,7 +76,7 @@ class MZ_DataRecorder {
     }
     ejectCmt() {
         this.stop();
-        var cmt = this._cmt;
+        const cmt = this._cmt;
         this._cmt = null;
         this._pos = 0;
         this._twdata = null;
@@ -84,11 +86,11 @@ class MZ_DataRecorder {
         return cmt;
     }
     m_on(state) {
-        var m = this.motor();
-        if (!this._m_on && state) {
+        const m = this.motor();
+        if (!this._mOn && state) {
             this._motor = !this._motor;
         }
-        this._m_on = state;
+        this._mOn = state;
         if (!m && this.motor()) {
             this._motorCallback(true);
         }
@@ -101,7 +103,7 @@ class MZ_DataRecorder {
     }
     wdata(wdata, tick) {
         if (this.motor() && this._rec) {
-            if (this._wdata != wdata) {
+            if (this._wdata !== wdata) {
                 this._wdata = wdata;
                 if (wdata) {
                     this._twdata = tick;
@@ -110,7 +112,7 @@ class MZ_DataRecorder {
                     if (this._twdata == null) {
                         this._twdata = tick;
                     }
-                    var bit = (tick - this._twdata > 1400);
+                    const bit = (tick - this._twdata > 1400);
                     if (this._pos < this._cmt.length) {
                         this._cmt[this._pos] = bit;
                         this._pos++;
@@ -127,7 +129,7 @@ class MZ_DataRecorder {
         if (this.motor()) {
             if (this._pos < this._cmt.length) {
                 // Simulate blank reagion at the top of CMT
-                if (this._pos == 0) {
+                if (this._pos === 0) {
                     if (this._readTopBlank <
                         MZ_DataRecorder.RDATA_TOP_BLANK_LEN) {
                         ++this._readTopBlank;
@@ -160,14 +162,14 @@ class MZ_DataRecorder {
                 //     H: 1500 cycle
                 //     L: 700  cycle
                 //
-                var ticks_high = (this._rbit ?
+                const ticksHigh = (this._rbit ?
                     MZ_DataRecorder.RDATA_CYCLE_HI_LONG :
                     MZ_DataRecorder.RDATA_CYCLE_HI_SHORT);
-                var ticks = tick - this._trdata;
-                if (ticks >= ticks_high + MZ_DataRecorder.RDATA_CYCLE_LO) {
+                const ticks = tick - this._trdata;
+                if (ticks >= ticksHigh + MZ_DataRecorder.RDATA_CYCLE_LO) {
                     this._rbit = null;
                 }
-                var signal = (ticks < ticks_high);
+                const signal = (ticks < ticksHigh);
                 return signal;
             }
         }

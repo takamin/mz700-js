@@ -1,61 +1,100 @@
 module.exports = function(grunt) {
     require('load-grunt-tasks')(grunt);
     grunt.initConfig({
+        clean: [
+            "./js/*.js",
+            "./js/*.map",
+        ],
         ts: {
             default: {
                 files: [
-                    { src: [
-                        "./Z80/*.ts",
-                        "./lib/*.ts",
-                    ] },
+                    {
+                        src: [
+                            "./Z80/*.ts",
+                            "./lib/*.ts",
+                        ]
+                    },
                 ],
                 "tsconfig": "./tsconfig.json",
             },
         },
         browserify: {
-            build: {
+            release: {
                 files: {
-                    "./build/bundle-mz700-emu.js": ["MZ-700/mz700-emu.js"],
-                    "./build/bundle-mz700-worker.js": ["MZ-700/mz700-worker.js"]
-                }
-            }
+                    "./js/mz700-emu-ws.js": [
+                        "MZ-700/mz700-emu-ws.js",
+                    ],
+                    "./js/mz700-emu.js": [
+                        "MZ-700/mz700-emu.js",
+                    ],
+                    "./js/mz700-worker.js": [
+                        "MZ-700/mz700-worker.js",
+                    ],
+                },
+            },
+            debug: {
+                files: {
+                    "./js/mz700-emu-ws.min.js": [
+                        "MZ-700/mz700-emu-ws.js",
+                    ],
+                    "./js/mz700-emu.min.js": [
+                        "MZ-700/mz700-emu.js",
+                    ],
+                    "./js/mz700-worker.min.js": [
+                        "MZ-700/mz700-worker.js",
+                    ],
+                },
+            },
         },
         uglify: {
-            build: {
+            default: {
                 files: {
-                    "./build/bundle-mz700-emu.min.js": ["./build/bundle-mz700-emu.js"],
-                    "./build/bundle-mz700-worker.min.js": ["./build/bundle-mz700-worker.js"]
-                }
-            }
+                    "./js/mz700-emu-ws.min.js": [
+                        "./js/mz700-emu-ws.js",
+                    ],
+                    "./js/mz700-emu.min.js": [
+                        "./js/mz700-emu.js",
+                    ],
+                    "./js/mz700-worker.min.js": [
+                        "./js/mz700-worker.js",
+                    ],
+                },
+                options: {
+                    sourceMap: true,
+                },
+            },
         },
         copy: {
-            "debug": {
+            default: {
                 files: {
-                    "./js/bundle-mz700-emu.js": ["./build/bundle-mz700-emu.js"],
-                    "./js/bundle-mz700-worker.js": ["./build/bundle-mz700-worker.js"],
-                    "./lib/codemirror.css": ["./node_modules/codemirror/lib/codemirror.css"]
-                }
+                    "./lib/codemirror.css": [
+                        "./node_modules/codemirror/lib/codemirror.css",
+                    ],
+                },
             },
-            "release": {
-                files: {
-                    "./js/bundle-mz700-emu.js": ["./build/bundle-mz700-emu.min.js"],
-                    "./js/bundle-mz700-worker.js": ["./build/bundle-mz700-worker.min.js"],
-                    "./lib/codemirror.css": ["./node_modules/codemirror/lib/codemirror.css"]
-                }
-            }
         },
-        eslint: {
-            target: [ "." ]
-        }
     });
 
+    grunt.loadNpmTasks('grunt-contrib-clean');
     grunt.loadNpmTasks("grunt-ts");
     grunt.loadNpmTasks("grunt-browserify");
     grunt.loadNpmTasks('grunt-contrib-uglify-es');
     grunt.loadNpmTasks('grunt-contrib-copy');
 
-    grunt.registerTask('lint',      ["ts", "eslint"]);
-    grunt.registerTask("debug",     ["lint", "browserify", "copy:debug" ]);
-    grunt.registerTask("release",   ["lint", "browserify", "uglify", "copy:release"]);
-    grunt.registerTask("default",   ["debug"]);
+    grunt.registerTask("debug", [
+        "ts",
+        "clean",
+        "browserify:debug",
+        "copy",
+    ]);
+    grunt.registerTask("release", [
+        "ts",
+        "clean",
+        "browserify:release",
+        "uglify",
+        "copy",
+    ]);
+    grunt.registerTask("default", [
+        "debug",
+    ]);
 };

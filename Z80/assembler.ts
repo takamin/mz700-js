@@ -1,3 +1,4 @@
+/* tslint:disable: class-name */
 /**
  * @fileoverview Z80 assembler class.
  */
@@ -6,23 +7,14 @@ import parseAddress from "../lib/parse-addr";
 
 /**
  * Z80 Assembler
- *
- * @constructor
- *
- * @param {string} asm_source The source code
- *
- * @param {boolean|undefined} assembleOnly
- * Set true not to resolve the addresses and create machine code.
- *
- * @param {number} startAddr
- * The starting address of assembling.
+ * @class
  */
 export default class Z80_assemble {
     /**
      * Assemble result lines
      * @type {object[]}
      */
-    list:Array<any> = [];
+    list:any[] = [];
     /**
      * mapping labels to address
      * @type {object}
@@ -39,42 +31,50 @@ export default class Z80_assemble {
      * A first address of this assembled codes.
      * @type {number}
      */
-    min_addr:number = null;
+    minAddr:number = null;
 
     /**
      * A last address of this assembled codes.
      * @type {number}
      */
-    max_addr:number = null;
+    maxAddr:number = null;
 
     /**
      * A binary code as assembling result.
      * @type {number[]}
      */
-    buffer:Array<number> = null;
+    buffer:number[] = null;
 
-    constructor(asm_source, assembleOnly, startAddr) {
+    /**
+     * @constructor
+     * @param {string} asmSource The source code
+     * @param {boolean|undefined} assembleOnly
+     * Set true not to resolve the addresses and create machine code.
+     * @param {number} startAddr
+     * The starting address of assembling.
+     */
+    constructor(asmSource, assembleOnly, startAddr) {
 
-        if(asm_source == undefined) {
+        if(asmSource === undefined) {
             return;
         }
 
         // Assemble the line by line
         let address = startAddr || 0;
-        let source_lines = asm_source.split(/\r{0,1}\n/);
-        source_lines.forEach( line => {
-            let assembled_code = Z80LineAssembler.assemble(
+        const sourceLines = asmSource.split(/\r{0,1}\n/);
+        sourceLines.forEach( line => {
+            const assembledCode = Z80LineAssembler.assemble(
                     line, address, this.label2value);
-            address = assembled_code.getNextAddress();
-            this.list.push(assembled_code);
+            address = assembledCode.getNextAddress();
+            this.list.push(assembledCode);
         });
 
         this._explicitAddress = Z80_assemble.hasExplicitAddress(this.list);
 
         if(assembleOnly) { // Estimate the code size
-            let range = Z80_assemble.measureCodeSize(this.list);
-            this.min_addr = range.min_addr;
-            this.max_addr = range.min_addr;
+            const range = Z80_assemble.measureCodeSize(this.list);
+            this.minAddr = range.minAddr;
+            this.maxAddr = range.minAddr;
         }
 
         if(!assembleOnly) {
@@ -100,8 +100,8 @@ export default class Z80_assemble {
      * @returns {boolean} true the list includes ORG, otherwise false.
      */
     static hasExplicitAddress(assembleList) {
-        for(let i = 0; i < assembleList.length; i++) {
-            if(assembleList[i].mnemonic === "ORG") {
+        for(const asm of assembleList) {
+            if(asm.mnemonic === "ORG") {
                 return true;
             }
         }
@@ -122,14 +122,14 @@ export default class Z80_assemble {
         Z80_assemble.resolveAddress(this.list, mapLabelToAddress);
 
         // Estimate the code size
-        let range = Z80_assemble.measureCodeSize(this.list);
-        this.min_addr = range.min_addr;
-        this.max_addr = range.min_addr;
+        const range = Z80_assemble.measureCodeSize(this.list);
+        this.minAddr = range.minAddr;
+        this.maxAddr = range.minAddr;
 
         // Create machine code buffer
         this.buffer = Z80_assemble.createMachineCode(
-            this.list, this.min_addr,
-            this.max_addr - this.min_addr + 1);
+            this.list, this.minAddr,
+            this.maxAddr - this.minAddr + 1);
     };
 
     /**
@@ -152,39 +152,36 @@ export default class Z80_assemble {
     /**
      * Determine the addresses of first and last line.
      *
-     * @param {Array<object>} assembleList
+     * @param {Z80LineAssembler[]} assembleList
      * An array of line assembleled information.
      *
-     * @returns {object} that has min_addr and max_addr as keys.
+     * @returns {object} that has minAddr and maxAddr as keys.
      */
-    static measureCodeSize(assembleList) {
+    static measureCodeSize(assembleList:Z80LineAssembler[]) {
         // address min-max
-        let min_addr = null;
-        let max_addr = null;
+        let minAddr = null;
+        let maxAddr = null;
         assembleList.forEach(line => {
             if(line.bytecode.length > 0) {
-                if(min_addr == null || line.address < min_addr) {
-                    min_addr = line.address;
+                if(minAddr == null || line.address < minAddr) {
+                    minAddr = line.address;
                 }
-                let lastAddr = line.getLastAddress();
-                if(max_addr == null || lastAddr > max_addr) {
-                    max_addr = lastAddr;
+                const lastAddr = line.getLastAddress();
+                if(maxAddr == null || lastAddr > maxAddr) {
+                    maxAddr = lastAddr;
                 }
             }
         });
-        return {
-            min_addr: min_addr,
-            max_addr: max_addr,
-        };
+        return {minAddr, maxAddr};
     };
 
     /**
      * Create machine code from the assemble list.
      *
-     * @param {Array<object>} assembleList
+     * @param {Z80LineAssembler[]} assembleList
      * An array of line assembleled information.
      *
-     * @param {number} min_addr
+     * @param {number} minAddr
      * The address of the first line of the list.
      *
      * @param {number} bytesize
@@ -192,12 +189,12 @@ export default class Z80_assemble {
      *
      * @returns {Array<number>} that contains Z80 machine code.
      */
-    static createMachineCode(assembleList, min_addr, bytesize) {
-        let buffer = new Array(bytesize);
+    static createMachineCode(assembleList:Z80LineAssembler[], minAddr:number, bytesize:number) {
+        const buffer = new Array(bytesize);
         assembleList.forEach(line => {
             if(line.bytecode.length > 0) {
                 Array.prototype.splice.apply(buffer, [
-                        line.address - min_addr,
+                        line.address - minAddr,
                         line.bytecode.length
                     ].concat(line.bytecode));
             }
@@ -216,20 +213,20 @@ export default class Z80_assemble {
     static assemble(sources) {
 
         // Assemble each source
-        let assembled = [];
+        const assembled = [];
         let startAddr = 0;
-        let min_addr = null;
-        let max_addr = null;
+        let minAddr = null;
+        let maxAddr = null;
         let lastAddr = null;
         sources.forEach( src => {
-            let asm = new Z80_assemble(src, true, startAddr);
-            if(min_addr == null || min_addr > asm.min_addr) {
-                min_addr = asm.min_addr;
+            const asm = new Z80_assemble(src, true, startAddr);
+            if(minAddr == null || minAddr > asm.minAddr) {
+                minAddr = asm.minAddr;
             }
-            if(max_addr == null || max_addr < asm.max_addr) {
-                max_addr = asm.max_addr;
+            if(maxAddr == null || maxAddr < asm.maxAddr) {
+                maxAddr = asm.maxAddr;
             }
-            let lineLastAddr = asm.list.slice(-1)[0].getNextAddress() - 1;
+            const lineLastAddr = asm.list.slice(-1)[0].getNextAddress() - 1;
             if(lastAddr == null || lastAddr < lineLastAddr) {
                 lastAddr = lineLastAddr;
             }
@@ -238,7 +235,7 @@ export default class Z80_assemble {
         });
 
         // Create an integrated address map
-        let mapLabelToAddress = {};
+        const mapLabelToAddress = {};
         assembled.forEach( asm => {
             Object.keys(asm.label2value).forEach( label => {
                 mapLabelToAddress[label] = asm.label2value[label];
@@ -251,16 +248,16 @@ export default class Z80_assemble {
         });
 
         // Create machine code
-        let buffer = new Array(lastAddr - min_addr + 1);
+        const buffer = new Array(lastAddr - minAddr + 1);
         for(let i = 0; i < buffer.length; i++) {
             buffer[i] = 0;
         }
         assembled.forEach(asm => {
             if(asm.buffer.length > 0) {
-                let last_addr = asm.max_addr + asm.buffer.length - 1;
+                const endAddr = asm.maxAddr + asm.buffer.length - 1;
                 Array.prototype.splice.apply(buffer, [
-                        asm.min_addr - min_addr,
-                        last_addr - asm.min_addr + 1,
+                        asm.minAddr - minAddr,
+                        endAddr - asm.minAddr + 1,
                     ].concat(asm.buffer));
             }
         });
@@ -268,9 +265,9 @@ export default class Z80_assemble {
         return {
             obj: assembled,
             label2value: mapLabelToAddress,
-            min_addr: min_addr,
-            max_addr: max_addr,
-            buffer: buffer,
+            minAddr,
+            maxAddr,
+            buffer,
         };
     };
 

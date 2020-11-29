@@ -1,9 +1,11 @@
 "use strict";
 import MZ700CanvasRenderer from "./mz700-canvas-renderer";
 
+/* tslint:disable: class-name */
+
 export default class mz700scrn extends MZ700CanvasRenderer {
 
-    //A Container container
+    // A Container container
     _container:HTMLElement = null;
 
     constructor(container:HTMLElement) {
@@ -26,7 +28,7 @@ export default class mz700scrn extends MZ700CanvasRenderer {
     }):void {
         super.create(opt);
 
-        //Create canvas object
+        // Create canvas object
         if(!this.opt.canvas) {
             this.opt.canvas = document.createElement("CANVAS") as HTMLCanvasElement;
             this._container.appendChild(this.opt.canvas);
