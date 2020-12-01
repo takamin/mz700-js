@@ -1,7 +1,7 @@
-const chai = require("chai");
-const assert = chai.assert;
-const NumberUtil = require("../lib/number-util.js");
 describe("NumberUtil", ()=>{
+    const chai = require("chai");
+    const assert = chai.assert;
+    const NumberUtil = require("../lib/number-util");
     describe(".to8bitSigned", ()=>{
         describe("zero or positive number should not be converted", () => {
             it("should not convert 0", ()=>{

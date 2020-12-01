@@ -1,7 +1,7 @@
 "use strict";
-const assert = require("chai").assert;
-const MZ700_Memory = require("../MZ-700/mz700-memory.js");
 describe("MZ700_memory", () => {
+    const assert = require("chai").assert;
+    const MZ700_Memory = require("../MZ-700/mz700-memory");
     describe("changeBlock1_VRAM", () => {
         it("should be able to peek a byte at D000 of the TEXT-VRAM", () => {
             const mem = new MZ700_Memory();

@@ -1,22 +1,21 @@
 "use strict";
 
 require("fullscrn");
-const BBox = require("b-box");
-const dock_n_liquid = require("dock-n-liquid");
-const MZ700 = require("./mz700.js");
+import BBox from "b-box";
+import dock_n_liquid from "dock-n-liquid";
 
-const MZBeep = require("../lib/mz-beep.js");
-const MZ_Tape = require("../lib/mz-tape.js");
-const MZ_TapeHeader = require("../lib/mz-tape-header.js");
-const Z80 = require("../Z80/Z80.js");
-const Z80_assemble = require("../Z80/assembler.js");
+import MZ700 from "./mz700";
+import MZBeep from "../lib/mz-beep";
+import MZ_Tape from "../lib/mz-tape";
+import MZ_TapeHeader from "../lib/mz-tape-header";
+import Z80 from "../Z80/Z80.js";
+import Z80_assemble from "../Z80/assembler";
 
-const packageJson = require("../package.json");
-const NumberUtil = require("../lib/number-util.js");
-const parseAddress = require("../lib/parse-addr.js");
-const parseRequest = require("../lib/parse-request");
-const requestJsonp = require("../lib/jsonp");
-const { getDeviceType } = require("../lib/user-agent-util.js");
+import NumberUtil from "../lib/number-util";
+import parseAddress from "../lib/parse-addr";
+import parseRequest from "../lib/parse-request";
+import requestJsonp from "../lib/jsonp";
+import {getDeviceType} from "../lib/user-agent-util";
 
 require("../lib/jquery-plugin/jquery.mz700-kb.js");
 require("../lib/jquery-plugin/jquery.Z80-reg.js");
@@ -62,7 +61,7 @@ async function loadMonitorROM(filename) {
  * @param {any} height (Optional) Height attibute value.
  * @returns {Promise<Image>} a promise to be resolved by image element.
  */
-function loadImage(src, alt, width, height) {
+function loadImage(src, alt, width?, height?) {
     return new Promise((resolve, reject) => {
         const image = new Image(width, height);
         image.onload = () => {
@@ -77,8 +76,17 @@ function loadImage(src, alt, width, height) {
     });
 }
 
+async function loadPackageJson():Promise<{name:string, version:string, description:string}> {
+    const response = await fetch("/mz700-js/package.json");
+    if(!response.ok) {
+        throw new Error("Fail to load package.json");
+    }
+    return await response.json();
+}
 async function createUI(mz700js, mz700screen, canvas) {
+    mz700screen = $(mz700screen);
     // Set module version to the page title
+    const packageJson = await loadPackageJson();
     const pageTitle = [
         packageJson.description,"(",
         packageJson.name,
@@ -95,7 +103,7 @@ async function createUI(mz700js, mz700screen, canvas) {
     mz700js.subscribe("onBreak", ()=> mz700js.stop());
 
     // MZ-700 Beep sound
-    const mzBeep = new MZBeep(mz700js);
+    const mzBeep = new MZBeep();
     mz700js.subscribe("startSound", freq => mzBeep.startSound(freq[0]));
     mz700js.subscribe("stopSound", () => mzBeep.stopSound());
 
@@ -205,7 +213,7 @@ async function createUI(mz700js, mz700screen, canvas) {
     // Reset Button
     const imgBtnResetOff = await loadImage("./image/btnReset-off.png", "Reset");
     const imgBtnResetOn = await loadImage("./image/btnReset-on.png", "Reset");
-    const btnReset = $("<button/>").MZ700ImgButton("create", {
+    const btnReset = ($("<button/>") as any).MZ700ImgButton("create", {
         img: imgBtnResetOff,
     }).click(async () => {
         await mz700js.stop();
@@ -225,7 +233,7 @@ async function createUI(mz700js, mz700screen, canvas) {
     const imgBtnRunOn = await loadImage("image/btnRun-on.png", "[F8] Run");
     const imgBtnStopOff = await loadImage("image/btnStop-off.png", "[F8] Stop");
     const imgBtnStopOn = await loadImage("image/btnStop-on.png", "[F8] Stop");
-    const btnStart = $("<button/>").MZ700ImgButton("create", {
+    const btnStart = ($("<button/>") as any).MZ700ImgButton("create", {
         img: imgBtnRunOff,
     }).click(() => {
         _isRunning ? mz700js.stop() : mz700js.start();
@@ -238,7 +246,7 @@ async function createUI(mz700js, mz700screen, canvas) {
     const imgBtnStepOff = await loadImage("image/btnStepIn-off.png", "[F9] Step-In");
     const imgBtnStepOn = await loadImage("image/btnStepIn-on.png", "[F9] Step-In");
     const imgBtnStepDi = await loadImage("image/btnStepIn-disabled.png", "[F9] Step-In");
-    const btnStep = $("<button/>").MZ700ImgButton("create", {
+    const btnStep = ($("<button/>") as any).MZ700ImgButton("create", {
         img: imgBtnStepOff,
     }).click( () => mz700js.step() ).hover(
         () => {
@@ -254,7 +262,7 @@ async function createUI(mz700js, mz700screen, canvas) {
 
     // Operate the emulation state by key
     window.addEventListener("keyup", async event => {
-        switch(event.code) {
+        switch(parseInt(event.code, 10)) {
         case 0x0042://F8 - RUN/STOP
             event.stopPropagation();
             _isRunning ? mz700js.stop() : mz700js.start();
@@ -304,7 +312,7 @@ async function createUI(mz700js, mz700screen, canvas) {
     });
 
     // Software keyboard
-    const keyboard = $("<div/>").css("display", "none").addClass("keyboard");
+    const keyboard = $("<div/>").css("display", "none").addClass("keyboard") as any;
     ctrlPanel.append(keyboard);
     keyboard.mz700keyboard("create", mz700js);
     if(getDeviceType() === "pc") {
@@ -322,7 +330,7 @@ async function createUI(mz700js, mz700screen, canvas) {
     // Create Screen keyboard button.
     const imgBtnScrnKbOff = await loadImage("image/btnKeyboard-off.png", "Open Keyboard");
     const imgBtnScrnKbOn = await loadImage("image/btnKeyboard-on.png", "Close Keyboard");
-    const screenKbButton = $("<button/>").ToggleButton("create", {
+    const screenKbButton = ($("<button/>") as any).ToggleButton("create", {
         img: imgBtnScrnKbOff,
         imgOff: imgBtnScrnKbOff,
         imgOn: imgBtnScrnKbOn,
@@ -334,7 +342,7 @@ async function createUI(mz700js, mz700screen, canvas) {
     // Create Full screen button.
     const imgBtnFullScrnOff = await loadImage("./image/btnFullscreen-off.png", "Fullscreen");
     const imgBtnFullScrnOn = await loadImage("./image/btnFullscreen-on.png", "Cancel Fullscreen");
-    const fullscreenButton = $("<button/>").ToggleButton("create", {
+    const fullscreenButton = ($("<button/>") as any).ToggleButton("create", {
         img: imgBtnFullScrnOff,
         imgOff: imgBtnFullScrnOff,
         imgOn: imgBtnFullScrnOn,
@@ -354,16 +362,16 @@ async function createUI(mz700js, mz700screen, canvas) {
 
     const emulationPanel = $("<div/>").addClass("emulation-panel");
     emulationPanel
-        .append($("<span/>").MZSoundControl("create", mzBeep))
+        .append(($("<span/>") as any).MZSoundControl("create", mzBeep))
         .append(btnStart).append(btnReset).append(btnStep)
-        .append($("<span/>").EmuSpeedControl(
+        .append(($("<span/>") as any).EmuSpeedControl(
             "create", mz700js, MZ700.Z80_CLOCK))
         .append(screenKbButton)
         .append(fullscreenButton);
     ctrlPanel.append(emulationPanel)
 
     // Data Recorder UI
-    const dataRecorder = $("<div/>").MZDataRecorder("create", {
+    const dataRecorder = ($("<div/>") as any).MZDataRecorder("create", {
         mz700js,
         onRecPushed: ()=>mz700js.dataRecorder_pushRec(),
         onPlayPushed: ()=>mz700js.dataRecorder_pushPlay(),
@@ -403,13 +411,13 @@ async function createUI(mz700js, mz700screen, canvas) {
                 resolve(mztButtons);
             });
     });
-    ctrlPanel.append(mztButtons);
+    ctrlPanel.append(mztButtons as JQuery<HTMLElement>);
 
     const dockPanelRight = $("#dock-panel-right").css("display", "none");
 
     // Register View
-    const regview = $("<div/>").Z80RegView("create");
-    const wndRegView = $("<div class='register-monitor tool-window close' title='REGISTER'/>");
+    const regview = ($("<div/>") as any).Z80RegView("create");
+    const wndRegView = $("<div class='register-monitor tool-window close' title='REGISTER'/>") as any;
     dockPanelRight.append(wndRegView);
 
     let reg_upd_tid = null;
@@ -443,23 +451,23 @@ async function createUI(mz700js, mz700screen, canvas) {
             }
         }
     };
-    wndRegView
-        .append($("<div/>").css("display", "inline-block").append(regview))
+    (wndRegView
+        .append($("<div/>").css("display", "inline-block").append(regview)) as any)
         .ToolWindow("create", {
             onOpened: () => Z80RegViewVisibility(true),
             onClosed: () => Z80RegViewVisibility(false),
         });
 
     // Create dump list
-    const dumplist = $("<div/>").dumplist("init", { mz700js: mz700js });
+    const dumplist = ($("<div/>") as any).dumplist("init", { mz700js: mz700js });
     const wndDumpList = $("<div class='tool-window memory open' title='MEMORY'/>");
     dockPanelRight.append(wndDumpList);
-    wndDumpList
+    (wndDumpList
         .append(dumplist.dumplist("addrSpecifier"))
-        .append(dumplist).ToolWindow("create");
+        .append(dumplist) as any).ToolWindow("create");
 
     // Create assemble list
-    const asmView = $("<div/>").asmview("create", {
+    const asmView = ($("<div/>") as any).asmview("create", {
         onSetBreak: async (addr, size, state) =>
             (state ?
                 await mz700js.addBreak(addr, size) :
@@ -468,7 +476,7 @@ async function createUI(mz700js, mz700screen, canvas) {
 
     const wndAsmList = $("<div class='tool-window open' title='Z80 ASM'/>");
     dockPanelRight.append(wndAsmList);
-    wndAsmList.append(asmView).ToolWindow("create");
+    (wndAsmList.append(asmView) as any).ToolWindow("create");
 
     const asmlist_assemble = async (asmlistObj, asmsrc) => {
         asmlistObj.asmlist("text", asmsrc);
@@ -493,7 +501,7 @@ async function createUI(mz700js, mz700screen, canvas) {
     await asmlist_assemble(asmlistMzt, asmlistSrc);
 
     // Disassemble MONITOR ROM and show that source.
-    const getText = url => {
+    const getText:(url:string)=>Promise<string> = url => {
         return new Promise(resolve => $.get(url, {}, resolve));
     };
     const readme = await getText("./mz_newmon/newmon_readme.txt");
@@ -523,7 +531,7 @@ async function createUI(mz700js, mz700screen, canvas) {
     const btnExecImm = $("<button/>").attr("type", "button").html("Execute")
         .click(async function() {
             const par = $(this).parent();
-            const addrToken = par.find("input.address").val();
+            const addrToken = par.find("input.address").val() as string;
             const addr = parseAddress.parseAddress(addrToken);
             if(addr != null) {
                 let src = 'ORG ' + NumberUtil.HEX(addr, 4) + "H\r\n";
@@ -538,7 +546,7 @@ async function createUI(mz700js, mz700screen, canvas) {
         });
     const wndImmExec = $("<div class='tool-window' title='IMM.EXEC.'/>");
     dockPanelRight.append(wndImmExec);
-    wndImmExec.append(
+    (wndImmExec.append(
         $("<div/>").addClass("imm-exec")
         .css("padding","15px 5px")
         .append($("<label/>")
@@ -558,7 +566,7 @@ async function createUI(mz700js, mz700screen, canvas) {
                 .addClass("mnemonic"))
         .append(btnExecImm)
         .append($("<br/>"))
-    ).ToolWindow("create");
+    ) as any).ToolWindow("create");
 
     // Layout
     const dockPanelHeader = $("#dock-panel-header");
@@ -590,12 +598,12 @@ async function createUI(mz700js, mz700screen, canvas) {
 
     // Accept MZT file to drop to the data recorder and MZ-700 screen
 
-    const readBinFile = file => {
+    const readBinFile:(file:Blob) => Promise<ArrayBuffer> = file => {
         return new Promise((resolve, reject) => {
             try {
                 const reader = new FileReader();
                 reader.onload = () => {
-                    resolve(reader.result);
+                    resolve(reader.result as ArrayBuffer);
                 };
                 reader.readAsArrayBuffer(file);
             } catch(err) {
@@ -665,7 +673,7 @@ async function createUI(mz700js, mz700screen, canvas) {
             event.stopPropagation();
             event.preventDefault();
             try {
-                const file = Array.from(event.dataTransfer.files).shift();
+                const file = Array.from(event.dataTransfer.files).shift() as File;
                 if(file) {
                     const onload = getOnLoadHandler(file.name, onloadHandlers);
                     if(onload) {
@@ -754,7 +762,7 @@ async function createUI(mz700js, mz700screen, canvas) {
 
     // Convert MZ-700 character
     for(const element of document.querySelectorAll("span.mz700scrn")) {
-        window.mz700scrn.convert(element);
+        (window as any).mz700scrn.convert(element);
     }
 
     await new Promise(resolve => mz700screen.show(0, resolve));
@@ -766,7 +774,7 @@ async function createUI(mz700js, mz700screen, canvas) {
     // Load MZT file when the filename is included in URL
     const request = parseRequest();
     if("mzt" in request.parameters) {
-        const filename = request.parameters.mzt;
+        const filename = request.parameters["mzt"];
         const url = `https://takamin.github.io/MZ-700/mzt/${filename}.js`;
         const tapeData = await requestJsonp("loadMZT", url);
         if(tapeData) {
@@ -774,7 +782,7 @@ async function createUI(mz700js, mz700screen, canvas) {
         }
     }
 }
-module.exports = {
+export default module.exports = {
     loadMonitorROM,
     createUI,
 };

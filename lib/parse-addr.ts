@@ -12,7 +12,7 @@ import Z80BinUtil from "../Z80/bin-util";
  * @returns {number} as the address.
  */
 const parseAddress = {
-    parseAddress: (addrToken:string, mapLabelToAddress:any):number => {
+    parseAddress: (addrToken:string, mapLabelToAddress?:any|null):number => {
         const bytes = parseAddress.parseNumLiteralPair(addrToken);
         if(bytes == null) {
             return null;

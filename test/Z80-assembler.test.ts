@@ -1,7 +1,7 @@
 "use strict";
-const assert = require("chai").assert;
-const assembler = require("../Z80/assembler.js");
 describe("Z80/assembler", () => {
+    const assert = require("chai").assert;
+    const assembler = require("../Z80/assembler");
     describe("assemble", () => {
         it("should link when the both aseembly does not specify the origin", () => {
             let result = assembler.assemble([

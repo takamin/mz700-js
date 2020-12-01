@@ -1,7 +1,4 @@
 "use strict";
-const assert = require("chai").assert;
-const Z80LineAssembler = require("../Z80/Z80-line-assembler.js");
-const oct = require("../lib/oct.js");
 
 /**
  * Test the source would be assembled to the machine code.
@@ -10,10 +7,15 @@ const oct = require("../lib/oct.js");
  * @returns {undefined}
  */
 const testAssemble = (source, machineCode) => {
+    const assert = require("chai").assert;
+    const Z80LineAssembler = require("../Z80/Z80-line-assembler");
     const bin = Z80LineAssembler.assemble(source, 0, {});
     assert.deepEqual(bin.bytecode, machineCode);
 };
 describe("Z80LineAssembler", () => {
+    const assert = require("chai").assert;
+    const Z80LineAssembler = require("../Z80/Z80-line-assembler");
+    const oct = require("../lib/oct");
     describe("#assemble", () => {
         describe("load 8bit with index", () => {
             describe("LD (IX+0),B", ()=>{

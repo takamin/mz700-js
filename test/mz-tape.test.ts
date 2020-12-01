@@ -1,9 +1,9 @@
 "use strict";
-const chai = require("chai");
-const assert = chai.assert;
-const MZ_Tape = require("../lib/mz-tape.js");
-const MZ_TapeHeader = require("../lib/mz-tape-header.js");
 describe("MZ_Tape", function() {
+    const chai = require("chai");
+    const assert = chai.assert;
+    const MZ_Tape = require("../lib/mz-tape");
+    const MZ_TapeHeader = require("../lib/mz-tape-header");
     describe("#isThereSignal", function() {
         describe("searching signal true", function() {
             it("returns true", function() {

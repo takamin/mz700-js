@@ -3,7 +3,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const { HEX } = require("../lib/number-util.js");
+const { HEX } = require("../js/lib/number-util.js");
 const getPackageJson = require("./lib/get-package-json");
 const npmInfo = getPackageJson(path.join(__dirname, ".."));
 
@@ -72,7 +72,7 @@ cliCommandSendKey.setMakeReleaseDurations(200,50);
 
 commands.install(require("./cli-command/conf.js"));
 
-const MZ700 = require("../MZ-700/mz700.js");
+const MZ700 = require("../js/MZ-700/mz700.js");
 MZ700.prototype.subscribe = function(notify, handler) {
     console.log(`subscribe ${notify} = ${handler}`);
 };
@@ -99,7 +99,7 @@ mz700.create({
 });
 mz700.setMonitorRom(readMzNewmon7Rom());
 
-const PCG700 = require("../lib/PCG-700");
+const PCG700 = require("../js/lib/PCG-700");
 const pcg700 = new PCG700();
 mz700.mmio.onWrite(0xE010, value => pcg700.setPattern(value & 0xff));
 mz700.mmio.onWrite(0xE011, value => pcg700.setAddrLo(value & 0xff));
