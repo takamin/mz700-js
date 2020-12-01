@@ -1,5 +1,5 @@
 "use strict";
-const NumberUtil = require("../../lib/number-util.js");
+const NumberUtil = require("../../js/lib/number-util.js");
 var CliCommand = require("./command");
 module.exports = new CliCommand("reg", function(mz700/*, args*/) {
     var reg = mz700.getRegister();

@@ -1,34 +1,49 @@
-(function() {
-    //
-    // MZ-700 Key Matrix
-    //
-    function MZ700KeyMatrix() {
+"use strict";
+
+class mzkey {
+    strobe;
+    bit;
+    face;
+    code;
+    strcode;
+    constructor(strobe, bit, face?, code?, strcode?) {
+        this.strobe = strobe;
+        this.bit = bit;
+        this.face = face || "&nbsp;";
+        this.code = code || [];
+        this.strcode = strcode || face;
+    }
+}
+
+//
+// MZ-700 Key Matrix
+//
+export default class MZ700KeyMatrix {
+    keymap;
+    constructor() {
         this.keymap = new Array(10);
-        for(var i = 0; i < this.keymap.length; i++) {
+        for (var i = 0; i < this.keymap.length; i++) {
             this.keymap[i] = 0xff;
         }
     }
-
-    MZ700KeyMatrix.prototype.getKeyData = function(strobe) {
+    getKeyData(strobe) {
         var keydata = 0xff;
         strobe &= 0x0f;
-        if(strobe < this.keymap.length) {
+        if (strobe < this.keymap.length) {
             keydata = this.keymap[strobe];
         }
         return keydata;
-    };
-
-    MZ700KeyMatrix.prototype.setKeyMatrixState = function(strobe, bit, state) {
-        if(state) {
+    }
+    setKeyMatrixState(strobe, bit, state) {
+        if (state) {
             // clear bit
             this.keymap[strobe] &= ((~(1 << bit)) & 0xff);
         } else {
             // set bit
             this.keymap[strobe] |= ((1 << bit) & 0xff);
         }
-    };
-
-    MZ700KeyMatrix.KeyCodes = {
+    }
+    static KeyCodes = {
         "Escape"    : 27,
         "F1"  : 112, "F2"  : 113, "F3"  : 114, "F4"  : 115, "F5"  : 116,
         "F6"  : 117, "F7"  : 118, "F8"  : 119, "F9"  : 120, "F10" : 121,
@@ -99,21 +114,14 @@
         "Hankaku"   : 243,
         "Zenkaku"   : 244
     };
-    var mzkey = function(strobe, bit, face, code, strcode) {
-        this.strobe = strobe;
-        this.bit = bit;
-        this.face = face || "&nbsp;";
-        this.code = code || [];
-        this.strcode = strcode || face;
-    }
-    MZ700KeyMatrix.Keys = [
+    static Keys = [
         new mzkey(0,0,"CR",     [MZ700KeyMatrix.KeyCodes.Enter]),
         new mzkey(0,1,":",      [MZ700KeyMatrix.KeyCodes.Colon]),
         new mzkey(0,2,";",      [MZ700KeyMatrix.KeyCodes.SemiColon]),
         new mzkey(0,3),
         new mzkey(0,4,"英数",   [MZ700KeyMatrix.KeyCodes.F10, MZ700KeyMatrix.KeyCodes.End], "ALNUM"),
         new mzkey(0,5,"=",      [MZ700KeyMatrix.KeyCodes.Backspace]),
-        new mzkey(0,6,"GRAPH",  [MZ700KeyMatrix.KeyCodes.F12, MZ700KeyMatrix.KeyCodes.PageDown, MZ700KeyMatrix.KeyCodes.Altername], "GRAPH"),
+        new mzkey(0,6,"GRAPH",  [MZ700KeyMatrix.KeyCodes.F12, MZ700KeyMatrix.KeyCodes.PageDown, MZ700KeyMatrix.KeyCodes.Alternate], "GRAPH"),
         new mzkey(0,7,"カナ",   [MZ700KeyMatrix.KeyCodes.F11, MZ700KeyMatrix.KeyCodes.PageUp], "KANA"),
         new mzkey(1,0),
         new mzkey(1,1),
@@ -188,14 +196,14 @@
         new mzkey(9,6,"F2",     [MZ700KeyMatrix.KeyCodes.F2]),
         new mzkey(9,7,"F1",     [MZ700KeyMatrix.KeyCodes.F1])
     ];
-    MZ700KeyMatrix.KeyNames = (function(obj) {
+    static KeyNames = (function(obj) {
         Object.keys(MZ700KeyMatrix.KeyCodes).forEach(function(name) {
             var code = MZ700KeyMatrix.KeyCodes[name];
             obj[code] = name;
         });
         return obj;
     }({}));
-    MZ700KeyMatrix.Code2Key = (function() {
+    static Code2Key = (function() {
         var code2key = new Array(256);
         MZ700KeyMatrix.Keys.forEach(function(key) {
             key.code.forEach(function(code) {
@@ -204,12 +212,13 @@
         });
         return code2key;
     })();
-    MZ700KeyMatrix.Str2Key = (function() {
+    static Str2Key = (function() {
         var s2key = {};
         MZ700KeyMatrix.Keys.forEach(function(key) {
             s2key[key.strcode] = key;
         });
         return s2key;
     })();
-    module.exports = MZ700KeyMatrix;
-}());
+}
+
+module.exports = MZ700KeyMatrix;

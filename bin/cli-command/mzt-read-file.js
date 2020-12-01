@@ -1,6 +1,6 @@
 "use strict";
 const fs = require('fs');
-const MZ_Tape = require("../../lib/mz-tape.js");
+const MZ_Tape = require("../../js/lib/mz-tape.js");
 module.exports = function (filename) {
     return new Promise((resolve, reject) => {
         fs.readFile(filename, (err, data) => {

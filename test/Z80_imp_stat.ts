@@ -1,28 +1,28 @@
-const NumberUtil = require("../lib/number-util.js");
-var Z80 = require('../Z80/Z80.js');
-var Z80_assemble = require('../Z80/assembler');
-var z80 = new Z80();
+const NumberUtil = require("../lib/number-util");
+const Z80 = require('../Z80/Z80');
+const Z80_assemble = require('../Z80/assembler');
+const z80 = new Z80();
 function get_hex_code(codes) {
-    var a = [];
+    const a = [];
     codes.forEach(function(code) {
         a.push( NumberUtil.HEX(code, 2) );
     });
     return a.join(" ");
 }
-var total = 0;
-var nodasm = 0;
-var noemu = 0;
-var check_table = function (table, codes) {
-    var code_list = [];
-    var i = 0;
+let total = 0;
+let nodasm = 0;
+let noemu = 0;
+const check_table = function (table, codes) {
+    const code_list = [];
+    let i = 0;
     table.forEach(function(def) {
         codes.push(i);
         if(def.mnemonic !== null) {
-            var type = typeof(def.mnemonic);
-            var strcode = "";
-            var mnemonic = "";
-            var implementOK = true;
-            var errorMessages = [];
+            const type = typeof(def.mnemonic);
+            let strcode = "";
+            let mnemonic = "";
+            let implementOK = true;
+            let errorMessages = [];
             switch(type) {
             case 'string':
                 ++total;
@@ -35,7 +35,7 @@ var check_table = function (table, codes) {
                     errorMessages.push("NO DISASSEMBLER");
                     implementOK = false;
                 } else if(def.proc && def.disasm) {
-                    var asmDasmErrors = check_asm_dasm(codes);
+                    const asmDasmErrors = check_asm_dasm(codes);
                     if(asmDasmErrors !== 0) {
                         implementOK = false;
                         errorMessages = errorMessages.concat(asmDasmErrors);
@@ -43,7 +43,7 @@ var check_table = function (table, codes) {
                 }
                 strcode = (get_hex_code(codes) + "               ").substring(0, 12);
                 mnemonic = (def.mnemonic + "                        ").substring(0, 18);
-                var errmsg = "";
+                let errmsg = "";
                 if(errorMessages.length >= 1) {
                     errmsg = errorMessages[0];
                     errorMessages = errorMessages.slice(1);
@@ -66,21 +66,21 @@ var check_table = function (table, codes) {
     });
     return code_list;
 };
-var errDisasm = 0;
-var disasmUnsupported = 0;
-var asmDasmMatch = 0;
-var asmDasmNotMatch = 0;
-var check_asm_dasm = function (codes) {
-    var errorMessages = 0;
-    var codes_src = codes.concat();
+let errDisasm = 0;
+let disasmUnsupported = 0;
+let asmDasmMatch = 0;
+let asmDasmNotMatch = 0;
+const check_asm_dasm = function (codes) {
+    let errorMessages:any = 0;
+    const codes_src = codes.concat();
     codes_src.push(0x12,0x34,0x56,0x78);
-    var swapcode = false;
+    let swapcode = false;
     if(codes_src.length > 3
         && codes_src[0] == 0xDD && codes_src[1] == 0xCB
         || codes_src[0] == 0xFD && codes_src[1] == 0xCB)
     {
         swapcode = true;
-        var tmp = codes_src[2];
+        const tmp = codes_src[2];
         codes_src[2] = codes_src[3];
         codes_src[3] = tmp;
     }
@@ -88,24 +88,24 @@ var check_asm_dasm = function (codes) {
     //
     // DISASSEMBLE
     //
-    var addr = 0;
-    for(var i = 0; i < codes_src.length; i++) {
+    let addr = 0;
+    for(let i = 0; i < codes_src.length; i++) {
         z80.memory.poke(addr + i, codes_src[i]);
     }
-    var dis = z80.disassemble(addr);
+    const dis = z80.disassemble(addr);
     if(!dis) {
         ++errDisasm;
         errorMessages = ["Error on disassemble the code " + JSON.stringify(dis)];
     } else {
-        var asm = dis.mnemonic + " " + dis.operand;
+        const asm = dis.mnemonic + " " + dis.operand;
 
         //
         // ASSEMBLE
         //
-        asm_result = Z80_assemble.assemble([asm]).obj[0];
-        codes_result = asm_result.list[0].bytecode;
-        var match = true;
-        for(var i = 0; i < codes_result.length; i++) {
+        const asm_result = Z80_assemble.assemble([asm]).obj[0];
+        const codes_result = asm_result.list[0].bytecode;
+        let match = true;
+        for(let i = 0; i < codes_result.length; i++) {
             if(codes_result[i] != codes_src[i]) {
                 match = false;
             }
@@ -160,7 +160,7 @@ var check_asm_dasm = function (codes) {
     }
     return errorMessages;
 };
-var all_the_codes = check_table(z80.opecodeTable, []);
+const all_the_codes = check_table(z80.opecodeTable, []);
 /*
 all_the_codes.forEach(function(codes) {
     check_asm_dasm(codes);

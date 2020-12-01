@@ -1,7 +1,7 @@
 "use strict";
-const assert = require("chai").assert;
-const changeExt = require('../lib/change-ext.js');
 describe("fnuts", ()=>{
+    const assert = require("chai").assert;
+    const changeExt = require('../lib/change-ext');
     describe("changeExt", ()=>{
         describe("when the new extension has no dot in its medium position", ()=>{
             it("should exchange the extension", () => {

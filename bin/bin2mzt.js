@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-var MZ_TapeHeader = require('../lib/mz-tape-header.js');
-var changeExt = require('../lib/change-ext.js');
+var MZ_TapeHeader = require('../js/lib/mz-tape-header.js');
+var changeExt = require('../js/lib/change-ext.js');
 var fs = require('fs');
 var getPackageJson = require("./lib/get-package-json");
 var npmInfo = getPackageJson(__dirname + "/..");

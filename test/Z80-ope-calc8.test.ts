@@ -1,10 +1,10 @@
-const Z80Tester = require('./lib/Z80Tester.js');
-const Z80 = require('../Z80/Z80.js');
-const tester = new Z80Tester();
-const cpu = new Z80();
-const chai = require("chai");
-const assert = chai.assert;
 describe("8 bit calculation", ()=>{
+    const Z80Tester = require('./lib/Z80Tester');
+    const Z80 = require('../Z80/Z80');
+    const tester = new Z80Tester();
+    const cpu = new Z80();
+    const chai = require("chai");
+    const assert = chai.assert;
     describe("When C flag is set", ()=>{
         describe("ADC A,n", ()=>{
             it("should add extra 1", ()=>{

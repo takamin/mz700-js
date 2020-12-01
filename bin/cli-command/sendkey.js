@@ -1,6 +1,6 @@
 "use strict";
 var CliCommand = require("./command");
-var MZ700KeyMatrix = require("../../MZ-700/mz700-key-matrix.js");
+var MZ700KeyMatrix = require("../../js/MZ-700/mz700-key-matrix.js");
 function CliCommandSendKey() {
     this._durationMake = 250;
     this._durationRelease = 250;

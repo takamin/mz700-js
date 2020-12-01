@@ -7,3 +7,11 @@
 /test
 /lib/*.js
 /Z80/*.js
+/MZ-700/mz700-key-matrix.js
+/MZ-700/mz700-memory.js
+/MZ-700/mz700-new-monitor.js
+/MZ-700/mz700-worker.js
+/MZ-700/mz700-emu-ws.js
+/MZ-700/mz700-emu.js
+/MZ-700/mz700-web-ui.js
+/MZ-700/mz700.js

@@ -5,7 +5,7 @@
  * @class
  */
 export default class MZMMIO {
-    _map:{r:(n:number)=>{}, w:(n:number)=>{}}[] = [];
+    _map:{r:(n:number)=>any, w:(n:number)=>void}[] = [];
 
     constructor() {
         for (let addr:number = 0xE000; addr < 0xE800; addr++) {
@@ -21,7 +21,7 @@ export default class MZMMIO {
      * @param address address of MMIO.
      * @param handler invoked when the address is read.
      */
-    onRead(address:number, handler:(n:number)=>{}):void {
+    onRead(address:number, handler:(n:number)=>any):void {
         this._map[address - 0xE000].r = handler;
     }
 
@@ -30,7 +30,7 @@ export default class MZMMIO {
      * @param address address of MMIO.
      * @param handler invoked when the address is write.
      */
-    onWrite(address:number, handler:(n:number)=>{}):void {
+    onWrite(address:number, handler:(n:number)=>void):void {
         this._map[address - 0xE000].w = handler;
     }
 
@@ -38,9 +38,9 @@ export default class MZMMIO {
      * Invoke the read handlers of this memory mapped I/O.
      * @param {number} address An address
      * @param {number} value A value
-     * @returns {undefined}
+     * @returns {any}
      */
-    read(address:number, value:number) {
+    read(address:number, value:number):any {
         return this._map[address - 0xE000].r(value);
     }
 
@@ -51,7 +51,7 @@ export default class MZMMIO {
      * @returns {undefined}
      */
     write(address:number, value:number) {
-        return this._map[address - 0xE000].w(value);
+        this._map[address - 0xE000].w(value);
     }
 }
 

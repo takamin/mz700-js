@@ -665,7 +665,7 @@ export default class Z80_Register {
         this.setF( (this.getF() & Z80_Register.C_FLAG) | (this.getZSTable(this.getA())) | (iff2 << 2) );
     }
 
-    cloneRaw():object {
+    cloneRaw():any {
         return {
             B: this.getB(),
             C: this.getC(),
@@ -681,6 +681,11 @@ export default class Z80_Register {
             IY: this.IY,
             R: this.R,
             I: this.I,
+            _: null,
+            IFF1: 0,
+            IFF2: 0,
+            IM: 0,
+            HALT:null,
         };
     };
     clear() {

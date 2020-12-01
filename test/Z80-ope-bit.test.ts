@@ -1,11 +1,11 @@
-var Z80Tester = require('./lib/Z80Tester.js');
-var Z80 = require('../Z80/Z80.js');
-var tester = new Z80Tester();
-var cpu = new Z80();
-const chai = require("chai");
-const assert = chai.assert;
-var reg8 = "ABCDEHL".split('');
 describe("BIT/SET/RES", function() {
+    const Z80Tester = require('./lib/Z80Tester');
+    const Z80 = require('../Z80/Z80');
+    const tester = new Z80Tester();
+    const cpu = new Z80();
+    const chai = require("chai");
+    const assert = chai.assert;
+    const reg8 = "ABCDEHL".split('');
     reg8.forEach(function(r) {
         [0,1,2,3,4,5,6,7].forEach(function(bit) {
             describe("BIT " + bit + "," + r, function() {
