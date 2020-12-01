@@ -496,15 +496,29 @@ function loadPackageJson() {
 function createUI(mz700js, mz700screen, canvas) {
     return __awaiter(this, void 0, void 0, function* () {
         mz700screen = $(mz700screen);
-        const packageJson = yield loadPackageJson();
-        const pageTitle = [
-            packageJson.description, "(",
-            packageJson.name,
-            "@", packageJson.version, ")"
-        ].join("");
-        $("title").html(pageTitle);
-        $("h1 .mz700scrn").html(pageTitle);
-        const monitorRom = yield loadMonitorROM("NEWMON7.ROM");
+        const [packageJson, monitorRom, imgBtnResetOff, imgBtnResetOn, imgBtnRunOff, imgBtnRunOn, imgBtnStopOff, imgBtnStopOn, imgBtnStepOff, imgBtnStepOn, imgBtnStepDi, imgBtnScrnKbOff, imgBtnScrnKbOn, imgBtnFullScrnOff, imgBtnFullScrnOn,] = yield Promise.all([
+            loadPackageJson(),
+            loadMonitorROM("NEWMON7.ROM"),
+            loadImage("image/btnReset-off.png", "Reset"),
+            loadImage("image/btnReset-on.png", "Reset"),
+            loadImage("image/btnRun-off.png", "[F8] Run"),
+            loadImage("image/btnRun-on.png", "[F8] Run"),
+            loadImage("image/btnStop-off.png", "[F8] Stop"),
+            loadImage("image/btnStop-on.png", "[F8] Stop"),
+            loadImage("image/btnStepIn-off.png", "[F9] Step-In"),
+            loadImage("image/btnStepIn-on.png", "[F9] Step-In"),
+            loadImage("image/btnStepIn-disabled.png", "[F9] Step-In"),
+            loadImage("image/btnKeyboard-off.png", "Open Keyboard"),
+            loadImage("image/btnKeyboard-on.png", "Close Keyboard"),
+            loadImage("image/btnFullscreen-off.png", "Fullscreen"),
+            loadImage("image/btnFullscreen-on.png", "Cancel Fullscreen"),
+        ]);
+        {
+            const { name, version, description } = packageJson;
+            const pageTitle = `${description}(${name}@${version})`;
+            $("title").html(pageTitle);
+            $("h1 .mz700scrn").html(pageTitle);
+        }
         mz700js.setMonitorRom(monitorRom);
         mz700js.subscribe("onBreak", () => mz700js.stop());
         const mzBeep = new mz_beep_1.default();
@@ -593,8 +607,6 @@ function createUI(mz700js, mz700screen, canvas) {
                 installHideCtrlPanelTimer();
             });
         }
-        const imgBtnResetOff = yield loadImage("./image/btnReset-off.png", "Reset");
-        const imgBtnResetOn = yield loadImage("./image/btnReset-on.png", "Reset");
         const btnReset = $("<button/>").MZ700ImgButton("create", {
             img: imgBtnResetOff,
         }).click(() => __awaiter(this, void 0, void 0, function* () {
@@ -604,18 +616,11 @@ function createUI(mz700js, mz700screen, canvas) {
             yield dataRecorder.MZDataRecorder("updateCmtSlot");
         })).hover(() => btnReset.MZ700ImgButton("setImg", imgBtnResetOn), () => btnReset.MZ700ImgButton("setImg", imgBtnResetOff));
         let _isRunning = false;
-        const imgBtnRunOff = yield loadImage("image/btnRun-off.png", "[F8] Run");
-        const imgBtnRunOn = yield loadImage("image/btnRun-on.png", "[F8] Run");
-        const imgBtnStopOff = yield loadImage("image/btnStop-off.png", "[F8] Stop");
-        const imgBtnStopOn = yield loadImage("image/btnStop-on.png", "[F8] Stop");
         const btnStart = $("<button/>").MZ700ImgButton("create", {
             img: imgBtnRunOff,
         }).click(() => {
             _isRunning ? mz700js.stop() : mz700js.start();
         }).hover(() => btnStart.MZ700ImgButton("setImg", _isRunning ? imgBtnStopOn : imgBtnRunOn), () => btnStart.MZ700ImgButton("setImg", _isRunning ? imgBtnStopOff : imgBtnRunOff));
-        const imgBtnStepOff = yield loadImage("image/btnStepIn-off.png", "[F9] Step-In");
-        const imgBtnStepOn = yield loadImage("image/btnStepIn-on.png", "[F9] Step-In");
-        const imgBtnStepDi = yield loadImage("image/btnStepIn-disabled.png", "[F9] Step-In");
         const btnStep = $("<button/>").MZ700ImgButton("create", {
             img: imgBtnStepOff,
         }).click(() => mz700js.step()).hover(() => {
@@ -678,8 +683,6 @@ function createUI(mz700js, mz700screen, canvas) {
                 keyboard.mz700keyboard("acceptKey", true);
             });
         }
-        const imgBtnScrnKbOff = yield loadImage("image/btnKeyboard-off.png", "Open Keyboard");
-        const imgBtnScrnKbOn = yield loadImage("image/btnKeyboard-on.png", "Close Keyboard");
         const screenKbButton = $("<button/>").ToggleButton("create", {
             img: imgBtnScrnKbOff,
             imgOff: imgBtnScrnKbOff,
@@ -688,8 +691,6 @@ function createUI(mz700js, mz700screen, canvas) {
             on: () => keyboard.show(0, resizeScreen),
             off: () => keyboard.hide(0, resizeScreen),
         });
-        const imgBtnFullScrnOff = yield loadImage("./image/btnFullscreen-off.png", "Fullscreen");
-        const imgBtnFullScrnOn = yield loadImage("./image/btnFullscreen-on.png", "Cancel Fullscreen");
         const fullscreenButton = $("<button/>").ToggleButton("create", {
             img: imgBtnFullScrnOff,
             imgOff: imgBtnFullScrnOff,
