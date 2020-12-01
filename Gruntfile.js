@@ -90,13 +90,11 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-contrib-copy');
 
     grunt.registerTask("debug", [
-        "clean",
         "copy",
         "ts",
         "browserify:debug",
     ]);
     grunt.registerTask("release", [
-        "clean",
         "copy",
         "ts",
         "browserify:release",

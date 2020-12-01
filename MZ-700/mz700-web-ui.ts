@@ -83,20 +83,52 @@ async function loadPackageJson():Promise<{name:string, version:string, descripti
     }
     return await response.json();
 }
+
 async function createUI(mz700js, mz700screen, canvas) {
     mz700screen = $(mz700screen);
-    // Set module version to the page title
-    const packageJson = await loadPackageJson();
-    const pageTitle = [
-        packageJson.description,"(",
-        packageJson.name,
-        "@",packageJson.version,")"
-    ].join("");
-    $("title").html(pageTitle);
-    $("h1 .mz700scrn").html(pageTitle);
 
-    // load monitor rom
-    const monitorRom = await loadMonitorROM("NEWMON7.ROM");
+    const [
+        packageJson,
+        monitorRom,
+        imgBtnResetOff,
+        imgBtnResetOn,
+        imgBtnRunOff,
+        imgBtnRunOn,
+        imgBtnStopOff,
+        imgBtnStopOn,
+        imgBtnStepOff,
+        imgBtnStepOn,
+        imgBtnStepDi,
+        imgBtnScrnKbOff,
+        imgBtnScrnKbOn,
+        imgBtnFullScrnOff,
+        imgBtnFullScrnOn,
+    ] = await Promise.all([
+        loadPackageJson(),
+        loadMonitorROM("NEWMON7.ROM"),
+        loadImage("image/btnReset-off.png", "Reset"),
+        loadImage("image/btnReset-on.png", "Reset"),
+        loadImage("image/btnRun-off.png", "[F8] Run"),
+        loadImage("image/btnRun-on.png", "[F8] Run"),
+        loadImage("image/btnStop-off.png", "[F8] Stop"),
+        loadImage("image/btnStop-on.png", "[F8] Stop"),
+        loadImage("image/btnStepIn-off.png", "[F9] Step-In"),
+        loadImage("image/btnStepIn-on.png", "[F9] Step-In"),
+        loadImage("image/btnStepIn-disabled.png", "[F9] Step-In"),
+        loadImage("image/btnKeyboard-off.png", "Open Keyboard"),
+        loadImage("image/btnKeyboard-on.png", "Close Keyboard"),
+        loadImage("image/btnFullscreen-off.png", "Fullscreen"),
+        loadImage("image/btnFullscreen-on.png", "Cancel Fullscreen"),
+    ]);
+
+    // Set module version to the page title
+    {
+        const {name, version, description} = packageJson as any;
+        const pageTitle = `${description}(${name}@${version})`;
+        $("title").html(pageTitle);
+        $("h1 .mz700scrn").html(pageTitle);
+    }
+
     mz700js.setMonitorRom(monitorRom);
 
     // Stop on break point
@@ -211,8 +243,6 @@ async function createUI(mz700js, mz700screen, canvas) {
     }
 
     // Reset Button
-    const imgBtnResetOff = await loadImage("./image/btnReset-off.png", "Reset");
-    const imgBtnResetOn = await loadImage("./image/btnReset-on.png", "Reset");
     const btnReset = ($("<button/>") as any).MZ700ImgButton("create", {
         img: imgBtnResetOff,
     }).click(async () => {
@@ -229,10 +259,6 @@ async function createUI(mz700js, mz700screen, canvas) {
     let _isRunning = false;
 
     // Run/Stop/Step Button
-    const imgBtnRunOff = await loadImage("image/btnRun-off.png", "[F8] Run");
-    const imgBtnRunOn = await loadImage("image/btnRun-on.png", "[F8] Run");
-    const imgBtnStopOff = await loadImage("image/btnStop-off.png", "[F8] Stop");
-    const imgBtnStopOn = await loadImage("image/btnStop-on.png", "[F8] Stop");
     const btnStart = ($("<button/>") as any).MZ700ImgButton("create", {
         img: imgBtnRunOff,
     }).click(() => {
@@ -243,9 +269,6 @@ async function createUI(mz700js, mz700screen, canvas) {
         () => btnStart.MZ700ImgButton("setImg",
                 _isRunning ? imgBtnStopOff : imgBtnRunOff),
     );
-    const imgBtnStepOff = await loadImage("image/btnStepIn-off.png", "[F9] Step-In");
-    const imgBtnStepOn = await loadImage("image/btnStepIn-on.png", "[F9] Step-In");
-    const imgBtnStepDi = await loadImage("image/btnStepIn-disabled.png", "[F9] Step-In");
     const btnStep = ($("<button/>") as any).MZ700ImgButton("create", {
         img: imgBtnStepOff,
     }).click( () => mz700js.step() ).hover(
@@ -328,8 +351,6 @@ async function createUI(mz700js, mz700screen, canvas) {
     }
 
     // Create Screen keyboard button.
-    const imgBtnScrnKbOff = await loadImage("image/btnKeyboard-off.png", "Open Keyboard");
-    const imgBtnScrnKbOn = await loadImage("image/btnKeyboard-on.png", "Close Keyboard");
     const screenKbButton = ($("<button/>") as any).ToggleButton("create", {
         img: imgBtnScrnKbOff,
         imgOff: imgBtnScrnKbOff,
@@ -340,8 +361,6 @@ async function createUI(mz700js, mz700screen, canvas) {
     });
 
     // Create Full screen button.
-    const imgBtnFullScrnOff = await loadImage("./image/btnFullscreen-off.png", "Fullscreen");
-    const imgBtnFullScrnOn = await loadImage("./image/btnFullscreen-on.png", "Cancel Fullscreen");
     const fullscreenButton = ($("<button/>") as any).ToggleButton("create", {
         img: imgBtnFullScrnOff,
         imgOff: imgBtnFullScrnOff,
