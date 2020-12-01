@@ -1,7 +1,7 @@
 "use strict";
 var CliCommand = require("./command");
-var { parseAddress } = require("../../lib/parse-addr");
-var { HEX } = require("../../lib/number-util");
+var { parseAddress } = require("../../js/lib/parse-addr");
+var { HEX } = require("../../js/lib/number-util");
 module.exports = new CliCommand("bp", function(mz700, args) {
     var bp = mz700.getBreakPoints();
     if(args.length > 0) {

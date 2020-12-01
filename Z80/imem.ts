@@ -1,5 +1,5 @@
 "use strict";
-import Z80BinUtil from "./bin-util.js";
+import Z80BinUtil from "./bin-util";
 
 /* tslint:disable:no-console */
 

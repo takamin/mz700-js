@@ -1,8 +1,8 @@
 "use strict";
 var CliCommand = require("./command");
 var mztReadFile = require("./mzt-read-file");
-var MZ_TapeHeader = require('../../lib/mz-tape-header.js');
-var { HEX } = require("../../lib/number-util");
+var MZ_TapeHeader = require('../../js/lib/mz-tape-header.js');
+var { HEX } = require("../../js/lib/number-util");
 
 module.exports = new CliCommand("cmt", (mz700, args) => {
     switch(args[0]) {

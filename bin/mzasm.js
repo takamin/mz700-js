@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-const NumberUtil = require("../lib/number-util.js");
-var Z80_assemble = require('../Z80/assembler');
-var MZ_TapeHeader = require('../lib/mz-tape-header');
-var changeExt = require('../lib/change-ext.js');
+const NumberUtil = require("../js/lib/number-util.js");
+var Z80_assemble = require('../js/Z80/assembler');
+var MZ_TapeHeader = require('../js/lib/mz-tape-header');
+var changeExt = require('../js/lib/change-ext.js');
 var fs = require('fs');
 var getPackageJson = require("./lib/get-package-json");
 var npmInfo = getPackageJson(__dirname + "/..");

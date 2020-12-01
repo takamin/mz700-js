@@ -2,7 +2,7 @@
 
 /* tslint:disable: class-name no-console */
 
-class MZ_DataRecorder {
+export default class MZ_DataRecorder {
 
     static RDATA_TOP_BLANK_LEN = 1;
     static RDATA_CYCLE_HI_LONG = 1500;

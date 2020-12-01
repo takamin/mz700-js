@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>jquery.tabview.js - Documentation</title>
+
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav>
+    <li class="nav-link nav-home-link"><a href="index.html">Home</a></li><li class="nav-heading">Classes</li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="asmeditor.html">asmeditor</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmeditor.html#create">create</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmeditor.html#refresh">refresh</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmeditor.html#text">text</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="asmlist.html">asmlist</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmlist.html#clearCurrentAddr">clearCurrentAddr</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmlist.html#create">create</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmlist.html#indexOfAddr">indexOfAddr</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmlist.html#lastLineIndexOfAddr">lastLineIndexOfAddr</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmlist.html#setCurrentAddr">setCurrentAddr</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmlist.html#text">text</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="asmlist.html#writeList">writeList</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="AsmRow.html">AsmRow</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="AsmRow.html#.selectorByAddress">selectorByAddress</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="dumplist.html">dumplist</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="dumplist.html#init">init</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="dumplist.html#redraw">redraw</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="dumplist.html#topAddr">topAddr</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="tabview.html">tabview</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="tabview.html#.tabId">tabId</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="tabview.html#add">add</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="tabview.html#caption">caption</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="tabview.html#create">create</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="tabview.html#currentPage">currentPage</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="tabview.html#data">data</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="tabview.html#index">index</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="tabview.html#page">page</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="tabview.html#show">show</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="ToggleButton.html">ToggleButton</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="ToggleButton.html#create">create</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="ToggleButton.html#off">off</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="ToggleButton.html#on">on</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="ToggleButton.html#setOff">setOff</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="ToggleButton.html#setOn">setOn</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="ToggleButton.html#state">state</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="ToggleButton.html#toggle">toggle</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="vscrlist.html">vscrlist</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#_listTopIndex">_listTopIndex</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#_maxTopRowIndex">_maxTopRowIndex</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#countKeyRepeat">countKeyRepeat</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#create">create</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#createList">createList</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#empty">empty</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#flashBufferedKeys">flashBufferedKeys</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#isEmpty">isEmpty</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#items">items</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#listTopIndex">listTopIndex</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#reportKbEvent">reportKbEvent</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#scroll">scroll</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#scrollByKeyCode">scrollByKeyCode</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#setupKeyEventListener">setupKeyEventListener</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#syncScrollTop">syncScrollTop</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="vscrlist.html#visibleRows">visibleRows</a></span></li><li class="nav-heading"><span class="nav-item-type type-class">C</span><span class="nav-item-name"><a href="Z80AddressSpecifier.html">Z80AddressSpecifier</a></span></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="Z80AddressSpecifier.html#create">create</a></span></li><li class="nav-heading"><a href="global.html">Globals</a></li><li class="nav-item"><span class="nav-item-type type-function">F</span><span class="nav-item-name"><a href="global.html#getEventCode">getEventCode</a></span></li>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">jquery.tabview.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>"use strict";
+var jquery_plugin_class = require("./jquery_plugin_class");
+jquery_plugin_class("tabview");
+
+/**
+ * jquery plug-in tabview.
+ * @constructor
+ * @param {Element} element DOM element to be a tab control.
+ */
+var tabview = function(element) {
+    this._root = $(element);
+    this._tabs = this._root.children(".tabs");
+    this._container = this._root.find("tabPageContainer");
+    this._currentPage = null;
+    this._root._data = {};
+    this._root._lastTabId = 0;
+    this._pages = [];
+};
+
+// Exports
+window.tabview = tabview;
+module.exports = tabview;
+
+/**
+ * Convert the DOM id of source element to
+ * id to operate the tab page.
+ *
+ * @param {string} domId
+ * The id attribute that set to source element of DOM.
+ *
+ * @returns {string} Id to be set TabPage object.
+ */
+tabview.tabId = function(domId) {
+    return "tabId" + domId;
+};
+
+/**
+ * create tabview's DOM.
+ * @returns {undefined}
+ */
+tabview.prototype.create = function() {
+    if(this._container.length === 0) {
+        this._tabs = $("&lt;div/>").addClass("tabs");
+        this._container = $("&lt;div/>").addClass("tabPageContainer clearfix");
+        this._root.addClass("tabview");
+        this._root.append(this._tabs).append(this._container);
+    }
+};
+
+/**
+ * Add tab page.
+ *
+ * @param {string} id
+ * A caption for the tab. Or object {id:{string}, caption:{string}}
+ *
+ * @param {jQueryElement} page A tab-page content.
+ * @returns {undefined}
+ */
+tabview.prototype.add = function(id, page)
+{
+    this._pages.push({ id, page });
+    var tabId = tabview.tabId(id);
+    var tab = $("&lt;button type='button'/>").click(function() {
+        this._tabs.children("button.tab").removeClass("selected");
+        tab.addClass("selected");
+        this._container.children().hide();
+        this._root.trigger("selected");
+        page.show();
+        this._root.trigger("activated");
+    }.bind(this)).html("New Tab Page");
+    tab.addClass("tab").addClass(tabId);
+    page.addClass(tabId);
+
+    this._tabs.append(tab);
+    this._container.append(page);
+    if(this._currentPage == null) {
+        this.show(id);
+    } else {
+        page.hide();
+    }
+};
+
+/**
+ * Show specified tab page.
+ * @param {string} id the page index number or jquery selector for the page.
+ * @returns {undefined}
+ */
+tabview.prototype.show = function(id) {
+    var tabId = tabview.tabId(id);
+    var tabPage = this._container.children("." + tabId);
+    this._tabs.children("button.tab").removeClass("selected");
+    this._container.children().hide();
+    this._currentPage = tabPage.get(0);
+    this._tabs.children("button." + tabId).addClass("selected");
+    tabPage.show();
+};
+
+/**
+ * Set or get the current page index.
+ * @param {undefined|number} index The page index to show.
+ * @return {number|undefined} Current page index.
+ */
+tabview.prototype.index = function(index) {
+    if(index == null) {
+        index = -1;
+        var currentPage = this._currentPage;
+        if(currentPage != null) {
+            var i = 0;
+            this._container.children().each(function() {
+                if(this === currentPage) {
+                    index = i;
+                    return false;
+                }
+                i++;
+            });
+        }
+        return index;
+    } else {
+        this.show(index);
+    }
+};
+
+/**
+ * Get the current page.
+ * @return {number|undefined} Current page index.
+ */
+tabview.prototype.currentPage = function() {
+    return $(this._currentPage);
+};
+
+/**
+ * Get tab page.
+ * @param {string} index A page index
+ * @return {jQueryObject} returns page content.
+ */
+tabview.prototype.page = function(index) {
+    index = tabview.tabId(index);
+    var tabPage = this._container.children("." + index);
+    return tabPage;
+};
+
+/**
+ * Set or get the user data.
+ * @param {string} name data name
+ * @param {any|null} value user data
+ * @returns {undefined|any} if the value is null, returns the user data.
+ *      Otherwise undefined.
+ */
+tabview.prototype.data = function(name, value) {
+    if(value == null) {
+        return this._root._data[name];
+    } else {
+        this._root._data[name] = value;
+    }
+};
+
+/**
+ * Set caption to the tab page.
+ * @param {string} index The selector of jquery to a select tab page.
+ * @param {string} caption (optional) New caption for the tab page.
+ * @returns {undefined|string} Returns the caption if the captio parameter is not specified.
+ */
+tabview.prototype.caption = function(index, caption) {
+    index = tabview.tabId(index);
+    if(caption == null) {
+        return this._tabs.children("." + index).html();
+    }
+    this._tabs.children("." + index).html(caption);
+};
+tabview.prototype.pages = function() {
+    return this._pages;
+};
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<br class="clear">
+
+<footer>
+    Generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.6.5</a> on Tue Dec 01 2020 19:46:19 GMT+0900 (日本標準時) using the Minami theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/linenumber.js"></script>
+</body>
+</html>

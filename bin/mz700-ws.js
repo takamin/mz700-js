@@ -9,12 +9,12 @@ const HashArg = require("hash-arg");
 const {WebSocketServer} = require("transworker");
 const {createCanvas} = require("canvas");
 
-const MZ700 = require("../MZ-700/mz700.js");
-const MZ700CanvasRenderer = require('../lib/mz700-canvas-renderer.js');
-const MZ700CG = require("../lib/mz700-cg.js");
-const PCG700 = require("../lib/PCG-700.js");
+const MZ700 = require("../js/MZ-700/mz700.js");
+const MZ700CanvasRenderer = require('../js/lib/mz700-canvas-renderer.js');
+const MZ700CG = require("../js/lib/mz700-cg.js");
+const PCG700 = require("../js/lib/PCG-700.js");
 
-const { HEX } = require("../lib/number-util.js");
+const { HEX } = require("../js/lib/number-util.js");
 const getPackageJson = require("./lib/get-package-json.js");
 const mztReadFile = require("./cli-command/mzt-read-file.js");
 

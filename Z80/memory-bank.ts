@@ -1,5 +1,5 @@
 "use strict";
-import IMem from "./imem.js";
+import IMem from "./imem";
 
 /* tslint:disable:no-bitwise */
 

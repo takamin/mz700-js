@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-const NumberUtil = require("../lib/number-util.js");
-var Z80 = require("../Z80/Z80.js");
-var Z80BinUtil = require("../Z80/bin-util.js");
-const parseAddress = require("../lib/parse-addr.js");
-const MZ_Tape = require("../lib/mz-tape.js");
-var changeExt = require("../lib/change-ext.js");
+const NumberUtil = require("../js/lib/number-util.js");
+var Z80 = require("../js/Z80/Z80.js");
+var Z80BinUtil = require("../js/Z80/bin-util.js");
+const parseAddress = require("../js/lib/parse-addr.js");
+const MZ_Tape = require("../js/lib/mz-tape.js");
+var changeExt = require("../js/lib/change-ext.js");
 var fs = require('fs');
 var path = require("path");
 var getPackageJson = require("./lib/get-package-json");

@@ -1,6 +1,6 @@
 "use strict";
 var CliCommand = require("./command");
-var { parseAddress } = require("../../lib/parse-addr");
+var { parseAddress } = require("../../js/lib/parse-addr");
 module.exports = new CliCommand("jp", function(mz700, args) {
     if(args.length < 1) {
         console.log("Error: No address specified; 'jp 1234h'");

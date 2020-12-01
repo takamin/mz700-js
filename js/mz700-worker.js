@@ -1,398 +1,381 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
-(function() {
-    //
-    // MZ-700 Key Matrix
-    //
-    function MZ700KeyMatrix() {
-        this.keymap = new Array(10);
-        for(var i = 0; i < this.keymap.length; i++) {
-            this.keymap[i] = 0xff;
-        }
-    }
-
-    MZ700KeyMatrix.prototype.getKeyData = function(strobe) {
-        var keydata = 0xff;
-        strobe &= 0x0f;
-        if(strobe < this.keymap.length) {
-            keydata = this.keymap[strobe];
-        }
-        return keydata;
-    };
-
-    MZ700KeyMatrix.prototype.setKeyMatrixState = function(strobe, bit, state) {
-        if(state) {
-            // clear bit
-            this.keymap[strobe] &= ((~(1 << bit)) & 0xff);
-        } else {
-            // set bit
-            this.keymap[strobe] |= ((1 << bit) & 0xff);
-        }
-    };
-
-    MZ700KeyMatrix.KeyCodes = {
-        "Escape"    : 27,
-        "F1"  : 112, "F2"  : 113, "F3"  : 114, "F4"  : 115, "F5"  : 116,
-        "F6"  : 117, "F7"  : 118, "F8"  : 119, "F9"  : 120, "F10" : 121,
-        "F11" : 122, "F12" : 123,
-
-        "Numlock" : 44,
-        "ScrollLock" : 145,
-        "Pause" : 19,
-
-        "D0" : 48, "D1" : 49, "D2" : 50, "D3" : 51, "D4" : 52,
-        "D5" : 53, "D6" : 54, "D7" : 55, "D8" : 56, "D9" : 57,
-
-        "A" : 65, "B" : 66, "C" : 67, "D" : 68, "E" : 69, "F" : 70, "G" : 71,
-        "H" : 72, "I" : 73, "J" : 74, "K" : 75, "L" : 76, "M" : 77, "N" : 78,
-        "O" : 79, "P" : 80, "Q" : 81, "R" : 82, "S" : 83, "T" : 84, "U" : 85,
-        "V" : 86, "W" : 87, "X" : 88, "Y" : 89, "Z" : 90,
-
-        "Subtract"  : 109,
-        "Caret"     : 107,
-        "Atmark"    : 192,
-        "Yen"       : 106,
-        "Colon"     : 186,
-        "SemiColon" : 187,
-        "Comma"     : 188,
-        "Decimal"   : 190,
-        "Divide"    : 111,
-        "Backslash" : 226,
-        "OpenBrackets"  : 219,
-        "CloseBrackets" : 221,
-
-        "Shift"     : 16,
-        "Control"   : 17,
-        "Alternate" : 18,
-        "Enter"     : 13,
-        "Tab"       : 9,
-        "Space"     : 32,
-        "Backspace" : 8,
-
-        "Insert"    : 45,
-        "Delete"    : 46,
-        "Home"      : 36,
-        "End"       : 35,
-        "PageUp"    : 33,
-        "PageDown"  : 34,
-
-        "Left"  : 37,
-        "Up"    : 38,
-        "Right" : 39,
-        "Down"  : 40,
-
-        "NumPad0" : 96,
-        "NumPad1" : 97,
-        "NumPad2" : 98,
-        "NumPad3" : 99,
-        "NumPad4" : 100,
-        "NumPad5" : 101,
-        "NumPad6" : 102,
-        "NumPad7" : 103,
-        "NumPad8" : 104,
-        "NumPad9" : 105,
-
-        "NumPadDivide"      : 191,
-        "NumPadMultiply"    : 220,
-        "NumPadSubtract"    : 189,
-        "NumPadPlus"        : 222,
-        "NumPadDecimal"     : 110,
-
-        "Hankaku"   : 243,
-        "Zenkaku"   : 244
-    };
-    var mzkey = function(strobe, bit, face, code, strcode) {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+class mzkey {
+    constructor(strobe, bit, face, code, strcode) {
         this.strobe = strobe;
         this.bit = bit;
         this.face = face || "&nbsp;";
         this.code = code || [];
         this.strcode = strcode || face;
     }
-    MZ700KeyMatrix.Keys = [
-        new mzkey(0,0,"CR",     [MZ700KeyMatrix.KeyCodes.Enter]),
-        new mzkey(0,1,":",      [MZ700KeyMatrix.KeyCodes.Colon]),
-        new mzkey(0,2,";",      [MZ700KeyMatrix.KeyCodes.SemiColon]),
-        new mzkey(0,3),
-        new mzkey(0,4,"英数",   [MZ700KeyMatrix.KeyCodes.F10, MZ700KeyMatrix.KeyCodes.End], "ALNUM"),
-        new mzkey(0,5,"=",      [MZ700KeyMatrix.KeyCodes.Backspace]),
-        new mzkey(0,6,"GRAPH",  [MZ700KeyMatrix.KeyCodes.F12, MZ700KeyMatrix.KeyCodes.PageDown, MZ700KeyMatrix.KeyCodes.Altername], "GRAPH"),
-        new mzkey(0,7,"カナ",   [MZ700KeyMatrix.KeyCodes.F11, MZ700KeyMatrix.KeyCodes.PageUp], "KANA"),
-        new mzkey(1,0),
-        new mzkey(1,1),
-        new mzkey(1,2),
-        new mzkey(1,3,")",      [MZ700KeyMatrix.KeyCodes.CloseBrackets]),
-        new mzkey(1,4,"(",      [MZ700KeyMatrix.KeyCodes.OpenBrackets]),
-        new mzkey(1,5,"@",      [MZ700KeyMatrix.KeyCodes.Atmark]),
-        new mzkey(1,6,"Z",      [MZ700KeyMatrix.KeyCodes.Z]),
-        new mzkey(1,7,"Y",      [MZ700KeyMatrix.KeyCodes.Y]),
-        new mzkey(2,0,"X",      [MZ700KeyMatrix.KeyCodes.X]),
-        new mzkey(2,1,"W",      [MZ700KeyMatrix.KeyCodes.W]),
-        new mzkey(2,2,"V",      [MZ700KeyMatrix.KeyCodes.V]),
-        new mzkey(2,3,"U",      [MZ700KeyMatrix.KeyCodes.U]),
-        new mzkey(2,4,"T",      [MZ700KeyMatrix.KeyCodes.T]),
-        new mzkey(2,5,"S",      [MZ700KeyMatrix.KeyCodes.S]),
-        new mzkey(2,6,"R",      [MZ700KeyMatrix.KeyCodes.R]),
-        new mzkey(2,7,"Q",      [MZ700KeyMatrix.KeyCodes.Q]),
-        new mzkey(3,0,"P",      [MZ700KeyMatrix.KeyCodes.P]),
-        new mzkey(3,1,"O",      [MZ700KeyMatrix.KeyCodes.O]),
-        new mzkey(3,2,"N",      [MZ700KeyMatrix.KeyCodes.N]),
-        new mzkey(3,3,"M",      [MZ700KeyMatrix.KeyCodes.M]),
-        new mzkey(3,4,"L",      [MZ700KeyMatrix.KeyCodes.L]),
-        new mzkey(3,5,"K",      [MZ700KeyMatrix.KeyCodes.K]),
-        new mzkey(3,6,"J",      [MZ700KeyMatrix.KeyCodes.J]),
-        new mzkey(3,7,"I",      [MZ700KeyMatrix.KeyCodes.I]),
-        new mzkey(4,0,"H",      [MZ700KeyMatrix.KeyCodes.H]),
-        new mzkey(4,1,"G",      [MZ700KeyMatrix.KeyCodes.G]),
-        new mzkey(4,2,"F",      [MZ700KeyMatrix.KeyCodes.F]),
-        new mzkey(4,3,"E",      [MZ700KeyMatrix.KeyCodes.E]),
-        new mzkey(4,4,"D",      [MZ700KeyMatrix.KeyCodes.D]),
-        new mzkey(4,5,"C",      [MZ700KeyMatrix.KeyCodes.C]),
-        new mzkey(4,6,"B",      [MZ700KeyMatrix.KeyCodes.B]),
-        new mzkey(4,7,"A",      [MZ700KeyMatrix.KeyCodes.A]),
-        new mzkey(5,0,"8",      [MZ700KeyMatrix.KeyCodes.D8, MZ700KeyMatrix.KeyCodes.NumPad8]),
-        new mzkey(5,1,"7",      [MZ700KeyMatrix.KeyCodes.D7, MZ700KeyMatrix.KeyCodes.NumPad7]),
-        new mzkey(5,2,"6",      [MZ700KeyMatrix.KeyCodes.D6, MZ700KeyMatrix.KeyCodes.NumPad6]),
-        new mzkey(5,3,"5",      [MZ700KeyMatrix.KeyCodes.D5, MZ700KeyMatrix.KeyCodes.NumPad5]),
-        new mzkey(5,4,"4",      [MZ700KeyMatrix.KeyCodes.D4, MZ700KeyMatrix.KeyCodes.NumPad4]),
-        new mzkey(5,5,"3",      [MZ700KeyMatrix.KeyCodes.D3, MZ700KeyMatrix.KeyCodes.NumPad3]),
-        new mzkey(5,6,"2",      [MZ700KeyMatrix.KeyCodes.D2, MZ700KeyMatrix.KeyCodes.NumPad2]),
-        new mzkey(5,7,"1",      [MZ700KeyMatrix.KeyCodes.D1, MZ700KeyMatrix.KeyCodes.NumPad1]),
-        new mzkey(6,0,".",      [MZ700KeyMatrix.KeyCodes.Decimal, 110]),
-        new mzkey(6,1,",",      [MZ700KeyMatrix.KeyCodes.Comma]),
-        new mzkey(6,2,"9",      [MZ700KeyMatrix.KeyCodes.D9, MZ700KeyMatrix.KeyCodes.NumPad9]),
-        new mzkey(6,3,"0",      [MZ700KeyMatrix.KeyCodes.D0, MZ700KeyMatrix.KeyCodes.NumPad0]),
-        new mzkey(6,4,"SPC",    [MZ700KeyMatrix.KeyCodes.Space], " "),
-        new mzkey(6,5,"-",      [MZ700KeyMatrix.KeyCodes.Subtract, MZ700KeyMatrix.KeyCodes.NumPadSubtract]),
-        new mzkey(6,6,"+",      [MZ700KeyMatrix.KeyCodes.Caret, MZ700KeyMatrix.KeyCodes.NumPadPlus]),
-        new mzkey(6,7,"*",      [MZ700KeyMatrix.KeyCodes.Yen, MZ700KeyMatrix.KeyCodes.NumPadMultiply]),
-        new mzkey(7,0,"/",      [MZ700KeyMatrix.KeyCodes.Divide, MZ700KeyMatrix.KeyCodes.NumPadDivide]),
-        new mzkey(7,1,"?",      [MZ700KeyMatrix.KeyCodes.Backslash]),
-        new mzkey(7,2,"←",     [MZ700KeyMatrix.KeyCodes.Left], "LEFT"),
-        new mzkey(7,3,"→",     [MZ700KeyMatrix.KeyCodes.Right], "RIGHT"),
-        new mzkey(7,4,"↓",     [MZ700KeyMatrix.KeyCodes.Down], "DOWN"),
-        new mzkey(7,5,"↑",     [MZ700KeyMatrix.KeyCodes.Up], "UP"),
-        new mzkey(7,6,"DEL",    [MZ700KeyMatrix.KeyCodes.Delete]),
-        new mzkey(7,7,"INS",    [MZ700KeyMatrix.KeyCodes.Insert]),
-        new mzkey(8,0,"SHIFT",  [MZ700KeyMatrix.KeyCodes.Shift]),
-        new mzkey(8,1,"(BS)"),
-        new mzkey(8,2),
-        new mzkey(8,3,"(→)",   [MZ700KeyMatrix.KeyCodes.Tab]),
-        new mzkey(8,4,"(CR)"),
-        new mzkey(8,5,"(SHIFT)"),
-        new mzkey(8,6,"CTRL",   [MZ700KeyMatrix.KeyCodes.Control]),
-        new mzkey(8,7,"BREAK",  [MZ700KeyMatrix.KeyCodes.Escape,MZ700KeyMatrix.KeyCodes.Pause]),
-        new mzkey(9,0,"HOME",   [MZ700KeyMatrix.KeyCodes.Home]),
-        new mzkey(9,1,"(SPC)"),
-        new mzkey(9,2,"(↓)"),
-        new mzkey(9,3,"F5",     [MZ700KeyMatrix.KeyCodes.F5]),
-        new mzkey(9,4,"F4",     [MZ700KeyMatrix.KeyCodes.F4]),
-        new mzkey(9,5,"F3",     [MZ700KeyMatrix.KeyCodes.F3]),
-        new mzkey(9,6,"F2",     [MZ700KeyMatrix.KeyCodes.F2]),
-        new mzkey(9,7,"F1",     [MZ700KeyMatrix.KeyCodes.F1])
-    ];
-    MZ700KeyMatrix.KeyNames = (function(obj) {
-        Object.keys(MZ700KeyMatrix.KeyCodes).forEach(function(name) {
-            var code = MZ700KeyMatrix.KeyCodes[name];
-            obj[code] = name;
+}
+class MZ700KeyMatrix {
+    constructor() {
+        this.keymap = new Array(10);
+        for (var i = 0; i < this.keymap.length; i++) {
+            this.keymap[i] = 0xff;
+        }
+    }
+    getKeyData(strobe) {
+        var keydata = 0xff;
+        strobe &= 0x0f;
+        if (strobe < this.keymap.length) {
+            keydata = this.keymap[strobe];
+        }
+        return keydata;
+    }
+    setKeyMatrixState(strobe, bit, state) {
+        if (state) {
+            this.keymap[strobe] &= ((~(1 << bit)) & 0xff);
+        }
+        else {
+            this.keymap[strobe] |= ((1 << bit) & 0xff);
+        }
+    }
+}
+exports.default = MZ700KeyMatrix;
+MZ700KeyMatrix.KeyCodes = {
+    "Escape": 27,
+    "F1": 112, "F2": 113, "F3": 114, "F4": 115, "F5": 116,
+    "F6": 117, "F7": 118, "F8": 119, "F9": 120, "F10": 121,
+    "F11": 122, "F12": 123,
+    "Numlock": 44,
+    "ScrollLock": 145,
+    "Pause": 19,
+    "D0": 48, "D1": 49, "D2": 50, "D3": 51, "D4": 52,
+    "D5": 53, "D6": 54, "D7": 55, "D8": 56, "D9": 57,
+    "A": 65, "B": 66, "C": 67, "D": 68, "E": 69, "F": 70, "G": 71,
+    "H": 72, "I": 73, "J": 74, "K": 75, "L": 76, "M": 77, "N": 78,
+    "O": 79, "P": 80, "Q": 81, "R": 82, "S": 83, "T": 84, "U": 85,
+    "V": 86, "W": 87, "X": 88, "Y": 89, "Z": 90,
+    "Subtract": 109,
+    "Caret": 107,
+    "Atmark": 192,
+    "Yen": 106,
+    "Colon": 186,
+    "SemiColon": 187,
+    "Comma": 188,
+    "Decimal": 190,
+    "Divide": 111,
+    "Backslash": 226,
+    "OpenBrackets": 219,
+    "CloseBrackets": 221,
+    "Shift": 16,
+    "Control": 17,
+    "Alternate": 18,
+    "Enter": 13,
+    "Tab": 9,
+    "Space": 32,
+    "Backspace": 8,
+    "Insert": 45,
+    "Delete": 46,
+    "Home": 36,
+    "End": 35,
+    "PageUp": 33,
+    "PageDown": 34,
+    "Left": 37,
+    "Up": 38,
+    "Right": 39,
+    "Down": 40,
+    "NumPad0": 96,
+    "NumPad1": 97,
+    "NumPad2": 98,
+    "NumPad3": 99,
+    "NumPad4": 100,
+    "NumPad5": 101,
+    "NumPad6": 102,
+    "NumPad7": 103,
+    "NumPad8": 104,
+    "NumPad9": 105,
+    "NumPadDivide": 191,
+    "NumPadMultiply": 220,
+    "NumPadSubtract": 189,
+    "NumPadPlus": 222,
+    "NumPadDecimal": 110,
+    "Hankaku": 243,
+    "Zenkaku": 244
+};
+MZ700KeyMatrix.Keys = [
+    new mzkey(0, 0, "CR", [MZ700KeyMatrix.KeyCodes.Enter]),
+    new mzkey(0, 1, ":", [MZ700KeyMatrix.KeyCodes.Colon]),
+    new mzkey(0, 2, ";", [MZ700KeyMatrix.KeyCodes.SemiColon]),
+    new mzkey(0, 3),
+    new mzkey(0, 4, "英数", [MZ700KeyMatrix.KeyCodes.F10, MZ700KeyMatrix.KeyCodes.End], "ALNUM"),
+    new mzkey(0, 5, "=", [MZ700KeyMatrix.KeyCodes.Backspace]),
+    new mzkey(0, 6, "GRAPH", [MZ700KeyMatrix.KeyCodes.F12, MZ700KeyMatrix.KeyCodes.PageDown, MZ700KeyMatrix.KeyCodes.Alternate], "GRAPH"),
+    new mzkey(0, 7, "カナ", [MZ700KeyMatrix.KeyCodes.F11, MZ700KeyMatrix.KeyCodes.PageUp], "KANA"),
+    new mzkey(1, 0),
+    new mzkey(1, 1),
+    new mzkey(1, 2),
+    new mzkey(1, 3, ")", [MZ700KeyMatrix.KeyCodes.CloseBrackets]),
+    new mzkey(1, 4, "(", [MZ700KeyMatrix.KeyCodes.OpenBrackets]),
+    new mzkey(1, 5, "@", [MZ700KeyMatrix.KeyCodes.Atmark]),
+    new mzkey(1, 6, "Z", [MZ700KeyMatrix.KeyCodes.Z]),
+    new mzkey(1, 7, "Y", [MZ700KeyMatrix.KeyCodes.Y]),
+    new mzkey(2, 0, "X", [MZ700KeyMatrix.KeyCodes.X]),
+    new mzkey(2, 1, "W", [MZ700KeyMatrix.KeyCodes.W]),
+    new mzkey(2, 2, "V", [MZ700KeyMatrix.KeyCodes.V]),
+    new mzkey(2, 3, "U", [MZ700KeyMatrix.KeyCodes.U]),
+    new mzkey(2, 4, "T", [MZ700KeyMatrix.KeyCodes.T]),
+    new mzkey(2, 5, "S", [MZ700KeyMatrix.KeyCodes.S]),
+    new mzkey(2, 6, "R", [MZ700KeyMatrix.KeyCodes.R]),
+    new mzkey(2, 7, "Q", [MZ700KeyMatrix.KeyCodes.Q]),
+    new mzkey(3, 0, "P", [MZ700KeyMatrix.KeyCodes.P]),
+    new mzkey(3, 1, "O", [MZ700KeyMatrix.KeyCodes.O]),
+    new mzkey(3, 2, "N", [MZ700KeyMatrix.KeyCodes.N]),
+    new mzkey(3, 3, "M", [MZ700KeyMatrix.KeyCodes.M]),
+    new mzkey(3, 4, "L", [MZ700KeyMatrix.KeyCodes.L]),
+    new mzkey(3, 5, "K", [MZ700KeyMatrix.KeyCodes.K]),
+    new mzkey(3, 6, "J", [MZ700KeyMatrix.KeyCodes.J]),
+    new mzkey(3, 7, "I", [MZ700KeyMatrix.KeyCodes.I]),
+    new mzkey(4, 0, "H", [MZ700KeyMatrix.KeyCodes.H]),
+    new mzkey(4, 1, "G", [MZ700KeyMatrix.KeyCodes.G]),
+    new mzkey(4, 2, "F", [MZ700KeyMatrix.KeyCodes.F]),
+    new mzkey(4, 3, "E", [MZ700KeyMatrix.KeyCodes.E]),
+    new mzkey(4, 4, "D", [MZ700KeyMatrix.KeyCodes.D]),
+    new mzkey(4, 5, "C", [MZ700KeyMatrix.KeyCodes.C]),
+    new mzkey(4, 6, "B", [MZ700KeyMatrix.KeyCodes.B]),
+    new mzkey(4, 7, "A", [MZ700KeyMatrix.KeyCodes.A]),
+    new mzkey(5, 0, "8", [MZ700KeyMatrix.KeyCodes.D8, MZ700KeyMatrix.KeyCodes.NumPad8]),
+    new mzkey(5, 1, "7", [MZ700KeyMatrix.KeyCodes.D7, MZ700KeyMatrix.KeyCodes.NumPad7]),
+    new mzkey(5, 2, "6", [MZ700KeyMatrix.KeyCodes.D6, MZ700KeyMatrix.KeyCodes.NumPad6]),
+    new mzkey(5, 3, "5", [MZ700KeyMatrix.KeyCodes.D5, MZ700KeyMatrix.KeyCodes.NumPad5]),
+    new mzkey(5, 4, "4", [MZ700KeyMatrix.KeyCodes.D4, MZ700KeyMatrix.KeyCodes.NumPad4]),
+    new mzkey(5, 5, "3", [MZ700KeyMatrix.KeyCodes.D3, MZ700KeyMatrix.KeyCodes.NumPad3]),
+    new mzkey(5, 6, "2", [MZ700KeyMatrix.KeyCodes.D2, MZ700KeyMatrix.KeyCodes.NumPad2]),
+    new mzkey(5, 7, "1", [MZ700KeyMatrix.KeyCodes.D1, MZ700KeyMatrix.KeyCodes.NumPad1]),
+    new mzkey(6, 0, ".", [MZ700KeyMatrix.KeyCodes.Decimal, 110]),
+    new mzkey(6, 1, ",", [MZ700KeyMatrix.KeyCodes.Comma]),
+    new mzkey(6, 2, "9", [MZ700KeyMatrix.KeyCodes.D9, MZ700KeyMatrix.KeyCodes.NumPad9]),
+    new mzkey(6, 3, "0", [MZ700KeyMatrix.KeyCodes.D0, MZ700KeyMatrix.KeyCodes.NumPad0]),
+    new mzkey(6, 4, "SPC", [MZ700KeyMatrix.KeyCodes.Space], " "),
+    new mzkey(6, 5, "-", [MZ700KeyMatrix.KeyCodes.Subtract, MZ700KeyMatrix.KeyCodes.NumPadSubtract]),
+    new mzkey(6, 6, "+", [MZ700KeyMatrix.KeyCodes.Caret, MZ700KeyMatrix.KeyCodes.NumPadPlus]),
+    new mzkey(6, 7, "*", [MZ700KeyMatrix.KeyCodes.Yen, MZ700KeyMatrix.KeyCodes.NumPadMultiply]),
+    new mzkey(7, 0, "/", [MZ700KeyMatrix.KeyCodes.Divide, MZ700KeyMatrix.KeyCodes.NumPadDivide]),
+    new mzkey(7, 1, "?", [MZ700KeyMatrix.KeyCodes.Backslash]),
+    new mzkey(7, 2, "←", [MZ700KeyMatrix.KeyCodes.Left], "LEFT"),
+    new mzkey(7, 3, "→", [MZ700KeyMatrix.KeyCodes.Right], "RIGHT"),
+    new mzkey(7, 4, "↓", [MZ700KeyMatrix.KeyCodes.Down], "DOWN"),
+    new mzkey(7, 5, "↑", [MZ700KeyMatrix.KeyCodes.Up], "UP"),
+    new mzkey(7, 6, "DEL", [MZ700KeyMatrix.KeyCodes.Delete]),
+    new mzkey(7, 7, "INS", [MZ700KeyMatrix.KeyCodes.Insert]),
+    new mzkey(8, 0, "SHIFT", [MZ700KeyMatrix.KeyCodes.Shift]),
+    new mzkey(8, 1, "(BS)"),
+    new mzkey(8, 2),
+    new mzkey(8, 3, "(→)", [MZ700KeyMatrix.KeyCodes.Tab]),
+    new mzkey(8, 4, "(CR)"),
+    new mzkey(8, 5, "(SHIFT)"),
+    new mzkey(8, 6, "CTRL", [MZ700KeyMatrix.KeyCodes.Control]),
+    new mzkey(8, 7, "BREAK", [MZ700KeyMatrix.KeyCodes.Escape, MZ700KeyMatrix.KeyCodes.Pause]),
+    new mzkey(9, 0, "HOME", [MZ700KeyMatrix.KeyCodes.Home]),
+    new mzkey(9, 1, "(SPC)"),
+    new mzkey(9, 2, "(↓)"),
+    new mzkey(9, 3, "F5", [MZ700KeyMatrix.KeyCodes.F5]),
+    new mzkey(9, 4, "F4", [MZ700KeyMatrix.KeyCodes.F4]),
+    new mzkey(9, 5, "F3", [MZ700KeyMatrix.KeyCodes.F3]),
+    new mzkey(9, 6, "F2", [MZ700KeyMatrix.KeyCodes.F2]),
+    new mzkey(9, 7, "F1", [MZ700KeyMatrix.KeyCodes.F1])
+];
+MZ700KeyMatrix.KeyNames = (function (obj) {
+    Object.keys(MZ700KeyMatrix.KeyCodes).forEach(function (name) {
+        var code = MZ700KeyMatrix.KeyCodes[name];
+        obj[code] = name;
+    });
+    return obj;
+}({}));
+MZ700KeyMatrix.Code2Key = (function () {
+    var code2key = new Array(256);
+    MZ700KeyMatrix.Keys.forEach(function (key) {
+        key.code.forEach(function (code) {
+            code2key[code] = key;
         });
-        return obj;
-    }({}));
-    MZ700KeyMatrix.Code2Key = (function() {
-        var code2key = new Array(256);
-        MZ700KeyMatrix.Keys.forEach(function(key) {
-            key.code.forEach(function(code) {
-                code2key[code] = key;
-            });
-        });
-        return code2key;
-    })();
-    MZ700KeyMatrix.Str2Key = (function() {
-        var s2key = {};
-        MZ700KeyMatrix.Keys.forEach(function(key) {
-            s2key[key.strcode] = key;
-        });
-        return s2key;
-    })();
-    module.exports = MZ700KeyMatrix;
-}());
+    });
+    return code2key;
+})();
+MZ700KeyMatrix.Str2Key = (function () {
+    var s2key = {};
+    MZ700KeyMatrix.Keys.forEach(function (key) {
+        s2key[key.strcode] = key;
+    });
+    return s2key;
+})();
+module.exports = MZ700KeyMatrix;
 
 },{}],2:[function(require,module,exports){
-var MZ700_NewMonitor = require("./mz700-new-monitor.js");
-var MemoryBlock = require("../Z80/memory-block.js");
-const MemoryBlockCbw = require("../Z80/memory-block-cbw.js");
-const MemoryBlockCbrw = require("../Z80/memory-block-cbrw.js");
-var MemoryBank = require('../Z80/memory-bank.js');
-
-function MZ700_Memory() { }
-MZ700_Memory.prototype = new MemoryBank();
-MZ700_Memory.prototype.create = function(opt) {
-
-    MemoryBank.prototype.create.call(this, opt);
-
-    const monitorRom = new MZ700_NewMonitor();
-    monitorRom.create();
-
-    //
-    // Create callbacks when the VRAMs are updated
-    //
-    const onVramUpdate = opt.onVramUpdate || (()=>{});
-    const cacheText = Array(1000).fill(0x00);
-    const cacheAttr = Array(1000).fill(0x71);
-
-    this.memblks = {
-        IPL_AREA_ROM: monitorRom,
-        IPL_AREA_RAM: new MemoryBlock({
-            startAddr: 0x0000, size: 0x1000
-        }),
-        FREE_RAM: new MemoryBlock({
-            startAddr: 0x1000, size: 0xC000
-        }),
-        TEXT_VRAM: new MemoryBlockCbw({
-            startAddr: 0xD000, size: 0x0800,
-            onPoke: (addr, dispcode) => {
-                if(0xD000 <= addr && addr < 0xD000 + 1000) {
-                    const i = addr - 0xD000;
-                    cacheText[i] = dispcode;
-                    onVramUpdate(i, dispcode, cacheAttr[i]);
-                }
-            },
-        }),
-        ATTR_VRAM: new MemoryBlockCbw({
-            startAddr: 0xD800, size: 0x0800,
-            onPoke: (addr, attr) => {
-                if(0xD800 <= addr && addr < 0xD800 + 1000) {
-                    const i = addr - 0xD800;
-                    cacheAttr[i] = attr;
-                    onVramUpdate(i, cacheText[i], attr);
-                }
-            },
-        }),
-        MMAPED_IO: new MemoryBlockCbrw({
-            startAddr: 0xE000, size: 0x0800,
-            onPeek: opt.onMappedIoRead || function(){},
-            onPoke: opt.onMappedIoUpdate || function(){}
-        }),
-        EXTND_ROM: new MemoryBlock({
-            startAddr: 0xE800, size: 0x10000 - 0xE800
-        }),
-        DRAM: new MemoryBlock({
-            startAddr: 0xD000, size: 0x3000
-        })
-    };
-
-    this._block1VRAM = true;
-    this._disabledBlock1 = false;
-    this.changeBlock0_MONITOR();
-    this.setMemoryBlock("FREE_RAM", this.memblks.FREE_RAM);
-    this.changeBlock1_VRAM();
-
-    // fill attribute VRAM by 71h foreground white and background blue
-    for(let i = 0; i < 0x800; i++) {
-        this.memblks.ATTR_VRAM.pokeByte(0xD800 + i, 0x71);
-    }
-}
-
-MZ700_Memory.prototype.setMonitorRom = function(bin) {
-    this.memblks.IPL_AREA_ROM.setBinary(bin);
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-
-MZ700_Memory.prototype.clear = function() {
-    MemoryBank.prototype.clear.call(this);
-    for(var name in this.memblks) {
-        this.memblks[name].clear();
+Object.defineProperty(exports, "__esModule", { value: true });
+const mz700_new_monitor_1 = __importDefault(require("./mz700-new-monitor"));
+const memory_block_1 = __importDefault(require("../Z80/memory-block"));
+const memory_block_cbw_1 = __importDefault(require("../Z80/memory-block-cbw"));
+const memory_block_cbrw_1 = __importDefault(require("../Z80/memory-block-cbrw"));
+const memory_bank_1 = __importDefault(require("../Z80/memory-bank"));
+class MZ700_Memory extends memory_bank_1.default {
+    constructor() {
+        super({});
+        this._block1VRAM = true;
+        this._disabledBlock1 = false;
     }
-}
-MZ700_Memory.prototype.getTextVram = function() {
-    return this.memblks.TEXT_VRAM;
-}
-MZ700_Memory.prototype.getAttrVram = function() {
-    return this.memblks.ATTR_VRAM;
-}
-MZ700_Memory.prototype.changeBlock0_MONITOR = function() {
-    this.setMemoryBlock("IPL_AREA", this.memblks.IPL_AREA_ROM);
-}
-MZ700_Memory.prototype.changeBlock0_DRAM = function() {
-    this.setMemoryBlock("IPL_AREA", this.memblks.IPL_AREA_RAM);
-}
-MZ700_Memory.prototype.changeBlock1_DRAM = function() {
-    this._block1VRAM = false;
-    this._disabledBlock1 = false;
-    this.setMemoryBlock("TEXT_VRAM", null);
-    this.setMemoryBlock("ATTR_VRAM", null);
-    this.setMemoryBlock("MMAPED_IO", null);
-    this.setMemoryBlock("EXTND_ROM", null);
-    this.setMemoryBlock("DRAM", this.memblks.DRAM);
-}
-MZ700_Memory.prototype.changeBlock1_VRAM = function() {
-    this._block1VRAM = true;
-    this._disabledBlock1 = false;
-    this.setMemoryBlock("DRAM", null);
-    this.setMemoryBlock("TEXT_VRAM", this.memblks.TEXT_VRAM);
-    this.setMemoryBlock("ATTR_VRAM", this.memblks.ATTR_VRAM);
-    this.setMemoryBlock("MMAPED_IO", this.memblks.MMAPED_IO);
-    this.setMemoryBlock("EXTND_ROM", this.memblks.EXTND_ROM);
-}
-MZ700_Memory.prototype.disableBlock1 = function() {
-    if(!this._disabledBlock1) {
-        this._disabledBlock1 = true;
+    create(opt) {
+        super.create(opt);
+        const monitorRom = new mz700_new_monitor_1.default();
+        monitorRom.create();
+        const onVramUpdate = opt.onVramUpdate || (() => { });
+        const cacheText = Array(1000).fill(0x00);
+        const cacheAttr = Array(1000).fill(0x71);
+        this.memblks = {
+            IPL_AREA_ROM: monitorRom,
+            IPL_AREA_RAM: new memory_block_1.default({
+                startAddr: 0x0000, size: 0x1000
+            }),
+            FREE_RAM: new memory_block_1.default({
+                startAddr: 0x1000, size: 0xC000
+            }),
+            TEXT_VRAM: new memory_block_cbw_1.default({
+                startAddr: 0xD000, size: 0x0800,
+                onPoke: (addr, dispcode) => {
+                    if (0xD000 <= addr && addr < 0xD000 + 1000) {
+                        const i = addr - 0xD000;
+                        cacheText[i] = dispcode;
+                        onVramUpdate(i, dispcode, cacheAttr[i]);
+                    }
+                },
+            }),
+            ATTR_VRAM: new memory_block_cbw_1.default({
+                startAddr: 0xD800, size: 0x0800,
+                onPoke: (addr, attr) => {
+                    if (0xD800 <= addr && addr < 0xD800 + 1000) {
+                        const i = addr - 0xD800;
+                        cacheAttr[i] = attr;
+                        onVramUpdate(i, cacheText[i], attr);
+                    }
+                },
+            }),
+            MMAPED_IO: new memory_block_cbrw_1.default({
+                startAddr: 0xE000, size: 0x0800,
+                onPeek: opt.onMappedIoRead || function () { },
+                onPoke: opt.onMappedIoUpdate || function () { }
+            }),
+            EXTND_ROM: new memory_block_1.default({
+                startAddr: 0xE800, size: 0x10000 - 0xE800
+            }),
+            DRAM: new memory_block_1.default({
+                startAddr: 0xD000, size: 0x3000
+            })
+        };
+        this._block1VRAM = true;
+        this._disabledBlock1 = false;
+        this.changeBlock0_MONITOR();
+        this.setMemoryBlock("FREE_RAM", this.memblks.FREE_RAM);
+        this.changeBlock1_VRAM();
+        for (let i = 0; i < 0x800; i++) {
+            this.memblks.ATTR_VRAM.pokeByte(0xD800 + i, 0x71);
+        }
+    }
+    setMonitorRom(bin) {
+        this.memblks.IPL_AREA_ROM.setBinary(bin);
+    }
+    clear() {
+        memory_bank_1.default.prototype.clear.call(this);
+        for (var name in this.memblks) {
+            this.memblks[name].clear();
+        }
+    }
+    getTextVram() {
+        return this.memblks.TEXT_VRAM;
+    }
+    getAttrVram() {
+        return this.memblks.ATTR_VRAM;
+    }
+    changeBlock0_MONITOR() {
+        this.setMemoryBlock("IPL_AREA", this.memblks.IPL_AREA_ROM);
+    }
+    changeBlock0_DRAM() {
+        this.setMemoryBlock("IPL_AREA", this.memblks.IPL_AREA_RAM);
+    }
+    changeBlock1_DRAM() {
+        this._block1VRAM = false;
+        this._disabledBlock1 = false;
         this.setMemoryBlock("TEXT_VRAM", null);
         this.setMemoryBlock("ATTR_VRAM", null);
         this.setMemoryBlock("MMAPED_IO", null);
         this.setMemoryBlock("EXTND_ROM", null);
-        this.setMemoryBlock("DRAM", null);
+        this.setMemoryBlock("DRAM", this.memblks.DRAM);
     }
-}
-MZ700_Memory.prototype.enableBlock1 = function() {
-    if(this._disabledBlock1) {
-        if(this._block1VRAM) {
-            this.changeBlock1_VRAM();
-        } else {
-            this.changeBlock1_DRAM();
-        }
+    changeBlock1_VRAM() {
+        this._block1VRAM = true;
         this._disabledBlock1 = false;
+        this.setMemoryBlock("DRAM", null);
+        this.setMemoryBlock("TEXT_VRAM", this.memblks.TEXT_VRAM);
+        this.setMemoryBlock("ATTR_VRAM", this.memblks.ATTR_VRAM);
+        this.setMemoryBlock("MMAPED_IO", this.memblks.MMAPED_IO);
+        this.setMemoryBlock("EXTND_ROM", this.memblks.EXTND_ROM);
+    }
+    disableBlock1() {
+        if (!this._disabledBlock1) {
+            this._disabledBlock1 = true;
+            this.setMemoryBlock("TEXT_VRAM", null);
+            this.setMemoryBlock("ATTR_VRAM", null);
+            this.setMemoryBlock("MMAPED_IO", null);
+            this.setMemoryBlock("EXTND_ROM", null);
+            this.setMemoryBlock("DRAM", null);
+        }
+    }
+    enableBlock1() {
+        if (this._disabledBlock1) {
+            if (this._block1VRAM) {
+                this.changeBlock1_VRAM();
+            }
+            else {
+                this.changeBlock1_DRAM();
+            }
+            this._disabledBlock1 = false;
+        }
     }
 }
+exports.default = MZ700_Memory;
 module.exports = MZ700_Memory;
 
-},{"../Z80/memory-bank.js":10,"../Z80/memory-block-cbrw.js":11,"../Z80/memory-block-cbw.js":12,"../Z80/memory-block.js":13,"./mz700-new-monitor.js":3}],3:[function(require,module,exports){
-"use strict"
-var MemoryBlock = require("../Z80/memory-block.js");
-function MZ700_NewMonitor() { }
-MZ700_NewMonitor.prototype = new MemoryBlock();
-MZ700_NewMonitor.prototype.create = function() {
-    MemoryBlock.prototype.create.call(this, { startAddr: 0x0000, size: 0x1000});
+},{"../Z80/memory-bank":10,"../Z80/memory-block":13,"../Z80/memory-block-cbrw":11,"../Z80/memory-block-cbw":12,"./mz700-new-monitor":3}],3:[function(require,module,exports){
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-
-MZ700_NewMonitor.prototype.setBinary = function(bin) {
-    for(let i = 0; i < this.size; i++) {
-        const address = this.startAddr + i;
-        MemoryBlock.prototype.pokeByte.call(this,
-            address, bin[address]);
+Object.defineProperty(exports, "__esModule", { value: true });
+const memory_block_1 = __importDefault(require("../Z80/memory-block"));
+class MZ700_NewMonitor extends memory_block_1.default {
+    constructor() {
+        super();
     }
-};
-
-MZ700_NewMonitor.prototype.pokeByte = function(/*address, value*/) {
-    /* IGNORE ALL WRITING */
-};
-
+    create() {
+        memory_block_1.default.prototype.create.call(this, { startAddr: 0x0000, size: 0x1000 });
+    }
+    setBinary(bin) {
+        for (let i = 0; i < this.size; i++) {
+            const address = this.startAddr + i;
+            memory_block_1.default.prototype.pokeByte.call(this, address, bin[address]);
+        }
+    }
+    pokeByte() {
+    }
+}
+exports.default = MZ700_NewMonitor;
 module.exports = MZ700_NewMonitor;
 
-},{"../Z80/memory-block.js":13}],4:[function(require,module,exports){
-//
-// Codes for Worker context.
-// Override the methods in Worker context
-//
+},{"../Z80/memory-block":13}],4:[function(require,module,exports){
 "use strict";
 const TransWorker = require('transworker');
 const MZ700 = require('./mz700.js');
 const MZ700CanvasRenderer = require('../lib/mz700-canvas-renderer.js');
 const PCG700 = require("../lib/PCG-700.js");
 const MZ700CG = require("../lib/mz700-cg.js");
-
-//Create MZ700 and TransWorker.
 const transworker = new TransWorker();
 const mz700 = new MZ700();
 const mz700CanvasRenderer = new MZ700CanvasRenderer();
-
 mz700.create({
     started: () => transworker.postNotify("start"),
     stopped: () => transworker.postNotify("stop"),
@@ -400,7 +383,7 @@ mz700.create({
     onVramUpdate: (index, dispcode, attr) => {
         mz700CanvasRenderer.writeVram(index, attr, dispcode);
     },
-    startSound: freq => transworker.postNotify("startSound", [ freq ]),
+    startSound: freq => transworker.postNotify("startSound", [freq]),
     stopSound: () => transworker.postNotify("stopSound"),
     onStartDataRecorder: () => transworker.postNotify("onStartDataRecorder"),
     onStopDataRecorder: () => transworker.postNotify("onStopDataRecorder"),
@@ -414,11 +397,7 @@ mz700.mmio.onWrite(0xE012, value => {
     pcg700.setWE(value & PCG700.WE);
     pcg700.setSSW(value & PCG700.SSW);
 });
-
 transworker.create(mz700);
-
-//Receive offscreen canvas from the UI-thread
-//and create a renderer and MMIO for PCG-700.
 transworker.listenTransferableObject("offscreenCanvas", offscreenCanvas => {
     mz700CanvasRenderer.create({
         canvas: offscreenCanvas,
@@ -429,610 +408,457 @@ transworker.listenTransferableObject("offscreenCanvas", offscreenCanvas => {
 
 },{"../lib/PCG-700.js":15,"../lib/mz700-canvas-renderer.js":24,"../lib/mz700-cg.js":25,"./mz700.js":5,"transworker":39}],5:[function(require,module,exports){
 "use strict";
-const FractionalTimer = require("fractional-timer");
-const MZ_TapeHeader   = require('../lib/mz-tape-header');
-const MZ_Tape         = require('../lib/mz-tape');
-const MZ_DataRecorder = require('../lib/mz-data-recorder');
-const Intel8253       = require('../lib/intel-8253');
-const FlipFlopCounter = require('../lib/flip-flop-counter');
-const IC556           = require('../lib/ic556');
-const MZMMIO          = require("../lib/mz-mmio.js");
-const MZ700KeyMatrix  = require('./mz700-key-matrix');
-const MZ700_Memory    = require("./mz700-memory.js");
-const Z80             = require('../Z80/Z80.js');
-const Z80LineAssembler = require("../Z80/Z80-line-assembler");
-
-function MZ700() { }
-
-MZ700.prototype.create = function(opt) {
-
-    // Screen update buffer
-    this._screenUpdateData = new Array(1000);
-
-    // Timer id to send screen buffer
-    this._vramTxTid = null;
-
-
-    //MZ700 Key Matrix
-    this.keymatrix = new MZ700KeyMatrix();
-
-    // Create 8253
-    this.intel8253 = new Intel8253();
-    this.intel8253.counter(1).initCount(15700, () => {
-        this.intel8253.counter(2).count(1);
-    });
-    this.intel8253.counter(2).initCount(43200, () => {
-        if(this.INTMSK) {
-            this.z80.interrupt();
-        }
-    });
-
-    //HBLNK F/F in 15.7 kHz
-    this.hblank = new FlipFlopCounter(MZ700.Z80_CLOCK / 15700);
-    this.hblank.addEventListener("change", () => {
-        this.intel8253.counter(1).count(1);
-    });
-
-    //VBLNK F/F in 50 Hz
-    this.vblank = new FlipFlopCounter(MZ700.Z80_CLOCK / 50);
-    this.VBLK = false;
-    this.vblank.addEventListener("change", () => {
-        this.VBLK = !this.VBLK;
-    });
-
-    // create IC 556 to create HBLNK(cursor blink) by 3 Hz?
-    this.ic556 = new IC556(MZ700.Z80_CLOCK / 3);
-    this.ic556_OUT = false;
-    this.ic556.addEventListener("change", () => {
-        this.ic556_OUT = !this.ic556_OUT;
-    });
-
-    this.INTMSK = false;
-
-    this.MLDST = false;
-
-    let motorOffDelayTid = null;
-    this.dataRecorder = new MZ_DataRecorder(motorState => {
-        if(motorState) {
-            if(motorOffDelayTid != null) {
-                clearTimeout(motorOffDelayTid);
-                motorOffDelayTid = null;
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const fractional_timer_1 = __importDefault(require("fractional-timer"));
+const mz_tape_header_1 = __importDefault(require("../lib/mz-tape-header"));
+const mz_tape_1 = __importDefault(require("../lib/mz-tape"));
+const mz_data_recorder_1 = __importDefault(require("../lib/mz-data-recorder"));
+const intel_8253_1 = __importDefault(require("../lib/intel-8253"));
+const flip_flop_counter_1 = __importDefault(require("../lib/flip-flop-counter"));
+const ic556_1 = __importDefault(require("../lib/ic556"));
+const mz_mmio_js_1 = __importDefault(require("../lib/mz-mmio.js"));
+const mz700_key_matrix_1 = __importDefault(require("./mz700-key-matrix"));
+const mz700_memory_js_1 = __importDefault(require("./mz700-memory.js"));
+const Z80_js_1 = __importDefault(require("../Z80/Z80.js"));
+const Z80_line_assembler_1 = __importDefault(require("../Z80/Z80-line-assembler"));
+class MZ700 {
+    constructor() { }
+    create(opt) {
+        this.keymatrix = new mz700_key_matrix_1.default();
+        this.intel8253 = new intel_8253_1.default();
+        this.intel8253.counter(1).initCount(15700, () => {
+            this.intel8253.counter(2).count(1);
+        });
+        this.intel8253.counter(2).initCount(43200, () => {
+            if (this.INTMSK) {
+                this.z80.interrupt();
             }
-            this.opt.onStartDataRecorder();
-        } else {
-            motorOffDelayTid = setTimeout(() => {
-                motorOffDelayTid = null;
-                this.opt.onStopDataRecorder();
-            }, 100);
-        }
-    });
-
-    //
-    // Default option settings to notify from WebWorker
-    // to UI thread by transworker
-    //
-    this.opt = {
-        started: () => {},
-        stopped: () => {},
-        onBreak : () => {},
-        onVramUpdate: (/*index, dispcode, attr*/) => {},
-        onUpdateScrn: (/*buffer*/) => {},
-        onMmioRead: (/*address, value*/) => { },
-        onMmioWrite: (/*address, value*/) => { },
-        startSound: (/*freq*/) => { },
-        stopSound: () => {},
-        onStartDataRecorder: () => {},
-        onStopDataRecorder: () => {}
-    };
-
-    //
-    // Override option to receive notifications with callbacks.
-    //
-    opt = opt || {};
-    Object.keys(opt).forEach(key => {
-        if(!(key in this.opt)) {
-            console.warn(`Unknown option key ${key} is specified.`);
-        }
-    });
-    Object.keys(this.opt).forEach(key => {
-        if(key in opt) {
-            this.opt[key] = opt[key];
-        }
-    });
-
-    this.tid = null;
-    this.clockFactor = 1.0;
-    this.tidMeasClock = null;
-    this.t_cycle_0 = 0;
-    this.actualClockFreq = 0.0;
-    this._cycleToWait = 0;
-
-    this.mmio = new MZMMIO();
-    for(let address = 0xE000; address < 0xE800; address++) {
-        this.mmio.onRead(address,
-            value=>this.opt.onMmioRead(address, value));
-        this.mmio.onWrite(address,
-            value=>this.opt.onMmioWrite(address, value));
-    }
-
-    //MMIO $E000
-    this.mmio.onWrite(0xE000, value => {
-        this.memory.poke(0xE001, this.keymatrix.getKeyData(value));
-        this.ic556.loadReset(value & 0x80);
-    });
-
-    //MMIO $E001
-    // No Device
-
-    //MMIO $E002
-    this.mmio.onRead(0xE002, value => {
-        // [VBLK~] [556OUT] [RDATA] [MOTOR] [M-ON] [INTMSK] [WDATA] [*****]
-        //    |        |       |       |       |       |       |       |
-        //    |        |       |       |       |       |       |       +---- b0. --- (undefined)
-        //    |        |       |       |       |       |       +------------ b1. OUT CMT WRITE DATA
-        //    |        |       |       |       |       +-------------------- b2. OUT CLOCK INT MASK
-        //    |        |       |       |       +---------------------------- b3. OUT DRIVE CMT MOTOR
-        //    |        |       |       +------------------------------------ b4. IN  CMT MOTOR FEEDBACK
-        //    |        |       +-------------------------------------------- b5. IN  CMT READ DATA
-        //    |        +---------------------------------------------------- b6. IN  BLINK CURSOR
-        //    +------------------------------------------------------------- b7. IN  VERTICAL BLANK
-        value = value & 0x0f; // 入力上位4ビットをオフ
-        // PC4 - MOTOR : The motor driving state (high active)
-        if(this.dataRecorder.motor()) {
-            value = value | 0x10;
-        } else {
-            value = value & 0xef;
-        }
-        // PC5 - RDATA : A bit data to read
-        if(this.dataRecorder_readBit()) {
-            value = value | 0x20;
-        } else {
-            value = value & 0xdf;
-        }
-        // PC6 - 556_OUT : A signal to blink cursor on the screen
-        if(this.ic556_OUT) {
-            value = value | 0x40;
-        } else {
-            value = value & 0xbf;
-        }
-        // PC7 - VBLK : A virtical blanking signal
-        // set V-BLANK bit
-        if(this.VBLK) {
-            value = value | 0x80;
-        } else {
-            value = value & 0x7f;
-        }
-        return value;
-    });
-
-    //MMIO $E003
-    this.mmio.onWrite(0xE003, value => {
-        // MSB==0の場合、PortCへのビット単位の書き込みを指示する。
-        //
-        // [ 7   6   5   4   3   2   1   0 ]
-        //  ---             ----------- ---
-        //   0   -   -   -  ビット番号  値
-        //
-        // MSB==1の場合は、モードセット
-        //
-        // [ 7   6   5   4   3   2   1   0 ]
-        //  --- ------- --- --- --- --- ---
-        //   1   ModeA   |   |   |   |   |
-        //       PortA --+   |   |   |   |
-        //       PortCH------+   |   |   +----- PortCL
-        //               ModeB --+   +--------- PortB
-        //
-        //  ModeA: 1x - モード2、01 - モード1、00 - モード0
-        //  ModeB: 1  - モード1、0  - モード0
-        //  PortA: Port A 入出力設定 0 - 出力、1 - 入力
-        //  PortB: Port B 入出力設定 0 - 出力、1 - 入力
-        //  PortCH: Port C 上位ニブル入出力設定 0 - 出力、1 - 入力
-        //  PortCL: Port C 下位ニブル入出力設定 0 - 出力、1 - 入力
-        //
-        if((value & 0x80) == 0) {
-            const bit = ((value & 0x01) != 0);
-            const bitno = (value & 0x0e) >> 1;
-            //const name = [
-            //    "SOUNDMSK(MZ-1500)",
-            //    "WDATA","INTMSK","M-ON",
-            //    "MOTOR","RDATA", "556 OUT", "VBLK"][bitno];
-            //console.log("$E003 8255 CTRL BITSET", name, bit);
-            switch(bitno) {
-                case 0://SOUNDMSK
-                    break;
-                case 1://WDATA
-                    this.dataRecorder_writeBit(bit);
-                    break;
-                case 2://INTMSK
-                    this.INTMSK = bit;//trueで割り込み許可
-                    break;
-                case 3://M-ON
-                    this.dataRecorder_motorOn(bit);
-                    break;
+        });
+        this.hblank = new flip_flop_counter_1.default(MZ700.Z80_CLOCK / 15700);
+        this.hblank.addEventListener("change", () => {
+            this.intel8253.counter(1).count(1);
+        });
+        this.vblank = new flip_flop_counter_1.default(MZ700.Z80_CLOCK / 50);
+        this.VBLK = false;
+        this.vblank.addEventListener("change", () => {
+            this.VBLK = !this.VBLK;
+        });
+        this.ic556 = new ic556_1.default(MZ700.Z80_CLOCK / 3);
+        this.ic556_OUT = false;
+        this.ic556.addEventListener("change", () => {
+            this.ic556_OUT = !this.ic556_OUT;
+        });
+        this.INTMSK = false;
+        this.MLDST = false;
+        let motorOffDelayTid = null;
+        this.dataRecorder = new mz_data_recorder_1.default(motorState => {
+            if (motorState) {
+                if (motorOffDelayTid != null) {
+                    clearTimeout(motorOffDelayTid);
+                    motorOffDelayTid = null;
+                }
+                this.opt.onStartDataRecorder();
             }
+            else {
+                motorOffDelayTid = setTimeout(() => {
+                    motorOffDelayTid = null;
+                    this.opt.onStopDataRecorder();
+                }, 100);
+            }
+        });
+        this.opt = {
+            started: () => { },
+            stopped: () => { },
+            onBreak: () => { },
+            onVramUpdate: () => { },
+            onUpdateScrn: () => { },
+            onMmioRead: () => { },
+            onMmioWrite: () => { },
+            startSound: () => { },
+            stopSound: () => { },
+            onStartDataRecorder: () => { },
+            onStopDataRecorder: () => { }
+        };
+        opt = opt || {};
+        Object.keys(opt).forEach(key => {
+            if (!(key in this.opt)) {
+                console.warn(`Unknown option key ${key} is specified.`);
+            }
+        });
+        Object.keys(this.opt).forEach(key => {
+            if (key in opt) {
+                this.opt[key] = opt[key];
+            }
+        });
+        this.tid = null;
+        this.clockFactor = 1.0;
+        this.tidMeasClock = null;
+        this.t_cycle_0 = 0;
+        this.actualClockFreq = 0.0;
+        this._cycleToWait = 0;
+        this.mmio = new mz_mmio_js_1.default();
+        for (let address = 0xE000; address < 0xE800; address++) {
+            this.mmio.onRead(address, value => this.opt.onMmioRead(address, value));
+            this.mmio.onWrite(address, value => this.opt.onMmioWrite(address, value));
         }
-    });
-
-    //MMIO $E004
-    this.mmio.onRead(0xE004, () => this.intel8253.counter(0).read());
-    this.mmio.onWrite(0xE004, value => {
-        if(this.intel8253.counter(0).load(value) && this.MLDST) {
-            this.opt.startSound(895000 / this.intel8253.counter(0).value);
-        }
-    });
-
-    //MMIO $E005
-    this.mmio.onRead(0xE005, () => this.intel8253.counter(1).read());
-    this.mmio.onWrite(0xE005, value => this.intel8253.counter(1).load(value));
-
-    //MMIO $E006
-    this.mmio.onRead(0xE006, () => this.intel8253.counter(2).read());
-    this.mmio.onWrite(0xE006, value => this.intel8253.counter(2).load(value));
-
-    //MMIO $E007
-    this.mmio.onWrite(0xE007, value => this.intel8253.setCtrlWord(value));
-
-    //MMIO $E008
-    this.mmio.onRead(0xE008, value => {
-        value = value & 0xfe; // MSBをオフ
-        // set H-BLANK bit
-        if(this.hblank.readOutput()) {
-            value = value | 0x01;
-        } else {
+        this.mmio.onWrite(0xE000, value => {
+            this.memory.poke(0xE001, this.keymatrix.getKeyData(value));
+            this.ic556.loadReset((value & 0x80) != 0);
+        });
+        this.mmio.onRead(0xE002, value => {
+            value = value & 0x0f;
+            if (this.dataRecorder.motor()) {
+                value = value | 0x10;
+            }
+            else {
+                value = value & 0xef;
+            }
+            if (this.dataRecorder_readBit()) {
+                value = value | 0x20;
+            }
+            else {
+                value = value & 0xdf;
+            }
+            if (this.ic556_OUT) {
+                value = value | 0x40;
+            }
+            else {
+                value = value & 0xbf;
+            }
+            if (this.VBLK) {
+                value = value | 0x80;
+            }
+            else {
+                value = value & 0x7f;
+            }
+            return value;
+        });
+        this.mmio.onWrite(0xE003, value => {
+            if ((value & 0x80) == 0) {
+                const bit = ((value & 0x01) != 0);
+                const bitno = (value & 0x0e) >> 1;
+                switch (bitno) {
+                    case 0:
+                        break;
+                    case 1:
+                        this.dataRecorder_writeBit(bit);
+                        break;
+                    case 2:
+                        this.INTMSK = bit;
+                        break;
+                    case 3:
+                        this.dataRecorder_motorOn(bit);
+                        break;
+                }
+            }
+        });
+        this.mmio.onRead(0xE004, () => this.intel8253.counter(0).read());
+        this.mmio.onWrite(0xE004, value => {
+            if (this.intel8253.counter(0).load(value) && this.MLDST) {
+                this.opt.startSound(895000 / this.intel8253.counter(0).value);
+            }
+        });
+        this.mmio.onRead(0xE005, () => this.intel8253.counter(1).read());
+        this.mmio.onWrite(0xE005, value => this.intel8253.counter(1).load(value));
+        this.mmio.onRead(0xE006, () => this.intel8253.counter(2).read());
+        this.mmio.onWrite(0xE006, value => this.intel8253.counter(2).load(value));
+        this.mmio.onWrite(0xE007, value => this.intel8253.setCtrlWord(value));
+        this.mmio.onRead(0xE008, value => {
             value = value & 0xfe;
-        }
-        return value;
-    });
-    this.mmio.onWrite(0xE008, value => {
-        if((this.MLDST = ((value & 0x01) != 0)) == true) {
-            this.opt.startSound(895000 / this.intel8253.counter(0).value);
-        } else {
-            this.opt.stopSound();
-        }
-    });
-
-    this.memory = new MZ700_Memory();
-    this.memory.create({
-        onVramUpdate: (index, dispcode, attr) => {
-            this.opt.onVramUpdate(index, dispcode, attr);
-        },
-        onMappedIoRead: (address, value) => {
-            //MMIO: Input from memory mapped peripherals
-            const readValue = this.mmio.read(address, value);
-            if(readValue == null || readValue == undefined) {
+            if (this.hblank.readOutput()) {
+                value = value | 0x01;
+            }
+            else {
+                value = value & 0xfe;
+            }
+            return value;
+        });
+        this.mmio.onWrite(0xE008, value => {
+            if ((this.MLDST = ((value & 0x01) != 0)) == true) {
+                this.opt.startSound(895000 / this.intel8253.counter(0).value);
+            }
+            else {
+                this.opt.stopSound();
+            }
+        });
+        this.memory = new mz700_memory_js_1.default();
+        this.memory.create({
+            onVramUpdate: (index, dispcode, attr) => {
+                this.opt.onVramUpdate(index, dispcode, attr);
+            },
+            onMappedIoRead: (address, value) => {
+                const readValue = this.mmio.read(address, value);
+                if (readValue == null || readValue == undefined) {
+                    return value;
+                }
+                return readValue;
+            },
+            onMappedIoUpdate: (address, value) => {
+                this.mmio.write(address, value);
                 return value;
             }
-            return readValue;
-        },
-        onMappedIoUpdate: (address, value) => {
-            //MMIO: Output to memory mapped peripherals
-            this.mmio.write(address, value);
-            return value;
+        });
+        this.z80 = new Z80_js_1.default({ memory: this.memory });
+        this.z80.onWriteIoPort(0xe0, () => this.memory.changeBlock0_DRAM());
+        this.z80.onWriteIoPort(0xe1, () => this.memory.changeBlock1_DRAM());
+        this.z80.onWriteIoPort(0xe2, () => this.memory.changeBlock0_MONITOR());
+        this.z80.onWriteIoPort(0xe3, () => this.memory.changeBlock1_VRAM());
+        this.z80.onWriteIoPort(0xe4, () => {
+            this.memory.changeBlock0_MONITOR();
+            this.memory.changeBlock1_VRAM();
+        });
+        this.z80.onWriteIoPort(0xe5, () => this.memory.disableBlock1());
+        this.z80.onWriteIoPort(0xe6, () => this.memory.enableBlock1());
+    }
+    setMonitorRom(bin) {
+        this.memory.setMonitorRom(bin);
+    }
+    writeAsmCode(assembled) {
+        for (let i = 0; i < assembled.buffer.length; i++) {
+            this.memory.poke(assembled.minAddr + i, assembled.buffer[i]);
         }
-    });
-
-    this.z80 = new Z80({ memory: this.memory });
-    this.z80.onWriteIoPort(0xe0, () => this.memory.changeBlock0_DRAM());
-    this.z80.onWriteIoPort(0xe1, () => this.memory.changeBlock1_DRAM());
-    this.z80.onWriteIoPort(0xe2, () => this.memory.changeBlock0_MONITOR());
-    this.z80.onWriteIoPort(0xe3, () => this.memory.changeBlock1_VRAM());
-    this.z80.onWriteIoPort(0xe4, () => {
+        return assembled.minAddr;
+    }
+    exec(execCount) {
+        execCount = execCount || 1;
+        try {
+            for (let i = 0; i < execCount; i++) {
+                this.z80.exec();
+                this.clock();
+            }
+        }
+        catch (ex) {
+            return -1;
+        }
+        return 0;
+    }
+    clock() {
+        this.hblank.count();
+        this.vblank.count();
+        this.ic556.count();
+    }
+    setCassetteTape(tape_data) {
+        if (tape_data.length > 0) {
+            if (tape_data.length <= 128) {
+                this.dataRecorder_setCmt([]);
+                console.error("error buf.length <= 128");
+                return null;
+            }
+            this.mzt_array = mz_tape_1.default.parseMZT(tape_data);
+            if (this.mzt_array == null || this.mzt_array.length < 1) {
+                console.error("setCassetteTape fail to parse");
+                return null;
+            }
+        }
+        this.dataRecorder_setCmt(tape_data);
+        return this.mzt_array;
+    }
+    getCassetteTape() {
+        const cmt = this.dataRecorder.getCmt();
+        if (cmt == null) {
+            return null;
+        }
+        return mz_tape_1.default.toBytes(cmt);
+    }
+    loadCassetteTape() {
+        for (let i = 0; i < this.mzt_array.length; i++) {
+            const mzt = this.mzt_array[i];
+            for (let j = 0; j < mzt.header.fileSize; j++) {
+                this.memory.poke(mzt.header.addrLoad + j, mzt.body.buffer[j]);
+            }
+        }
+    }
+    reset() {
+        this.memory.enableBlock1();
+        this.memory.enableBlock1();
         this.memory.changeBlock0_MONITOR();
         this.memory.changeBlock1_VRAM();
-    });
-    this.z80.onWriteIoPort(0xe5, () => this.memory.disableBlock1());
-    this.z80.onWriteIoPort(0xe6, () => this.memory.enableBlock1());
-};
-
-MZ700.Z80_CLOCK = 3.579545 * 1000000;// 3.58 MHz
-MZ700.DEFAULT_TIMER_INTERVAL = 1.0 / MZ700.Z80_CLOCK;
-
-MZ700.prototype.setMonitorRom = function(bin) {
-    this.memory.setMonitorRom(bin);
-};
-
-MZ700.prototype.writeAsmCode = function(assembled) {
-    for(let i = 0; i < assembled.buffer.length; i++) {
-        this.memory.poke(
-                assembled.minAddr + i,
-                assembled.buffer[i]);
-    }
-    return assembled.minAddr;
-};
-
-MZ700.prototype.exec = function(execCount) {
-    execCount = execCount || 1;
-    try {
-        for(let i = 0; i < execCount; i++) {
-            this.z80.exec();
-            this.clock();
+        for (let i = 0; i < 40 * 25; i++) {
+            this.memory.poke(0xd000 + i, 0x00);
+            this.memory.poke(0xd800 + i, 0x71);
         }
-    } catch(ex) {
-        return -1;
+        this.z80.reset();
     }
-    return 0;
-};
-
-MZ700.prototype.clock = function() {
-
-    // HBLNK - 15.7 kHz clock
-    this.hblank.count();
-
-    // VBLNK - 50 Hz
-    this.vblank.count();
-
-    // CURSOR BLNK - 1 Hz
-    this.ic556.count();
-
-};
-
-MZ700.prototype.setCassetteTape = function(tape_data) {
-    if(tape_data.length > 0) {
-        if(tape_data.length <= 128) {
-            this.dataRecorder_setCmt([]);
-            console.error("error buf.length <= 128");
-            return null;
+    getRegister() {
+        const reg = this.z80.reg.cloneRaw();
+        reg._ = this.z80.regB.cloneRaw();
+        reg.IFF1 = this.z80.IFF1;
+        reg.IFF2 = this.z80.IFF2;
+        reg.IM = this.z80.IM;
+        reg.HALT = this.z80.HALT;
+        return reg;
+    }
+    setPC(addr) {
+        this.z80.reg.PC = addr;
+    }
+    readMemory(addrStart, addrEnd) {
+        if (addrEnd) {
+            return Array(addrEnd - addrStart).fill(null)
+                .map(() => this.memory.peek(addrStart++));
         }
-        this.mzt_array = MZ_Tape.parseMZT(tape_data);
-        if(this.mzt_array == null || this.mzt_array.length < 1) {
-            console.error("setCassetteTape fail to parse");
-            return null;
+        return this.memory.peek(addrStart);
+    }
+    setKeyState(strobe, bit, state) {
+        this.keymatrix.setKeyMatrixState(strobe, bit, state);
+    }
+    clearBreakPoints() {
+        this.z80.clearBreakPoints();
+    }
+    getBreakPoints() {
+        return this.z80.getBreakPoints();
+    }
+    removeBreak(addr, size) {
+        this.z80.removeBreak(addr, size);
+    }
+    addBreak(addr, size) {
+        this.z80.setBreak(addr, size);
+    }
+    start() {
+        if ("tid" in this && this.tid != null) {
+            console.warn("MZ700.start(): already started");
+            return false;
+        }
+        this.startEmulation();
+        this.opt.started();
+        return true;
+    }
+    stop() {
+        const running = (this.tid != null);
+        this.stopEmulation();
+        if (running) {
+            this.opt.stopped();
         }
     }
-    this.dataRecorder_setCmt(tape_data);
-    return this.mzt_array;
-};
-
-/**
- * Get CMT content without ejecting.
- * @returns {Buffer|null} CMT data buffer
- */
-MZ700.prototype.getCassetteTape = function() {
-    const cmt = this.dataRecorder.getCmt();
-    if(cmt == null) {
-        return null;
-    }
-    return MZ_Tape.toBytes(cmt);
-};
-
-MZ700.prototype.loadCassetteTape = function() {
-    for(let i = 0; i < this.mzt_array.length; i++) {
-        const mzt = this.mzt_array[i];
-        for(let j = 0; j < mzt.header.fileSize; j++) {
-            this.memory.poke(mzt.header.addrLoad + j, mzt.body.buffer[j]);
+    step() {
+        if ("tid" in this && this.tid != null) {
+            this.stop();
+            return;
         }
-    }
-};
-
-MZ700.prototype.reset = function() {
-    this.memory.enableBlock1();
-    this.memory.enableBlock1();
-    this.memory.changeBlock0_MONITOR();
-    this.memory.changeBlock1_VRAM();
-
-    // Clear VRAM
-    for(let i = 0; i < 40 * 25; i++) {
-        this.memory.poke(0xd000 + i, 0x00);
-        this.memory.poke(0xd800 + i, 0x71);
-    }
-    this.z80.reset();
-};
-
-MZ700.prototype.getRegister = function() {
-    const reg = this.z80.reg.cloneRaw();
-    reg._ = this.z80.regB.cloneRaw();
-    reg.IFF1 = this.z80.IFF1;
-    reg.IFF2 = this.z80.IFF2;
-    reg.IM = this.z80.IM;
-    reg.HALT = this.z80.HALT;
-    return reg;
-};
-
-MZ700.prototype.setPC = function(addr) {
-    this.z80.reg.PC = addr;
-};
-
-/**
- * Read memory.
- * @param {number} addrStart start address
- * @param {number} addrEnd (optional) end address
- * @returns {number|Array<number>} A value in the start addr or memory block
- */
-MZ700.prototype.readMemory = function(addrStart, addrEnd) {
-    if(addrEnd) {
-        return Array(addrEnd - addrStart).fill()
-            .map( () => this.memory.peek(addrStart++) );
-    }
-    return this.memory.peek(addrStart);
-};
-
-MZ700.prototype.setKeyState = function(strobe, bit, state) {
-    this.keymatrix.setKeyMatrixState(strobe, bit, state);
-};
-
-MZ700.prototype.clearBreakPoints = function() {
-    this.z80.clearBreakPoints();
-};
-
-MZ700.prototype.getBreakPoints = function() {
-    return this.z80.getBreakPoints();
-};
-
-MZ700.prototype.removeBreak = function(addr, size) {
-    this.z80.removeBreak(addr, size);
-};
-
-MZ700.prototype.addBreak = function(addr, size) {
-    this.z80.setBreak(addr, size);
-};
-
-//
-// For TransWorker
-//
-MZ700.prototype.start = function() {
-    if("tid" in this && this.tid != null) {
-        console.warn("MZ700.start(): already started");
-        return false;
-    }
-    this.startEmulation();
-    this.opt.started();
-
-    return true;
-};
-
-MZ700.prototype.stop = function() {
-    const running = (this.tid != null);
-    this.stopEmulation();
-    if(running) {
+        this.exec(1);
+        this.opt.started();
         this.opt.stopped();
     }
-};
-
-MZ700.prototype.step = function() {
-    if("tid" in this && this.tid != null) {
-        this.stop();
-        return;
-    }
-    this.exec(1);
-    this.opt.started();
-    this.opt.stopped();
-};
-
-MZ700.prototype.run = function() {
-    try {
-        if(this._cycleToWait > 0) {
-            this._cycleToWait--;
-        } else {
-            const cycle0 = this.z80.consumedTCycle;
-            this.z80.exec();
-            this._cycleToWait = this.z80.consumedTCycle - cycle0;
+    run() {
+        try {
+            if (this._cycleToWait > 0) {
+                this._cycleToWait--;
+            }
+            else {
+                const cycle0 = this.z80.consumedTCycle;
+                this.z80.exec();
+                this._cycleToWait = this.z80.consumedTCycle - cycle0;
+            }
+            this.clock();
         }
-        this.clock();
-    } catch(ex) {
-        console.log("Error:", ex);
-        console.log(ex.stack);
-        this.stop();
-        this.opt.onBreak();
+        catch (ex) {
+            console.log("Error:", ex);
+            console.log(ex.stack);
+            this.stop();
+            this.opt.onBreak();
+        }
     }
-};
-
-//
-// Disassemble
-//
-MZ700.disassemble = function(mztape_array) {
-    let dasmlist = [];
-    mztape_array.forEach( mzt => {
-        console.assert(
-            mzt.header.constructor === MZ_TapeHeader,
-            "No MZT-header");
-        let mzthead = mzt.header.getHeadline().split("\n");
-        Array.prototype.push.apply(dasmlist, mzthead.map(line => {
-            const asmline = new Z80LineAssembler();
-            asmline.setComment(line);
-            return asmline;
-        }));
-        Array.prototype.push.apply(dasmlist, Z80.dasm(
-            mzt.body.buffer, 0,
-            mzt.header.fileSize,
-            mzt.header.addrLoad));
-    });
-
-    let dasmlines = Z80.dasmlines(dasmlist);
-    return {
-        outbuf: dasmlines.join("\n") + "\n",
-        dasmlines: dasmlines,
-        asmlist: dasmlist
-    };
-};
-
-MZ700.prototype.dataRecorder_setCmt = function(bytes) {
-    if(bytes.length == 0) {
-        this.dataRecorder.setCmt([]);
+    dataRecorder_setCmt(bytes) {
+        if (bytes.length == 0) {
+            this.dataRecorder.setCmt([]);
+            return [];
+        }
+        const cmt = mz_tape_1.default.fromBytes(bytes);
+        this.dataRecorder.setCmt(cmt);
+        return cmt;
+    }
+    dataRecorder_ejectCmt() {
+        if (this.dataRecorder.isCmtSet()) {
+            const cmt = this.dataRecorder.ejectCmt();
+            if (cmt != null) {
+                return mz_tape_1.default.toBytes(cmt);
+            }
+        }
         return [];
     }
-    const cmt = MZ_Tape.fromBytes(bytes);
-    this.dataRecorder.setCmt(cmt);
-    return cmt;
-};
-
-MZ700.prototype.dataRecorder_ejectCmt = function() {
-    if(this.dataRecorder.isCmtSet()) {
-        const cmt = this.dataRecorder.ejectCmt();
-        if(cmt != null) {
-            return MZ_Tape.toBytes(cmt);
+    dataRecorder_pushPlay() {
+        this.dataRecorder.play();
+    }
+    dataRecorder_pushRec() {
+        if (this.dataRecorder.isCmtSet()) {
+            this.dataRecorder.ejectCmt();
+        }
+        this.dataRecorder.setCmt([]);
+        this.dataRecorder.rec();
+    }
+    dataRecorder_pushStop() {
+        this.dataRecorder.stop();
+    }
+    dataRecorder_motorOn(state) {
+        this.dataRecorder.m_on(state);
+    }
+    dataRecorder_readBit() {
+        return this.dataRecorder.rdata(this.z80.consumedTCycle);
+    }
+    dataRecorder_writeBit(state) {
+        this.dataRecorder.wdata(state, this.z80.consumedTCycle);
+    }
+    getClockFactor() {
+        return this.clockFactor;
+    }
+    setClockFactor(clockFactor) {
+        const running = (this.tid != null);
+        if (running) {
+            this.stopEmulation();
+        }
+        this.clockFactor = clockFactor;
+        if (running) {
+            this.startEmulation();
         }
     }
-    return [];
-};
-
-MZ700.prototype.dataRecorder_pushPlay = function() {
-    this.dataRecorder.play();
-};
-
-MZ700.prototype.dataRecorder_pushRec = function() {
-    if(this.dataRecorder.isCmtSet()) {
-        this.dataRecorder.ejectCmt();
+    getActualClockFreq() {
+        return this.actualClockFreq;
     }
-    this.dataRecorder.setCmt([]);
-    this.dataRecorder.rec();
-};
-
-MZ700.prototype.dataRecorder_pushStop = function() {
-    this.dataRecorder.stop();
-};
-
-MZ700.prototype.dataRecorder_motorOn = function(state) {
-    this.dataRecorder.m_on(state);
-};
-
-MZ700.prototype.dataRecorder_readBit = function() {
-    return this.dataRecorder.rdata(this.z80.consumedTCycle);
-};
-
-MZ700.prototype.dataRecorder_writeBit = function(state) {
-    this.dataRecorder.wdata(state, this.z80.consumedTCycle);
-};
-
-MZ700.prototype.getClockFactor = function() {
-    return this.clockFactor;
-};
-
-MZ700.prototype.setClockFactor = function(clockFactor) {
-    const running = (this.tid != null);
-    if(running) {
-        this.stopEmulation();
+    startEmulation() {
+        const execCount = Math.round(200 * this.clockFactor);
+        this.tid = fractional_timer_1.default.setInterval(this.run.bind(this), MZ700.DEFAULT_TIMER_INTERVAL, 80, execCount);
+        const mint = 1000;
+        this.tidMeasClock = setInterval(() => {
+            this.actualClockFreq = (this.z80.consumedTCycle - this.t_cycle_0) / (mint / 1000);
+            this.t_cycle_0 = this.z80.consumedTCycle;
+        }, mint);
     }
-    this.clockFactor = clockFactor;
-    if(running) {
-        this.startEmulation();
+    stopEmulation() {
+        if (this.tid != null) {
+            fractional_timer_1.default.clearInterval(this.tid);
+            this.tid = null;
+        }
+        if (this.tidMeasClock != null) {
+            clearInterval(this.tidMeasClock);
+            this.tidMeasClock = null;
+            this.actualClockFreq = 0.0;
+        }
     }
-};
-
-MZ700.prototype.getActualClockFreq = function() {
-    return this.actualClockFreq;
-};
-
-MZ700.prototype.startEmulation = function() {
-    const execCount = Math.round(200 * this.clockFactor);
-    this.tid = FractionalTimer.setInterval(
-        this.run.bind(this), MZ700.DEFAULT_TIMER_INTERVAL, 80, execCount);
-    const mint = 1000;
-    this.tidMeasClock = setInterval(() => {
-        this.actualClockFreq = (this.z80.consumedTCycle - this.t_cycle_0) / (mint / 1000);
-        this.t_cycle_0 = this.z80.consumedTCycle;
-    }, mint);
-};
-MZ700.prototype.stopEmulation = function() {
-    if(this.tid != null) {
-        FractionalTimer.clearInterval(this.tid);
-        this.tid = null;
+    static disassemble(mztape_array) {
+        let dasmlist = [];
+        mztape_array.forEach(mzt => {
+            console.assert(mzt.header.constructor === mz_tape_header_1.default, "No MZT-header");
+            let mzthead = mzt.header.getHeadline().split("\n");
+            Array.prototype.push.apply(dasmlist, mzthead.map(line => {
+                const asmline = new Z80_line_assembler_1.default();
+                asmline.setComment(line);
+                return asmline;
+            }));
+            Array.prototype.push.apply(dasmlist, Z80_js_1.default.dasm(mzt.body.buffer, 0, mzt.header.fileSize, mzt.header.addrLoad));
+        });
+        let dasmlines = Z80_js_1.default.dasmlines(dasmlist);
+        return {
+            outbuf: dasmlines.join("\n") + "\n",
+            dasmlines: dasmlines,
+            asmlist: dasmlist
+        };
     }
-    if(this.tidMeasClock != null) {
-        clearInterval(this.tidMeasClock);
-        this.tidMeasClock = null;
-        this.actualClockFreq = 0.0;
-    }
-};
+}
+exports.default = MZ700;
+MZ700.Z80_CLOCK = 3.579545 * 1000000;
+MZ700.DEFAULT_TIMER_INTERVAL = 1.0 / MZ700.Z80_CLOCK;
 module.exports = MZ700;
 
 },{"../Z80/Z80-line-assembler":6,"../Z80/Z80.js":7,"../lib/flip-flop-counter":17,"../lib/ic556":18,"../lib/intel-8253":19,"../lib/mz-data-recorder":20,"../lib/mz-mmio.js":21,"../lib/mz-tape":23,"../lib/mz-tape-header":22,"./mz700-key-matrix":1,"./mz700-memory.js":2,"fractional-timer":36}],6:[function(require,module,exports){
@@ -8318,7 +8144,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const bin_util_js_1 = __importDefault(require("./bin-util.js"));
+const bin_util_1 = __importDefault(require("./bin-util"));
 class IMem {
     constructor() {
     }
@@ -8361,20 +8187,20 @@ class IMem {
         this.pokeByte(address, value);
     }
     peekPair(address) {
-        return bin_util_js_1.default.pair(this.peek(address + 1), this.peek(address + 0));
+        return bin_util_1.default.pair(this.peek(address + 1), this.peek(address + 0));
     }
 }
 exports.default = IMem;
 module.exports = IMem;
 
-},{"./bin-util.js":8}],10:[function(require,module,exports){
+},{"./bin-util":8}],10:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const imem_js_1 = __importDefault(require("./imem.js"));
-class MemoryBank extends imem_js_1.default {
+const imem_1 = __importDefault(require("./imem"));
+class MemoryBank extends imem_1.default {
     constructor(opt) {
         super();
         this.create(opt);
@@ -8419,7 +8245,7 @@ class MemoryBank extends imem_js_1.default {
 exports.default = MemoryBank;
 module.exports = MemoryBank;
 
-},{"./imem.js":9}],11:[function(require,module,exports){
+},{"./imem":9}],11:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -8881,6 +8707,11 @@ class Z80_Register {
             IY: this.IY,
             R: this.R,
             I: this.I,
+            _: null,
+            IFF1: 0,
+            IFF2: 0,
+            IM: 0,
+            HALT: null,
         };
     }
     ;
@@ -9502,6 +9333,7 @@ module.exports = Intel8253;
 
 },{"./event-dispatcher":16}],20:[function(require,module,exports){
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 class MZ_DataRecorder {
     constructor(motorCallback) {
         this._mOn = false;
@@ -9648,6 +9480,7 @@ class MZ_DataRecorder {
         return null;
     }
 }
+exports.default = MZ_DataRecorder;
 MZ_DataRecorder.RDATA_TOP_BLANK_LEN = 1;
 MZ_DataRecorder.RDATA_CYCLE_HI_LONG = 1500;
 MZ_DataRecorder.RDATA_CYCLE_HI_SHORT = 700;
@@ -9677,7 +9510,7 @@ class MZMMIO {
         return this._map[address - 0xE000].r(value);
     }
     write(address, value) {
-        return this._map[address - 0xE000].w(value);
+        this._map[address - 0xE000].w(value);
     }
 }
 exports.default = MZMMIO;
@@ -13074,7 +12907,7 @@ TransWorker.prototype.createInvoker = function(
     this._callbacker = thisObject;
 
     // Create prototype entries same to the client
-    const methodNames = Object.keys(clientCtor.prototype)
+    const methodNames = Object.getOwnPropertyNames(clientCtor.prototype);
     if(this._syncType === TransWorker.SyncTypePromise) {
         for(const methodName of methodNames) {
             this[methodName] = this.createPromiseWrapper(methodName).bind(this);
@@ -13286,7 +13119,7 @@ TransWorker.prototype.createWorker = function(client) {
 };
 
 TransWorker.prototype.injectSubClassMethod = function() {
-    Object.keys(this.constructor.prototype)
+    Object.getOwnPropertyNames(this.constructor.prototype)
     .forEach(m => {
         this.client[m] = ((...args) => {
             this.constructor.prototype[m].apply(this, args);

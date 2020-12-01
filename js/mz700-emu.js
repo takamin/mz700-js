@@ -1,442 +1,443 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 "use strict";
-const TransWorker = require("transworker");
-const MZ700 = require("./mz700.js");
-const MZ700WebUI = require("./mz700-web-ui.js");
-require("../lib/jquery-plugin/jquery.mz700-scrn.js");
-
-async function main() {
-    // Create MZ-700 Emulator
-    const mz700js = TransWorker.createInterface(
-        "./js/mz700-worker.min.js", MZ700,
-        { syncType: TransWorker.SyncTypePromise });
-
-    // MZ-700 Screen
-    const mz700screen = $("#mz700screen").css("display", "none");
-    const canvas = document.createElement("CANVAS");
-    mz700screen.append($(canvas));
-    mz700screen.mz700scrn("create", { canvas });
-    $(canvas).css("height", "calc(100% - 1px)");
-
-    // Setup Rendering
-    mz700js.transferObject("offscreenCanvas",
-        canvas.transferControlToOffscreen());
-
-    //<!-- Go to www.addthis.com/dashboard to customize your tools -->
-    const addThisBox = $("<div/>").css("height", "48px").css("line-height","48px")
-        .append($("<div/>").css("box-sizing", "border-box").css("text-align", "right")
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const transworker_1 = __importDefault(require("transworker"));
+const mz700_1 = __importDefault(require("./mz700"));
+const mz700_scrn_1 = __importDefault(require("../lib/mz700-scrn"));
+const mz700_web_ui_1 = __importDefault(require("./mz700-web-ui"));
+function main() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const mz700js = transworker_1.default.createInterface("./js/mz700-worker.min.js", mz700_1.default, { syncType: transworker_1.default.SyncTypePromise });
+        const mz700screen = document.querySelector("#mz700screen");
+        const mz700scrn = new mz700_scrn_1.default(mz700screen);
+        const canvas = document.createElement("CANVAS");
+        mz700screen.style.display = "none";
+        mz700screen.appendChild(canvas);
+        mz700scrn.create({ canvas });
+        canvas.style.height = "calc(100% - 1px)";
+        mz700js.transferObject("offscreenCanvas", canvas.transferControlToOffscreen());
+        const addThisBox = $("<div/>").css("height", "48px").css("line-height", "48px")
+            .append($("<div/>").css("box-sizing", "border-box").css("text-align", "right")
             .addClass("addthis_inline_share_toolbox"));
-    const addThisScript = $("<script/>").attr("type", "text/javascript")
-        .attr("src", "//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-596c4b9e47c8c585");
-    addThisBox.insertBefore($(".emulation-panel"));
-    $(document.body).append(addThisScript);
-
-    // Create user interface
-    await MZ700WebUI.createUI(mz700js, mz700screen, canvas);
+        const addThisScript = $("<script/>").attr("type", "text/javascript")
+            .attr("src", "//s7.addthis.com/js/300/addthis_widget.js#pubid=ra-596c4b9e47c8c585");
+        addThisBox.insertBefore($(".emulation-panel"));
+        $(document.body).append(addThisScript);
+        yield mz700_web_ui_1.default.createUI(mz700js, mz700screen, canvas);
+    });
 }
-
 main().catch(err => console.warn(err.stack));
 
-},{"../lib/jquery-plugin/jquery.mz700-scrn.js":33,"./mz700-web-ui.js":5,"./mz700.js":6,"transworker":78}],2:[function(require,module,exports){
-(function() {
-    //
-    // MZ-700 Key Matrix
-    //
-    function MZ700KeyMatrix() {
-        this.keymap = new Array(10);
-        for(var i = 0; i < this.keymap.length; i++) {
-            this.keymap[i] = 0xff;
-        }
-    }
-
-    MZ700KeyMatrix.prototype.getKeyData = function(strobe) {
-        var keydata = 0xff;
-        strobe &= 0x0f;
-        if(strobe < this.keymap.length) {
-            keydata = this.keymap[strobe];
-        }
-        return keydata;
-    };
-
-    MZ700KeyMatrix.prototype.setKeyMatrixState = function(strobe, bit, state) {
-        if(state) {
-            // clear bit
-            this.keymap[strobe] &= ((~(1 << bit)) & 0xff);
-        } else {
-            // set bit
-            this.keymap[strobe] |= ((1 << bit) & 0xff);
-        }
-    };
-
-    MZ700KeyMatrix.KeyCodes = {
-        "Escape"    : 27,
-        "F1"  : 112, "F2"  : 113, "F3"  : 114, "F4"  : 115, "F5"  : 116,
-        "F6"  : 117, "F7"  : 118, "F8"  : 119, "F9"  : 120, "F10" : 121,
-        "F11" : 122, "F12" : 123,
-
-        "Numlock" : 44,
-        "ScrollLock" : 145,
-        "Pause" : 19,
-
-        "D0" : 48, "D1" : 49, "D2" : 50, "D3" : 51, "D4" : 52,
-        "D5" : 53, "D6" : 54, "D7" : 55, "D8" : 56, "D9" : 57,
-
-        "A" : 65, "B" : 66, "C" : 67, "D" : 68, "E" : 69, "F" : 70, "G" : 71,
-        "H" : 72, "I" : 73, "J" : 74, "K" : 75, "L" : 76, "M" : 77, "N" : 78,
-        "O" : 79, "P" : 80, "Q" : 81, "R" : 82, "S" : 83, "T" : 84, "U" : 85,
-        "V" : 86, "W" : 87, "X" : 88, "Y" : 89, "Z" : 90,
-
-        "Subtract"  : 109,
-        "Caret"     : 107,
-        "Atmark"    : 192,
-        "Yen"       : 106,
-        "Colon"     : 186,
-        "SemiColon" : 187,
-        "Comma"     : 188,
-        "Decimal"   : 190,
-        "Divide"    : 111,
-        "Backslash" : 226,
-        "OpenBrackets"  : 219,
-        "CloseBrackets" : 221,
-
-        "Shift"     : 16,
-        "Control"   : 17,
-        "Alternate" : 18,
-        "Enter"     : 13,
-        "Tab"       : 9,
-        "Space"     : 32,
-        "Backspace" : 8,
-
-        "Insert"    : 45,
-        "Delete"    : 46,
-        "Home"      : 36,
-        "End"       : 35,
-        "PageUp"    : 33,
-        "PageDown"  : 34,
-
-        "Left"  : 37,
-        "Up"    : 38,
-        "Right" : 39,
-        "Down"  : 40,
-
-        "NumPad0" : 96,
-        "NumPad1" : 97,
-        "NumPad2" : 98,
-        "NumPad3" : 99,
-        "NumPad4" : 100,
-        "NumPad5" : 101,
-        "NumPad6" : 102,
-        "NumPad7" : 103,
-        "NumPad8" : 104,
-        "NumPad9" : 105,
-
-        "NumPadDivide"      : 191,
-        "NumPadMultiply"    : 220,
-        "NumPadSubtract"    : 189,
-        "NumPadPlus"        : 222,
-        "NumPadDecimal"     : 110,
-
-        "Hankaku"   : 243,
-        "Zenkaku"   : 244
-    };
-    var mzkey = function(strobe, bit, face, code, strcode) {
+},{"../lib/mz700-scrn":49,"./mz700":6,"./mz700-web-ui":5,"transworker":78}],2:[function(require,module,exports){
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+class mzkey {
+    constructor(strobe, bit, face, code, strcode) {
         this.strobe = strobe;
         this.bit = bit;
         this.face = face || "&nbsp;";
         this.code = code || [];
         this.strcode = strcode || face;
     }
-    MZ700KeyMatrix.Keys = [
-        new mzkey(0,0,"CR",     [MZ700KeyMatrix.KeyCodes.Enter]),
-        new mzkey(0,1,":",      [MZ700KeyMatrix.KeyCodes.Colon]),
-        new mzkey(0,2,";",      [MZ700KeyMatrix.KeyCodes.SemiColon]),
-        new mzkey(0,3),
-        new mzkey(0,4,"英数",   [MZ700KeyMatrix.KeyCodes.F10, MZ700KeyMatrix.KeyCodes.End], "ALNUM"),
-        new mzkey(0,5,"=",      [MZ700KeyMatrix.KeyCodes.Backspace]),
-        new mzkey(0,6,"GRAPH",  [MZ700KeyMatrix.KeyCodes.F12, MZ700KeyMatrix.KeyCodes.PageDown, MZ700KeyMatrix.KeyCodes.Altername], "GRAPH"),
-        new mzkey(0,7,"カナ",   [MZ700KeyMatrix.KeyCodes.F11, MZ700KeyMatrix.KeyCodes.PageUp], "KANA"),
-        new mzkey(1,0),
-        new mzkey(1,1),
-        new mzkey(1,2),
-        new mzkey(1,3,")",      [MZ700KeyMatrix.KeyCodes.CloseBrackets]),
-        new mzkey(1,4,"(",      [MZ700KeyMatrix.KeyCodes.OpenBrackets]),
-        new mzkey(1,5,"@",      [MZ700KeyMatrix.KeyCodes.Atmark]),
-        new mzkey(1,6,"Z",      [MZ700KeyMatrix.KeyCodes.Z]),
-        new mzkey(1,7,"Y",      [MZ700KeyMatrix.KeyCodes.Y]),
-        new mzkey(2,0,"X",      [MZ700KeyMatrix.KeyCodes.X]),
-        new mzkey(2,1,"W",      [MZ700KeyMatrix.KeyCodes.W]),
-        new mzkey(2,2,"V",      [MZ700KeyMatrix.KeyCodes.V]),
-        new mzkey(2,3,"U",      [MZ700KeyMatrix.KeyCodes.U]),
-        new mzkey(2,4,"T",      [MZ700KeyMatrix.KeyCodes.T]),
-        new mzkey(2,5,"S",      [MZ700KeyMatrix.KeyCodes.S]),
-        new mzkey(2,6,"R",      [MZ700KeyMatrix.KeyCodes.R]),
-        new mzkey(2,7,"Q",      [MZ700KeyMatrix.KeyCodes.Q]),
-        new mzkey(3,0,"P",      [MZ700KeyMatrix.KeyCodes.P]),
-        new mzkey(3,1,"O",      [MZ700KeyMatrix.KeyCodes.O]),
-        new mzkey(3,2,"N",      [MZ700KeyMatrix.KeyCodes.N]),
-        new mzkey(3,3,"M",      [MZ700KeyMatrix.KeyCodes.M]),
-        new mzkey(3,4,"L",      [MZ700KeyMatrix.KeyCodes.L]),
-        new mzkey(3,5,"K",      [MZ700KeyMatrix.KeyCodes.K]),
-        new mzkey(3,6,"J",      [MZ700KeyMatrix.KeyCodes.J]),
-        new mzkey(3,7,"I",      [MZ700KeyMatrix.KeyCodes.I]),
-        new mzkey(4,0,"H",      [MZ700KeyMatrix.KeyCodes.H]),
-        new mzkey(4,1,"G",      [MZ700KeyMatrix.KeyCodes.G]),
-        new mzkey(4,2,"F",      [MZ700KeyMatrix.KeyCodes.F]),
-        new mzkey(4,3,"E",      [MZ700KeyMatrix.KeyCodes.E]),
-        new mzkey(4,4,"D",      [MZ700KeyMatrix.KeyCodes.D]),
-        new mzkey(4,5,"C",      [MZ700KeyMatrix.KeyCodes.C]),
-        new mzkey(4,6,"B",      [MZ700KeyMatrix.KeyCodes.B]),
-        new mzkey(4,7,"A",      [MZ700KeyMatrix.KeyCodes.A]),
-        new mzkey(5,0,"8",      [MZ700KeyMatrix.KeyCodes.D8, MZ700KeyMatrix.KeyCodes.NumPad8]),
-        new mzkey(5,1,"7",      [MZ700KeyMatrix.KeyCodes.D7, MZ700KeyMatrix.KeyCodes.NumPad7]),
-        new mzkey(5,2,"6",      [MZ700KeyMatrix.KeyCodes.D6, MZ700KeyMatrix.KeyCodes.NumPad6]),
-        new mzkey(5,3,"5",      [MZ700KeyMatrix.KeyCodes.D5, MZ700KeyMatrix.KeyCodes.NumPad5]),
-        new mzkey(5,4,"4",      [MZ700KeyMatrix.KeyCodes.D4, MZ700KeyMatrix.KeyCodes.NumPad4]),
-        new mzkey(5,5,"3",      [MZ700KeyMatrix.KeyCodes.D3, MZ700KeyMatrix.KeyCodes.NumPad3]),
-        new mzkey(5,6,"2",      [MZ700KeyMatrix.KeyCodes.D2, MZ700KeyMatrix.KeyCodes.NumPad2]),
-        new mzkey(5,7,"1",      [MZ700KeyMatrix.KeyCodes.D1, MZ700KeyMatrix.KeyCodes.NumPad1]),
-        new mzkey(6,0,".",      [MZ700KeyMatrix.KeyCodes.Decimal, 110]),
-        new mzkey(6,1,",",      [MZ700KeyMatrix.KeyCodes.Comma]),
-        new mzkey(6,2,"9",      [MZ700KeyMatrix.KeyCodes.D9, MZ700KeyMatrix.KeyCodes.NumPad9]),
-        new mzkey(6,3,"0",      [MZ700KeyMatrix.KeyCodes.D0, MZ700KeyMatrix.KeyCodes.NumPad0]),
-        new mzkey(6,4,"SPC",    [MZ700KeyMatrix.KeyCodes.Space], " "),
-        new mzkey(6,5,"-",      [MZ700KeyMatrix.KeyCodes.Subtract, MZ700KeyMatrix.KeyCodes.NumPadSubtract]),
-        new mzkey(6,6,"+",      [MZ700KeyMatrix.KeyCodes.Caret, MZ700KeyMatrix.KeyCodes.NumPadPlus]),
-        new mzkey(6,7,"*",      [MZ700KeyMatrix.KeyCodes.Yen, MZ700KeyMatrix.KeyCodes.NumPadMultiply]),
-        new mzkey(7,0,"/",      [MZ700KeyMatrix.KeyCodes.Divide, MZ700KeyMatrix.KeyCodes.NumPadDivide]),
-        new mzkey(7,1,"?",      [MZ700KeyMatrix.KeyCodes.Backslash]),
-        new mzkey(7,2,"←",     [MZ700KeyMatrix.KeyCodes.Left], "LEFT"),
-        new mzkey(7,3,"→",     [MZ700KeyMatrix.KeyCodes.Right], "RIGHT"),
-        new mzkey(7,4,"↓",     [MZ700KeyMatrix.KeyCodes.Down], "DOWN"),
-        new mzkey(7,5,"↑",     [MZ700KeyMatrix.KeyCodes.Up], "UP"),
-        new mzkey(7,6,"DEL",    [MZ700KeyMatrix.KeyCodes.Delete]),
-        new mzkey(7,7,"INS",    [MZ700KeyMatrix.KeyCodes.Insert]),
-        new mzkey(8,0,"SHIFT",  [MZ700KeyMatrix.KeyCodes.Shift]),
-        new mzkey(8,1,"(BS)"),
-        new mzkey(8,2),
-        new mzkey(8,3,"(→)",   [MZ700KeyMatrix.KeyCodes.Tab]),
-        new mzkey(8,4,"(CR)"),
-        new mzkey(8,5,"(SHIFT)"),
-        new mzkey(8,6,"CTRL",   [MZ700KeyMatrix.KeyCodes.Control]),
-        new mzkey(8,7,"BREAK",  [MZ700KeyMatrix.KeyCodes.Escape,MZ700KeyMatrix.KeyCodes.Pause]),
-        new mzkey(9,0,"HOME",   [MZ700KeyMatrix.KeyCodes.Home]),
-        new mzkey(9,1,"(SPC)"),
-        new mzkey(9,2,"(↓)"),
-        new mzkey(9,3,"F5",     [MZ700KeyMatrix.KeyCodes.F5]),
-        new mzkey(9,4,"F4",     [MZ700KeyMatrix.KeyCodes.F4]),
-        new mzkey(9,5,"F3",     [MZ700KeyMatrix.KeyCodes.F3]),
-        new mzkey(9,6,"F2",     [MZ700KeyMatrix.KeyCodes.F2]),
-        new mzkey(9,7,"F1",     [MZ700KeyMatrix.KeyCodes.F1])
-    ];
-    MZ700KeyMatrix.KeyNames = (function(obj) {
-        Object.keys(MZ700KeyMatrix.KeyCodes).forEach(function(name) {
-            var code = MZ700KeyMatrix.KeyCodes[name];
-            obj[code] = name;
+}
+class MZ700KeyMatrix {
+    constructor() {
+        this.keymap = new Array(10);
+        for (var i = 0; i < this.keymap.length; i++) {
+            this.keymap[i] = 0xff;
+        }
+    }
+    getKeyData(strobe) {
+        var keydata = 0xff;
+        strobe &= 0x0f;
+        if (strobe < this.keymap.length) {
+            keydata = this.keymap[strobe];
+        }
+        return keydata;
+    }
+    setKeyMatrixState(strobe, bit, state) {
+        if (state) {
+            this.keymap[strobe] &= ((~(1 << bit)) & 0xff);
+        }
+        else {
+            this.keymap[strobe] |= ((1 << bit) & 0xff);
+        }
+    }
+}
+exports.default = MZ700KeyMatrix;
+MZ700KeyMatrix.KeyCodes = {
+    "Escape": 27,
+    "F1": 112, "F2": 113, "F3": 114, "F4": 115, "F5": 116,
+    "F6": 117, "F7": 118, "F8": 119, "F9": 120, "F10": 121,
+    "F11": 122, "F12": 123,
+    "Numlock": 44,
+    "ScrollLock": 145,
+    "Pause": 19,
+    "D0": 48, "D1": 49, "D2": 50, "D3": 51, "D4": 52,
+    "D5": 53, "D6": 54, "D7": 55, "D8": 56, "D9": 57,
+    "A": 65, "B": 66, "C": 67, "D": 68, "E": 69, "F": 70, "G": 71,
+    "H": 72, "I": 73, "J": 74, "K": 75, "L": 76, "M": 77, "N": 78,
+    "O": 79, "P": 80, "Q": 81, "R": 82, "S": 83, "T": 84, "U": 85,
+    "V": 86, "W": 87, "X": 88, "Y": 89, "Z": 90,
+    "Subtract": 109,
+    "Caret": 107,
+    "Atmark": 192,
+    "Yen": 106,
+    "Colon": 186,
+    "SemiColon": 187,
+    "Comma": 188,
+    "Decimal": 190,
+    "Divide": 111,
+    "Backslash": 226,
+    "OpenBrackets": 219,
+    "CloseBrackets": 221,
+    "Shift": 16,
+    "Control": 17,
+    "Alternate": 18,
+    "Enter": 13,
+    "Tab": 9,
+    "Space": 32,
+    "Backspace": 8,
+    "Insert": 45,
+    "Delete": 46,
+    "Home": 36,
+    "End": 35,
+    "PageUp": 33,
+    "PageDown": 34,
+    "Left": 37,
+    "Up": 38,
+    "Right": 39,
+    "Down": 40,
+    "NumPad0": 96,
+    "NumPad1": 97,
+    "NumPad2": 98,
+    "NumPad3": 99,
+    "NumPad4": 100,
+    "NumPad5": 101,
+    "NumPad6": 102,
+    "NumPad7": 103,
+    "NumPad8": 104,
+    "NumPad9": 105,
+    "NumPadDivide": 191,
+    "NumPadMultiply": 220,
+    "NumPadSubtract": 189,
+    "NumPadPlus": 222,
+    "NumPadDecimal": 110,
+    "Hankaku": 243,
+    "Zenkaku": 244
+};
+MZ700KeyMatrix.Keys = [
+    new mzkey(0, 0, "CR", [MZ700KeyMatrix.KeyCodes.Enter]),
+    new mzkey(0, 1, ":", [MZ700KeyMatrix.KeyCodes.Colon]),
+    new mzkey(0, 2, ";", [MZ700KeyMatrix.KeyCodes.SemiColon]),
+    new mzkey(0, 3),
+    new mzkey(0, 4, "英数", [MZ700KeyMatrix.KeyCodes.F10, MZ700KeyMatrix.KeyCodes.End], "ALNUM"),
+    new mzkey(0, 5, "=", [MZ700KeyMatrix.KeyCodes.Backspace]),
+    new mzkey(0, 6, "GRAPH", [MZ700KeyMatrix.KeyCodes.F12, MZ700KeyMatrix.KeyCodes.PageDown, MZ700KeyMatrix.KeyCodes.Alternate], "GRAPH"),
+    new mzkey(0, 7, "カナ", [MZ700KeyMatrix.KeyCodes.F11, MZ700KeyMatrix.KeyCodes.PageUp], "KANA"),
+    new mzkey(1, 0),
+    new mzkey(1, 1),
+    new mzkey(1, 2),
+    new mzkey(1, 3, ")", [MZ700KeyMatrix.KeyCodes.CloseBrackets]),
+    new mzkey(1, 4, "(", [MZ700KeyMatrix.KeyCodes.OpenBrackets]),
+    new mzkey(1, 5, "@", [MZ700KeyMatrix.KeyCodes.Atmark]),
+    new mzkey(1, 6, "Z", [MZ700KeyMatrix.KeyCodes.Z]),
+    new mzkey(1, 7, "Y", [MZ700KeyMatrix.KeyCodes.Y]),
+    new mzkey(2, 0, "X", [MZ700KeyMatrix.KeyCodes.X]),
+    new mzkey(2, 1, "W", [MZ700KeyMatrix.KeyCodes.W]),
+    new mzkey(2, 2, "V", [MZ700KeyMatrix.KeyCodes.V]),
+    new mzkey(2, 3, "U", [MZ700KeyMatrix.KeyCodes.U]),
+    new mzkey(2, 4, "T", [MZ700KeyMatrix.KeyCodes.T]),
+    new mzkey(2, 5, "S", [MZ700KeyMatrix.KeyCodes.S]),
+    new mzkey(2, 6, "R", [MZ700KeyMatrix.KeyCodes.R]),
+    new mzkey(2, 7, "Q", [MZ700KeyMatrix.KeyCodes.Q]),
+    new mzkey(3, 0, "P", [MZ700KeyMatrix.KeyCodes.P]),
+    new mzkey(3, 1, "O", [MZ700KeyMatrix.KeyCodes.O]),
+    new mzkey(3, 2, "N", [MZ700KeyMatrix.KeyCodes.N]),
+    new mzkey(3, 3, "M", [MZ700KeyMatrix.KeyCodes.M]),
+    new mzkey(3, 4, "L", [MZ700KeyMatrix.KeyCodes.L]),
+    new mzkey(3, 5, "K", [MZ700KeyMatrix.KeyCodes.K]),
+    new mzkey(3, 6, "J", [MZ700KeyMatrix.KeyCodes.J]),
+    new mzkey(3, 7, "I", [MZ700KeyMatrix.KeyCodes.I]),
+    new mzkey(4, 0, "H", [MZ700KeyMatrix.KeyCodes.H]),
+    new mzkey(4, 1, "G", [MZ700KeyMatrix.KeyCodes.G]),
+    new mzkey(4, 2, "F", [MZ700KeyMatrix.KeyCodes.F]),
+    new mzkey(4, 3, "E", [MZ700KeyMatrix.KeyCodes.E]),
+    new mzkey(4, 4, "D", [MZ700KeyMatrix.KeyCodes.D]),
+    new mzkey(4, 5, "C", [MZ700KeyMatrix.KeyCodes.C]),
+    new mzkey(4, 6, "B", [MZ700KeyMatrix.KeyCodes.B]),
+    new mzkey(4, 7, "A", [MZ700KeyMatrix.KeyCodes.A]),
+    new mzkey(5, 0, "8", [MZ700KeyMatrix.KeyCodes.D8, MZ700KeyMatrix.KeyCodes.NumPad8]),
+    new mzkey(5, 1, "7", [MZ700KeyMatrix.KeyCodes.D7, MZ700KeyMatrix.KeyCodes.NumPad7]),
+    new mzkey(5, 2, "6", [MZ700KeyMatrix.KeyCodes.D6, MZ700KeyMatrix.KeyCodes.NumPad6]),
+    new mzkey(5, 3, "5", [MZ700KeyMatrix.KeyCodes.D5, MZ700KeyMatrix.KeyCodes.NumPad5]),
+    new mzkey(5, 4, "4", [MZ700KeyMatrix.KeyCodes.D4, MZ700KeyMatrix.KeyCodes.NumPad4]),
+    new mzkey(5, 5, "3", [MZ700KeyMatrix.KeyCodes.D3, MZ700KeyMatrix.KeyCodes.NumPad3]),
+    new mzkey(5, 6, "2", [MZ700KeyMatrix.KeyCodes.D2, MZ700KeyMatrix.KeyCodes.NumPad2]),
+    new mzkey(5, 7, "1", [MZ700KeyMatrix.KeyCodes.D1, MZ700KeyMatrix.KeyCodes.NumPad1]),
+    new mzkey(6, 0, ".", [MZ700KeyMatrix.KeyCodes.Decimal, 110]),
+    new mzkey(6, 1, ",", [MZ700KeyMatrix.KeyCodes.Comma]),
+    new mzkey(6, 2, "9", [MZ700KeyMatrix.KeyCodes.D9, MZ700KeyMatrix.KeyCodes.NumPad9]),
+    new mzkey(6, 3, "0", [MZ700KeyMatrix.KeyCodes.D0, MZ700KeyMatrix.KeyCodes.NumPad0]),
+    new mzkey(6, 4, "SPC", [MZ700KeyMatrix.KeyCodes.Space], " "),
+    new mzkey(6, 5, "-", [MZ700KeyMatrix.KeyCodes.Subtract, MZ700KeyMatrix.KeyCodes.NumPadSubtract]),
+    new mzkey(6, 6, "+", [MZ700KeyMatrix.KeyCodes.Caret, MZ700KeyMatrix.KeyCodes.NumPadPlus]),
+    new mzkey(6, 7, "*", [MZ700KeyMatrix.KeyCodes.Yen, MZ700KeyMatrix.KeyCodes.NumPadMultiply]),
+    new mzkey(7, 0, "/", [MZ700KeyMatrix.KeyCodes.Divide, MZ700KeyMatrix.KeyCodes.NumPadDivide]),
+    new mzkey(7, 1, "?", [MZ700KeyMatrix.KeyCodes.Backslash]),
+    new mzkey(7, 2, "←", [MZ700KeyMatrix.KeyCodes.Left], "LEFT"),
+    new mzkey(7, 3, "→", [MZ700KeyMatrix.KeyCodes.Right], "RIGHT"),
+    new mzkey(7, 4, "↓", [MZ700KeyMatrix.KeyCodes.Down], "DOWN"),
+    new mzkey(7, 5, "↑", [MZ700KeyMatrix.KeyCodes.Up], "UP"),
+    new mzkey(7, 6, "DEL", [MZ700KeyMatrix.KeyCodes.Delete]),
+    new mzkey(7, 7, "INS", [MZ700KeyMatrix.KeyCodes.Insert]),
+    new mzkey(8, 0, "SHIFT", [MZ700KeyMatrix.KeyCodes.Shift]),
+    new mzkey(8, 1, "(BS)"),
+    new mzkey(8, 2),
+    new mzkey(8, 3, "(→)", [MZ700KeyMatrix.KeyCodes.Tab]),
+    new mzkey(8, 4, "(CR)"),
+    new mzkey(8, 5, "(SHIFT)"),
+    new mzkey(8, 6, "CTRL", [MZ700KeyMatrix.KeyCodes.Control]),
+    new mzkey(8, 7, "BREAK", [MZ700KeyMatrix.KeyCodes.Escape, MZ700KeyMatrix.KeyCodes.Pause]),
+    new mzkey(9, 0, "HOME", [MZ700KeyMatrix.KeyCodes.Home]),
+    new mzkey(9, 1, "(SPC)"),
+    new mzkey(9, 2, "(↓)"),
+    new mzkey(9, 3, "F5", [MZ700KeyMatrix.KeyCodes.F5]),
+    new mzkey(9, 4, "F4", [MZ700KeyMatrix.KeyCodes.F4]),
+    new mzkey(9, 5, "F3", [MZ700KeyMatrix.KeyCodes.F3]),
+    new mzkey(9, 6, "F2", [MZ700KeyMatrix.KeyCodes.F2]),
+    new mzkey(9, 7, "F1", [MZ700KeyMatrix.KeyCodes.F1])
+];
+MZ700KeyMatrix.KeyNames = (function (obj) {
+    Object.keys(MZ700KeyMatrix.KeyCodes).forEach(function (name) {
+        var code = MZ700KeyMatrix.KeyCodes[name];
+        obj[code] = name;
+    });
+    return obj;
+}({}));
+MZ700KeyMatrix.Code2Key = (function () {
+    var code2key = new Array(256);
+    MZ700KeyMatrix.Keys.forEach(function (key) {
+        key.code.forEach(function (code) {
+            code2key[code] = key;
         });
-        return obj;
-    }({}));
-    MZ700KeyMatrix.Code2Key = (function() {
-        var code2key = new Array(256);
-        MZ700KeyMatrix.Keys.forEach(function(key) {
-            key.code.forEach(function(code) {
-                code2key[code] = key;
-            });
-        });
-        return code2key;
-    })();
-    MZ700KeyMatrix.Str2Key = (function() {
-        var s2key = {};
-        MZ700KeyMatrix.Keys.forEach(function(key) {
-            s2key[key.strcode] = key;
-        });
-        return s2key;
-    })();
-    module.exports = MZ700KeyMatrix;
-}());
+    });
+    return code2key;
+})();
+MZ700KeyMatrix.Str2Key = (function () {
+    var s2key = {};
+    MZ700KeyMatrix.Keys.forEach(function (key) {
+        s2key[key.strcode] = key;
+    });
+    return s2key;
+})();
+module.exports = MZ700KeyMatrix;
 
 },{}],3:[function(require,module,exports){
-var MZ700_NewMonitor = require("./mz700-new-monitor.js");
-var MemoryBlock = require("../Z80/memory-block.js");
-const MemoryBlockCbw = require("../Z80/memory-block-cbw.js");
-const MemoryBlockCbrw = require("../Z80/memory-block-cbrw.js");
-var MemoryBank = require('../Z80/memory-bank.js');
-
-function MZ700_Memory() { }
-MZ700_Memory.prototype = new MemoryBank();
-MZ700_Memory.prototype.create = function(opt) {
-
-    MemoryBank.prototype.create.call(this, opt);
-
-    const monitorRom = new MZ700_NewMonitor();
-    monitorRom.create();
-
-    //
-    // Create callbacks when the VRAMs are updated
-    //
-    const onVramUpdate = opt.onVramUpdate || (()=>{});
-    const cacheText = Array(1000).fill(0x00);
-    const cacheAttr = Array(1000).fill(0x71);
-
-    this.memblks = {
-        IPL_AREA_ROM: monitorRom,
-        IPL_AREA_RAM: new MemoryBlock({
-            startAddr: 0x0000, size: 0x1000
-        }),
-        FREE_RAM: new MemoryBlock({
-            startAddr: 0x1000, size: 0xC000
-        }),
-        TEXT_VRAM: new MemoryBlockCbw({
-            startAddr: 0xD000, size: 0x0800,
-            onPoke: (addr, dispcode) => {
-                if(0xD000 <= addr && addr < 0xD000 + 1000) {
-                    const i = addr - 0xD000;
-                    cacheText[i] = dispcode;
-                    onVramUpdate(i, dispcode, cacheAttr[i]);
-                }
-            },
-        }),
-        ATTR_VRAM: new MemoryBlockCbw({
-            startAddr: 0xD800, size: 0x0800,
-            onPoke: (addr, attr) => {
-                if(0xD800 <= addr && addr < 0xD800 + 1000) {
-                    const i = addr - 0xD800;
-                    cacheAttr[i] = attr;
-                    onVramUpdate(i, cacheText[i], attr);
-                }
-            },
-        }),
-        MMAPED_IO: new MemoryBlockCbrw({
-            startAddr: 0xE000, size: 0x0800,
-            onPeek: opt.onMappedIoRead || function(){},
-            onPoke: opt.onMappedIoUpdate || function(){}
-        }),
-        EXTND_ROM: new MemoryBlock({
-            startAddr: 0xE800, size: 0x10000 - 0xE800
-        }),
-        DRAM: new MemoryBlock({
-            startAddr: 0xD000, size: 0x3000
-        })
-    };
-
-    this._block1VRAM = true;
-    this._disabledBlock1 = false;
-    this.changeBlock0_MONITOR();
-    this.setMemoryBlock("FREE_RAM", this.memblks.FREE_RAM);
-    this.changeBlock1_VRAM();
-
-    // fill attribute VRAM by 71h foreground white and background blue
-    for(let i = 0; i < 0x800; i++) {
-        this.memblks.ATTR_VRAM.pokeByte(0xD800 + i, 0x71);
-    }
-}
-
-MZ700_Memory.prototype.setMonitorRom = function(bin) {
-    this.memblks.IPL_AREA_ROM.setBinary(bin);
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-
-MZ700_Memory.prototype.clear = function() {
-    MemoryBank.prototype.clear.call(this);
-    for(var name in this.memblks) {
-        this.memblks[name].clear();
+Object.defineProperty(exports, "__esModule", { value: true });
+const mz700_new_monitor_1 = __importDefault(require("./mz700-new-monitor"));
+const memory_block_1 = __importDefault(require("../Z80/memory-block"));
+const memory_block_cbw_1 = __importDefault(require("../Z80/memory-block-cbw"));
+const memory_block_cbrw_1 = __importDefault(require("../Z80/memory-block-cbrw"));
+const memory_bank_1 = __importDefault(require("../Z80/memory-bank"));
+class MZ700_Memory extends memory_bank_1.default {
+    constructor() {
+        super({});
+        this._block1VRAM = true;
+        this._disabledBlock1 = false;
     }
-}
-MZ700_Memory.prototype.getTextVram = function() {
-    return this.memblks.TEXT_VRAM;
-}
-MZ700_Memory.prototype.getAttrVram = function() {
-    return this.memblks.ATTR_VRAM;
-}
-MZ700_Memory.prototype.changeBlock0_MONITOR = function() {
-    this.setMemoryBlock("IPL_AREA", this.memblks.IPL_AREA_ROM);
-}
-MZ700_Memory.prototype.changeBlock0_DRAM = function() {
-    this.setMemoryBlock("IPL_AREA", this.memblks.IPL_AREA_RAM);
-}
-MZ700_Memory.prototype.changeBlock1_DRAM = function() {
-    this._block1VRAM = false;
-    this._disabledBlock1 = false;
-    this.setMemoryBlock("TEXT_VRAM", null);
-    this.setMemoryBlock("ATTR_VRAM", null);
-    this.setMemoryBlock("MMAPED_IO", null);
-    this.setMemoryBlock("EXTND_ROM", null);
-    this.setMemoryBlock("DRAM", this.memblks.DRAM);
-}
-MZ700_Memory.prototype.changeBlock1_VRAM = function() {
-    this._block1VRAM = true;
-    this._disabledBlock1 = false;
-    this.setMemoryBlock("DRAM", null);
-    this.setMemoryBlock("TEXT_VRAM", this.memblks.TEXT_VRAM);
-    this.setMemoryBlock("ATTR_VRAM", this.memblks.ATTR_VRAM);
-    this.setMemoryBlock("MMAPED_IO", this.memblks.MMAPED_IO);
-    this.setMemoryBlock("EXTND_ROM", this.memblks.EXTND_ROM);
-}
-MZ700_Memory.prototype.disableBlock1 = function() {
-    if(!this._disabledBlock1) {
-        this._disabledBlock1 = true;
+    create(opt) {
+        super.create(opt);
+        const monitorRom = new mz700_new_monitor_1.default();
+        monitorRom.create();
+        const onVramUpdate = opt.onVramUpdate || (() => { });
+        const cacheText = Array(1000).fill(0x00);
+        const cacheAttr = Array(1000).fill(0x71);
+        this.memblks = {
+            IPL_AREA_ROM: monitorRom,
+            IPL_AREA_RAM: new memory_block_1.default({
+                startAddr: 0x0000, size: 0x1000
+            }),
+            FREE_RAM: new memory_block_1.default({
+                startAddr: 0x1000, size: 0xC000
+            }),
+            TEXT_VRAM: new memory_block_cbw_1.default({
+                startAddr: 0xD000, size: 0x0800,
+                onPoke: (addr, dispcode) => {
+                    if (0xD000 <= addr && addr < 0xD000 + 1000) {
+                        const i = addr - 0xD000;
+                        cacheText[i] = dispcode;
+                        onVramUpdate(i, dispcode, cacheAttr[i]);
+                    }
+                },
+            }),
+            ATTR_VRAM: new memory_block_cbw_1.default({
+                startAddr: 0xD800, size: 0x0800,
+                onPoke: (addr, attr) => {
+                    if (0xD800 <= addr && addr < 0xD800 + 1000) {
+                        const i = addr - 0xD800;
+                        cacheAttr[i] = attr;
+                        onVramUpdate(i, cacheText[i], attr);
+                    }
+                },
+            }),
+            MMAPED_IO: new memory_block_cbrw_1.default({
+                startAddr: 0xE000, size: 0x0800,
+                onPeek: opt.onMappedIoRead || function () { },
+                onPoke: opt.onMappedIoUpdate || function () { }
+            }),
+            EXTND_ROM: new memory_block_1.default({
+                startAddr: 0xE800, size: 0x10000 - 0xE800
+            }),
+            DRAM: new memory_block_1.default({
+                startAddr: 0xD000, size: 0x3000
+            })
+        };
+        this._block1VRAM = true;
+        this._disabledBlock1 = false;
+        this.changeBlock0_MONITOR();
+        this.setMemoryBlock("FREE_RAM", this.memblks.FREE_RAM);
+        this.changeBlock1_VRAM();
+        for (let i = 0; i < 0x800; i++) {
+            this.memblks.ATTR_VRAM.pokeByte(0xD800 + i, 0x71);
+        }
+    }
+    setMonitorRom(bin) {
+        this.memblks.IPL_AREA_ROM.setBinary(bin);
+    }
+    clear() {
+        memory_bank_1.default.prototype.clear.call(this);
+        for (var name in this.memblks) {
+            this.memblks[name].clear();
+        }
+    }
+    getTextVram() {
+        return this.memblks.TEXT_VRAM;
+    }
+    getAttrVram() {
+        return this.memblks.ATTR_VRAM;
+    }
+    changeBlock0_MONITOR() {
+        this.setMemoryBlock("IPL_AREA", this.memblks.IPL_AREA_ROM);
+    }
+    changeBlock0_DRAM() {
+        this.setMemoryBlock("IPL_AREA", this.memblks.IPL_AREA_RAM);
+    }
+    changeBlock1_DRAM() {
+        this._block1VRAM = false;
+        this._disabledBlock1 = false;
         this.setMemoryBlock("TEXT_VRAM", null);
         this.setMemoryBlock("ATTR_VRAM", null);
         this.setMemoryBlock("MMAPED_IO", null);
         this.setMemoryBlock("EXTND_ROM", null);
-        this.setMemoryBlock("DRAM", null);
+        this.setMemoryBlock("DRAM", this.memblks.DRAM);
     }
-}
-MZ700_Memory.prototype.enableBlock1 = function() {
-    if(this._disabledBlock1) {
-        if(this._block1VRAM) {
-            this.changeBlock1_VRAM();
-        } else {
-            this.changeBlock1_DRAM();
-        }
+    changeBlock1_VRAM() {
+        this._block1VRAM = true;
         this._disabledBlock1 = false;
+        this.setMemoryBlock("DRAM", null);
+        this.setMemoryBlock("TEXT_VRAM", this.memblks.TEXT_VRAM);
+        this.setMemoryBlock("ATTR_VRAM", this.memblks.ATTR_VRAM);
+        this.setMemoryBlock("MMAPED_IO", this.memblks.MMAPED_IO);
+        this.setMemoryBlock("EXTND_ROM", this.memblks.EXTND_ROM);
+    }
+    disableBlock1() {
+        if (!this._disabledBlock1) {
+            this._disabledBlock1 = true;
+            this.setMemoryBlock("TEXT_VRAM", null);
+            this.setMemoryBlock("ATTR_VRAM", null);
+            this.setMemoryBlock("MMAPED_IO", null);
+            this.setMemoryBlock("EXTND_ROM", null);
+            this.setMemoryBlock("DRAM", null);
+        }
+    }
+    enableBlock1() {
+        if (this._disabledBlock1) {
+            if (this._block1VRAM) {
+                this.changeBlock1_VRAM();
+            }
+            else {
+                this.changeBlock1_DRAM();
+            }
+            this._disabledBlock1 = false;
+        }
     }
 }
+exports.default = MZ700_Memory;
 module.exports = MZ700_Memory;
 
-},{"../Z80/memory-bank.js":12,"../Z80/memory-block-cbrw.js":13,"../Z80/memory-block-cbw.js":14,"../Z80/memory-block.js":15,"./mz700-new-monitor.js":4}],4:[function(require,module,exports){
-"use strict"
-var MemoryBlock = require("../Z80/memory-block.js");
-function MZ700_NewMonitor() { }
-MZ700_NewMonitor.prototype = new MemoryBlock();
-MZ700_NewMonitor.prototype.create = function() {
-    MemoryBlock.prototype.create.call(this, { startAddr: 0x0000, size: 0x1000});
+},{"../Z80/memory-bank":12,"../Z80/memory-block":15,"../Z80/memory-block-cbrw":13,"../Z80/memory-block-cbw":14,"./mz700-new-monitor":4}],4:[function(require,module,exports){
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-
-MZ700_NewMonitor.prototype.setBinary = function(bin) {
-    for(let i = 0; i < this.size; i++) {
-        const address = this.startAddr + i;
-        MemoryBlock.prototype.pokeByte.call(this,
-            address, bin[address]);
+Object.defineProperty(exports, "__esModule", { value: true });
+const memory_block_1 = __importDefault(require("../Z80/memory-block"));
+class MZ700_NewMonitor extends memory_block_1.default {
+    constructor() {
+        super();
     }
-};
-
-MZ700_NewMonitor.prototype.pokeByte = function(/*address, value*/) {
-    /* IGNORE ALL WRITING */
-};
-
+    create() {
+        memory_block_1.default.prototype.create.call(this, { startAddr: 0x0000, size: 0x1000 });
+    }
+    setBinary(bin) {
+        for (let i = 0; i < this.size; i++) {
+            const address = this.startAddr + i;
+            memory_block_1.default.prototype.pokeByte.call(this, address, bin[address]);
+        }
+    }
+    pokeByte() {
+    }
+}
+exports.default = MZ700_NewMonitor;
 module.exports = MZ700_NewMonitor;
 
-},{"../Z80/memory-block.js":15}],5:[function(require,module,exports){
+},{"../Z80/memory-block":15}],5:[function(require,module,exports){
 (function (Buffer){
 "use strict";
-
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
 require("fullscrn");
-const BBox = require("b-box");
-const dock_n_liquid = require("dock-n-liquid");
-const MZ700 = require("./mz700.js");
-
-const MZBeep = require("../lib/mz-beep.js");
-const MZ_Tape = require("../lib/mz-tape.js");
-const MZ_TapeHeader = require("../lib/mz-tape-header.js");
-const Z80 = require("../Z80/Z80.js");
-const Z80_assemble = require("../Z80/assembler.js");
-
-const packageJson = require("../package.json");
-const NumberUtil = require("../lib/number-util.js");
-const parseAddress = require("../lib/parse-addr.js");
-const parseRequest = require("../lib/parse-request");
-const requestJsonp = require("../lib/jsonp");
-const { getDeviceType } = require("../lib/user-agent-util.js");
-
+const b_box_1 = __importDefault(require("b-box"));
+const dock_n_liquid_1 = __importDefault(require("dock-n-liquid"));
+const mz700_1 = __importDefault(require("./mz700"));
+const mz_beep_1 = __importDefault(require("../lib/mz-beep"));
+const mz_tape_1 = __importDefault(require("../lib/mz-tape"));
+const mz_tape_header_1 = __importDefault(require("../lib/mz-tape-header"));
+const Z80_js_1 = __importDefault(require("../Z80/Z80.js"));
+const assembler_1 = __importDefault(require("../Z80/assembler"));
+const number_util_1 = __importDefault(require("../lib/number-util"));
+const parse_addr_1 = __importDefault(require("../lib/parse-addr"));
+const parse_request_1 = __importDefault(require("../lib/parse-request"));
+const jsonp_1 = __importDefault(require("../lib/jsonp"));
+const user_agent_util_1 = require("../lib/user-agent-util");
 require("../lib/jquery-plugin/jquery.mz700-kb.js");
 require("../lib/jquery-plugin/jquery.Z80-reg.js");
 require("../lib/jquery-plugin/jquery.asmview.js");
@@ -450,37 +451,24 @@ require("../lib/jquery-plugin/jquery.emu-speed-control.js");
 require("../lib/jquery-plugin/jquery.mz-data-recorder.js");
 require("../lib/jquery-plugin/jquery.toggle-button.js");
 require("../lib/jquery-plugin/jquery.tool-window.js");
-
-/**
- * MONITOR ROM を読み込む。
- * @param {string} filename ROM filename
- * @return {Array<number>} Uint8Arrayを配列に変換したもの
- */
-async function loadMonitorROM(filename) {
-    const monitorRom = await new Promise(resolve => {
-        const xhr = new XMLHttpRequest();
-        xhr.open("GET", `./mz_newmon/ROMS/${filename}`, true);
-        xhr.responseType = "arraybuffer";
-        xhr.onload = function () {
-            const arrayBuffer = xhr.response;
-            if (arrayBuffer) {
-                const byteArray = Array.from(new Uint8Array(arrayBuffer));
-                resolve(byteArray);
-            }
-        };
-        xhr.send(null);
+function loadMonitorROM(filename) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const monitorRom = yield new Promise(resolve => {
+            const xhr = new XMLHttpRequest();
+            xhr.open("GET", `./mz_newmon/ROMS/${filename}`, true);
+            xhr.responseType = "arraybuffer";
+            xhr.onload = function () {
+                const arrayBuffer = xhr.response;
+                if (arrayBuffer) {
+                    const byteArray = Array.from(new Uint8Array(arrayBuffer));
+                    resolve(byteArray);
+                }
+            };
+            xhr.send(null);
+        });
+        return monitorRom;
     });
-    return monitorRom;
 }
-
-/**
- * Load an IMG element.
- * @param {string} src source attribute value.
- * @param {string|null} alt alt attribute value.
- * @param {any} width (Optional) Width attribute value.
- * @param {any} height (Optional) Height attibute value.
- * @returns {Promise<Image>} a promise to be resolved by image element.
- */
 function loadImage(src, alt, width, height) {
     return new Promise((resolve, reject) => {
         const image = new Image(width, height);
@@ -495,1316 +483,1061 @@ function loadImage(src, alt, width, height) {
         image.setAttribute("title", alt);
     });
 }
-
-async function createUI(mz700js, mz700screen, canvas) {
-    // Set module version to the page title
-    const pageTitle = [
-        packageJson.description,"(",
-        packageJson.name,
-        "@",packageJson.version,")"
-    ].join("");
-    $("title").html(pageTitle);
-    $("h1 .mz700scrn").html(pageTitle);
-
-    // load monitor rom
-    const monitorRom = await loadMonitorROM("NEWMON7.ROM");
-    mz700js.setMonitorRom(monitorRom);
-
-    // Stop on break point
-    mz700js.subscribe("onBreak", ()=> mz700js.stop());
-
-    // MZ-700 Beep sound
-    const mzBeep = new MZBeep(mz700js);
-    mz700js.subscribe("startSound", freq => mzBeep.startSound(freq[0]));
-    mz700js.subscribe("stopSound", () => mzBeep.stopSound());
-
-    // Control panel
-    const mz700container = $("#mz700container");
-    const ctrlPanel = $("<div/>").attr("id", "control-panel").css("display", "none");
-    mz700container.append(ctrlPanel);
-
-    const resizeScreen = function() {
-        dock_n_liquid.select($("#liquid-panel-MZ-700").get(0)).layout();
-        const bboxContainer = new BBox(mz700container.get(0));
-        const bboxScreen = new BBox(mz700screen.get(0));
-        const containerSize = bboxContainer.getSize();
-        containerSize._h -= bboxScreen.px("border-top-width");
-        containerSize._h -= bboxScreen.px("border-bottom-width");
-        const orgSize = new BBox.Size(320,200);
-        const innerSize = containerSize.getMaxInscribedSize(orgSize);
-
-        const margin = new BBox.Size((containerSize._w - innerSize._w) / 2, 0);
-        if(margin._w < 0) {
-            margin._w = 0;
+function loadPackageJson() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const response = yield fetch("/mz700-js/package.json");
+        if (!response.ok) {
+            throw new Error("Fail to load package.json");
         }
-        mz700screen
-            .css("margin-left", margin._w + "px")
-            .css("margin-top", margin._h + "px")
-            .css("width", innerSize._w + "px")
-            .css("height", innerSize._h + "px");
-        if(ctrlPanel.is(":visible")) {
-            const phifBBox = new BBox(ctrlPanel.get(0));
-            const phifSize = phifBBox.getSize();
-            const phifMargin = new BBox.Size(
-                    (containerSize._w - phifSize._w) / 2,
-                    innerSize._h - phifSize._h);
-            if(phifMargin._w < 0) {
-                phifMargin._w = 0;
+        return yield response.json();
+    });
+}
+function createUI(mz700js, mz700screen, canvas) {
+    return __awaiter(this, void 0, void 0, function* () {
+        mz700screen = $(mz700screen);
+        const packageJson = yield loadPackageJson();
+        const pageTitle = [
+            packageJson.description, "(",
+            packageJson.name,
+            "@", packageJson.version, ")"
+        ].join("");
+        $("title").html(pageTitle);
+        $("h1 .mz700scrn").html(pageTitle);
+        const monitorRom = yield loadMonitorROM("NEWMON7.ROM");
+        mz700js.setMonitorRom(monitorRom);
+        mz700js.subscribe("onBreak", () => mz700js.stop());
+        const mzBeep = new mz_beep_1.default();
+        mz700js.subscribe("startSound", freq => mzBeep.startSound(freq[0]));
+        mz700js.subscribe("stopSound", () => mzBeep.stopSound());
+        const mz700container = $("#mz700container");
+        const ctrlPanel = $("<div/>").attr("id", "control-panel").css("display", "none");
+        mz700container.append(ctrlPanel);
+        const resizeScreen = function () {
+            dock_n_liquid_1.default.select($("#liquid-panel-MZ-700").get(0)).layout();
+            const bboxContainer = new b_box_1.default(mz700container.get(0));
+            const bboxScreen = new b_box_1.default(mz700screen.get(0));
+            const containerSize = bboxContainer.getSize();
+            containerSize._h -= bboxScreen.px("border-top-width");
+            containerSize._h -= bboxScreen.px("border-bottom-width");
+            const orgSize = new b_box_1.default.Size(320, 200);
+            const innerSize = containerSize.getMaxInscribedSize(orgSize);
+            const margin = new b_box_1.default.Size((containerSize._w - innerSize._w) / 2, 0);
+            if (margin._w < 0) {
+                margin._w = 0;
             }
-            if(phifMargin._h < 0) {
-                phifMargin._h = 0;
+            mz700screen
+                .css("margin-left", margin._w + "px")
+                .css("margin-top", margin._h + "px")
+                .css("width", innerSize._w + "px")
+                .css("height", innerSize._h + "px");
+            if (ctrlPanel.is(":visible")) {
+                const phifBBox = new b_box_1.default(ctrlPanel.get(0));
+                const phifSize = phifBBox.getSize();
+                const phifMargin = new b_box_1.default.Size((containerSize._w - phifSize._w) / 2, innerSize._h - phifSize._h);
+                if (phifMargin._w < 0) {
+                    phifMargin._w = 0;
+                }
+                if (phifMargin._h < 0) {
+                    phifMargin._h = 0;
+                }
+                ctrlPanel.css("margin-left", phifMargin._w + "px")
+                    .css("margin-top", phifMargin._h + "px");
             }
-            ctrlPanel.css("margin-left", phifMargin._w + "px")
-                .css("margin-top", phifMargin._h + "px");
-        }
-    };
-
-    /**
-     * Show the panel to operate MZ-700.
-     * @param {Function} resize resize handler.
-     * @returns {undefined}
-     */
-    const showCtrlPanel = () => {
-        if(!ctrlPanel.is(":visible")) {
-            ctrlPanel.addClass("hover");
-            ctrlPanel.show(0, () => {
-                resizeScreen();
+        };
+        const showCtrlPanel = () => {
+            if (!ctrlPanel.is(":visible")) {
+                ctrlPanel.addClass("hover");
+                ctrlPanel.show(0, () => {
+                    resizeScreen();
+                });
+            }
+        };
+        const hideCtrlPanel = () => {
+            if (ctrlPanel.is(":visible")) {
+                ctrlPanel.removeClass("hover");
+                ctrlPanel.hide(0, () => {
+                    resizeScreen();
+                });
+            }
+        };
+        let tidHideCtrlPanel = null;
+        const installHideCtrlPanelTimer = () => {
+            tidHideCtrlPanel = setTimeout(() => {
+                hideCtrlPanel();
+                tidHideCtrlPanel = null;
+            }, 1000);
+        };
+        const cancelHideCtrlPanelTimer = () => {
+            if (tidHideCtrlPanel) {
+                clearTimeout(tidHideCtrlPanel);
+                tidHideCtrlPanel = null;
+            }
+        };
+        const deviceType = user_agent_util_1.getDeviceType();
+        if (deviceType === "pc") {
+            mz700container.mouseenter(() => {
+                cancelHideCtrlPanelTimer();
+                showCtrlPanel();
+                installHideCtrlPanelTimer();
+            }).mouseleave(() => {
+                cancelHideCtrlPanelTimer();
+                hideCtrlPanel();
+            });
+            ctrlPanel.mouseenter(event => {
+                event.stopPropagation();
+                cancelHideCtrlPanelTimer();
+            }).mouseleave(event => {
+                event.stopPropagation();
+                cancelHideCtrlPanelTimer();
+                installHideCtrlPanelTimer();
             });
         }
-    };
-
-    /**
-     * Hide the panel to operate MZ-700.
-     * @param {Function} resize resize handler.
-     * @returns {undefined}
-     */
-    const hideCtrlPanel = () => {
-        if(ctrlPanel.is(":visible")) {
-            ctrlPanel.removeClass("hover");
-            ctrlPanel.hide(0, ()=> {
-                resizeScreen();
-            });
-        }
-    };
-
-    let tidHideCtrlPanel = null;
-    const installHideCtrlPanelTimer = () => {
-        tidHideCtrlPanel = setTimeout(() => {
-            hideCtrlPanel();
-            tidHideCtrlPanel = null;
-        }, 1000);
-    };
-    const cancelHideCtrlPanelTimer = () => {
-        if(tidHideCtrlPanel) {
-            clearTimeout(tidHideCtrlPanel);
-            tidHideCtrlPanel = null;
-        }
-    };
-
-    const deviceType = getDeviceType();
-    if(deviceType === "pc") {
-        mz700container.mouseenter(() => {
-            cancelHideCtrlPanelTimer();
-            showCtrlPanel();
-            installHideCtrlPanelTimer();
-        }).mouseleave(() => {
-            cancelHideCtrlPanelTimer();
-            hideCtrlPanel();
-        });
-        ctrlPanel.mouseenter(event => {
-            event.stopPropagation();
-            cancelHideCtrlPanelTimer();
-        }).mouseleave(event =>{
-            event.stopPropagation();
-            cancelHideCtrlPanelTimer();
-            installHideCtrlPanelTimer();
-        });
-    }
-
-    // Reset Button
-    const imgBtnResetOff = await loadImage("./image/btnReset-off.png", "Reset");
-    const imgBtnResetOn = await loadImage("./image/btnReset-on.png", "Reset");
-    const btnReset = $("<button/>").MZ700ImgButton("create", {
-        img: imgBtnResetOff,
-    }).click(async () => {
-        await mz700js.stop();
-        await mz700js.reset();
-        await mz700js.start();
-        await dataRecorder.MZDataRecorder("updateCmtSlot");
-    }).hover(
-        () => btnReset.MZ700ImgButton("setImg", imgBtnResetOn),
-        () => btnReset.MZ700ImgButton("setImg", imgBtnResetOff)
-    );
-
-    // MZ-700 Running status
-    let _isRunning = false;
-
-    // Run/Stop/Step Button
-    const imgBtnRunOff = await loadImage("image/btnRun-off.png", "[F8] Run");
-    const imgBtnRunOn = await loadImage("image/btnRun-on.png", "[F8] Run");
-    const imgBtnStopOff = await loadImage("image/btnStop-off.png", "[F8] Stop");
-    const imgBtnStopOn = await loadImage("image/btnStop-on.png", "[F8] Stop");
-    const btnStart = $("<button/>").MZ700ImgButton("create", {
-        img: imgBtnRunOff,
-    }).click(() => {
-        _isRunning ? mz700js.stop() : mz700js.start();
-    }).hover(
-        () => btnStart.MZ700ImgButton("setImg",
-                _isRunning ? imgBtnStopOn : imgBtnRunOn),
-        () => btnStart.MZ700ImgButton("setImg",
-                _isRunning ? imgBtnStopOff : imgBtnRunOff),
-    );
-    const imgBtnStepOff = await loadImage("image/btnStepIn-off.png", "[F9] Step-In");
-    const imgBtnStepOn = await loadImage("image/btnStepIn-on.png", "[F9] Step-In");
-    const imgBtnStepDi = await loadImage("image/btnStepIn-disabled.png", "[F9] Step-In");
-    const btnStep = $("<button/>").MZ700ImgButton("create", {
-        img: imgBtnStepOff,
-    }).click( () => mz700js.step() ).hover(
-        () => {
-            if(!_isRunning) {
+        const imgBtnResetOff = yield loadImage("./image/btnReset-off.png", "Reset");
+        const imgBtnResetOn = yield loadImage("./image/btnReset-on.png", "Reset");
+        const btnReset = $("<button/>").MZ700ImgButton("create", {
+            img: imgBtnResetOff,
+        }).click(() => __awaiter(this, void 0, void 0, function* () {
+            yield mz700js.stop();
+            yield mz700js.reset();
+            yield mz700js.start();
+            yield dataRecorder.MZDataRecorder("updateCmtSlot");
+        })).hover(() => btnReset.MZ700ImgButton("setImg", imgBtnResetOn), () => btnReset.MZ700ImgButton("setImg", imgBtnResetOff));
+        let _isRunning = false;
+        const imgBtnRunOff = yield loadImage("image/btnRun-off.png", "[F8] Run");
+        const imgBtnRunOn = yield loadImage("image/btnRun-on.png", "[F8] Run");
+        const imgBtnStopOff = yield loadImage("image/btnStop-off.png", "[F8] Stop");
+        const imgBtnStopOn = yield loadImage("image/btnStop-on.png", "[F8] Stop");
+        const btnStart = $("<button/>").MZ700ImgButton("create", {
+            img: imgBtnRunOff,
+        }).click(() => {
+            _isRunning ? mz700js.stop() : mz700js.start();
+        }).hover(() => btnStart.MZ700ImgButton("setImg", _isRunning ? imgBtnStopOn : imgBtnRunOn), () => btnStart.MZ700ImgButton("setImg", _isRunning ? imgBtnStopOff : imgBtnRunOff));
+        const imgBtnStepOff = yield loadImage("image/btnStepIn-off.png", "[F9] Step-In");
+        const imgBtnStepOn = yield loadImage("image/btnStepIn-on.png", "[F9] Step-In");
+        const imgBtnStepDi = yield loadImage("image/btnStepIn-disabled.png", "[F9] Step-In");
+        const btnStep = $("<button/>").MZ700ImgButton("create", {
+            img: imgBtnStepOff,
+        }).click(() => mz700js.step()).hover(() => {
+            if (!_isRunning) {
                 btnStep.MZ700ImgButton("setImg", imgBtnStepOn);
             }
         }, () => {
-            if(!_isRunning) {
+            if (!_isRunning) {
                 btnStep.MZ700ImgButton("setImg", imgBtnStepOff);
             }
-        }
-    );
-
-    // Operate the emulation state by key
-    window.addEventListener("keyup", async event => {
-        switch(event.code) {
-        case 0x0042://F8 - RUN/STOP
-            event.stopPropagation();
-            _isRunning ? mz700js.stop() : mz700js.start();
-            break;
-        case 0x0043://F9 - STEP In
-            event.stopPropagation();
-            _isRunning ? mz700js.stop() : mz700js.step();
-            break;
-        }
-    });
-
-    // Emulation started
-    mz700js.subscribe("start", async () => {
-        if(!_isRunning && reg_visibility) {
-            await Z80RegViewAutoUpdate(true);
-        }
-        _isRunning = true;
-
-        $(".MZ-700").addClass("running");
-
-        btnStart.MZ700ImgButton("setImg", imgBtnStopOff);
-        btnStep.prop('disabled', 'disabled')
-        btnStep.MZ700ImgButton("setImg", imgBtnStepDi);
-
-        asmView.asmview("clearCurrentLine");
-
-        btnExecImm.prop("disabled", true);
-    });
-
-    // Emulation stopped
-    mz700js.subscribe("stop", async () => {
-        if(_isRunning && reg_visibility) {
-            await Z80RegViewAutoUpdate(false);
-        }
-        _isRunning = false;
-
-        $(".MZ-700").removeClass("running");
-
-        btnStart.MZ700ImgButton("setImg", imgBtnRunOff);
-        btnStep.prop('disabled', '');
-        btnStep.MZ700ImgButton("setImg", imgBtnStepOff);
-
-        const reg = await mz700js.getRegister();
-        asmView.asmview("currentLine", reg.PC);
-
-        btnExecImm.prop("disabled", false);
-    });
-
-    // Software keyboard
-    const keyboard = $("<div/>").css("display", "none").addClass("keyboard");
-    ctrlPanel.append(keyboard);
-    keyboard.mz700keyboard("create", mz700js);
-    if(getDeviceType() === "pc") {
-        mz700container.mouseenter(() => {
-            keyboard.mz700keyboard("acceptKey", true);
-        }).mouseleave(() => {
-            keyboard.mz700keyboard("acceptKey", false);
         });
-        ctrlPanel.mouseenter(event => {
-            event.stopPropagation();
-            keyboard.mz700keyboard("acceptKey", true);
-        });
-    }
-
-    // Create Screen keyboard button.
-    const imgBtnScrnKbOff = await loadImage("image/btnKeyboard-off.png", "Open Keyboard");
-    const imgBtnScrnKbOn = await loadImage("image/btnKeyboard-on.png", "Close Keyboard");
-    const screenKbButton = $("<button/>").ToggleButton("create", {
-        img: imgBtnScrnKbOff,
-        imgOff: imgBtnScrnKbOff,
-        imgOn: imgBtnScrnKbOn,
-        alt: "Keyboard",
-        on: ()=>keyboard.show(0, resizeScreen),
-        off: ()=>keyboard.hide(0, resizeScreen),
-    });
-
-    // Create Full screen button.
-    const imgBtnFullScrnOff = await loadImage("./image/btnFullscreen-off.png", "Fullscreen");
-    const imgBtnFullScrnOn = await loadImage("./image/btnFullscreen-on.png", "Cancel Fullscreen");
-    const fullscreenButton = $("<button/>").ToggleButton("create", {
-        img: imgBtnFullScrnOff,
-        imgOff: imgBtnFullScrnOff,
-        imgOn: imgBtnFullScrnOn,
-        autoState: false,
-        on: async ()=>{
-            if(document.fullscreenElement !== document.body) {
-                await document.body.requestFullscreen();
+        window.addEventListener("keyup", (event) => __awaiter(this, void 0, void 0, function* () {
+            switch (parseInt(event.code, 10)) {
+                case 0x0042:
+                    event.stopPropagation();
+                    _isRunning ? mz700js.stop() : mz700js.start();
+                    break;
+                case 0x0043:
+                    event.stopPropagation();
+                    _isRunning ? mz700js.stop() : mz700js.step();
+                    break;
+            }
+        }));
+        mz700js.subscribe("start", () => __awaiter(this, void 0, void 0, function* () {
+            if (!_isRunning && reg_visibility) {
+                yield Z80RegViewAutoUpdate(true);
+            }
+            _isRunning = true;
+            $(".MZ-700").addClass("running");
+            btnStart.MZ700ImgButton("setImg", imgBtnStopOff);
+            btnStep.prop('disabled', 'disabled');
+            btnStep.MZ700ImgButton("setImg", imgBtnStepDi);
+            asmView.asmview("clearCurrentLine");
+            btnExecImm.prop("disabled", true);
+        }));
+        mz700js.subscribe("stop", () => __awaiter(this, void 0, void 0, function* () {
+            if (_isRunning && reg_visibility) {
+                yield Z80RegViewAutoUpdate(false);
+            }
+            _isRunning = false;
+            $(".MZ-700").removeClass("running");
+            btnStart.MZ700ImgButton("setImg", imgBtnRunOff);
+            btnStep.prop('disabled', '');
+            btnStep.MZ700ImgButton("setImg", imgBtnStepOff);
+            const reg = yield mz700js.getRegister();
+            asmView.asmview("currentLine", reg.PC);
+            btnExecImm.prop("disabled", false);
+        }));
+        const keyboard = $("<div/>").css("display", "none").addClass("keyboard");
+        ctrlPanel.append(keyboard);
+        keyboard.mz700keyboard("create", mz700js);
+        if (user_agent_util_1.getDeviceType() === "pc") {
+            mz700container.mouseenter(() => {
                 keyboard.mz700keyboard("acceptKey", true);
-            }
-        },
-        off: ()=>{
-            if(document.fullscreenElement === document.body) {
-                document.exitFullscreen();
-            }
-        },
-    });
-
-    const emulationPanel = $("<div/>").addClass("emulation-panel");
-    emulationPanel
-        .append($("<span/>").MZSoundControl("create", mzBeep))
-        .append(btnStart).append(btnReset).append(btnStep)
-        .append($("<span/>").EmuSpeedControl(
-            "create", mz700js, MZ700.Z80_CLOCK))
-        .append(screenKbButton)
-        .append(fullscreenButton);
-    ctrlPanel.append(emulationPanel)
-
-    // Data Recorder UI
-    const dataRecorder = $("<div/>").MZDataRecorder("create", {
-        mz700js,
-        onRecPushed: ()=>mz700js.dataRecorder_pushRec(),
-        onPlayPushed: ()=>mz700js.dataRecorder_pushPlay(),
-        onStopPushed: ()=>mz700js.dataRecorder_pushStop(),
-        onEjectPushed: ()=>mz700js.dataRecorder_ejectCmt(),
-    });
-
-    // Events handling
-    mz700js.subscribe("onStartDataRecorder",
-        ()=>dataRecorder.MZDataRecorder("start"));
-    mz700js.subscribe("onStopDataRecorder",
-        ()=>dataRecorder.MZDataRecorder("stop"));
-    ctrlPanel.append(dataRecorder)
-
-    const mztButtons = await new Promise( resolve => {
-        requestJsonp("mztList",
-            "https://takamin.github.io/MZ-700/mzt/mzt-list.js",
-            files => {
+            }).mouseleave(() => {
+                keyboard.mz700keyboard("acceptKey", false);
+            });
+            ctrlPanel.mouseenter(event => {
+                event.stopPropagation();
+                keyboard.mz700keyboard("acceptKey", true);
+            });
+        }
+        const imgBtnScrnKbOff = yield loadImage("image/btnKeyboard-off.png", "Open Keyboard");
+        const imgBtnScrnKbOn = yield loadImage("image/btnKeyboard-on.png", "Close Keyboard");
+        const screenKbButton = $("<button/>").ToggleButton("create", {
+            img: imgBtnScrnKbOff,
+            imgOff: imgBtnScrnKbOff,
+            imgOn: imgBtnScrnKbOn,
+            alt: "Keyboard",
+            on: () => keyboard.show(0, resizeScreen),
+            off: () => keyboard.hide(0, resizeScreen),
+        });
+        const imgBtnFullScrnOff = yield loadImage("./image/btnFullscreen-off.png", "Fullscreen");
+        const imgBtnFullScrnOn = yield loadImage("./image/btnFullscreen-on.png", "Cancel Fullscreen");
+        const fullscreenButton = $("<button/>").ToggleButton("create", {
+            img: imgBtnFullScrnOff,
+            imgOff: imgBtnFullScrnOff,
+            imgOn: imgBtnFullScrnOn,
+            autoState: false,
+            on: () => __awaiter(this, void 0, void 0, function* () {
+                if (document.fullscreenElement !== document.body) {
+                    yield document.body.requestFullscreen();
+                    keyboard.mz700keyboard("acceptKey", true);
+                }
+            }),
+            off: () => {
+                if (document.fullscreenElement === document.body) {
+                    document.exitFullscreen();
+                }
+            },
+        });
+        const emulationPanel = $("<div/>").addClass("emulation-panel");
+        emulationPanel
+            .append($("<span/>").MZSoundControl("create", mzBeep))
+            .append(btnStart).append(btnReset).append(btnStep)
+            .append($("<span/>").EmuSpeedControl("create", mz700js, mz700_1.default.Z80_CLOCK))
+            .append(screenKbButton)
+            .append(fullscreenButton);
+        ctrlPanel.append(emulationPanel);
+        const dataRecorder = $("<div/>").MZDataRecorder("create", {
+            mz700js,
+            onRecPushed: () => mz700js.dataRecorder_pushRec(),
+            onPlayPushed: () => mz700js.dataRecorder_pushPlay(),
+            onStopPushed: () => mz700js.dataRecorder_pushStop(),
+            onEjectPushed: () => mz700js.dataRecorder_ejectCmt(),
+        });
+        mz700js.subscribe("onStartDataRecorder", () => dataRecorder.MZDataRecorder("start"));
+        mz700js.subscribe("onStopDataRecorder", () => dataRecorder.MZDataRecorder("stop"));
+        ctrlPanel.append(dataRecorder);
+        const mztButtons = yield new Promise(resolve => {
+            jsonp_1.default("mztList", "https://takamin.github.io/MZ-700/mzt/mzt-list.js", files => {
                 const mztButtons = $("<div/>");
                 files.forEach(mzt => {
-                    mztButtons.append(
-                        $("<button/>").attr("type", "button")
+                    mztButtons.append($("<button/>").attr("type", "button")
                         .css("padding", 0).css("height", "24px")
                         .css("border", "solid 0px transparent")
                         .css("padding", 0).css("margin", "4px 2px")
                         .append($("<span/>").addClass("mz700scrn")
-                            .attr("charSize", "8").attr("padding", "1")
-                            .attr("color", mzt.mz700_buttonStyle.color)
-                            .attr("bgColor", mzt.mz700_buttonStyle.bgColor)
-                            .html(mzt.name))
+                        .attr("charSize", "8").attr("padding", "1")
+                        .attr("color", mzt.mz700_buttonStyle.color)
+                        .attr("bgColor", mzt.mz700_buttonStyle.bgColor)
+                        .html(mzt.name))
                         .click(() => {
-                            const request = parseRequest();
-                            window.location.href =
-                                request.path + "?mzt=" + mzt.path;
-                        }));
+                        const request = parse_request_1.default();
+                        window.location.href =
+                            request.path + "?mzt=" + mzt.path;
+                    }));
                 });
                 resolve(mztButtons);
             });
-    });
-    ctrlPanel.append(mztButtons);
-
-    const dockPanelRight = $("#dock-panel-right").css("display", "none");
-
-    // Register View
-    const regview = $("<div/>").Z80RegView("create");
-    const wndRegView = $("<div class='register-monitor tool-window close' title='REGISTER'/>");
-    dockPanelRight.append(wndRegView);
-
-    let reg_upd_tid = null;
-    let reg_visibility = false;
-    const Z80RegViewUpdateRegister = async () => {
-        const reg = await mz700js.getRegister();
-        regview.Z80RegView("updateRegister", reg);
-    }
-    const Z80RegViewAutoUpdate = async status => {
-        if(status) {
-            if(!reg_upd_tid) {
-                reg_upd_tid = setInterval(()=>Z80RegViewUpdateRegister(), 50);
-            }
-        } else {
-            if(reg_upd_tid) {
-                clearInterval(reg_upd_tid);
-                reg_upd_tid = null;
-            }
-            await Z80RegViewUpdateRegister();
-        }
-    };
-    const Z80RegViewVisibility = async status => {
-        if(reg_visibility != status) {
-            reg_visibility = status;
-            if(_isRunning) {
-                if(reg_visibility) {
-                    await Z80RegViewAutoUpdate(true);
-                } else {
-                    await Z80RegViewAutoUpdate(false);
+        });
+        ctrlPanel.append(mztButtons);
+        const dockPanelRight = $("#dock-panel-right").css("display", "none");
+        const regview = $("<div/>").Z80RegView("create");
+        const wndRegView = $("<div class='register-monitor tool-window close' title='REGISTER'/>");
+        dockPanelRight.append(wndRegView);
+        let reg_upd_tid = null;
+        let reg_visibility = false;
+        const Z80RegViewUpdateRegister = () => __awaiter(this, void 0, void 0, function* () {
+            const reg = yield mz700js.getRegister();
+            regview.Z80RegView("updateRegister", reg);
+        });
+        const Z80RegViewAutoUpdate = (status) => __awaiter(this, void 0, void 0, function* () {
+            if (status) {
+                if (!reg_upd_tid) {
+                    reg_upd_tid = setInterval(() => Z80RegViewUpdateRegister(), 50);
                 }
             }
-        }
-    };
-    wndRegView
-        .append($("<div/>").css("display", "inline-block").append(regview))
-        .ToolWindow("create", {
+            else {
+                if (reg_upd_tid) {
+                    clearInterval(reg_upd_tid);
+                    reg_upd_tid = null;
+                }
+                yield Z80RegViewUpdateRegister();
+            }
+        });
+        const Z80RegViewVisibility = (status) => __awaiter(this, void 0, void 0, function* () {
+            if (reg_visibility != status) {
+                reg_visibility = status;
+                if (_isRunning) {
+                    if (reg_visibility) {
+                        yield Z80RegViewAutoUpdate(true);
+                    }
+                    else {
+                        yield Z80RegViewAutoUpdate(false);
+                    }
+                }
+            }
+        });
+        wndRegView
+            .append($("<div/>").css("display", "inline-block").append(regview))
+            .ToolWindow("create", {
             onOpened: () => Z80RegViewVisibility(true),
             onClosed: () => Z80RegViewVisibility(false),
         });
-
-    // Create dump list
-    const dumplist = $("<div/>").dumplist("init", { mz700js: mz700js });
-    const wndDumpList = $("<div class='tool-window memory open' title='MEMORY'/>");
-    dockPanelRight.append(wndDumpList);
-    wndDumpList
-        .append(dumplist.dumplist("addrSpecifier"))
-        .append(dumplist).ToolWindow("create");
-
-    // Create assemble list
-    const asmView = $("<div/>").asmview("create", {
-        onSetBreak: async (addr, size, state) =>
-            (state ?
-                await mz700js.addBreak(addr, size) :
-                await mz700js.removeBreak(addr, size))
-    });
-
-    const wndAsmList = $("<div class='tool-window open' title='Z80 ASM'/>");
-    dockPanelRight.append(wndAsmList);
-    wndAsmList.append(asmView).ToolWindow("create");
-
-    const asmlist_assemble = async (asmlistObj, asmsrc) => {
-        asmlistObj.asmlist("text", asmsrc);
-        const shouldBeResumed = _isRunning;
-        if(shouldBeResumed) {
-            await mz700js.stop();
-        }
-        const assembled = Z80_assemble.assemble([asmsrc]).obj[0];
-        await mz700js.writeAsmCode( assembled );
-        asmlistObj.asmlist("writeList",
-            assembled.list,
-            await mz700js.getBreakPoints());
-        if(shouldBeResumed) {
-            await mz700js.start();
-        }
-    };
-
-    // Show a sample assemble source
-    const asmlistMzt = asmView.asmview("newAsmList", "mzt", "PCG-700 sample");
-    const asmlistSrc = await new Promise(resolve =>
-        $.get("./MZ-700/pcg700-sample.asm", {}, resolve));
-    await asmlist_assemble(asmlistMzt, asmlistSrc);
-
-    // Disassemble MONITOR ROM and show that source.
-    const getText = url => {
-        return new Promise(resolve => $.get(url, {}, resolve));
-    };
-    const readme = await getText("./mz_newmon/newmon_readme.txt");
-    console.log(readme);
-    const commandHelp = await getText("./mz_newmon/newmon_command.txt");
-    console.log(commandHelp);
-    const comment = [
-        ";;;",
-        ";;; This is a disassembled list of the MZ-NEW MONITOR",
-        ";;; provided from the Marukun's website 'MZ-Memories'",
-        ";;; ( http://retropc.net/mz-memories/mz700/ ).",
-        ";;; ",
-        ";----",
-        ...commandHelp.split(/\r*\n/).map(line => `;${line}`),
-        ";----",
-    ].join("\n");
-
-    const source = comment +  "\n" + Z80.dasmlines(Z80.dasm(
-        monitorRom, 0x0000, 0x1000, 0x0000
-    )).join("\n") + "\n";
-
-    const monRom = asmView.asmview("newAsmList",
-        "monitor-rom", "MZ-700 NEW MONITOR");
-    await asmlist_assemble(monRom, source);
-
-    //直接実行ボタン
-    const btnExecImm = $("<button/>").attr("type", "button").html("Execute")
-        .click(async function() {
-            const par = $(this).parent();
-            const addrToken = par.find("input.address").val();
-            const addr = parseAddress.parseAddress(addrToken);
-            if(addr != null) {
-                let src = 'ORG ' + NumberUtil.HEX(addr, 4) + "H\r\n";
-                src += par.find("input.mnemonic").val() + "\r\n";
-                const bin = Z80_assemble.assemble([src]).obj[0];
-                const reg = await mz700js.getRegister();
-                const execAddr = await mz700js.writeAsmCode( bin );
-                await mz700js.setPC(execAddr);
-                await mz700js.step();
-                await mz700js.setPC(reg.PC);
+        const dumplist = $("<div/>").dumplist("init", { mz700js: mz700js });
+        const wndDumpList = $("<div class='tool-window memory open' title='MEMORY'/>");
+        dockPanelRight.append(wndDumpList);
+        wndDumpList
+            .append(dumplist.dumplist("addrSpecifier"))
+            .append(dumplist).ToolWindow("create");
+        const asmView = $("<div/>").asmview("create", {
+            onSetBreak: (addr, size, state) => __awaiter(this, void 0, void 0, function* () {
+                return (state ?
+                    yield mz700js.addBreak(addr, size) :
+                    yield mz700js.removeBreak(addr, size));
+            })
+        });
+        const wndAsmList = $("<div class='tool-window open' title='Z80 ASM'/>");
+        dockPanelRight.append(wndAsmList);
+        wndAsmList.append(asmView).ToolWindow("create");
+        const asmlist_assemble = (asmlistObj, asmsrc) => __awaiter(this, void 0, void 0, function* () {
+            asmlistObj.asmlist("text", asmsrc);
+            const shouldBeResumed = _isRunning;
+            if (shouldBeResumed) {
+                yield mz700js.stop();
+            }
+            const assembled = assembler_1.default.assemble([asmsrc]).obj[0];
+            yield mz700js.writeAsmCode(assembled);
+            asmlistObj.asmlist("writeList", assembled.list, yield mz700js.getBreakPoints());
+            if (shouldBeResumed) {
+                yield mz700js.start();
             }
         });
-    const wndImmExec = $("<div class='tool-window' title='IMM.EXEC.'/>");
-    dockPanelRight.append(wndImmExec);
-    wndImmExec.append(
-        $("<div/>").addClass("imm-exec")
-        .css("padding","15px 5px")
-        .append($("<label/>")
-            .css("display","inline-block").css("width", "80px")
+        const asmlistMzt = asmView.asmview("newAsmList", "mzt", "PCG-700 sample");
+        const asmlistSrc = yield new Promise(resolve => $.get("./MZ-700/pcg700-sample.asm", {}, resolve));
+        yield asmlist_assemble(asmlistMzt, asmlistSrc);
+        const getText = url => {
+            return new Promise(resolve => $.get(url, {}, resolve));
+        };
+        const readme = yield getText("./mz_newmon/newmon_readme.txt");
+        console.log(readme);
+        const commandHelp = yield getText("./mz_newmon/newmon_command.txt");
+        console.log(commandHelp);
+        const comment = [
+            ";;;",
+            ";;; This is a disassembled list of the MZ-NEW MONITOR",
+            ";;; provided from the Marukun's website 'MZ-Memories'",
+            ";;; ( http://retropc.net/mz-memories/mz700/ ).",
+            ";;; ",
+            ";----",
+            ...commandHelp.split(/\r*\n/).map(line => `;${line}`),
+            ";----",
+        ].join("\n");
+        const source = comment + "\n" + Z80_js_1.default.dasmlines(Z80_js_1.default.dasm(monitorRom, 0x0000, 0x1000, 0x0000)).join("\n") + "\n";
+        const monRom = asmView.asmview("newAsmList", "monitor-rom", "MZ-700 NEW MONITOR");
+        yield asmlist_assemble(monRom, source);
+        const btnExecImm = $("<button/>").attr("type", "button").html("Execute")
+            .click(function () {
+            return __awaiter(this, void 0, void 0, function* () {
+                const par = $(this).parent();
+                const addrToken = par.find("input.address").val();
+                const addr = parse_addr_1.default.parseAddress(addrToken);
+                if (addr != null) {
+                    let src = 'ORG ' + number_util_1.default.HEX(addr, 4) + "H\r\n";
+                    src += par.find("input.mnemonic").val() + "\r\n";
+                    const bin = assembler_1.default.assemble([src]).obj[0];
+                    const reg = yield mz700js.getRegister();
+                    const execAddr = yield mz700js.writeAsmCode(bin);
+                    yield mz700js.setPC(execAddr);
+                    yield mz700js.step();
+                    yield mz700js.setPC(reg.PC);
+                }
+            });
+        });
+        const wndImmExec = $("<div class='tool-window' title='IMM.EXEC.'/>");
+        dockPanelRight.append(wndImmExec);
+        wndImmExec.append($("<div/>").addClass("imm-exec")
+            .css("padding", "15px 5px")
+            .append($("<label/>")
+            .css("display", "inline-block").css("width", "80px")
             .css("text-align", "right").css("padding-right", "10px")
             .html("Address"))
-        .append($("<input/>")
-                .attr("type", "text").attr("value", "CF00h")
-                .addClass("address"))
-        .append($("<br/>"))
-        .append($("<label/>")
-            .css("display","inline-block").css("width", "80px")
+            .append($("<input/>")
+            .attr("type", "text").attr("value", "CF00h")
+            .addClass("address"))
+            .append($("<br/>"))
+            .append($("<label/>")
+            .css("display", "inline-block").css("width", "80px")
             .css("text-align", "right").css("padding-right", "10px")
             .html("Mnemonic"))
-        .append($("<input/>")
-                .attr("type", "text").attr("value", "NOP")
-                .addClass("mnemonic"))
-        .append(btnExecImm)
-        .append($("<br/>"))
-    ).ToolWindow("create");
-
-    // Layout
-    const dockPanelHeader = $("#dock-panel-header");
-    window.addEventListener("resize", resizeScreen);
-    document.addEventListener("fullscreenchange", async () => {
-        if(document.fullscreenElement == null) {
-            dockPanelHeader.show(0,
-                () => fullscreenButton.ToggleButton("setOff"));
-            if(deviceType === "pc") {
-                await new Promise(
-                    resolve => dockPanelRight.show(0, resolve));
-                if(wndRegView.ToolWindow("isOpen")) {
-                    await Z80RegViewVisibility(true);
-                }
-            }
-        } else {
-            dockPanelHeader.hide(0,
-                () => fullscreenButton.ToggleButton("setOn"));
-            if(deviceType === "pc") {
-                await new Promise(
-                    resolve => dockPanelRight.hide(0, resolve));
-                if(wndRegView.ToolWindow("isOpen")) {
-                    await Z80RegViewVisibility(false);
-                }
-            }
-        }
-        resizeScreen();
-    });
-
-    // Accept MZT file to drop to the data recorder and MZ-700 screen
-
-    const readBinFile = file => {
-        return new Promise((resolve, reject) => {
-            try {
-                const reader = new FileReader();
-                reader.onload = () => {
-                    resolve(reader.result);
-                };
-                reader.readAsArrayBuffer(file);
-            } catch(err) {
-                reject(err);
-            }
-        });
-    };
-
-    const readTextFile = file => {
-        return new Promise((resolve, reject) => {
-            try {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.readAsText(file);
-            } catch(err) {
-                reject(err);
-            }
-        });
-    };
-
-    const getOnLoadHandler = (filename, onloadHandlers) => {
-        const ext = filename.replace(/^.*\./, "").toLowerCase();
-        const types = Object.keys(onloadHandlers);
-        const index = types.map(type => type.toLowerCase()).indexOf(ext);
-        if(index >= 0) {
-            const type = types[index];
-            return onloadHandlers[type];
-        }
-        return null;
-    };
-
-    // Set a cassette tape to data recorder of MZ-700 and
-    // load the MZT to memory directly.
-    const setMztData = async (mz700js, tapeData, execAddr) => {
-        await mz700js.stop();
-        await mz700js.setCassetteTape(tapeData);
-        await mz700js.loadCassetteTape();
-        await mz700js.setPC(execAddr);
-        await mz700js.start();
-    };
-
-    // Disassemble MZTape array
-    const showMztDisasm = async function(mztape_array) {
-        const name = MZ_TapeHeader.get1stFilename(mztape_array) || "(empty)";
-        const result = MZ700.disassemble(mztape_array);
-        asmView.asmview("name", "mzt", name);
-        asmlistMzt.asmlist("text", result.outbuf);
-        asmlistMzt.asmlist("writeList",
-            result.asmlist, await mz700js.getBreakPoints());
-        await dataRecorder.MZDataRecorder("updateCmtSlot");
-    };
-
-    const setMztAndRun = async tapeData => {
-        const mztape_array = MZ_Tape.parseMZT(tapeData);
-        await showMztDisasm(mztape_array);
-        await setMztData(mz700js, tapeData,
-            mztape_array[0].header.addrExec);
-    };
-
-    const setupDragDrop = (element, onloadHandlers) => {
-        element.addEventListener("dragenter", async event => {
-            event.stopPropagation();
-            event.preventDefault();
-            event.dataTransfer.dropEffect = "copy";
-        }, false);
-        element.addEventListener('drop', async event => {
-            event.stopPropagation();
-            event.preventDefault();
-            try {
-                const file = Array.from(event.dataTransfer.files).shift();
-                if(file) {
-                    const onload = getOnLoadHandler(file.name, onloadHandlers);
-                    if(onload) {
-                        await onload(file);
+            .append($("<input/>")
+            .attr("type", "text").attr("value", "NOP")
+            .addClass("mnemonic"))
+            .append(btnExecImm)
+            .append($("<br/>"))).ToolWindow("create");
+        const dockPanelHeader = $("#dock-panel-header");
+        window.addEventListener("resize", resizeScreen);
+        document.addEventListener("fullscreenchange", () => __awaiter(this, void 0, void 0, function* () {
+            if (document.fullscreenElement == null) {
+                dockPanelHeader.show(0, () => fullscreenButton.ToggleButton("setOff"));
+                if (deviceType === "pc") {
+                    yield new Promise(resolve => dockPanelRight.show(0, resolve));
+                    if (wndRegView.ToolWindow("isOpen")) {
+                        yield Z80RegViewVisibility(true);
                     }
                 }
-            } catch(err) {
-                console.error(`Error: ${err.stack}`);
             }
-        }, false);
-    };
-
-    if (window.File && window.FileReader && window.FileList && window.Blob) {
-        setupDragDrop(dataRecorder.get(0), {
-            "MZT": async tapeData => await mz700js.setCassetteTape(tapeData),
-        });
-        const mztFileLoader = async file => {
-            try {
-                const arrayBuffer = await readBinFile(file);
-                if(arrayBuffer) {
-                    const mzt = new Uint8Array(arrayBuffer);
-                    await setMztAndRun(Array.from(mzt));
+            else {
+                dockPanelHeader.hide(0, () => fullscreenButton.ToggleButton("setOn"));
+                if (deviceType === "pc") {
+                    yield new Promise(resolve => dockPanelRight.hide(0, resolve));
+                    if (wndRegView.ToolWindow("isOpen")) {
+                        yield Z80RegViewVisibility(false);
+                    }
                 }
-            } catch(err) {
-                console.error(`Error: Loading file ${file.name} ${err.message}`);
             }
+            resizeScreen();
+        }));
+        const readBinFile = file => {
+            return new Promise((resolve, reject) => {
+                try {
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        resolve(reader.result);
+                    };
+                    reader.readAsArrayBuffer(file);
+                }
+                catch (err) {
+                    reject(err);
+                }
+            });
         };
-        const asmFileLoader = async file => {
-            try {
-                const src = await readTextFile(file);
-                const obj = Z80_assemble.assemble([src]);
-                const hdr = MZ_TapeHeader.createNew();
-                hdr.setFilename(file.name);
-                hdr.setAddrLoad(obj.minAddr);
-                hdr.setAddrExec(obj.minAddr);
-                hdr.setFilesize(obj.buffer.length);
-                const mzt = Buffer.from(hdr.buffer.concat(obj.buffer));
-                await setMztAndRun(Array.from(mzt));
-            } catch(err) {
-                console.error(`Error: Loading file ${file.name} ${err.message}`);
-            }
+        const readTextFile = file => {
+            return new Promise((resolve, reject) => {
+                try {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.readAsText(file);
+                }
+                catch (err) {
+                    reject(err);
+                }
+            });
         };
-        setupDragDrop(canvas, {
-            "MZT": mztFileLoader,
-            "M12": mztFileLoader,
-            "ASM": asmFileLoader,
-        });
-    }
-
-    fullscreenButton.ToggleButton("off");
-    switch(deviceType) {
-    case "mobile":
-        screenKbButton.ToggleButton("on");
-        dockPanelRight.remove();
-        break;
-    case "tablet":
-        ctrlPanel.click(event => {
-            event.stopPropagation();
-            if(ctrlPanel.is(":visible")) {
-                hideCtrlPanel();
-            } else {
-                showCtrlPanel();
+        const getOnLoadHandler = (filename, onloadHandlers) => {
+            const ext = filename.replace(/^.*\./, "").toLowerCase();
+            const types = Object.keys(onloadHandlers);
+            const index = types.map(type => type.toLowerCase()).indexOf(ext);
+            if (index >= 0) {
+                const type = types[index];
+                return onloadHandlers[type];
             }
+            return null;
+        };
+        const setMztData = (mz700js, tapeData, execAddr) => __awaiter(this, void 0, void 0, function* () {
+            yield mz700js.stop();
+            yield mz700js.setCassetteTape(tapeData);
+            yield mz700js.loadCassetteTape();
+            yield mz700js.setPC(execAddr);
+            yield mz700js.start();
         });
-        screenKbButton.ToggleButton("off");
-        mz700screen.click(event => {
-            event.stopPropagation();
-            if(ctrlPanel.is(":visible")) {
-                hideCtrlPanel();
-            } else {
-                showCtrlPanel();
-            }
+        const showMztDisasm = function (mztape_array) {
+            return __awaiter(this, void 0, void 0, function* () {
+                const name = mz_tape_header_1.default.get1stFilename(mztape_array) || "(empty)";
+                const result = mz700_1.default.disassemble(mztape_array);
+                asmView.asmview("name", "mzt", name);
+                asmlistMzt.asmlist("text", result.outbuf);
+                asmlistMzt.asmlist("writeList", result.asmlist, yield mz700js.getBreakPoints());
+                yield dataRecorder.MZDataRecorder("updateCmtSlot");
+            });
+        };
+        const setMztAndRun = (tapeData) => __awaiter(this, void 0, void 0, function* () {
+            const mztape_array = mz_tape_1.default.parseMZT(tapeData);
+            yield showMztDisasm(mztape_array);
+            yield setMztData(mz700js, tapeData, mztape_array[0].header.addrExec);
         });
-        dockPanelRight.remove();
-        break;
-    case "pc":
-        screenKbButton.ToggleButton("off");
-        mz700screen.mousemove(event => {
-            event.stopPropagation();
-            keyboard.mz700keyboard("acceptKey", true);
-            showCtrlPanel();
-        });
-        await new Promise(resolve => dockPanelRight.show(0, resolve));
-        break;
-    }
-
-    // Convert MZ-700 character
-    for(const element of document.querySelectorAll("span.mz700scrn")) {
-        window.mz700scrn.convert(element);
-    }
-
-    await new Promise(resolve => mz700screen.show(0, resolve));
-    resizeScreen();
-
-    await mz700js.reset();
-    await mz700js.start();
-
-    // Load MZT file when the filename is included in URL
-    const request = parseRequest();
-    if("mzt" in request.parameters) {
-        const filename = request.parameters.mzt;
-        const url = `https://takamin.github.io/MZ-700/mzt/${filename}.js`;
-        const tapeData = await requestJsonp("loadMZT", url);
-        if(tapeData) {
-            await setMztAndRun(tapeData);
+        const setupDragDrop = (element, onloadHandlers) => {
+            element.addEventListener("dragenter", (event) => __awaiter(this, void 0, void 0, function* () {
+                event.stopPropagation();
+                event.preventDefault();
+                event.dataTransfer.dropEffect = "copy";
+            }), false);
+            element.addEventListener('drop', (event) => __awaiter(this, void 0, void 0, function* () {
+                event.stopPropagation();
+                event.preventDefault();
+                try {
+                    const file = Array.from(event.dataTransfer.files).shift();
+                    if (file) {
+                        const onload = getOnLoadHandler(file.name, onloadHandlers);
+                        if (onload) {
+                            yield onload(file);
+                        }
+                    }
+                }
+                catch (err) {
+                    console.error(`Error: ${err.stack}`);
+                }
+            }), false);
+        };
+        if (window.File && window.FileReader && window.FileList && window.Blob) {
+            setupDragDrop(dataRecorder.get(0), {
+                "MZT": (tapeData) => __awaiter(this, void 0, void 0, function* () { return yield mz700js.setCassetteTape(tapeData); }),
+            });
+            const mztFileLoader = (file) => __awaiter(this, void 0, void 0, function* () {
+                try {
+                    const arrayBuffer = yield readBinFile(file);
+                    if (arrayBuffer) {
+                        const mzt = new Uint8Array(arrayBuffer);
+                        yield setMztAndRun(Array.from(mzt));
+                    }
+                }
+                catch (err) {
+                    console.error(`Error: Loading file ${file.name} ${err.message}`);
+                }
+            });
+            const asmFileLoader = (file) => __awaiter(this, void 0, void 0, function* () {
+                try {
+                    const src = yield readTextFile(file);
+                    const obj = assembler_1.default.assemble([src]);
+                    const hdr = mz_tape_header_1.default.createNew();
+                    hdr.setFilename(file.name);
+                    hdr.setAddrLoad(obj.minAddr);
+                    hdr.setAddrExec(obj.minAddr);
+                    hdr.setFilesize(obj.buffer.length);
+                    const mzt = Buffer.from(hdr.buffer.concat(obj.buffer));
+                    yield setMztAndRun(Array.from(mzt));
+                }
+                catch (err) {
+                    console.error(`Error: Loading file ${file.name} ${err.message}`);
+                }
+            });
+            setupDragDrop(canvas, {
+                "MZT": mztFileLoader,
+                "M12": mztFileLoader,
+                "ASM": asmFileLoader,
+            });
         }
-    }
+        fullscreenButton.ToggleButton("off");
+        switch (deviceType) {
+            case "mobile":
+                screenKbButton.ToggleButton("on");
+                dockPanelRight.remove();
+                break;
+            case "tablet":
+                ctrlPanel.click(event => {
+                    event.stopPropagation();
+                    if (ctrlPanel.is(":visible")) {
+                        hideCtrlPanel();
+                    }
+                    else {
+                        showCtrlPanel();
+                    }
+                });
+                screenKbButton.ToggleButton("off");
+                mz700screen.click(event => {
+                    event.stopPropagation();
+                    if (ctrlPanel.is(":visible")) {
+                        hideCtrlPanel();
+                    }
+                    else {
+                        showCtrlPanel();
+                    }
+                });
+                dockPanelRight.remove();
+                break;
+            case "pc":
+                screenKbButton.ToggleButton("off");
+                mz700screen.mousemove(event => {
+                    event.stopPropagation();
+                    keyboard.mz700keyboard("acceptKey", true);
+                    showCtrlPanel();
+                });
+                yield new Promise(resolve => dockPanelRight.show(0, resolve));
+                break;
+        }
+        for (const element of document.querySelectorAll("span.mz700scrn")) {
+            window.mz700scrn.convert(element);
+        }
+        yield new Promise(resolve => mz700screen.show(0, resolve));
+        resizeScreen();
+        yield mz700js.reset();
+        yield mz700js.start();
+        const request = parse_request_1.default();
+        if ("mzt" in request.parameters) {
+            const filename = request.parameters["mzt"];
+            const url = `https://takamin.github.io/MZ-700/mzt/${filename}.js`;
+            const tapeData = yield jsonp_1.default("loadMZT", url);
+            if (tapeData) {
+                yield setMztAndRun(tapeData);
+            }
+        }
+    });
 }
-module.exports = {
+exports.default = module.exports = {
     loadMonitorROM,
     createUI,
 };
 
 }).call(this,require("buffer").Buffer)
-},{"../Z80/Z80.js":8,"../Z80/assembler.js":9,"../lib/jquery-plugin/jquery.Z80-mem.js":23,"../lib/jquery-plugin/jquery.Z80-reg.js":24,"../lib/jquery-plugin/jquery.asmlist.js":26,"../lib/jquery-plugin/jquery.asmview.js":27,"../lib/jquery-plugin/jquery.emu-speed-control.js":28,"../lib/jquery-plugin/jquery.mz-data-recorder.js":29,"../lib/jquery-plugin/jquery.mz-sound-control.js":30,"../lib/jquery-plugin/jquery.mz700-img-button.js":31,"../lib/jquery-plugin/jquery.mz700-kb.js":32,"../lib/jquery-plugin/jquery.mz700-scrn.js":33,"../lib/jquery-plugin/jquery.tabview.js":35,"../lib/jquery-plugin/jquery.toggle-button.js":36,"../lib/jquery-plugin/jquery.tool-window.js":37,"../lib/jsonp":40,"../lib/mz-beep.js":41,"../lib/mz-tape-header.js":44,"../lib/mz-tape.js":45,"../lib/number-util.js":50,"../lib/parse-addr.js":52,"../lib/parse-request":53,"../lib/user-agent-util.js":54,"../package.json":100,"./mz700.js":6,"b-box":59,"buffer":61,"dock-n-liquid":68,"fullscrn":71}],6:[function(require,module,exports){
+},{"../Z80/Z80.js":8,"../Z80/assembler":9,"../lib/jquery-plugin/jquery.Z80-mem.js":23,"../lib/jquery-plugin/jquery.Z80-reg.js":24,"../lib/jquery-plugin/jquery.asmlist.js":26,"../lib/jquery-plugin/jquery.asmview.js":27,"../lib/jquery-plugin/jquery.emu-speed-control.js":28,"../lib/jquery-plugin/jquery.mz-data-recorder.js":29,"../lib/jquery-plugin/jquery.mz-sound-control.js":30,"../lib/jquery-plugin/jquery.mz700-img-button.js":31,"../lib/jquery-plugin/jquery.mz700-kb.js":32,"../lib/jquery-plugin/jquery.mz700-scrn.js":33,"../lib/jquery-plugin/jquery.tabview.js":35,"../lib/jquery-plugin/jquery.toggle-button.js":36,"../lib/jquery-plugin/jquery.tool-window.js":37,"../lib/jsonp":40,"../lib/mz-beep":41,"../lib/mz-tape":45,"../lib/mz-tape-header":44,"../lib/number-util":50,"../lib/parse-addr":52,"../lib/parse-request":53,"../lib/user-agent-util":54,"./mz700":6,"b-box":59,"buffer":61,"dock-n-liquid":68,"fullscrn":71}],6:[function(require,module,exports){
 "use strict";
-const FractionalTimer = require("fractional-timer");
-const MZ_TapeHeader   = require('../lib/mz-tape-header');
-const MZ_Tape         = require('../lib/mz-tape');
-const MZ_DataRecorder = require('../lib/mz-data-recorder');
-const Intel8253       = require('../lib/intel-8253');
-const FlipFlopCounter = require('../lib/flip-flop-counter');
-const IC556           = require('../lib/ic556');
-const MZMMIO          = require("../lib/mz-mmio.js");
-const MZ700KeyMatrix  = require('./mz700-key-matrix');
-const MZ700_Memory    = require("./mz700-memory.js");
-const Z80             = require('../Z80/Z80.js');
-const Z80LineAssembler = require("../Z80/Z80-line-assembler");
-
-function MZ700() { }
-
-MZ700.prototype.create = function(opt) {
-
-    // Screen update buffer
-    this._screenUpdateData = new Array(1000);
-
-    // Timer id to send screen buffer
-    this._vramTxTid = null;
-
-
-    //MZ700 Key Matrix
-    this.keymatrix = new MZ700KeyMatrix();
-
-    // Create 8253
-    this.intel8253 = new Intel8253();
-    this.intel8253.counter(1).initCount(15700, () => {
-        this.intel8253.counter(2).count(1);
-    });
-    this.intel8253.counter(2).initCount(43200, () => {
-        if(this.INTMSK) {
-            this.z80.interrupt();
-        }
-    });
-
-    //HBLNK F/F in 15.7 kHz
-    this.hblank = new FlipFlopCounter(MZ700.Z80_CLOCK / 15700);
-    this.hblank.addEventListener("change", () => {
-        this.intel8253.counter(1).count(1);
-    });
-
-    //VBLNK F/F in 50 Hz
-    this.vblank = new FlipFlopCounter(MZ700.Z80_CLOCK / 50);
-    this.VBLK = false;
-    this.vblank.addEventListener("change", () => {
-        this.VBLK = !this.VBLK;
-    });
-
-    // create IC 556 to create HBLNK(cursor blink) by 3 Hz?
-    this.ic556 = new IC556(MZ700.Z80_CLOCK / 3);
-    this.ic556_OUT = false;
-    this.ic556.addEventListener("change", () => {
-        this.ic556_OUT = !this.ic556_OUT;
-    });
-
-    this.INTMSK = false;
-
-    this.MLDST = false;
-
-    let motorOffDelayTid = null;
-    this.dataRecorder = new MZ_DataRecorder(motorState => {
-        if(motorState) {
-            if(motorOffDelayTid != null) {
-                clearTimeout(motorOffDelayTid);
-                motorOffDelayTid = null;
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const fractional_timer_1 = __importDefault(require("fractional-timer"));
+const mz_tape_header_1 = __importDefault(require("../lib/mz-tape-header"));
+const mz_tape_1 = __importDefault(require("../lib/mz-tape"));
+const mz_data_recorder_1 = __importDefault(require("../lib/mz-data-recorder"));
+const intel_8253_1 = __importDefault(require("../lib/intel-8253"));
+const flip_flop_counter_1 = __importDefault(require("../lib/flip-flop-counter"));
+const ic556_1 = __importDefault(require("../lib/ic556"));
+const mz_mmio_js_1 = __importDefault(require("../lib/mz-mmio.js"));
+const mz700_key_matrix_1 = __importDefault(require("./mz700-key-matrix"));
+const mz700_memory_js_1 = __importDefault(require("./mz700-memory.js"));
+const Z80_js_1 = __importDefault(require("../Z80/Z80.js"));
+const Z80_line_assembler_1 = __importDefault(require("../Z80/Z80-line-assembler"));
+class MZ700 {
+    constructor() { }
+    create(opt) {
+        this.keymatrix = new mz700_key_matrix_1.default();
+        this.intel8253 = new intel_8253_1.default();
+        this.intel8253.counter(1).initCount(15700, () => {
+            this.intel8253.counter(2).count(1);
+        });
+        this.intel8253.counter(2).initCount(43200, () => {
+            if (this.INTMSK) {
+                this.z80.interrupt();
             }
-            this.opt.onStartDataRecorder();
-        } else {
-            motorOffDelayTid = setTimeout(() => {
-                motorOffDelayTid = null;
-                this.opt.onStopDataRecorder();
-            }, 100);
-        }
-    });
-
-    //
-    // Default option settings to notify from WebWorker
-    // to UI thread by transworker
-    //
-    this.opt = {
-        started: () => {},
-        stopped: () => {},
-        onBreak : () => {},
-        onVramUpdate: (/*index, dispcode, attr*/) => {},
-        onUpdateScrn: (/*buffer*/) => {},
-        onMmioRead: (/*address, value*/) => { },
-        onMmioWrite: (/*address, value*/) => { },
-        startSound: (/*freq*/) => { },
-        stopSound: () => {},
-        onStartDataRecorder: () => {},
-        onStopDataRecorder: () => {}
-    };
-
-    //
-    // Override option to receive notifications with callbacks.
-    //
-    opt = opt || {};
-    Object.keys(opt).forEach(key => {
-        if(!(key in this.opt)) {
-            console.warn(`Unknown option key ${key} is specified.`);
-        }
-    });
-    Object.keys(this.opt).forEach(key => {
-        if(key in opt) {
-            this.opt[key] = opt[key];
-        }
-    });
-
-    this.tid = null;
-    this.clockFactor = 1.0;
-    this.tidMeasClock = null;
-    this.t_cycle_0 = 0;
-    this.actualClockFreq = 0.0;
-    this._cycleToWait = 0;
-
-    this.mmio = new MZMMIO();
-    for(let address = 0xE000; address < 0xE800; address++) {
-        this.mmio.onRead(address,
-            value=>this.opt.onMmioRead(address, value));
-        this.mmio.onWrite(address,
-            value=>this.opt.onMmioWrite(address, value));
-    }
-
-    //MMIO $E000
-    this.mmio.onWrite(0xE000, value => {
-        this.memory.poke(0xE001, this.keymatrix.getKeyData(value));
-        this.ic556.loadReset(value & 0x80);
-    });
-
-    //MMIO $E001
-    // No Device
-
-    //MMIO $E002
-    this.mmio.onRead(0xE002, value => {
-        // [VBLK~] [556OUT] [RDATA] [MOTOR] [M-ON] [INTMSK] [WDATA] [*****]
-        //    |        |       |       |       |       |       |       |
-        //    |        |       |       |       |       |       |       +---- b0. --- (undefined)
-        //    |        |       |       |       |       |       +------------ b1. OUT CMT WRITE DATA
-        //    |        |       |       |       |       +-------------------- b2. OUT CLOCK INT MASK
-        //    |        |       |       |       +---------------------------- b3. OUT DRIVE CMT MOTOR
-        //    |        |       |       +------------------------------------ b4. IN  CMT MOTOR FEEDBACK
-        //    |        |       +-------------------------------------------- b5. IN  CMT READ DATA
-        //    |        +---------------------------------------------------- b6. IN  BLINK CURSOR
-        //    +------------------------------------------------------------- b7. IN  VERTICAL BLANK
-        value = value & 0x0f; // 入力上位4ビットをオフ
-        // PC4 - MOTOR : The motor driving state (high active)
-        if(this.dataRecorder.motor()) {
-            value = value | 0x10;
-        } else {
-            value = value & 0xef;
-        }
-        // PC5 - RDATA : A bit data to read
-        if(this.dataRecorder_readBit()) {
-            value = value | 0x20;
-        } else {
-            value = value & 0xdf;
-        }
-        // PC6 - 556_OUT : A signal to blink cursor on the screen
-        if(this.ic556_OUT) {
-            value = value | 0x40;
-        } else {
-            value = value & 0xbf;
-        }
-        // PC7 - VBLK : A virtical blanking signal
-        // set V-BLANK bit
-        if(this.VBLK) {
-            value = value | 0x80;
-        } else {
-            value = value & 0x7f;
-        }
-        return value;
-    });
-
-    //MMIO $E003
-    this.mmio.onWrite(0xE003, value => {
-        // MSB==0の場合、PortCへのビット単位の書き込みを指示する。
-        //
-        // [ 7   6   5   4   3   2   1   0 ]
-        //  ---             ----------- ---
-        //   0   -   -   -  ビット番号  値
-        //
-        // MSB==1の場合は、モードセット
-        //
-        // [ 7   6   5   4   3   2   1   0 ]
-        //  --- ------- --- --- --- --- ---
-        //   1   ModeA   |   |   |   |   |
-        //       PortA --+   |   |   |   |
-        //       PortCH------+   |   |   +----- PortCL
-        //               ModeB --+   +--------- PortB
-        //
-        //  ModeA: 1x - モード2、01 - モード1、00 - モード0
-        //  ModeB: 1  - モード1、0  - モード0
-        //  PortA: Port A 入出力設定 0 - 出力、1 - 入力
-        //  PortB: Port B 入出力設定 0 - 出力、1 - 入力
-        //  PortCH: Port C 上位ニブル入出力設定 0 - 出力、1 - 入力
-        //  PortCL: Port C 下位ニブル入出力設定 0 - 出力、1 - 入力
-        //
-        if((value & 0x80) == 0) {
-            const bit = ((value & 0x01) != 0);
-            const bitno = (value & 0x0e) >> 1;
-            //const name = [
-            //    "SOUNDMSK(MZ-1500)",
-            //    "WDATA","INTMSK","M-ON",
-            //    "MOTOR","RDATA", "556 OUT", "VBLK"][bitno];
-            //console.log("$E003 8255 CTRL BITSET", name, bit);
-            switch(bitno) {
-                case 0://SOUNDMSK
-                    break;
-                case 1://WDATA
-                    this.dataRecorder_writeBit(bit);
-                    break;
-                case 2://INTMSK
-                    this.INTMSK = bit;//trueで割り込み許可
-                    break;
-                case 3://M-ON
-                    this.dataRecorder_motorOn(bit);
-                    break;
+        });
+        this.hblank = new flip_flop_counter_1.default(MZ700.Z80_CLOCK / 15700);
+        this.hblank.addEventListener("change", () => {
+            this.intel8253.counter(1).count(1);
+        });
+        this.vblank = new flip_flop_counter_1.default(MZ700.Z80_CLOCK / 50);
+        this.VBLK = false;
+        this.vblank.addEventListener("change", () => {
+            this.VBLK = !this.VBLK;
+        });
+        this.ic556 = new ic556_1.default(MZ700.Z80_CLOCK / 3);
+        this.ic556_OUT = false;
+        this.ic556.addEventListener("change", () => {
+            this.ic556_OUT = !this.ic556_OUT;
+        });
+        this.INTMSK = false;
+        this.MLDST = false;
+        let motorOffDelayTid = null;
+        this.dataRecorder = new mz_data_recorder_1.default(motorState => {
+            if (motorState) {
+                if (motorOffDelayTid != null) {
+                    clearTimeout(motorOffDelayTid);
+                    motorOffDelayTid = null;
+                }
+                this.opt.onStartDataRecorder();
             }
+            else {
+                motorOffDelayTid = setTimeout(() => {
+                    motorOffDelayTid = null;
+                    this.opt.onStopDataRecorder();
+                }, 100);
+            }
+        });
+        this.opt = {
+            started: () => { },
+            stopped: () => { },
+            onBreak: () => { },
+            onVramUpdate: () => { },
+            onUpdateScrn: () => { },
+            onMmioRead: () => { },
+            onMmioWrite: () => { },
+            startSound: () => { },
+            stopSound: () => { },
+            onStartDataRecorder: () => { },
+            onStopDataRecorder: () => { }
+        };
+        opt = opt || {};
+        Object.keys(opt).forEach(key => {
+            if (!(key in this.opt)) {
+                console.warn(`Unknown option key ${key} is specified.`);
+            }
+        });
+        Object.keys(this.opt).forEach(key => {
+            if (key in opt) {
+                this.opt[key] = opt[key];
+            }
+        });
+        this.tid = null;
+        this.clockFactor = 1.0;
+        this.tidMeasClock = null;
+        this.t_cycle_0 = 0;
+        this.actualClockFreq = 0.0;
+        this._cycleToWait = 0;
+        this.mmio = new mz_mmio_js_1.default();
+        for (let address = 0xE000; address < 0xE800; address++) {
+            this.mmio.onRead(address, value => this.opt.onMmioRead(address, value));
+            this.mmio.onWrite(address, value => this.opt.onMmioWrite(address, value));
         }
-    });
-
-    //MMIO $E004
-    this.mmio.onRead(0xE004, () => this.intel8253.counter(0).read());
-    this.mmio.onWrite(0xE004, value => {
-        if(this.intel8253.counter(0).load(value) && this.MLDST) {
-            this.opt.startSound(895000 / this.intel8253.counter(0).value);
-        }
-    });
-
-    //MMIO $E005
-    this.mmio.onRead(0xE005, () => this.intel8253.counter(1).read());
-    this.mmio.onWrite(0xE005, value => this.intel8253.counter(1).load(value));
-
-    //MMIO $E006
-    this.mmio.onRead(0xE006, () => this.intel8253.counter(2).read());
-    this.mmio.onWrite(0xE006, value => this.intel8253.counter(2).load(value));
-
-    //MMIO $E007
-    this.mmio.onWrite(0xE007, value => this.intel8253.setCtrlWord(value));
-
-    //MMIO $E008
-    this.mmio.onRead(0xE008, value => {
-        value = value & 0xfe; // MSBをオフ
-        // set H-BLANK bit
-        if(this.hblank.readOutput()) {
-            value = value | 0x01;
-        } else {
+        this.mmio.onWrite(0xE000, value => {
+            this.memory.poke(0xE001, this.keymatrix.getKeyData(value));
+            this.ic556.loadReset((value & 0x80) != 0);
+        });
+        this.mmio.onRead(0xE002, value => {
+            value = value & 0x0f;
+            if (this.dataRecorder.motor()) {
+                value = value | 0x10;
+            }
+            else {
+                value = value & 0xef;
+            }
+            if (this.dataRecorder_readBit()) {
+                value = value | 0x20;
+            }
+            else {
+                value = value & 0xdf;
+            }
+            if (this.ic556_OUT) {
+                value = value | 0x40;
+            }
+            else {
+                value = value & 0xbf;
+            }
+            if (this.VBLK) {
+                value = value | 0x80;
+            }
+            else {
+                value = value & 0x7f;
+            }
+            return value;
+        });
+        this.mmio.onWrite(0xE003, value => {
+            if ((value & 0x80) == 0) {
+                const bit = ((value & 0x01) != 0);
+                const bitno = (value & 0x0e) >> 1;
+                switch (bitno) {
+                    case 0:
+                        break;
+                    case 1:
+                        this.dataRecorder_writeBit(bit);
+                        break;
+                    case 2:
+                        this.INTMSK = bit;
+                        break;
+                    case 3:
+                        this.dataRecorder_motorOn(bit);
+                        break;
+                }
+            }
+        });
+        this.mmio.onRead(0xE004, () => this.intel8253.counter(0).read());
+        this.mmio.onWrite(0xE004, value => {
+            if (this.intel8253.counter(0).load(value) && this.MLDST) {
+                this.opt.startSound(895000 / this.intel8253.counter(0).value);
+            }
+        });
+        this.mmio.onRead(0xE005, () => this.intel8253.counter(1).read());
+        this.mmio.onWrite(0xE005, value => this.intel8253.counter(1).load(value));
+        this.mmio.onRead(0xE006, () => this.intel8253.counter(2).read());
+        this.mmio.onWrite(0xE006, value => this.intel8253.counter(2).load(value));
+        this.mmio.onWrite(0xE007, value => this.intel8253.setCtrlWord(value));
+        this.mmio.onRead(0xE008, value => {
             value = value & 0xfe;
-        }
-        return value;
-    });
-    this.mmio.onWrite(0xE008, value => {
-        if((this.MLDST = ((value & 0x01) != 0)) == true) {
-            this.opt.startSound(895000 / this.intel8253.counter(0).value);
-        } else {
-            this.opt.stopSound();
-        }
-    });
-
-    this.memory = new MZ700_Memory();
-    this.memory.create({
-        onVramUpdate: (index, dispcode, attr) => {
-            this.opt.onVramUpdate(index, dispcode, attr);
-        },
-        onMappedIoRead: (address, value) => {
-            //MMIO: Input from memory mapped peripherals
-            const readValue = this.mmio.read(address, value);
-            if(readValue == null || readValue == undefined) {
+            if (this.hblank.readOutput()) {
+                value = value | 0x01;
+            }
+            else {
+                value = value & 0xfe;
+            }
+            return value;
+        });
+        this.mmio.onWrite(0xE008, value => {
+            if ((this.MLDST = ((value & 0x01) != 0)) == true) {
+                this.opt.startSound(895000 / this.intel8253.counter(0).value);
+            }
+            else {
+                this.opt.stopSound();
+            }
+        });
+        this.memory = new mz700_memory_js_1.default();
+        this.memory.create({
+            onVramUpdate: (index, dispcode, attr) => {
+                this.opt.onVramUpdate(index, dispcode, attr);
+            },
+            onMappedIoRead: (address, value) => {
+                const readValue = this.mmio.read(address, value);
+                if (readValue == null || readValue == undefined) {
+                    return value;
+                }
+                return readValue;
+            },
+            onMappedIoUpdate: (address, value) => {
+                this.mmio.write(address, value);
                 return value;
             }
-            return readValue;
-        },
-        onMappedIoUpdate: (address, value) => {
-            //MMIO: Output to memory mapped peripherals
-            this.mmio.write(address, value);
-            return value;
+        });
+        this.z80 = new Z80_js_1.default({ memory: this.memory });
+        this.z80.onWriteIoPort(0xe0, () => this.memory.changeBlock0_DRAM());
+        this.z80.onWriteIoPort(0xe1, () => this.memory.changeBlock1_DRAM());
+        this.z80.onWriteIoPort(0xe2, () => this.memory.changeBlock0_MONITOR());
+        this.z80.onWriteIoPort(0xe3, () => this.memory.changeBlock1_VRAM());
+        this.z80.onWriteIoPort(0xe4, () => {
+            this.memory.changeBlock0_MONITOR();
+            this.memory.changeBlock1_VRAM();
+        });
+        this.z80.onWriteIoPort(0xe5, () => this.memory.disableBlock1());
+        this.z80.onWriteIoPort(0xe6, () => this.memory.enableBlock1());
+    }
+    setMonitorRom(bin) {
+        this.memory.setMonitorRom(bin);
+    }
+    writeAsmCode(assembled) {
+        for (let i = 0; i < assembled.buffer.length; i++) {
+            this.memory.poke(assembled.minAddr + i, assembled.buffer[i]);
         }
-    });
-
-    this.z80 = new Z80({ memory: this.memory });
-    this.z80.onWriteIoPort(0xe0, () => this.memory.changeBlock0_DRAM());
-    this.z80.onWriteIoPort(0xe1, () => this.memory.changeBlock1_DRAM());
-    this.z80.onWriteIoPort(0xe2, () => this.memory.changeBlock0_MONITOR());
-    this.z80.onWriteIoPort(0xe3, () => this.memory.changeBlock1_VRAM());
-    this.z80.onWriteIoPort(0xe4, () => {
+        return assembled.minAddr;
+    }
+    exec(execCount) {
+        execCount = execCount || 1;
+        try {
+            for (let i = 0; i < execCount; i++) {
+                this.z80.exec();
+                this.clock();
+            }
+        }
+        catch (ex) {
+            return -1;
+        }
+        return 0;
+    }
+    clock() {
+        this.hblank.count();
+        this.vblank.count();
+        this.ic556.count();
+    }
+    setCassetteTape(tape_data) {
+        if (tape_data.length > 0) {
+            if (tape_data.length <= 128) {
+                this.dataRecorder_setCmt([]);
+                console.error("error buf.length <= 128");
+                return null;
+            }
+            this.mzt_array = mz_tape_1.default.parseMZT(tape_data);
+            if (this.mzt_array == null || this.mzt_array.length < 1) {
+                console.error("setCassetteTape fail to parse");
+                return null;
+            }
+        }
+        this.dataRecorder_setCmt(tape_data);
+        return this.mzt_array;
+    }
+    getCassetteTape() {
+        const cmt = this.dataRecorder.getCmt();
+        if (cmt == null) {
+            return null;
+        }
+        return mz_tape_1.default.toBytes(cmt);
+    }
+    loadCassetteTape() {
+        for (let i = 0; i < this.mzt_array.length; i++) {
+            const mzt = this.mzt_array[i];
+            for (let j = 0; j < mzt.header.fileSize; j++) {
+                this.memory.poke(mzt.header.addrLoad + j, mzt.body.buffer[j]);
+            }
+        }
+    }
+    reset() {
+        this.memory.enableBlock1();
+        this.memory.enableBlock1();
         this.memory.changeBlock0_MONITOR();
         this.memory.changeBlock1_VRAM();
-    });
-    this.z80.onWriteIoPort(0xe5, () => this.memory.disableBlock1());
-    this.z80.onWriteIoPort(0xe6, () => this.memory.enableBlock1());
-};
-
-MZ700.Z80_CLOCK = 3.579545 * 1000000;// 3.58 MHz
-MZ700.DEFAULT_TIMER_INTERVAL = 1.0 / MZ700.Z80_CLOCK;
-
-MZ700.prototype.setMonitorRom = function(bin) {
-    this.memory.setMonitorRom(bin);
-};
-
-MZ700.prototype.writeAsmCode = function(assembled) {
-    for(let i = 0; i < assembled.buffer.length; i++) {
-        this.memory.poke(
-                assembled.minAddr + i,
-                assembled.buffer[i]);
-    }
-    return assembled.minAddr;
-};
-
-MZ700.prototype.exec = function(execCount) {
-    execCount = execCount || 1;
-    try {
-        for(let i = 0; i < execCount; i++) {
-            this.z80.exec();
-            this.clock();
+        for (let i = 0; i < 40 * 25; i++) {
+            this.memory.poke(0xd000 + i, 0x00);
+            this.memory.poke(0xd800 + i, 0x71);
         }
-    } catch(ex) {
-        return -1;
+        this.z80.reset();
     }
-    return 0;
-};
-
-MZ700.prototype.clock = function() {
-
-    // HBLNK - 15.7 kHz clock
-    this.hblank.count();
-
-    // VBLNK - 50 Hz
-    this.vblank.count();
-
-    // CURSOR BLNK - 1 Hz
-    this.ic556.count();
-
-};
-
-MZ700.prototype.setCassetteTape = function(tape_data) {
-    if(tape_data.length > 0) {
-        if(tape_data.length <= 128) {
-            this.dataRecorder_setCmt([]);
-            console.error("error buf.length <= 128");
-            return null;
+    getRegister() {
+        const reg = this.z80.reg.cloneRaw();
+        reg._ = this.z80.regB.cloneRaw();
+        reg.IFF1 = this.z80.IFF1;
+        reg.IFF2 = this.z80.IFF2;
+        reg.IM = this.z80.IM;
+        reg.HALT = this.z80.HALT;
+        return reg;
+    }
+    setPC(addr) {
+        this.z80.reg.PC = addr;
+    }
+    readMemory(addrStart, addrEnd) {
+        if (addrEnd) {
+            return Array(addrEnd - addrStart).fill(null)
+                .map(() => this.memory.peek(addrStart++));
         }
-        this.mzt_array = MZ_Tape.parseMZT(tape_data);
-        if(this.mzt_array == null || this.mzt_array.length < 1) {
-            console.error("setCassetteTape fail to parse");
-            return null;
+        return this.memory.peek(addrStart);
+    }
+    setKeyState(strobe, bit, state) {
+        this.keymatrix.setKeyMatrixState(strobe, bit, state);
+    }
+    clearBreakPoints() {
+        this.z80.clearBreakPoints();
+    }
+    getBreakPoints() {
+        return this.z80.getBreakPoints();
+    }
+    removeBreak(addr, size) {
+        this.z80.removeBreak(addr, size);
+    }
+    addBreak(addr, size) {
+        this.z80.setBreak(addr, size);
+    }
+    start() {
+        if ("tid" in this && this.tid != null) {
+            console.warn("MZ700.start(): already started");
+            return false;
+        }
+        this.startEmulation();
+        this.opt.started();
+        return true;
+    }
+    stop() {
+        const running = (this.tid != null);
+        this.stopEmulation();
+        if (running) {
+            this.opt.stopped();
         }
     }
-    this.dataRecorder_setCmt(tape_data);
-    return this.mzt_array;
-};
-
-/**
- * Get CMT content without ejecting.
- * @returns {Buffer|null} CMT data buffer
- */
-MZ700.prototype.getCassetteTape = function() {
-    const cmt = this.dataRecorder.getCmt();
-    if(cmt == null) {
-        return null;
-    }
-    return MZ_Tape.toBytes(cmt);
-};
-
-MZ700.prototype.loadCassetteTape = function() {
-    for(let i = 0; i < this.mzt_array.length; i++) {
-        const mzt = this.mzt_array[i];
-        for(let j = 0; j < mzt.header.fileSize; j++) {
-            this.memory.poke(mzt.header.addrLoad + j, mzt.body.buffer[j]);
+    step() {
+        if ("tid" in this && this.tid != null) {
+            this.stop();
+            return;
         }
-    }
-};
-
-MZ700.prototype.reset = function() {
-    this.memory.enableBlock1();
-    this.memory.enableBlock1();
-    this.memory.changeBlock0_MONITOR();
-    this.memory.changeBlock1_VRAM();
-
-    // Clear VRAM
-    for(let i = 0; i < 40 * 25; i++) {
-        this.memory.poke(0xd000 + i, 0x00);
-        this.memory.poke(0xd800 + i, 0x71);
-    }
-    this.z80.reset();
-};
-
-MZ700.prototype.getRegister = function() {
-    const reg = this.z80.reg.cloneRaw();
-    reg._ = this.z80.regB.cloneRaw();
-    reg.IFF1 = this.z80.IFF1;
-    reg.IFF2 = this.z80.IFF2;
-    reg.IM = this.z80.IM;
-    reg.HALT = this.z80.HALT;
-    return reg;
-};
-
-MZ700.prototype.setPC = function(addr) {
-    this.z80.reg.PC = addr;
-};
-
-/**
- * Read memory.
- * @param {number} addrStart start address
- * @param {number} addrEnd (optional) end address
- * @returns {number|Array<number>} A value in the start addr or memory block
- */
-MZ700.prototype.readMemory = function(addrStart, addrEnd) {
-    if(addrEnd) {
-        return Array(addrEnd - addrStart).fill()
-            .map( () => this.memory.peek(addrStart++) );
-    }
-    return this.memory.peek(addrStart);
-};
-
-MZ700.prototype.setKeyState = function(strobe, bit, state) {
-    this.keymatrix.setKeyMatrixState(strobe, bit, state);
-};
-
-MZ700.prototype.clearBreakPoints = function() {
-    this.z80.clearBreakPoints();
-};
-
-MZ700.prototype.getBreakPoints = function() {
-    return this.z80.getBreakPoints();
-};
-
-MZ700.prototype.removeBreak = function(addr, size) {
-    this.z80.removeBreak(addr, size);
-};
-
-MZ700.prototype.addBreak = function(addr, size) {
-    this.z80.setBreak(addr, size);
-};
-
-//
-// For TransWorker
-//
-MZ700.prototype.start = function() {
-    if("tid" in this && this.tid != null) {
-        console.warn("MZ700.start(): already started");
-        return false;
-    }
-    this.startEmulation();
-    this.opt.started();
-
-    return true;
-};
-
-MZ700.prototype.stop = function() {
-    const running = (this.tid != null);
-    this.stopEmulation();
-    if(running) {
+        this.exec(1);
+        this.opt.started();
         this.opt.stopped();
     }
-};
-
-MZ700.prototype.step = function() {
-    if("tid" in this && this.tid != null) {
-        this.stop();
-        return;
-    }
-    this.exec(1);
-    this.opt.started();
-    this.opt.stopped();
-};
-
-MZ700.prototype.run = function() {
-    try {
-        if(this._cycleToWait > 0) {
-            this._cycleToWait--;
-        } else {
-            const cycle0 = this.z80.consumedTCycle;
-            this.z80.exec();
-            this._cycleToWait = this.z80.consumedTCycle - cycle0;
+    run() {
+        try {
+            if (this._cycleToWait > 0) {
+                this._cycleToWait--;
+            }
+            else {
+                const cycle0 = this.z80.consumedTCycle;
+                this.z80.exec();
+                this._cycleToWait = this.z80.consumedTCycle - cycle0;
+            }
+            this.clock();
         }
-        this.clock();
-    } catch(ex) {
-        console.log("Error:", ex);
-        console.log(ex.stack);
-        this.stop();
-        this.opt.onBreak();
+        catch (ex) {
+            console.log("Error:", ex);
+            console.log(ex.stack);
+            this.stop();
+            this.opt.onBreak();
+        }
     }
-};
-
-//
-// Disassemble
-//
-MZ700.disassemble = function(mztape_array) {
-    let dasmlist = [];
-    mztape_array.forEach( mzt => {
-        console.assert(
-            mzt.header.constructor === MZ_TapeHeader,
-            "No MZT-header");
-        let mzthead = mzt.header.getHeadline().split("\n");
-        Array.prototype.push.apply(dasmlist, mzthead.map(line => {
-            const asmline = new Z80LineAssembler();
-            asmline.setComment(line);
-            return asmline;
-        }));
-        Array.prototype.push.apply(dasmlist, Z80.dasm(
-            mzt.body.buffer, 0,
-            mzt.header.fileSize,
-            mzt.header.addrLoad));
-    });
-
-    let dasmlines = Z80.dasmlines(dasmlist);
-    return {
-        outbuf: dasmlines.join("\n") + "\n",
-        dasmlines: dasmlines,
-        asmlist: dasmlist
-    };
-};
-
-MZ700.prototype.dataRecorder_setCmt = function(bytes) {
-    if(bytes.length == 0) {
-        this.dataRecorder.setCmt([]);
+    dataRecorder_setCmt(bytes) {
+        if (bytes.length == 0) {
+            this.dataRecorder.setCmt([]);
+            return [];
+        }
+        const cmt = mz_tape_1.default.fromBytes(bytes);
+        this.dataRecorder.setCmt(cmt);
+        return cmt;
+    }
+    dataRecorder_ejectCmt() {
+        if (this.dataRecorder.isCmtSet()) {
+            const cmt = this.dataRecorder.ejectCmt();
+            if (cmt != null) {
+                return mz_tape_1.default.toBytes(cmt);
+            }
+        }
         return [];
     }
-    const cmt = MZ_Tape.fromBytes(bytes);
-    this.dataRecorder.setCmt(cmt);
-    return cmt;
-};
-
-MZ700.prototype.dataRecorder_ejectCmt = function() {
-    if(this.dataRecorder.isCmtSet()) {
-        const cmt = this.dataRecorder.ejectCmt();
-        if(cmt != null) {
-            return MZ_Tape.toBytes(cmt);
+    dataRecorder_pushPlay() {
+        this.dataRecorder.play();
+    }
+    dataRecorder_pushRec() {
+        if (this.dataRecorder.isCmtSet()) {
+            this.dataRecorder.ejectCmt();
+        }
+        this.dataRecorder.setCmt([]);
+        this.dataRecorder.rec();
+    }
+    dataRecorder_pushStop() {
+        this.dataRecorder.stop();
+    }
+    dataRecorder_motorOn(state) {
+        this.dataRecorder.m_on(state);
+    }
+    dataRecorder_readBit() {
+        return this.dataRecorder.rdata(this.z80.consumedTCycle);
+    }
+    dataRecorder_writeBit(state) {
+        this.dataRecorder.wdata(state, this.z80.consumedTCycle);
+    }
+    getClockFactor() {
+        return this.clockFactor;
+    }
+    setClockFactor(clockFactor) {
+        const running = (this.tid != null);
+        if (running) {
+            this.stopEmulation();
+        }
+        this.clockFactor = clockFactor;
+        if (running) {
+            this.startEmulation();
         }
     }
-    return [];
-};
-
-MZ700.prototype.dataRecorder_pushPlay = function() {
-    this.dataRecorder.play();
-};
-
-MZ700.prototype.dataRecorder_pushRec = function() {
-    if(this.dataRecorder.isCmtSet()) {
-        this.dataRecorder.ejectCmt();
+    getActualClockFreq() {
+        return this.actualClockFreq;
     }
-    this.dataRecorder.setCmt([]);
-    this.dataRecorder.rec();
-};
-
-MZ700.prototype.dataRecorder_pushStop = function() {
-    this.dataRecorder.stop();
-};
-
-MZ700.prototype.dataRecorder_motorOn = function(state) {
-    this.dataRecorder.m_on(state);
-};
-
-MZ700.prototype.dataRecorder_readBit = function() {
-    return this.dataRecorder.rdata(this.z80.consumedTCycle);
-};
-
-MZ700.prototype.dataRecorder_writeBit = function(state) {
-    this.dataRecorder.wdata(state, this.z80.consumedTCycle);
-};
-
-MZ700.prototype.getClockFactor = function() {
-    return this.clockFactor;
-};
-
-MZ700.prototype.setClockFactor = function(clockFactor) {
-    const running = (this.tid != null);
-    if(running) {
-        this.stopEmulation();
+    startEmulation() {
+        const execCount = Math.round(200 * this.clockFactor);
+        this.tid = fractional_timer_1.default.setInterval(this.run.bind(this), MZ700.DEFAULT_TIMER_INTERVAL, 80, execCount);
+        const mint = 1000;
+        this.tidMeasClock = setInterval(() => {
+            this.actualClockFreq = (this.z80.consumedTCycle - this.t_cycle_0) / (mint / 1000);
+            this.t_cycle_0 = this.z80.consumedTCycle;
+        }, mint);
     }
-    this.clockFactor = clockFactor;
-    if(running) {
-        this.startEmulation();
+    stopEmulation() {
+        if (this.tid != null) {
+            fractional_timer_1.default.clearInterval(this.tid);
+            this.tid = null;
+        }
+        if (this.tidMeasClock != null) {
+            clearInterval(this.tidMeasClock);
+            this.tidMeasClock = null;
+            this.actualClockFreq = 0.0;
+        }
     }
-};
-
-MZ700.prototype.getActualClockFreq = function() {
-    return this.actualClockFreq;
-};
-
-MZ700.prototype.startEmulation = function() {
-    const execCount = Math.round(200 * this.clockFactor);
-    this.tid = FractionalTimer.setInterval(
-        this.run.bind(this), MZ700.DEFAULT_TIMER_INTERVAL, 80, execCount);
-    const mint = 1000;
-    this.tidMeasClock = setInterval(() => {
-        this.actualClockFreq = (this.z80.consumedTCycle - this.t_cycle_0) / (mint / 1000);
-        this.t_cycle_0 = this.z80.consumedTCycle;
-    }, mint);
-};
-MZ700.prototype.stopEmulation = function() {
-    if(this.tid != null) {
-        FractionalTimer.clearInterval(this.tid);
-        this.tid = null;
+    static disassemble(mztape_array) {
+        let dasmlist = [];
+        mztape_array.forEach(mzt => {
+            console.assert(mzt.header.constructor === mz_tape_header_1.default, "No MZT-header");
+            let mzthead = mzt.header.getHeadline().split("\n");
+            Array.prototype.push.apply(dasmlist, mzthead.map(line => {
+                const asmline = new Z80_line_assembler_1.default();
+                asmline.setComment(line);
+                return asmline;
+            }));
+            Array.prototype.push.apply(dasmlist, Z80_js_1.default.dasm(mzt.body.buffer, 0, mzt.header.fileSize, mzt.header.addrLoad));
+        });
+        let dasmlines = Z80_js_1.default.dasmlines(dasmlist);
+        return {
+            outbuf: dasmlines.join("\n") + "\n",
+            dasmlines: dasmlines,
+            asmlist: dasmlist
+        };
     }
-    if(this.tidMeasClock != null) {
-        clearInterval(this.tidMeasClock);
-        this.tidMeasClock = null;
-        this.actualClockFreq = 0.0;
-    }
-};
+}
+exports.default = MZ700;
+MZ700.Z80_CLOCK = 3.579545 * 1000000;
+MZ700.DEFAULT_TIMER_INTERVAL = 1.0 / MZ700.Z80_CLOCK;
 module.exports = MZ700;
 
 },{"../Z80/Z80-line-assembler":7,"../Z80/Z80.js":8,"../lib/flip-flop-counter":19,"../lib/ic556":20,"../lib/intel-8253":21,"../lib/mz-data-recorder":42,"../lib/mz-mmio.js":43,"../lib/mz-tape":45,"../lib/mz-tape-header":44,"./mz700-key-matrix":2,"./mz700-memory.js":3,"fractional-timer":70}],7:[function(require,module,exports){
@@ -9253,7 +8986,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const bin_util_js_1 = __importDefault(require("./bin-util.js"));
+const bin_util_1 = __importDefault(require("./bin-util"));
 class IMem {
     constructor() {
     }
@@ -9296,20 +9029,20 @@ class IMem {
         this.pokeByte(address, value);
     }
     peekPair(address) {
-        return bin_util_js_1.default.pair(this.peek(address + 1), this.peek(address + 0));
+        return bin_util_1.default.pair(this.peek(address + 1), this.peek(address + 0));
     }
 }
 exports.default = IMem;
 module.exports = IMem;
 
-},{"./bin-util.js":10}],12:[function(require,module,exports){
+},{"./bin-util":10}],12:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const imem_js_1 = __importDefault(require("./imem.js"));
-class MemoryBank extends imem_js_1.default {
+const imem_1 = __importDefault(require("./imem"));
+class MemoryBank extends imem_1.default {
     constructor(opt) {
         super();
         this.create(opt);
@@ -9354,7 +9087,7 @@ class MemoryBank extends imem_js_1.default {
 exports.default = MemoryBank;
 module.exports = MemoryBank;
 
-},{"./imem.js":11}],13:[function(require,module,exports){
+},{"./imem":11}],13:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -9816,6 +9549,11 @@ class Z80_Register {
             IY: this.IY,
             R: this.R,
             I: this.I,
+            _: null,
+            IFF1: 0,
+            IFF2: 0,
+            IM: 0,
+            HALT: null,
         };
     }
     ;
@@ -13157,6 +12895,7 @@ module.exports = MZBeep;
 
 },{}],42:[function(require,module,exports){
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 class MZ_DataRecorder {
     constructor(motorCallback) {
         this._mOn = false;
@@ -13303,6 +13042,7 @@ class MZ_DataRecorder {
         return null;
     }
 }
+exports.default = MZ_DataRecorder;
 MZ_DataRecorder.RDATA_TOP_BLANK_LEN = 1;
 MZ_DataRecorder.RDATA_CYCLE_HI_LONG = 1500;
 MZ_DataRecorder.RDATA_CYCLE_HI_SHORT = 700;
@@ -13332,7 +13072,7 @@ class MZMMIO {
         return this._map[address - 0xE000].r(value);
     }
     write(address, value) {
-        return this._map[address - 0xE000].w(value);
+        this._map[address - 0xE000].w(value);
     }
 }
 exports.default = MZMMIO;
@@ -14806,18 +14546,21 @@ module.exports = parseRequest;
 },{}],54:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.getDeviceType = void 0;
+function getDeviceType() {
+    const ua = navigator.userAgent;
+    if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
+        ua.indexOf('Android') >= 0 && ua.indexOf('Mobile') >= 0) {
+        return "mobile";
+    }
+    else if (ua.indexOf('iPad') >= 0 || ua.indexOf('Android') >= 0) {
+        return "tablet";
+    }
+    return "pc";
+}
+exports.getDeviceType = getDeviceType;
 const UserAgentUtil = {
-    getDeviceType: () => {
-        const ua = navigator.userAgent;
-        if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPod') >= 0 ||
-            ua.indexOf('Android') >= 0 && ua.indexOf('Mobile') >= 0) {
-            return "mobile";
-        }
-        else if (ua.indexOf('iPad') >= 0 || ua.indexOf('Android') >= 0) {
-            return "tablet";
-        }
-        return "pc";
-    },
+    getDeviceType
 };
 exports.default = UserAgentUtil;
 module.exports = UserAgentUtil;
@@ -31226,7 +30969,7 @@ TransWorker.prototype.createInvoker = function(
     this._callbacker = thisObject;
 
     // Create prototype entries same to the client
-    const methodNames = Object.keys(clientCtor.prototype)
+    const methodNames = Object.getOwnPropertyNames(clientCtor.prototype);
     if(this._syncType === TransWorker.SyncTypePromise) {
         for(const methodName of methodNames) {
             this[methodName] = this.createPromiseWrapper(methodName).bind(this);
@@ -31438,7 +31181,7 @@ TransWorker.prototype.createWorker = function(client) {
 };
 
 TransWorker.prototype.injectSubClassMethod = function() {
-    Object.keys(this.constructor.prototype)
+    Object.getOwnPropertyNames(this.constructor.prototype)
     .forEach(m => {
         this.client[m] = ((...args) => {
             this.constructor.prototype[m].apply(this, args);
@@ -32506,115 +32249,5 @@ module.exports = function () {
       'WebSocket object'
   );
 };
-
-},{}],100:[function(require,module,exports){
-module.exports={
-  "name": "mz700-js",
-  "version": "1.5.1",
-  "description": "MZ-700 Full JavaScript Emulator",
-  "private": false,
-  "scripts": {
-    "start": "node bin/mz700-web.js",
-    "mz700-js": "node bin/mz700-web.js",
-    "mz700-ws": "node bin/mz700-ws.js",
-    "mz700-cli": "node bin/mz700-cli.js",
-    "http-server": "http-server",
-    "test": "mocha && cd test && sh ./test.sh && cd ..",
-    "postinstall": "grunt release",
-    "lint": "npm run eslint && npm run tslint",
-    "eslint": "eslint MZ-700/",
-    "tslint": "tslint lib/*.ts Z80/*.ts",
-    "build": "grunt debug",
-    "release": "grunt release",
-    "generate-docs": "jsdoc --configure jsdoc.json --verbose"
-  },
-  "bin": {
-    "mz700-js": "./bin/mz700-web.js",
-    "mz700-ws": "./bin/mz700-ws.js",
-    "mz700-cli": "./bin/mz700-cli.js",
-    "mzasm": "./bin/mzasm.js",
-    "mzdas": "./bin/mzdasm.js",
-    "bin2mzt": "./bin/bin2mzt.js"
-  },
-  "dependencies": {
-    "@types/node": "^14.0.25",
-    "ansi-escape-sequences": "^5.1.2",
-    "b-box": "^1.0.3",
-    "canvas": "^2.6.1",
-    "codemirror": "^5.56.0",
-    "debug": "^4.1.1",
-    "dock-n-liquid": "^0.5.3",
-    "fractional-timer": "^1.0.2",
-    "fullscrn": "^1.3.5",
-    "grunt": "^1.2.1",
-    "grunt-browserify": "^5.3.0",
-    "grunt-cli": "^1.3.2",
-    "grunt-contrib-clean": "^2.0.0",
-    "grunt-contrib-copy": "^1.0.0",
-    "grunt-contrib-uglify-es": "^3.3.0",
-    "grunt-eslint": "^23.0.0",
-    "grunt-ts": "^6.0.0-beta.22",
-    "hash-arg": "1.0.3",
-    "http-server": "^0.12.3",
-    "js-cookie": "^2.2.1",
-    "linebyline": "^1.3.0",
-    "list-it": "^1.3.5",
-    "load-grunt-tasks": "^5.1.0",
-    "node-getopt": "^0.3.2",
-    "path": "^0.12.7",
-    "transworker": "^1.4.1",
-    "tslint": "^6.1.3",
-    "typescript": "^3.9.7"
-  },
-  "devDependencies": {
-    "chai": "^4.2.0",
-    "jsdoc": "^3.6.5",
-    "minami": "^1.2.3",
-    "mocha": "^8.1.3"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/takamin/mz700-js.git"
-  },
-  "keywords": [
-    "emulator",
-    "MZ-700",
-    "MZ700",
-    "Z80"
-  ],
-  "author": "Koji Takami",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/takamin/mz700-js/issues"
-  },
-  "homepage": "https://takamin.github.io/mz700-js/emu.html",
-  "engines": {
-    "node": ">=10"
-  },
-  "browserslist": [
-    "last 1 Chrome version"
-  ],
-  "eslintConfig": {
-    "parserOptions": {
-      "ecmaVersion": 2017
-    },
-    "env": {
-      "es6": true,
-      "browser": true,
-      "node": true,
-      "mocha": true
-    },
-    "globals": {
-      "$": true,
-      "ArrayBuffer": true
-    },
-    "rules": {
-      "no-console": "off",
-      "no-unused-vars": "warn",
-      "valid-jsdoc": "warn"
-    },
-    "extends": "eslint:recommended"
-  }
-}
 
 },{}]},{},[1]);

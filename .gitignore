@@ -6,6 +6,8 @@ tags
 bundle-*.js
 lib/*.js
 lib/*.js.map
+MZ-700/*.js
+MZ-700/*.js.map
 Z80/*.js
 Z80/*.js.map
 .tscache/

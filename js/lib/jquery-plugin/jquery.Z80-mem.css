@@ -1,0 +1,54 @@
+.dumplist {
+    font-family: inherit;
+    font-size: 8pt;
+    border-bottom: solid 1px gray;
+    width: 100%;
+    height: 275px;
+}
+.dumplist .vscrlist {
+    height: 293px;
+    width: 100%;
+}
+.dumplist .row {
+    min-width:550px;
+}
+
+.dumplist .row {
+    height: 16px;
+    line-height:16px;
+}
+.dumplist .row.header {
+    border-bottom: solid 1px gray;
+}
+.dumplist .listen-key {
+    border-width: 1px 1px 1px 5px;
+    border-style: solid;
+    border-color: blue;
+    margin: -1px -1px -1px -5px;
+}
+.dumplist .listen-key .row.header {
+    background-color: blue;
+    color: white;
+}
+.dumplist .row.header > .char-selector > label,
+.dumplist .row.header > .char-selector > span
+{
+    vertical-align: top;
+}
+.dumplist .row > .cell {
+    display: inline-block;
+    width: 20px;
+    text-align: center;
+    vertical-align: top;
+}
+.dumplist .row > .cell.header {
+    display: inline-block;
+    width: 40px;
+    text-align: center;
+    vertical-align: top;
+}
+.dumplist .row > .mz700chars {
+    margin-left: 10px;
+    padding-top: 1px;
+    display: inline-block;
+}

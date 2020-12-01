@@ -10,7 +10,7 @@ let id = 0;
  * @param {Function} callback A function to callback
  * @returns {Promise} It will be resolved after the :bJSONP function is called.
  */
-export default function requestJsonp(callbackName:string, url:string, callback:(args:any)=>void):Promise<string> {
+export default function requestJsonp(callbackName:string, url:string, callback?:(args:any)=>void):Promise<string> {
     return new Promise( (resolve, reject) => {
         window[callbackName] = (...args:any):void => {
             if(callback) {
