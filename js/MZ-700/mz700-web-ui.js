@@ -45,7 +45,7 @@ function loadMonitorROM(filename) {
             const xhr = new XMLHttpRequest();
             xhr.open("GET", `./mz_newmon/ROMS/${filename}`, true);
             xhr.responseType = "arraybuffer";
-            xhr.onload = function () {
+            xhr.onload = () => {
                 const arrayBuffer = xhr.response;
                 if (arrayBuffer) {
                     const byteArray = Array.from(new Uint8Array(arrayBuffer));
@@ -82,19 +82,20 @@ function loadPackageJson() {
 }
 function createUI(mz700js, mz700screen, canvas) {
     return __awaiter(this, void 0, void 0, function* () {
+        const pageRequest = parse_request_1.default();
         mz700screen = $(mz700screen);
         const [packageJson, monitorRom, imgBtnResetOff, imgBtnResetOn, imgBtnRunOff, imgBtnRunOn, imgBtnStopOff, imgBtnStopOn, imgBtnStepOff, imgBtnStepOn, imgBtnStepDi, imgBtnScrnKbOff, imgBtnScrnKbOn, imgBtnFullScrnOff, imgBtnFullScrnOn,] = yield Promise.all([
             loadPackageJson(),
             loadMonitorROM("NEWMON7.ROM"),
             loadImage("image/btnReset-off.png", "Reset"),
             loadImage("image/btnReset-on.png", "Reset"),
-            loadImage("image/btnRun-off.png", "[F8] Run"),
-            loadImage("image/btnRun-on.png", "[F8] Run"),
-            loadImage("image/btnStop-off.png", "[F8] Stop"),
-            loadImage("image/btnStop-on.png", "[F8] Stop"),
-            loadImage("image/btnStepIn-off.png", "[F9] Step-In"),
-            loadImage("image/btnStepIn-on.png", "[F9] Step-In"),
-            loadImage("image/btnStepIn-disabled.png", "[F9] Step-In"),
+            loadImage("image/btnRun-off.png", "[Ctrl]+[F9] Run"),
+            loadImage("image/btnRun-on.png", "[Ctrl]+[F9] Run"),
+            loadImage("image/btnStop-off.png", "[Ctrl]+[F9] Stop"),
+            loadImage("image/btnStop-on.png", "[Ctrl]+[F9] Stop"),
+            loadImage("image/btnStepIn-off.png", "[F9] Step"),
+            loadImage("image/btnStepIn-on.png", "[F9] Step"),
+            loadImage("image/btnStepIn-disabled.png", "[F9] Step"),
             loadImage("image/btnKeyboard-off.png", "Open Keyboard"),
             loadImage("image/btnKeyboard-on.png", "Close Keyboard"),
             loadImage("image/btnFullscreen-off.png", "Fullscreen"),
@@ -114,7 +115,7 @@ function createUI(mz700js, mz700screen, canvas) {
         const mz700container = $("#mz700container");
         const ctrlPanel = $("<div/>").attr("id", "control-panel").css("display", "none");
         mz700container.append(ctrlPanel);
-        const resizeScreen = function () {
+        const resizeScreen = () => {
             dock_n_liquid_1.default.select($("#liquid-panel-MZ-700").get(0)).layout();
             const bboxContainer = new b_box_1.default(mz700container.get(0));
             const bboxScreen = new b_box_1.default(mz700screen.get(0));
@@ -220,19 +221,19 @@ function createUI(mz700js, mz700screen, canvas) {
             }
         });
         window.addEventListener("keyup", (event) => __awaiter(this, void 0, void 0, function* () {
-            switch (parseInt(event.code, 10)) {
-                case 0x0042:
+            if (event.code === "F9") {
+                if (event.ctrlKey) {
                     event.stopPropagation();
                     _isRunning ? mz700js.stop() : mz700js.start();
-                    break;
-                case 0x0043:
+                }
+                else if (!event.shiftKey) {
                     event.stopPropagation();
                     _isRunning ? mz700js.stop() : mz700js.step();
-                    break;
+                }
             }
         }));
         mz700js.subscribe("start", () => __awaiter(this, void 0, void 0, function* () {
-            if (!_isRunning && reg_visibility) {
+            if (!_isRunning && regVisibility) {
                 yield Z80RegViewAutoUpdate(true);
             }
             _isRunning = true;
@@ -244,7 +245,7 @@ function createUI(mz700js, mz700screen, canvas) {
             btnExecImm.prop("disabled", true);
         }));
         mz700js.subscribe("stop", () => __awaiter(this, void 0, void 0, function* () {
-            if (_isRunning && reg_visibility) {
+            if (_isRunning && regVisibility) {
                 yield Z80RegViewAutoUpdate(false);
             }
             _isRunning = false;
@@ -315,9 +316,9 @@ function createUI(mz700js, mz700screen, canvas) {
         ctrlPanel.append(dataRecorder);
         const mztButtons = yield new Promise(resolve => {
             jsonp_1.default("mztList", "https://takamin.github.io/MZ-700/mzt/mzt-list.js", files => {
-                const mztButtons = $("<div/>");
+                const div = $("<div/>");
                 files.forEach(mzt => {
-                    mztButtons.append($("<button/>").attr("type", "button")
+                    div.append($("<button/>").attr("type", "button")
                         .css("padding", 0).css("height", "24px")
                         .css("border", "solid 0px transparent")
                         .css("padding", 0).css("margin", "4px 2px")
@@ -327,12 +328,11 @@ function createUI(mz700js, mz700screen, canvas) {
                         .attr("bgColor", mzt.mz700_buttonStyle.bgColor)
                         .html(mzt.name))
                         .click(() => {
-                        const request = parse_request_1.default();
                         window.location.href =
-                            request.path + "?mzt=" + mzt.path;
+                            pageRequest.path + "?mzt=" + mzt.path;
                     }));
                 });
-                resolve(mztButtons);
+                resolve(div);
             });
         });
         ctrlPanel.append(mztButtons);
@@ -340,31 +340,31 @@ function createUI(mz700js, mz700screen, canvas) {
         const regview = $("<div/>").Z80RegView("create");
         const wndRegView = $("<div class='register-monitor tool-window close' title='REGISTER'/>");
         dockPanelRight.append(wndRegView);
-        let reg_upd_tid = null;
-        let reg_visibility = false;
+        let regUpdTid = null;
+        let regVisibility = false;
         const Z80RegViewUpdateRegister = () => __awaiter(this, void 0, void 0, function* () {
             const reg = yield mz700js.getRegister();
             regview.Z80RegView("updateRegister", reg);
         });
         const Z80RegViewAutoUpdate = (status) => __awaiter(this, void 0, void 0, function* () {
             if (status) {
-                if (!reg_upd_tid) {
-                    reg_upd_tid = setInterval(() => Z80RegViewUpdateRegister(), 50);
+                if (!regUpdTid) {
+                    regUpdTid = setInterval(() => Z80RegViewUpdateRegister(), 50);
                 }
             }
             else {
-                if (reg_upd_tid) {
-                    clearInterval(reg_upd_tid);
-                    reg_upd_tid = null;
+                if (regUpdTid) {
+                    clearInterval(regUpdTid);
+                    regUpdTid = null;
                 }
                 yield Z80RegViewUpdateRegister();
             }
         });
         const Z80RegViewVisibility = (status) => __awaiter(this, void 0, void 0, function* () {
-            if (reg_visibility != status) {
-                reg_visibility = status;
+            if (regVisibility !== status) {
+                regVisibility = status;
                 if (_isRunning) {
-                    if (reg_visibility) {
+                    if (regVisibility) {
                         yield Z80RegViewAutoUpdate(true);
                     }
                     else {
@@ -379,7 +379,7 @@ function createUI(mz700js, mz700screen, canvas) {
             onOpened: () => Z80RegViewVisibility(true),
             onClosed: () => Z80RegViewVisibility(false),
         });
-        const dumplist = $("<div/>").dumplist("init", { mz700js: mz700js });
+        const dumplist = $("<div/>").dumplist("init", { mz700js });
         const wndDumpList = $("<div class='tool-window memory open' title='MEMORY'/>");
         dockPanelRight.append(wndDumpList);
         wndDumpList
@@ -395,7 +395,7 @@ function createUI(mz700js, mz700screen, canvas) {
         const wndAsmList = $("<div class='tool-window open' title='Z80 ASM'/>");
         dockPanelRight.append(wndAsmList);
         wndAsmList.append(asmView).ToolWindow("create");
-        const asmlist_assemble = (asmlistObj, asmsrc) => __awaiter(this, void 0, void 0, function* () {
+        const asmlistAssemble = (asmlistObj, asmsrc) => __awaiter(this, void 0, void 0, function* () {
             asmlistObj.asmlist("text", asmsrc);
             const shouldBeResumed = _isRunning;
             if (shouldBeResumed) {
@@ -410,7 +410,7 @@ function createUI(mz700js, mz700screen, canvas) {
         });
         const asmlistMzt = asmView.asmview("newAsmList", "mzt", "PCG-700 sample");
         const asmlistSrc = yield new Promise(resolve => $.get("./MZ-700/pcg700-sample.asm", {}, resolve));
-        yield asmlist_assemble(asmlistMzt, asmlistSrc);
+        yield asmlistAssemble(asmlistMzt, asmlistSrc);
         const getText = url => {
             return new Promise(resolve => $.get(url, {}, resolve));
         };
@@ -430,7 +430,7 @@ function createUI(mz700js, mz700screen, canvas) {
         ].join("\n");
         const source = comment + "\n" + Z80_js_1.default.dasmlines(Z80_js_1.default.dasm(monitorRom, 0x0000, 0x1000, 0x0000)).join("\n") + "\n";
         const monRom = asmView.asmview("newAsmList", "monitor-rom", "MZ-700 NEW MONITOR");
-        yield asmlist_assemble(monRom, source);
+        yield asmlistAssemble(monRom, source);
         const btnExecImm = $("<button/>").attr("type", "button").html("Execute")
             .click(function () {
             return __awaiter(this, void 0, void 0, function* () {
@@ -529,27 +529,25 @@ function createUI(mz700js, mz700screen, canvas) {
             }
             return null;
         };
-        const setMztData = (mz700js, tapeData, execAddr) => __awaiter(this, void 0, void 0, function* () {
-            yield mz700js.stop();
-            yield mz700js.setCassetteTape(tapeData);
-            yield mz700js.loadCassetteTape();
-            yield mz700js.setPC(execAddr);
-            yield mz700js.start();
+        const setMztData = (mz700, tapeData, execAddr) => __awaiter(this, void 0, void 0, function* () {
+            yield mz700.stop();
+            yield mz700.setCassetteTape(tapeData);
+            yield mz700.loadCassetteTape();
+            yield mz700.setPC(execAddr);
+            yield mz700.start();
         });
-        const showMztDisasm = function (mztape_array) {
-            return __awaiter(this, void 0, void 0, function* () {
-                const name = mz_tape_header_1.default.get1stFilename(mztape_array) || "(empty)";
-                const result = mz700_1.default.disassemble(mztape_array);
-                asmView.asmview("name", "mzt", name);
-                asmlistMzt.asmlist("text", result.outbuf);
-                asmlistMzt.asmlist("writeList", result.asmlist, yield mz700js.getBreakPoints());
-                yield dataRecorder.MZDataRecorder("updateCmtSlot");
-            });
-        };
+        const showMztDisasm = (mztArray) => __awaiter(this, void 0, void 0, function* () {
+            const name = mz_tape_header_1.default.get1stFilename(mztArray) || "(empty)";
+            const result = mz700_1.default.disassemble(mztArray);
+            asmView.asmview("name", "mzt", name);
+            asmlistMzt.asmlist("text", result.outbuf);
+            asmlistMzt.asmlist("writeList", result.asmlist, yield mz700js.getBreakPoints());
+            yield dataRecorder.MZDataRecorder("updateCmtSlot");
+        });
         const setMztAndRun = (tapeData) => __awaiter(this, void 0, void 0, function* () {
-            const mztape_array = mz_tape_1.default.parseMZT(tapeData);
-            yield showMztDisasm(mztape_array);
-            yield setMztData(mz700js, tapeData, mztape_array[0].header.addrExec);
+            const mztArray = mz_tape_1.default.parseMZT(tapeData);
+            yield showMztDisasm(mztArray);
+            yield setMztData(mz700js, tapeData, mztArray[0].header.addrExec);
         });
         const setupDragDrop = (element, onloadHandlers) => {
             element.addEventListener("dragenter", (event) => __awaiter(this, void 0, void 0, function* () {
@@ -657,9 +655,8 @@ function createUI(mz700js, mz700screen, canvas) {
         resizeScreen();
         yield mz700js.reset();
         yield mz700js.start();
-        const request = parse_request_1.default();
-        if ("mzt" in request.parameters) {
-            const filename = request.parameters["mzt"];
+        if ("mzt" in pageRequest.parameters) {
+            const filename = pageRequest.parameters["mzt"];
             const url = `https://takamin.github.io/MZ-700/mzt/${filename}.js`;
             const tapeData = yield jsonp_1.default("loadMZT", url);
             if (tapeData) {

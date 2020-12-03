@@ -50,10 +50,10 @@ class MZ700CanvasRenderer {
     }
     setupRendering() {
         this._ctx = this._canvas.getContext('2d');
-        this._ctx.mozImageSmoothingEnabled = false;
-        this._ctx.webkitImageSmoothingEnabled = false;
-        this._ctx.msImageSmoothingEnabled = false;
-        this._ctx.imageSmoothingEnabled = false;
+        this._ctx.mozImageSmoothingEnabled = true;
+        this._ctx.webkitImageSmoothingEnabled = true;
+        this._ctx.msImageSmoothingEnabled = true;
+        this._ctx.imageSmoothingEnabled = true;
     }
     redrawChar(atb, dispCode) {
         const abit = atb << 7;
@@ -82,6 +82,9 @@ class MZ700CanvasRenderer {
         for (let i = 0; i < n; i++) {
             this._writeVram(i, this.vramAttr[i], this.vramText[i]);
         }
+    }
+    getImageData() {
+        return this._ctx.getImageData(0, 0, 320, 200);
     }
     changeCG(cgData) {
         this._font = cgData;

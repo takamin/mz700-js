@@ -1,8 +1,11 @@
+"use strict";
+/* tslint:disable:class-name */
 import MZ700_NewMonitor from "./mz700-new-monitor";
 import MemoryBlock from "../Z80/memory-block";
 import MemoryBlockCbw from "../Z80/memory-block-cbw";
 import MemoryBlockCbrw from "../Z80/memory-block-cbrw";
 import MemoryBank from '../Z80/memory-bank';
+import IMem from '../Z80/imem';
 
 export default class MZ700_Memory extends MemoryBank {
     memblks;
@@ -21,7 +24,7 @@ export default class MZ700_Memory extends MemoryBank {
         //
         // Create callbacks when the VRAMs are updated
         //
-        const onVramUpdate = opt.onVramUpdate || (() => { });
+        const onVramUpdate = opt.onVramUpdate || (() => { /* empty */ });
         const cacheText = Array(1000).fill(0x00);
         const cacheAttr = Array(1000).fill(0x71);
 
@@ -55,8 +58,8 @@ export default class MZ700_Memory extends MemoryBank {
             }),
             MMAPED_IO: new MemoryBlockCbrw({
                 startAddr: 0xE000, size: 0x0800,
-                onPeek: opt.onMappedIoRead || function () { },
-                onPoke: opt.onMappedIoUpdate || function () { }
+                onPeek: opt.onMappedIoRead || (()=>{ /* empty */ }),
+                onPoke: opt.onMappedIoUpdate || (()=>{ /* empty */ })
             }),
             EXTND_ROM: new MemoryBlock({
                 startAddr: 0xE800, size: 0x10000 - 0xE800
@@ -82,9 +85,7 @@ export default class MZ700_Memory extends MemoryBank {
     }
     clear() {
         MemoryBank.prototype.clear.call(this);
-        for (var name in this.memblks) {
-            this.memblks[name].clear();
-        }
+        Object.values(this.memblks).forEach((memblk:IMem) => memblk.clear())
     }
     getTextVram() {
         return this.memblks.TEXT_VRAM;

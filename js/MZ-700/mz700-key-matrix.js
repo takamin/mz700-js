@@ -11,13 +11,10 @@ class mzkey {
 }
 class MZ700KeyMatrix {
     constructor() {
-        this.keymap = new Array(10);
-        for (var i = 0; i < this.keymap.length; i++) {
-            this.keymap[i] = 0xff;
-        }
+        this.keymap = new Array(10).fill(0xff);
     }
     getKeyData(strobe) {
-        var keydata = 0xff;
+        let keydata = 0xff;
         strobe &= 0x0f;
         if (strobe < this.keymap.length) {
             keydata = this.keymap[strobe];
@@ -177,25 +174,25 @@ MZ700KeyMatrix.Keys = [
     new mzkey(9, 6, "F2", [MZ700KeyMatrix.KeyCodes.F2]),
     new mzkey(9, 7, "F1", [MZ700KeyMatrix.KeyCodes.F1])
 ];
-MZ700KeyMatrix.KeyNames = (function (obj) {
-    Object.keys(MZ700KeyMatrix.KeyCodes).forEach(function (name) {
-        var code = MZ700KeyMatrix.KeyCodes[name];
+MZ700KeyMatrix.KeyNames = ((obj) => {
+    Object.keys(MZ700KeyMatrix.KeyCodes).forEach((name) => {
+        const code = MZ700KeyMatrix.KeyCodes[name];
         obj[code] = name;
     });
     return obj;
-}({}));
-MZ700KeyMatrix.Code2Key = (function () {
-    var code2key = new Array(256);
-    MZ700KeyMatrix.Keys.forEach(function (key) {
-        key.code.forEach(function (code) {
+})({});
+MZ700KeyMatrix.Code2Key = (() => {
+    const code2key = new Array(256);
+    MZ700KeyMatrix.Keys.forEach((key) => {
+        key.code.forEach((code) => {
             code2key[code] = key;
         });
     });
     return code2key;
 })();
-MZ700KeyMatrix.Str2Key = (function () {
-    var s2key = {};
-    MZ700KeyMatrix.Keys.forEach(function (key) {
+MZ700KeyMatrix.Str2Key = (() => {
+    const s2key = {};
+    MZ700KeyMatrix.Keys.forEach((key) => {
         s2key[key.strcode] = key;
     });
     return s2key;

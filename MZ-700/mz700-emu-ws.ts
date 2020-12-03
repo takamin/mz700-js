@@ -1,4 +1,5 @@
 "use strict";
+/* tslint:disable:no-console */
 import TransWorker from "transworker";
 import MZ700 from "./mz700";
 import MZ700Scrn from "../lib/mz700-scrn";
@@ -19,7 +20,6 @@ async function main() {
     mz700scrn.create({canvas});
     canvas.style.height = "calc(100% - 1px)";
 
-    // Setup Rendering
     mz700scrn.setupRendering();
     mz700js.subscribe("onUpdateScrn", canvasData => {
         const buffer = Buffer.from(canvasData, "base64");

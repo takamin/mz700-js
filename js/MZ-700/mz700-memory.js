@@ -51,8 +51,8 @@ class MZ700_Memory extends memory_bank_1.default {
             }),
             MMAPED_IO: new memory_block_cbrw_1.default({
                 startAddr: 0xE000, size: 0x0800,
-                onPeek: opt.onMappedIoRead || function () { },
-                onPoke: opt.onMappedIoUpdate || function () { }
+                onPeek: opt.onMappedIoRead || (() => { }),
+                onPoke: opt.onMappedIoUpdate || (() => { })
             }),
             EXTND_ROM: new memory_block_1.default({
                 startAddr: 0xE800, size: 0x10000 - 0xE800
@@ -75,9 +75,7 @@ class MZ700_Memory extends memory_bank_1.default {
     }
     clear() {
         memory_bank_1.default.prototype.clear.call(this);
-        for (var name in this.memblks) {
-            this.memblks[name].clear();
-        }
+        Object.values(this.memblks).forEach((memblk) => memblk.clear());
     }
     getTextVram() {
         return this.memblks.TEXT_VRAM;

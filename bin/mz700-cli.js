@@ -1,54 +1,23 @@
 #!/usr/bin/env node
 "use strict";
-
-const fs = require("fs");
 const path = require("path");
-const { HEX } = require("../js/lib/number-util.js");
-const getPackageJson = require("./lib/get-package-json");
-const npmInfo = getPackageJson(path.join(__dirname, ".."));
-
-/**
- * Read NEWMON7.ROM
- * @returns {UintA8Array} A NEWMON7 binary
- */
-function readMzNewmon7Rom() {
-    const pathname = path.join(
-        __dirname, "../mz_newmon/ROMS/NEWMON7.ROM");
-    const buffer = fs.readFileSync(pathname);
-    return Uint8Array.from(buffer);
-}
-
 const Getopt = require('node-getopt');
-const getopt = new Getopt([
-        ['c',   'set-cmt=FILENAME',  'set MZT file as cassette magnetic tape'],
-        ['h',   'help',     'display this help'],
-        ['v',   'version',  'show version']
-        ]);
-const cli = getopt.parseSystem();
-const argv = require("hash-arg").get(["input_filename"], cli.argv);
-const description = "The Cli-Version MZ-700 Emulator. -- " + npmInfo.name + "@" + npmInfo.version;
-getopt.setHelp(
-        "Usage: mz700-cli [OPTION] [MZT-filename]\n" +
-        description + "\n" +
-        "\n" +
-        "[[OPTIONS]]\n" +
-        "\n" +
-        "Installation: npm install -g mz700-js\n" +
-        "Repository: https://github.com/takamin/mz700-js");
+const HashArg = require("hash-arg");
+const readline = require("linebyline")(process.stdin);
 
-if(cli.options.help) {
-    getopt.showHelp();
-    return;
-}
-
-if(cli.options.version) {
-    console.log(description);
-    return;
-}
-
-console.log(description);
+const MZ700 = require("../js/MZ-700/mz700.js");
+const PCG700 = require("../js/lib/PCG-700");
+const getPackageJson = require("./lib/get-package-json");
+const {
+    readMzNewmon7Rom,
+    loadMzt,
+    loadCmt,
+    writeMzt,
+} = require("./lib/mz-files");
 
 const CliCommand = require("./cli-command/command.js");
+const cliCommandSendKey = require("./cli-command/sendkey.js");
+const cliCommandVram = require("./cli-command/vram.js");
 const commands = new CliCommand();
 commands.install([
     require("./cli-command/exit.js"),
@@ -58,101 +27,88 @@ commands.install([
     require("./cli-command/step.js"),
     require("./cli-command/jump.js"),
     require("./cli-command/breakpoint.js"),
-    require("./cli-command/mem.js")
-]);
-const cliCommandSendKey = require("./cli-command/sendkey.js");
-const cliCommandVram = require("./cli-command/vram.js");
-const cliCommandCmt = require("./cli-command/cmt.js");
-commands.install([
+    require("./cli-command/mem.js"),
     cliCommandSendKey,
     cliCommandVram,
-    cliCommandCmt
+    require("./cli-command/cmt.js"),
+    require("./cli-command/conf.js")
 ]);
 cliCommandSendKey.setMakeReleaseDurations(200,50);
 
-commands.install(require("./cli-command/conf.js"));
+const getopt = new Getopt([
+    ['c',   'set-cmt=FILENAME',  'set MZT file as cassette magnetic tape'],
+    ['h',   'help',     'display this help'],
+    ['v',   'version',  'show version']
+    ]);
+const npm = getPackageJson(path.join(__dirname, ".."));
+const description = "The Cli-Version MZ-700 Emulator. -- " + npm.name + "@" + npm.version;
+getopt.setHelp(
+    "Usage: mz700-cli [OPTION] [MZT-filename]\n" +
+    description + "\n" +
+    "\n" +
+    "[[OPTIONS]]\n" +
+    "\n" +
+    "Installation: npm install -g mz700-js\n" +
+    "Repository: https://github.com/takamin/mz700-js");
 
-const MZ700 = require("../js/MZ-700/mz700.js");
+const cli = getopt.parseSystem();
+if(cli.options.help) {
+    getopt.showHelp();
+    return;
+}
+if(cli.options.version) {
+    console.log(description);
+    return;
+}
+console.log(description);
+
+const argv = HashArg.get(["input_filename"], cli.argv);
+
 MZ700.prototype.subscribe = function(notify, handler) {
     console.log(`subscribe ${notify} = ${handler}`);
 };
-const mz700 = new MZ700();
-mz700.create({
-    "started": ()=> { },
-    "stopped": ()=> { },
-    "onBreak" : ()=> { },
-    "onVramUpdate": (index, dispcode, attr)=>{
-        cliCommandVram.setAt(index, dispcode, attr);
-    },
-    'startSound': (/*freq*/)=> {
-        //console.log("bz:", freq, "Hz");
-    },
-    'stopSound': ()=> {
-        //console.log("bz: off");
-    },
-    "onStartDataRecorder": ()=>{
-        //console.log("MOTOR: ON");
-    },
-    "onStopDataRecorder": ()=>{
-        //console.log("MOTOR: OFF");
+
+function createMZ700() {
+    const mz700 = new MZ700();
+    mz700.create({
+        "started": ()=> { },
+        "stopped": ()=> { },
+        "onBreak" : ()=> { },
+        "onVramUpdate": (index, dispcode, attr)=>{
+            cliCommandVram.setAt(index, dispcode, attr);
+        },
+        'startSound': ()=> { },
+        'stopSound': ()=> { },
+        "onStartDataRecorder": ()=>{ },
+        "onStopDataRecorder": ()=>{ }
+    });
+    return mz700;
+}
+
+async function main() {
+    const fnCmt = cli.options["set-cmt"];
+    const fnLoad = argv.input_filename;
+    const [newmon7, cassetteTape, mztList] = await Promise.all([
+        readMzNewmon7Rom(),
+        fnCmt ? loadCmt(fnCmt) : null,
+        fnLoad ? loadMzt(fnLoad) : null,
+    ]);
+
+    const mz700 = createMZ700();
+    const pcg700 = new PCG700();
+    mz700.attachPCG700(pcg700);
+
+    mz700.setMonitorRom(newmon7);
+    if(cassetteTape) {
+        mz700.setCassetteTape(cassetteTape);
     }
-});
-mz700.setMonitorRom(readMzNewmon7Rom());
-
-const PCG700 = require("../js/lib/PCG-700");
-const pcg700 = new PCG700();
-mz700.mmio.onWrite(0xE010, value => pcg700.setPattern(value & 0xff));
-mz700.mmio.onWrite(0xE011, value => pcg700.setAddrLo(value & 0xff));
-mz700.mmio.onWrite(0xE012, value => {
-    pcg700.setAddrHi(value & PCG700.ADDR);
-    pcg700.setCopy(value & PCG700.COPY);
-    pcg700.setWE(value & PCG700.WE);
-    pcg700.setSSW(value & PCG700.SSW);
-});
-mz700.memory.poke(0xE010, 0x00);
-mz700.memory.poke(0xE011, 0x00);
-mz700.memory.poke(0xE012, 0x18);
-
-const readline = require("linebyline")(process.stdin);
-readline.on("line", line => {
-    commands.executeCommandline(line, mz700, line);
-});
-
-const mztReadFile = require("./cli-command/mzt-read-file");
-const mztWriteMem = (mz700, mzt) => {
-    const addr = mzt.header.addrLoad;
-    const buf = mzt.body.buffer;
-    const size = mzt.header.fileSize;
-    for(let i = 0; i < size; i++) {
-        mz700.memory.poke(addr + i, buf[i]);
+    if(mztList) {
+        writeMzt(mz700, mztList);
     }
-};
 
-(async () => {
-    try {
-        if(cli.options["set-cmt"]) {
-            const filename = cli.options["set-cmt"];
-            await cliCommandCmt.func.call(
-                cliCommandCmt, mz700, ["set", filename]);
-        }
-        //Input file
-        if(!argv.input_filename) {
-            commands.runCli();
-        } else {
-            const mzt_list = await mztReadFile(argv.input_filename);
-            if(mzt_list != null && mzt_list.length > 0) {
-                mzt_list.forEach((mzt, i) => {
-                    console.log("[" + (i + 1) + "/" + mzt_list.length + "] " +
-                        HEX(mzt.header.addrLoad, 4) + "h --- " +
-                        HEX((mzt.header.addrLoad + mzt.header.fileSize - 1), 4) + "h " +
-                        "(" + mzt.header.fileSize + " bytes), " +
-                        HEX(mzt.header.addrExec, 4) + "h, " + mzt.header.filename);
-                    mztWriteMem(mz700, mzt);
-                });
-            }
-            commands.runCli();
-        }
-    } catch(err) {
-        console.log(err);
-    }
-})();
+    readline.on("line", line => {
+        commands.executeCommandline(line, mz700, line);
+    });
+    commands.runCli();
+}
+main().catch(err => console.error(`Error: ${err.stack}`));

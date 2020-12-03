@@ -1,4 +1,5 @@
 "use strict";
+/* tslint:disable:class-name */
 import MemoryBlock from "../Z80/memory-block";
 export default class MZ700_NewMonitor extends MemoryBlock {
     constructor() {

@@ -12,13 +12,10 @@ class mzkey {
 }
 class MZ700KeyMatrix {
     constructor() {
-        this.keymap = new Array(10);
-        for (var i = 0; i < this.keymap.length; i++) {
-            this.keymap[i] = 0xff;
-        }
+        this.keymap = new Array(10).fill(0xff);
     }
     getKeyData(strobe) {
-        var keydata = 0xff;
+        let keydata = 0xff;
         strobe &= 0x0f;
         if (strobe < this.keymap.length) {
             keydata = this.keymap[strobe];
@@ -178,25 +175,25 @@ MZ700KeyMatrix.Keys = [
     new mzkey(9, 6, "F2", [MZ700KeyMatrix.KeyCodes.F2]),
     new mzkey(9, 7, "F1", [MZ700KeyMatrix.KeyCodes.F1])
 ];
-MZ700KeyMatrix.KeyNames = (function (obj) {
-    Object.keys(MZ700KeyMatrix.KeyCodes).forEach(function (name) {
-        var code = MZ700KeyMatrix.KeyCodes[name];
+MZ700KeyMatrix.KeyNames = ((obj) => {
+    Object.keys(MZ700KeyMatrix.KeyCodes).forEach((name) => {
+        const code = MZ700KeyMatrix.KeyCodes[name];
         obj[code] = name;
     });
     return obj;
-}({}));
-MZ700KeyMatrix.Code2Key = (function () {
-    var code2key = new Array(256);
-    MZ700KeyMatrix.Keys.forEach(function (key) {
-        key.code.forEach(function (code) {
+})({});
+MZ700KeyMatrix.Code2Key = (() => {
+    const code2key = new Array(256);
+    MZ700KeyMatrix.Keys.forEach((key) => {
+        key.code.forEach((code) => {
             code2key[code] = key;
         });
     });
     return code2key;
 })();
-MZ700KeyMatrix.Str2Key = (function () {
-    var s2key = {};
-    MZ700KeyMatrix.Keys.forEach(function (key) {
+MZ700KeyMatrix.Str2Key = (() => {
+    const s2key = {};
+    MZ700KeyMatrix.Keys.forEach((key) => {
         s2key[key.strcode] = key;
     });
     return s2key;
@@ -257,8 +254,8 @@ class MZ700_Memory extends memory_bank_1.default {
             }),
             MMAPED_IO: new memory_block_cbrw_1.default({
                 startAddr: 0xE000, size: 0x0800,
-                onPeek: opt.onMappedIoRead || function () { },
-                onPoke: opt.onMappedIoUpdate || function () { }
+                onPeek: opt.onMappedIoRead || (() => { }),
+                onPoke: opt.onMappedIoUpdate || (() => { })
             }),
             EXTND_ROM: new memory_block_1.default({
                 startAddr: 0xE800, size: 0x10000 - 0xE800
@@ -281,9 +278,7 @@ class MZ700_Memory extends memory_bank_1.default {
     }
     clear() {
         memory_bank_1.default.prototype.clear.call(this);
-        for (var name in this.memblks) {
-            this.memblks[name].clear();
-        }
+        Object.values(this.memblks).forEach((memblk) => memblk.clear());
     }
     getTextVram() {
         return this.memblks.TEXT_VRAM;
@@ -368,45 +363,72 @@ module.exports = MZ700_NewMonitor;
 
 },{"../Z80/memory-block":13}],4:[function(require,module,exports){
 "use strict";
-const TransWorker = require('transworker');
-const MZ700 = require('./mz700.js');
-const MZ700CanvasRenderer = require('../lib/mz700-canvas-renderer.js');
-const PCG700 = require("../lib/PCG-700.js");
-const MZ700CG = require("../lib/mz700-cg.js");
-const transworker = new TransWorker();
-const mz700 = new MZ700();
-const mz700CanvasRenderer = new MZ700CanvasRenderer();
-mz700.create({
-    started: () => transworker.postNotify("start"),
-    stopped: () => transworker.postNotify("stop"),
-    onBreak: () => transworker.postNotify("onBreak"),
-    onVramUpdate: (index, dispcode, attr) => {
-        mz700CanvasRenderer.writeVram(index, attr, dispcode);
-    },
-    startSound: freq => transworker.postNotify("startSound", [freq]),
-    stopSound: () => transworker.postNotify("stopSound"),
-    onStartDataRecorder: () => transworker.postNotify("onStartDataRecorder"),
-    onStopDataRecorder: () => transworker.postNotify("onStopDataRecorder"),
-});
-const pcg700 = new PCG700(mz700CanvasRenderer);
-mz700.mmio.onWrite(0xE010, value => pcg700.setPattern(value & 0xff));
-mz700.mmio.onWrite(0xE011, value => pcg700.setAddrLo(value & 0xff));
-mz700.mmio.onWrite(0xE012, value => {
-    pcg700.setAddrHi(value & PCG700.ADDR);
-    pcg700.setCopy(value & PCG700.COPY);
-    pcg700.setWE(value & PCG700.WE);
-    pcg700.setSSW(value & PCG700.SSW);
-});
-transworker.create(mz700);
-transworker.listenTransferableObject("offscreenCanvas", offscreenCanvas => {
-    mz700CanvasRenderer.create({
-        canvas: offscreenCanvas,
-        CG: new MZ700CG(MZ700CG.ROM, 8, 8),
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
-    mz700CanvasRenderer.setupRendering();
-});
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const TransWorker = require("transworker");
+const mz700_1 = __importDefault(require("./mz700"));
+const mz700_canvas_renderer_1 = __importDefault(require("../lib/mz700-canvas-renderer"));
+const mz700_cg_js_1 = __importDefault(require("../lib/mz700-cg.js"));
+const PCG_700_js_1 = __importDefault(require("../lib/PCG-700.js"));
+function createMZ700(transworker, mz700CanvasRenderer) {
+    const mz700 = new mz700_1.default();
+    let vramUpdated = true;
+    const onVramUpdate = () => {
+        vramUpdated = true;
+    };
+    mz700.create({
+        started: () => transworker.postNotify("start"),
+        stopped: () => transworker.postNotify("stop"),
+        onBreak: () => transworker.postNotify("onBreak"),
+        onVramUpdate: (index, dispcode, attr) => {
+            mz700CanvasRenderer.writeVram(index, attr, dispcode);
+            onVramUpdate();
+        },
+        startSound: freq => transworker.postNotify("startSound", [freq]),
+        stopSound: () => transworker.postNotify("stopSound"),
+        onStartDataRecorder: () => transworker.postNotify("onStartDataRecorder"),
+        onStopDataRecorder: () => transworker.postNotify("onStopDataRecorder"),
+    });
+    transworker.listenTransferableObject("offscreenCanvas", offscreenCanvas => {
+        mz700CanvasRenderer.create({
+            canvas: offscreenCanvas,
+            CG: new mz700_cg_js_1.default(mz700_cg_js_1.default.ROM, 8, 8),
+        });
+        mz700CanvasRenderer.setupRendering();
+        setInterval(() => {
+            if (vramUpdated) {
+                const imageData = mz700CanvasRenderer.getImageData();
+                transworker.postNotify("onUpdateScrn", imageData, [imageData.data.buffer]);
+                vramUpdated = false;
+            }
+        }, 1000 / 24);
+    });
+    return mz700;
+}
+function main() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const transworker = new TransWorker();
+        const mz700CanvasRenderer = new mz700_canvas_renderer_1.default();
+        const mz700 = createMZ700(transworker, mz700CanvasRenderer);
+        const pcg700 = new PCG_700_js_1.default(mz700CanvasRenderer);
+        mz700.attachPCG700(pcg700);
+        transworker.create(mz700);
+    });
+}
+main().catch(err => console.error(`Error: ${err.stack}`));
 
-},{"../lib/PCG-700.js":15,"../lib/mz700-canvas-renderer.js":24,"../lib/mz700-cg.js":25,"./mz700.js":5,"transworker":39}],5:[function(require,module,exports){
+},{"../lib/PCG-700.js":15,"../lib/mz700-canvas-renderer":24,"../lib/mz700-cg.js":25,"./mz700":5,"transworker":39}],5:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -424,6 +446,7 @@ const mz700_key_matrix_1 = __importDefault(require("./mz700-key-matrix"));
 const mz700_memory_js_1 = __importDefault(require("./mz700-memory.js"));
 const Z80_js_1 = __importDefault(require("../Z80/Z80.js"));
 const Z80_line_assembler_1 = __importDefault(require("../Z80/Z80-line-assembler"));
+const PCG_700_1 = __importDefault(require("../lib/PCG-700"));
 class MZ700 {
     constructor() { }
     create(opt) {
@@ -447,9 +470,9 @@ class MZ700 {
             this.VBLK = !this.VBLK;
         });
         this.ic556 = new ic556_1.default(MZ700.Z80_CLOCK / 3);
-        this.ic556_OUT = false;
+        this.ic556Out = false;
         this.ic556.addEventListener("change", () => {
-            this.ic556_OUT = !this.ic556_OUT;
+            this.ic556Out = !this.ic556Out;
         });
         this.INTMSK = false;
         this.MLDST = false;
@@ -496,7 +519,7 @@ class MZ700 {
         this.tid = null;
         this.clockFactor = 1.0;
         this.tidMeasClock = null;
-        this.t_cycle_0 = 0;
+        this.tCycle0 = 0;
         this.actualClockFreq = 0.0;
         this._cycleToWait = 0;
         this.mmio = new mz_mmio_js_1.default();
@@ -506,7 +529,7 @@ class MZ700 {
         }
         this.mmio.onWrite(0xE000, value => {
             this.memory.poke(0xE001, this.keymatrix.getKeyData(value));
-            this.ic556.loadReset((value & 0x80) != 0);
+            this.ic556.loadReset((value & 0x80) !== 0);
         });
         this.mmio.onRead(0xE002, value => {
             value = value & 0x0f;
@@ -522,7 +545,7 @@ class MZ700 {
             else {
                 value = value & 0xdf;
             }
-            if (this.ic556_OUT) {
+            if (this.ic556Out) {
                 value = value | 0x40;
             }
             else {
@@ -537,8 +560,8 @@ class MZ700 {
             return value;
         });
         this.mmio.onWrite(0xE003, value => {
-            if ((value & 0x80) == 0) {
-                const bit = ((value & 0x01) != 0);
+            if ((value & 0x80) === 0) {
+                const bit = ((value & 0x01) !== 0);
                 const bitno = (value & 0x0e) >> 1;
                 switch (bitno) {
                     case 0:
@@ -577,7 +600,8 @@ class MZ700 {
             return value;
         });
         this.mmio.onWrite(0xE008, value => {
-            if ((this.MLDST = ((value & 0x01) != 0)) == true) {
+            this.MLDST = ((value & 0x01) !== 0);
+            if (this.MLDST) {
                 this.opt.startSound(895000 / this.intel8253.counter(0).value);
             }
             else {
@@ -591,7 +615,7 @@ class MZ700 {
             },
             onMappedIoRead: (address, value) => {
                 const readValue = this.mmio.read(address, value);
-                if (readValue == null || readValue == undefined) {
+                if (readValue == null || readValue === undefined) {
                     return value;
                 }
                 return readValue;
@@ -640,21 +664,21 @@ class MZ700 {
         this.vblank.count();
         this.ic556.count();
     }
-    setCassetteTape(tape_data) {
-        if (tape_data.length > 0) {
-            if (tape_data.length <= 128) {
+    setCassetteTape(tapeData) {
+        if (tapeData.length > 0) {
+            if (tapeData.length <= 128) {
                 this.dataRecorder_setCmt([]);
                 console.error("error buf.length <= 128");
                 return null;
             }
-            this.mzt_array = mz_tape_1.default.parseMZT(tape_data);
-            if (this.mzt_array == null || this.mzt_array.length < 1) {
+            this.mztArray = mz_tape_1.default.parseMZT(tapeData);
+            if (this.mztArray == null || this.mztArray.length < 1) {
                 console.error("setCassetteTape fail to parse");
                 return null;
             }
         }
-        this.dataRecorder_setCmt(tape_data);
-        return this.mzt_array;
+        this.dataRecorder_setCmt(tapeData);
+        return this.mztArray;
     }
     getCassetteTape() {
         const cmt = this.dataRecorder.getCmt();
@@ -664,10 +688,9 @@ class MZ700 {
         return mz_tape_1.default.toBytes(cmt);
     }
     loadCassetteTape() {
-        for (let i = 0; i < this.mzt_array.length; i++) {
-            const mzt = this.mzt_array[i];
-            for (let j = 0; j < mzt.header.fileSize; j++) {
-                this.memory.poke(mzt.header.addrLoad + j, mzt.body.buffer[j]);
+        for (const mzt of this.mztArray) {
+            for (let i = 0; i < mzt.header.fileSize; i++) {
+                this.memory.poke(mzt.header.addrLoad + i, mzt.body.buffer[i]);
             }
         }
     }
@@ -761,7 +784,7 @@ class MZ700 {
         }
     }
     dataRecorder_setCmt(bytes) {
-        if (bytes.length == 0) {
+        if (bytes.length === 0) {
             this.dataRecorder.setCmt([]);
             return [];
         }
@@ -821,8 +844,8 @@ class MZ700 {
         this.tid = fractional_timer_1.default.setInterval(this.run.bind(this), MZ700.DEFAULT_TIMER_INTERVAL, 80, execCount);
         const mint = 1000;
         this.tidMeasClock = setInterval(() => {
-            this.actualClockFreq = (this.z80.consumedTCycle - this.t_cycle_0) / (mint / 1000);
-            this.t_cycle_0 = this.z80.consumedTCycle;
+            this.actualClockFreq = (this.z80.consumedTCycle - this.tCycle0) / (mint / 1000);
+            this.tCycle0 = this.z80.consumedTCycle;
         }, mint);
     }
     stopEmulation() {
@@ -836,11 +859,11 @@ class MZ700 {
             this.actualClockFreq = 0.0;
         }
     }
-    static disassemble(mztape_array) {
-        let dasmlist = [];
-        mztape_array.forEach(mzt => {
+    static disassemble(mztArray) {
+        const dasmlist = [];
+        mztArray.forEach(mzt => {
             console.assert(mzt.header.constructor === mz_tape_header_1.default, "No MZT-header");
-            let mzthead = mzt.header.getHeadline().split("\n");
+            const mzthead = mzt.header.getHeadline().split("\n");
             Array.prototype.push.apply(dasmlist, mzthead.map(line => {
                 const asmline = new Z80_line_assembler_1.default();
                 asmline.setComment(line);
@@ -848,12 +871,25 @@ class MZ700 {
             }));
             Array.prototype.push.apply(dasmlist, Z80_js_1.default.dasm(mzt.body.buffer, 0, mzt.header.fileSize, mzt.header.addrLoad));
         });
-        let dasmlines = Z80_js_1.default.dasmlines(dasmlist);
+        const dasmlines = Z80_js_1.default.dasmlines(dasmlist);
         return {
             outbuf: dasmlines.join("\n") + "\n",
-            dasmlines: dasmlines,
+            dasmlines,
             asmlist: dasmlist
         };
+    }
+    attachPCG700(pcg700) {
+        this.mmio.onWrite(0xE010, value => pcg700.setPattern(value & 0xff));
+        this.mmio.onWrite(0xE011, value => pcg700.setAddrLo(value & 0xff));
+        this.mmio.onWrite(0xE012, value => {
+            pcg700.setAddrHi(value & PCG_700_1.default.ADDR);
+            pcg700.setCopy(value & PCG_700_1.default.COPY);
+            pcg700.setWE(value & PCG_700_1.default.WE);
+            pcg700.setSSW(value & PCG_700_1.default.SSW);
+        });
+        this.memory.poke(0xE010, 0x00);
+        this.memory.poke(0xE011, 0x00);
+        this.memory.poke(0xE012, 0x18);
     }
 }
 exports.default = MZ700;
@@ -861,7 +897,7 @@ MZ700.Z80_CLOCK = 3.579545 * 1000000;
 MZ700.DEFAULT_TIMER_INTERVAL = 1.0 / MZ700.Z80_CLOCK;
 module.exports = MZ700;
 
-},{"../Z80/Z80-line-assembler":6,"../Z80/Z80.js":7,"../lib/flip-flop-counter":17,"../lib/ic556":18,"../lib/intel-8253":19,"../lib/mz-data-recorder":20,"../lib/mz-mmio.js":21,"../lib/mz-tape":23,"../lib/mz-tape-header":22,"./mz700-key-matrix":1,"./mz700-memory.js":2,"fractional-timer":36}],6:[function(require,module,exports){
+},{"../Z80/Z80-line-assembler":6,"../Z80/Z80.js":7,"../lib/PCG-700":15,"../lib/flip-flop-counter":17,"../lib/ic556":18,"../lib/intel-8253":19,"../lib/mz-data-recorder":20,"../lib/mz-mmio.js":21,"../lib/mz-tape":23,"../lib/mz-tape-header":22,"./mz700-key-matrix":1,"./mz700-memory.js":2,"fractional-timer":36}],6:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -9955,10 +9991,10 @@ class MZ700CanvasRenderer {
     }
     setupRendering() {
         this._ctx = this._canvas.getContext('2d');
-        this._ctx.mozImageSmoothingEnabled = false;
-        this._ctx.webkitImageSmoothingEnabled = false;
-        this._ctx.msImageSmoothingEnabled = false;
-        this._ctx.imageSmoothingEnabled = false;
+        this._ctx.mozImageSmoothingEnabled = true;
+        this._ctx.webkitImageSmoothingEnabled = true;
+        this._ctx.msImageSmoothingEnabled = true;
+        this._ctx.imageSmoothingEnabled = true;
     }
     redrawChar(atb, dispCode) {
         const abit = atb << 7;
@@ -9987,6 +10023,9 @@ class MZ700CanvasRenderer {
         for (let i = 0; i < n; i++) {
             this._writeVram(i, this.vramAttr[i], this.vramText[i]);
         }
+    }
+    getImageData() {
+        return this._ctx.getImageData(0, 0, 320, 200);
     }
     changeCG(cgData) {
         this._font = cgData;
@@ -13184,14 +13223,15 @@ TransWorker.prototype.onReceiveClientMessage = function(e) {
  * Post a notify to the UI-thread TransWorker instance
  * @param {string} name A message name.
  * @param {any} param A message parameters.
+ * @param {Transferable[]|null} transObjList A list of transferable objects.
  * @returns {undefined}
  */
-TransWorker.prototype.postNotify = function(name, param) {
+TransWorker.prototype.postNotify = function(name, param, transObjList) {
     this.postMessage({
         type:'notify',
         name: name,
         param: param
-    });
+    }, transObjList);
 };
 
 /**
@@ -13313,24 +13353,53 @@ class WebSocketServer extends TransWorker {
     /**
      * Start to listen client connections.
      * @param {http.server} server HTTP server
-     * @param {Function} createClient A function to create clientninstance
+     * @param {Function} createClient A function to create client instance
      * @returns {undefined}
      */
     static listen(server, createClient) {
         this.wss = new WebSocket.Server({server});
-        this.wss.on("connection", ws => {
-            const transworker = new WebSocketServer();
-            transworker.worker = null;
-            transworker.messagePort = ws;
-            transworker.messagePort.onmessage = e => {
-                const data = JSON.parse(e.data);
-                transworker.onReceiveClientMessage({data});
-            };
-            const client = createClient(transworker);
-            transworker.client = client;
-            transworker.client._transworker = this;
-            transworker.injectSubClassMethod();
+        this.wss.on("connection", async ws => {
+            const transworker = new WebSocketServer(ws);
+            try {
+                const client = createClient(transworker);
+                await transworker.setupClient(client);
+            } catch (err) {
+                console.error(`Error: ${err.stack}`);
+            }
         });
+    }
+
+    /**
+     * @constructor
+     * @param {WebSocket} ws A client WebSocket
+     */
+    constructor(ws) {
+        super();
+        this.worker = null;
+        this.messagePort = ws;
+        this.messagePort.onmessage = e => {
+            try {
+                const data = JSON.parse(e.data);
+                this.onReceiveClientMessage({data});
+            } catch (err) {
+                console.error(`Error: ${err.stack}`);
+            }
+        };
+    }
+    /**
+     * Set client.
+     * @async
+     * @param {any|Promise} client An instance of client class or its Promise
+     * @returns {undefined}
+     */
+    async setupClient(client) {
+        if(client instanceof Promise) {
+            this.client = await client;
+        } else {
+            this.client = client;
+        }
+        this.client._transworker = this;
+        this.injectSubClassMethod();
     }
 
     /**

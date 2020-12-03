@@ -27,7 +27,17 @@ function main() {
         mz700screen.appendChild(canvas);
         mz700scrn.create({ canvas });
         canvas.style.height = "calc(100% - 1px)";
-        mz700js.transferObject("offscreenCanvas", canvas.transferControlToOffscreen());
+        mz700scrn.setupRendering();
+        const mz700screen2 = document.createElement("DIV");
+        const mz700scrn2 = new mz700_scrn_1.default(mz700screen2);
+        const canvas2 = document.createElement("CANVAS");
+        mz700screen2.style.display = "none";
+        mz700screen2.appendChild(canvas2);
+        mz700scrn2.create({ canvas: canvas2 });
+        mz700js.transferObject("offscreenCanvas", canvas2.transferControlToOffscreen());
+        mz700js.subscribe("onUpdateScrn", (imageData) => {
+            mz700scrn._ctx.putImageData(imageData, 0, 0);
+        });
         const addThisBox = $("<div/>").css("height", "48px").css("line-height", "48px")
             .append($("<div/>").css("box-sizing", "border-box").css("text-align", "right")
             .addClass("addthis_inline_share_toolbox"));
@@ -40,7 +50,7 @@ function main() {
 }
 main().catch(err => console.warn(err.stack));
 
-},{"../lib/mz700-scrn":49,"./mz700":6,"./mz700-web-ui":5,"transworker":78}],2:[function(require,module,exports){
+},{"../lib/mz700-scrn":50,"./mz700":6,"./mz700-web-ui":5,"transworker":79}],2:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 class mzkey {
@@ -54,13 +64,10 @@ class mzkey {
 }
 class MZ700KeyMatrix {
     constructor() {
-        this.keymap = new Array(10);
-        for (var i = 0; i < this.keymap.length; i++) {
-            this.keymap[i] = 0xff;
-        }
+        this.keymap = new Array(10).fill(0xff);
     }
     getKeyData(strobe) {
-        var keydata = 0xff;
+        let keydata = 0xff;
         strobe &= 0x0f;
         if (strobe < this.keymap.length) {
             keydata = this.keymap[strobe];
@@ -220,25 +227,25 @@ MZ700KeyMatrix.Keys = [
     new mzkey(9, 6, "F2", [MZ700KeyMatrix.KeyCodes.F2]),
     new mzkey(9, 7, "F1", [MZ700KeyMatrix.KeyCodes.F1])
 ];
-MZ700KeyMatrix.KeyNames = (function (obj) {
-    Object.keys(MZ700KeyMatrix.KeyCodes).forEach(function (name) {
-        var code = MZ700KeyMatrix.KeyCodes[name];
+MZ700KeyMatrix.KeyNames = ((obj) => {
+    Object.keys(MZ700KeyMatrix.KeyCodes).forEach((name) => {
+        const code = MZ700KeyMatrix.KeyCodes[name];
         obj[code] = name;
     });
     return obj;
-}({}));
-MZ700KeyMatrix.Code2Key = (function () {
-    var code2key = new Array(256);
-    MZ700KeyMatrix.Keys.forEach(function (key) {
-        key.code.forEach(function (code) {
+})({});
+MZ700KeyMatrix.Code2Key = (() => {
+    const code2key = new Array(256);
+    MZ700KeyMatrix.Keys.forEach((key) => {
+        key.code.forEach((code) => {
             code2key[code] = key;
         });
     });
     return code2key;
 })();
-MZ700KeyMatrix.Str2Key = (function () {
-    var s2key = {};
-    MZ700KeyMatrix.Keys.forEach(function (key) {
+MZ700KeyMatrix.Str2Key = (() => {
+    const s2key = {};
+    MZ700KeyMatrix.Keys.forEach((key) => {
         s2key[key.strcode] = key;
     });
     return s2key;
@@ -299,8 +306,8 @@ class MZ700_Memory extends memory_bank_1.default {
             }),
             MMAPED_IO: new memory_block_cbrw_1.default({
                 startAddr: 0xE000, size: 0x0800,
-                onPeek: opt.onMappedIoRead || function () { },
-                onPoke: opt.onMappedIoUpdate || function () { }
+                onPeek: opt.onMappedIoRead || (() => { }),
+                onPoke: opt.onMappedIoUpdate || (() => { })
             }),
             EXTND_ROM: new memory_block_1.default({
                 startAddr: 0xE800, size: 0x10000 - 0xE800
@@ -323,9 +330,7 @@ class MZ700_Memory extends memory_bank_1.default {
     }
     clear() {
         memory_bank_1.default.prototype.clear.call(this);
-        for (var name in this.memblks) {
-            this.memblks[name].clear();
-        }
+        Object.values(this.memblks).forEach((memblk) => memblk.clear());
     }
     getTextVram() {
         return this.memblks.TEXT_VRAM;
@@ -457,7 +462,7 @@ function loadMonitorROM(filename) {
             const xhr = new XMLHttpRequest();
             xhr.open("GET", `./mz_newmon/ROMS/${filename}`, true);
             xhr.responseType = "arraybuffer";
-            xhr.onload = function () {
+            xhr.onload = () => {
                 const arrayBuffer = xhr.response;
                 if (arrayBuffer) {
                     const byteArray = Array.from(new Uint8Array(arrayBuffer));
@@ -494,19 +499,20 @@ function loadPackageJson() {
 }
 function createUI(mz700js, mz700screen, canvas) {
     return __awaiter(this, void 0, void 0, function* () {
+        const pageRequest = parse_request_1.default();
         mz700screen = $(mz700screen);
         const [packageJson, monitorRom, imgBtnResetOff, imgBtnResetOn, imgBtnRunOff, imgBtnRunOn, imgBtnStopOff, imgBtnStopOn, imgBtnStepOff, imgBtnStepOn, imgBtnStepDi, imgBtnScrnKbOff, imgBtnScrnKbOn, imgBtnFullScrnOff, imgBtnFullScrnOn,] = yield Promise.all([
             loadPackageJson(),
             loadMonitorROM("NEWMON7.ROM"),
             loadImage("image/btnReset-off.png", "Reset"),
             loadImage("image/btnReset-on.png", "Reset"),
-            loadImage("image/btnRun-off.png", "[F8] Run"),
-            loadImage("image/btnRun-on.png", "[F8] Run"),
-            loadImage("image/btnStop-off.png", "[F8] Stop"),
-            loadImage("image/btnStop-on.png", "[F8] Stop"),
-            loadImage("image/btnStepIn-off.png", "[F9] Step-In"),
-            loadImage("image/btnStepIn-on.png", "[F9] Step-In"),
-            loadImage("image/btnStepIn-disabled.png", "[F9] Step-In"),
+            loadImage("image/btnRun-off.png", "[Ctrl]+[F9] Run"),
+            loadImage("image/btnRun-on.png", "[Ctrl]+[F9] Run"),
+            loadImage("image/btnStop-off.png", "[Ctrl]+[F9] Stop"),
+            loadImage("image/btnStop-on.png", "[Ctrl]+[F9] Stop"),
+            loadImage("image/btnStepIn-off.png", "[F9] Step"),
+            loadImage("image/btnStepIn-on.png", "[F9] Step"),
+            loadImage("image/btnStepIn-disabled.png", "[F9] Step"),
             loadImage("image/btnKeyboard-off.png", "Open Keyboard"),
             loadImage("image/btnKeyboard-on.png", "Close Keyboard"),
             loadImage("image/btnFullscreen-off.png", "Fullscreen"),
@@ -526,7 +532,7 @@ function createUI(mz700js, mz700screen, canvas) {
         const mz700container = $("#mz700container");
         const ctrlPanel = $("<div/>").attr("id", "control-panel").css("display", "none");
         mz700container.append(ctrlPanel);
-        const resizeScreen = function () {
+        const resizeScreen = () => {
             dock_n_liquid_1.default.select($("#liquid-panel-MZ-700").get(0)).layout();
             const bboxContainer = new b_box_1.default(mz700container.get(0));
             const bboxScreen = new b_box_1.default(mz700screen.get(0));
@@ -632,19 +638,19 @@ function createUI(mz700js, mz700screen, canvas) {
             }
         });
         window.addEventListener("keyup", (event) => __awaiter(this, void 0, void 0, function* () {
-            switch (parseInt(event.code, 10)) {
-                case 0x0042:
+            if (event.code === "F9") {
+                if (event.ctrlKey) {
                     event.stopPropagation();
                     _isRunning ? mz700js.stop() : mz700js.start();
-                    break;
-                case 0x0043:
+                }
+                else if (!event.shiftKey) {
                     event.stopPropagation();
                     _isRunning ? mz700js.stop() : mz700js.step();
-                    break;
+                }
             }
         }));
         mz700js.subscribe("start", () => __awaiter(this, void 0, void 0, function* () {
-            if (!_isRunning && reg_visibility) {
+            if (!_isRunning && regVisibility) {
                 yield Z80RegViewAutoUpdate(true);
             }
             _isRunning = true;
@@ -656,7 +662,7 @@ function createUI(mz700js, mz700screen, canvas) {
             btnExecImm.prop("disabled", true);
         }));
         mz700js.subscribe("stop", () => __awaiter(this, void 0, void 0, function* () {
-            if (_isRunning && reg_visibility) {
+            if (_isRunning && regVisibility) {
                 yield Z80RegViewAutoUpdate(false);
             }
             _isRunning = false;
@@ -727,9 +733,9 @@ function createUI(mz700js, mz700screen, canvas) {
         ctrlPanel.append(dataRecorder);
         const mztButtons = yield new Promise(resolve => {
             jsonp_1.default("mztList", "https://takamin.github.io/MZ-700/mzt/mzt-list.js", files => {
-                const mztButtons = $("<div/>");
+                const div = $("<div/>");
                 files.forEach(mzt => {
-                    mztButtons.append($("<button/>").attr("type", "button")
+                    div.append($("<button/>").attr("type", "button")
                         .css("padding", 0).css("height", "24px")
                         .css("border", "solid 0px transparent")
                         .css("padding", 0).css("margin", "4px 2px")
@@ -739,12 +745,11 @@ function createUI(mz700js, mz700screen, canvas) {
                         .attr("bgColor", mzt.mz700_buttonStyle.bgColor)
                         .html(mzt.name))
                         .click(() => {
-                        const request = parse_request_1.default();
                         window.location.href =
-                            request.path + "?mzt=" + mzt.path;
+                            pageRequest.path + "?mzt=" + mzt.path;
                     }));
                 });
-                resolve(mztButtons);
+                resolve(div);
             });
         });
         ctrlPanel.append(mztButtons);
@@ -752,31 +757,31 @@ function createUI(mz700js, mz700screen, canvas) {
         const regview = $("<div/>").Z80RegView("create");
         const wndRegView = $("<div class='register-monitor tool-window close' title='REGISTER'/>");
         dockPanelRight.append(wndRegView);
-        let reg_upd_tid = null;
-        let reg_visibility = false;
+        let regUpdTid = null;
+        let regVisibility = false;
         const Z80RegViewUpdateRegister = () => __awaiter(this, void 0, void 0, function* () {
             const reg = yield mz700js.getRegister();
             regview.Z80RegView("updateRegister", reg);
         });
         const Z80RegViewAutoUpdate = (status) => __awaiter(this, void 0, void 0, function* () {
             if (status) {
-                if (!reg_upd_tid) {
-                    reg_upd_tid = setInterval(() => Z80RegViewUpdateRegister(), 50);
+                if (!regUpdTid) {
+                    regUpdTid = setInterval(() => Z80RegViewUpdateRegister(), 50);
                 }
             }
             else {
-                if (reg_upd_tid) {
-                    clearInterval(reg_upd_tid);
-                    reg_upd_tid = null;
+                if (regUpdTid) {
+                    clearInterval(regUpdTid);
+                    regUpdTid = null;
                 }
                 yield Z80RegViewUpdateRegister();
             }
         });
         const Z80RegViewVisibility = (status) => __awaiter(this, void 0, void 0, function* () {
-            if (reg_visibility != status) {
-                reg_visibility = status;
+            if (regVisibility !== status) {
+                regVisibility = status;
                 if (_isRunning) {
-                    if (reg_visibility) {
+                    if (regVisibility) {
                         yield Z80RegViewAutoUpdate(true);
                     }
                     else {
@@ -791,7 +796,7 @@ function createUI(mz700js, mz700screen, canvas) {
             onOpened: () => Z80RegViewVisibility(true),
             onClosed: () => Z80RegViewVisibility(false),
         });
-        const dumplist = $("<div/>").dumplist("init", { mz700js: mz700js });
+        const dumplist = $("<div/>").dumplist("init", { mz700js });
         const wndDumpList = $("<div class='tool-window memory open' title='MEMORY'/>");
         dockPanelRight.append(wndDumpList);
         wndDumpList
@@ -807,7 +812,7 @@ function createUI(mz700js, mz700screen, canvas) {
         const wndAsmList = $("<div class='tool-window open' title='Z80 ASM'/>");
         dockPanelRight.append(wndAsmList);
         wndAsmList.append(asmView).ToolWindow("create");
-        const asmlist_assemble = (asmlistObj, asmsrc) => __awaiter(this, void 0, void 0, function* () {
+        const asmlistAssemble = (asmlistObj, asmsrc) => __awaiter(this, void 0, void 0, function* () {
             asmlistObj.asmlist("text", asmsrc);
             const shouldBeResumed = _isRunning;
             if (shouldBeResumed) {
@@ -822,7 +827,7 @@ function createUI(mz700js, mz700screen, canvas) {
         });
         const asmlistMzt = asmView.asmview("newAsmList", "mzt", "PCG-700 sample");
         const asmlistSrc = yield new Promise(resolve => $.get("./MZ-700/pcg700-sample.asm", {}, resolve));
-        yield asmlist_assemble(asmlistMzt, asmlistSrc);
+        yield asmlistAssemble(asmlistMzt, asmlistSrc);
         const getText = url => {
             return new Promise(resolve => $.get(url, {}, resolve));
         };
@@ -842,7 +847,7 @@ function createUI(mz700js, mz700screen, canvas) {
         ].join("\n");
         const source = comment + "\n" + Z80_js_1.default.dasmlines(Z80_js_1.default.dasm(monitorRom, 0x0000, 0x1000, 0x0000)).join("\n") + "\n";
         const monRom = asmView.asmview("newAsmList", "monitor-rom", "MZ-700 NEW MONITOR");
-        yield asmlist_assemble(monRom, source);
+        yield asmlistAssemble(monRom, source);
         const btnExecImm = $("<button/>").attr("type", "button").html("Execute")
             .click(function () {
             return __awaiter(this, void 0, void 0, function* () {
@@ -941,27 +946,25 @@ function createUI(mz700js, mz700screen, canvas) {
             }
             return null;
         };
-        const setMztData = (mz700js, tapeData, execAddr) => __awaiter(this, void 0, void 0, function* () {
-            yield mz700js.stop();
-            yield mz700js.setCassetteTape(tapeData);
-            yield mz700js.loadCassetteTape();
-            yield mz700js.setPC(execAddr);
-            yield mz700js.start();
+        const setMztData = (mz700, tapeData, execAddr) => __awaiter(this, void 0, void 0, function* () {
+            yield mz700.stop();
+            yield mz700.setCassetteTape(tapeData);
+            yield mz700.loadCassetteTape();
+            yield mz700.setPC(execAddr);
+            yield mz700.start();
         });
-        const showMztDisasm = function (mztape_array) {
-            return __awaiter(this, void 0, void 0, function* () {
-                const name = mz_tape_header_1.default.get1stFilename(mztape_array) || "(empty)";
-                const result = mz700_1.default.disassemble(mztape_array);
-                asmView.asmview("name", "mzt", name);
-                asmlistMzt.asmlist("text", result.outbuf);
-                asmlistMzt.asmlist("writeList", result.asmlist, yield mz700js.getBreakPoints());
-                yield dataRecorder.MZDataRecorder("updateCmtSlot");
-            });
-        };
+        const showMztDisasm = (mztArray) => __awaiter(this, void 0, void 0, function* () {
+            const name = mz_tape_header_1.default.get1stFilename(mztArray) || "(empty)";
+            const result = mz700_1.default.disassemble(mztArray);
+            asmView.asmview("name", "mzt", name);
+            asmlistMzt.asmlist("text", result.outbuf);
+            asmlistMzt.asmlist("writeList", result.asmlist, yield mz700js.getBreakPoints());
+            yield dataRecorder.MZDataRecorder("updateCmtSlot");
+        });
         const setMztAndRun = (tapeData) => __awaiter(this, void 0, void 0, function* () {
-            const mztape_array = mz_tape_1.default.parseMZT(tapeData);
-            yield showMztDisasm(mztape_array);
-            yield setMztData(mz700js, tapeData, mztape_array[0].header.addrExec);
+            const mztArray = mz_tape_1.default.parseMZT(tapeData);
+            yield showMztDisasm(mztArray);
+            yield setMztData(mz700js, tapeData, mztArray[0].header.addrExec);
         });
         const setupDragDrop = (element, onloadHandlers) => {
             element.addEventListener("dragenter", (event) => __awaiter(this, void 0, void 0, function* () {
@@ -1069,9 +1072,8 @@ function createUI(mz700js, mz700screen, canvas) {
         resizeScreen();
         yield mz700js.reset();
         yield mz700js.start();
-        const request = parse_request_1.default();
-        if ("mzt" in request.parameters) {
-            const filename = request.parameters["mzt"];
+        if ("mzt" in pageRequest.parameters) {
+            const filename = pageRequest.parameters["mzt"];
             const url = `https://takamin.github.io/MZ-700/mzt/${filename}.js`;
             const tapeData = yield jsonp_1.default("loadMZT", url);
             if (tapeData) {
@@ -1086,7 +1088,7 @@ exports.default = module.exports = {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"../Z80/Z80.js":8,"../Z80/assembler":9,"../lib/jquery-plugin/jquery.Z80-mem.js":23,"../lib/jquery-plugin/jquery.Z80-reg.js":24,"../lib/jquery-plugin/jquery.asmlist.js":26,"../lib/jquery-plugin/jquery.asmview.js":27,"../lib/jquery-plugin/jquery.emu-speed-control.js":28,"../lib/jquery-plugin/jquery.mz-data-recorder.js":29,"../lib/jquery-plugin/jquery.mz-sound-control.js":30,"../lib/jquery-plugin/jquery.mz700-img-button.js":31,"../lib/jquery-plugin/jquery.mz700-kb.js":32,"../lib/jquery-plugin/jquery.mz700-scrn.js":33,"../lib/jquery-plugin/jquery.tabview.js":35,"../lib/jquery-plugin/jquery.toggle-button.js":36,"../lib/jquery-plugin/jquery.tool-window.js":37,"../lib/jsonp":40,"../lib/mz-beep":41,"../lib/mz-tape":45,"../lib/mz-tape-header":44,"../lib/number-util":50,"../lib/parse-addr":52,"../lib/parse-request":53,"../lib/user-agent-util":54,"./mz700":6,"b-box":59,"buffer":61,"dock-n-liquid":68,"fullscrn":71}],6:[function(require,module,exports){
+},{"../Z80/Z80.js":8,"../Z80/assembler":9,"../lib/jquery-plugin/jquery.Z80-mem.js":24,"../lib/jquery-plugin/jquery.Z80-reg.js":25,"../lib/jquery-plugin/jquery.asmlist.js":27,"../lib/jquery-plugin/jquery.asmview.js":28,"../lib/jquery-plugin/jquery.emu-speed-control.js":29,"../lib/jquery-plugin/jquery.mz-data-recorder.js":30,"../lib/jquery-plugin/jquery.mz-sound-control.js":31,"../lib/jquery-plugin/jquery.mz700-img-button.js":32,"../lib/jquery-plugin/jquery.mz700-kb.js":33,"../lib/jquery-plugin/jquery.mz700-scrn.js":34,"../lib/jquery-plugin/jquery.tabview.js":36,"../lib/jquery-plugin/jquery.toggle-button.js":37,"../lib/jquery-plugin/jquery.tool-window.js":38,"../lib/jsonp":41,"../lib/mz-beep":42,"../lib/mz-tape":46,"../lib/mz-tape-header":45,"../lib/number-util":51,"../lib/parse-addr":53,"../lib/parse-request":54,"../lib/user-agent-util":55,"./mz700":6,"b-box":60,"buffer":62,"dock-n-liquid":69,"fullscrn":72}],6:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -1104,6 +1106,7 @@ const mz700_key_matrix_1 = __importDefault(require("./mz700-key-matrix"));
 const mz700_memory_js_1 = __importDefault(require("./mz700-memory.js"));
 const Z80_js_1 = __importDefault(require("../Z80/Z80.js"));
 const Z80_line_assembler_1 = __importDefault(require("../Z80/Z80-line-assembler"));
+const PCG_700_1 = __importDefault(require("../lib/PCG-700"));
 class MZ700 {
     constructor() { }
     create(opt) {
@@ -1127,9 +1130,9 @@ class MZ700 {
             this.VBLK = !this.VBLK;
         });
         this.ic556 = new ic556_1.default(MZ700.Z80_CLOCK / 3);
-        this.ic556_OUT = false;
+        this.ic556Out = false;
         this.ic556.addEventListener("change", () => {
-            this.ic556_OUT = !this.ic556_OUT;
+            this.ic556Out = !this.ic556Out;
         });
         this.INTMSK = false;
         this.MLDST = false;
@@ -1176,7 +1179,7 @@ class MZ700 {
         this.tid = null;
         this.clockFactor = 1.0;
         this.tidMeasClock = null;
-        this.t_cycle_0 = 0;
+        this.tCycle0 = 0;
         this.actualClockFreq = 0.0;
         this._cycleToWait = 0;
         this.mmio = new mz_mmio_js_1.default();
@@ -1186,7 +1189,7 @@ class MZ700 {
         }
         this.mmio.onWrite(0xE000, value => {
             this.memory.poke(0xE001, this.keymatrix.getKeyData(value));
-            this.ic556.loadReset((value & 0x80) != 0);
+            this.ic556.loadReset((value & 0x80) !== 0);
         });
         this.mmio.onRead(0xE002, value => {
             value = value & 0x0f;
@@ -1202,7 +1205,7 @@ class MZ700 {
             else {
                 value = value & 0xdf;
             }
-            if (this.ic556_OUT) {
+            if (this.ic556Out) {
                 value = value | 0x40;
             }
             else {
@@ -1217,8 +1220,8 @@ class MZ700 {
             return value;
         });
         this.mmio.onWrite(0xE003, value => {
-            if ((value & 0x80) == 0) {
-                const bit = ((value & 0x01) != 0);
+            if ((value & 0x80) === 0) {
+                const bit = ((value & 0x01) !== 0);
                 const bitno = (value & 0x0e) >> 1;
                 switch (bitno) {
                     case 0:
@@ -1257,7 +1260,8 @@ class MZ700 {
             return value;
         });
         this.mmio.onWrite(0xE008, value => {
-            if ((this.MLDST = ((value & 0x01) != 0)) == true) {
+            this.MLDST = ((value & 0x01) !== 0);
+            if (this.MLDST) {
                 this.opt.startSound(895000 / this.intel8253.counter(0).value);
             }
             else {
@@ -1271,7 +1275,7 @@ class MZ700 {
             },
             onMappedIoRead: (address, value) => {
                 const readValue = this.mmio.read(address, value);
-                if (readValue == null || readValue == undefined) {
+                if (readValue == null || readValue === undefined) {
                     return value;
                 }
                 return readValue;
@@ -1320,21 +1324,21 @@ class MZ700 {
         this.vblank.count();
         this.ic556.count();
     }
-    setCassetteTape(tape_data) {
-        if (tape_data.length > 0) {
-            if (tape_data.length <= 128) {
+    setCassetteTape(tapeData) {
+        if (tapeData.length > 0) {
+            if (tapeData.length <= 128) {
                 this.dataRecorder_setCmt([]);
                 console.error("error buf.length <= 128");
                 return null;
             }
-            this.mzt_array = mz_tape_1.default.parseMZT(tape_data);
-            if (this.mzt_array == null || this.mzt_array.length < 1) {
+            this.mztArray = mz_tape_1.default.parseMZT(tapeData);
+            if (this.mztArray == null || this.mztArray.length < 1) {
                 console.error("setCassetteTape fail to parse");
                 return null;
             }
         }
-        this.dataRecorder_setCmt(tape_data);
-        return this.mzt_array;
+        this.dataRecorder_setCmt(tapeData);
+        return this.mztArray;
     }
     getCassetteTape() {
         const cmt = this.dataRecorder.getCmt();
@@ -1344,10 +1348,9 @@ class MZ700 {
         return mz_tape_1.default.toBytes(cmt);
     }
     loadCassetteTape() {
-        for (let i = 0; i < this.mzt_array.length; i++) {
-            const mzt = this.mzt_array[i];
-            for (let j = 0; j < mzt.header.fileSize; j++) {
-                this.memory.poke(mzt.header.addrLoad + j, mzt.body.buffer[j]);
+        for (const mzt of this.mztArray) {
+            for (let i = 0; i < mzt.header.fileSize; i++) {
+                this.memory.poke(mzt.header.addrLoad + i, mzt.body.buffer[i]);
             }
         }
     }
@@ -1441,7 +1444,7 @@ class MZ700 {
         }
     }
     dataRecorder_setCmt(bytes) {
-        if (bytes.length == 0) {
+        if (bytes.length === 0) {
             this.dataRecorder.setCmt([]);
             return [];
         }
@@ -1501,8 +1504,8 @@ class MZ700 {
         this.tid = fractional_timer_1.default.setInterval(this.run.bind(this), MZ700.DEFAULT_TIMER_INTERVAL, 80, execCount);
         const mint = 1000;
         this.tidMeasClock = setInterval(() => {
-            this.actualClockFreq = (this.z80.consumedTCycle - this.t_cycle_0) / (mint / 1000);
-            this.t_cycle_0 = this.z80.consumedTCycle;
+            this.actualClockFreq = (this.z80.consumedTCycle - this.tCycle0) / (mint / 1000);
+            this.tCycle0 = this.z80.consumedTCycle;
         }, mint);
     }
     stopEmulation() {
@@ -1516,11 +1519,11 @@ class MZ700 {
             this.actualClockFreq = 0.0;
         }
     }
-    static disassemble(mztape_array) {
-        let dasmlist = [];
-        mztape_array.forEach(mzt => {
+    static disassemble(mztArray) {
+        const dasmlist = [];
+        mztArray.forEach(mzt => {
             console.assert(mzt.header.constructor === mz_tape_header_1.default, "No MZT-header");
-            let mzthead = mzt.header.getHeadline().split("\n");
+            const mzthead = mzt.header.getHeadline().split("\n");
             Array.prototype.push.apply(dasmlist, mzthead.map(line => {
                 const asmline = new Z80_line_assembler_1.default();
                 asmline.setComment(line);
@@ -1528,12 +1531,25 @@ class MZ700 {
             }));
             Array.prototype.push.apply(dasmlist, Z80_js_1.default.dasm(mzt.body.buffer, 0, mzt.header.fileSize, mzt.header.addrLoad));
         });
-        let dasmlines = Z80_js_1.default.dasmlines(dasmlist);
+        const dasmlines = Z80_js_1.default.dasmlines(dasmlist);
         return {
             outbuf: dasmlines.join("\n") + "\n",
-            dasmlines: dasmlines,
+            dasmlines,
             asmlist: dasmlist
         };
+    }
+    attachPCG700(pcg700) {
+        this.mmio.onWrite(0xE010, value => pcg700.setPattern(value & 0xff));
+        this.mmio.onWrite(0xE011, value => pcg700.setAddrLo(value & 0xff));
+        this.mmio.onWrite(0xE012, value => {
+            pcg700.setAddrHi(value & PCG_700_1.default.ADDR);
+            pcg700.setCopy(value & PCG_700_1.default.COPY);
+            pcg700.setWE(value & PCG_700_1.default.WE);
+            pcg700.setSSW(value & PCG_700_1.default.SSW);
+        });
+        this.memory.poke(0xE010, 0x00);
+        this.memory.poke(0xE011, 0x00);
+        this.memory.poke(0xE012, 0x18);
     }
 }
 exports.default = MZ700;
@@ -1541,7 +1557,7 @@ MZ700.Z80_CLOCK = 3.579545 * 1000000;
 MZ700.DEFAULT_TIMER_INTERVAL = 1.0 / MZ700.Z80_CLOCK;
 module.exports = MZ700;
 
-},{"../Z80/Z80-line-assembler":7,"../Z80/Z80.js":8,"../lib/flip-flop-counter":19,"../lib/ic556":20,"../lib/intel-8253":21,"../lib/mz-data-recorder":42,"../lib/mz-mmio.js":43,"../lib/mz-tape":45,"../lib/mz-tape-header":44,"./mz700-key-matrix":2,"./mz700-memory.js":3,"fractional-timer":70}],7:[function(require,module,exports){
+},{"../Z80/Z80-line-assembler":7,"../Z80/Z80.js":8,"../lib/PCG-700":17,"../lib/flip-flop-counter":20,"../lib/ic556":21,"../lib/intel-8253":22,"../lib/mz-data-recorder":43,"../lib/mz-mmio.js":44,"../lib/mz-tape":46,"../lib/mz-tape-header":45,"./mz700-key-matrix":2,"./mz700-memory.js":3,"fractional-timer":71}],7:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -2806,7 +2822,7 @@ function match_token(toks, pattern, lastNullOfPatternMatchAll) {
 }
 module.exports = Z80LineAssembler;
 
-},{"../lib/mz700-charcode":48,"../lib/number-util":50,"../lib/oct":51,"../lib/parse-addr":52}],8:[function(require,module,exports){
+},{"../lib/mz700-charcode":49,"../lib/number-util":51,"../lib/oct":52,"../lib/parse-addr":53}],8:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -8793,7 +8809,7 @@ Z80.exec = function () {
 };
 module.exports = Z80;
 
-},{"../lib/number-util":50,"../lib/oct":51,"./Z80-line-assembler":7,"./bin-util":10,"./memory-block":15,"./register":16}],9:[function(require,module,exports){
+},{"../lib/number-util":51,"../lib/oct":52,"./Z80-line-assembler":7,"./bin-util":10,"./memory-block":15,"./register":16}],9:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -8956,7 +8972,7 @@ class Z80_assemble {
 exports.default = Z80_assemble;
 module.exports = Z80_assemble;
 
-},{"../lib/parse-addr":52,"./Z80-line-assembler":7}],10:[function(require,module,exports){
+},{"../lib/parse-addr":53,"./Z80-line-assembler":7}],10:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 class Z80BinUtil {
@@ -9811,7 +9827,86 @@ Z80_Register.DAATable = [
 ];
 module.exports = Z80_Register;
 
-},{"../lib/number-util":50,"./bin-util":10}],17:[function(require,module,exports){
+},{"../lib/number-util":51,"./bin-util":10}],17:[function(require,module,exports){
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const mz700_cg_1 = __importDefault(require("./mz700-cg"));
+class PCG700 {
+    constructor(screen) {
+        this.addr = 0x000;
+        this.pattern = 0x00;
+        this.we = 0;
+        this.ssw = 1;
+        this.copy = 0;
+        this._screen = screen;
+        const patternBuffer = [];
+        for (let code = 0; code < 512; code++) {
+            patternBuffer.push([0, 0, 0, 0, 0, 0, 0, 0]);
+            for (let row = 0; row < 8; row++) {
+                patternBuffer[code][row] = mz700_cg_1.default.ROM[code][row];
+            }
+        }
+        this._cg = new mz700_cg_1.default(patternBuffer, 8, 8);
+    }
+    setPattern(pattern) {
+        this.pattern = pattern & 0xff;
+    }
+    setAddrLo(addr) {
+        this.addr = ((this.addr & 0x700) | ((addr & 0xff) << 0));
+    }
+    setAddrHi(addr) {
+        this.addr = ((this.addr & 0x0FF) | ((addr & PCG700.ADDR) << 8));
+    }
+    setCopy(value) {
+        this.copy = (value === 0) ? 0 : 1;
+    }
+    setWE(value) {
+        const we = this.we;
+        this.we = (value === 0) ? 0 : 1;
+        if (we && !this.we) {
+            this.write();
+        }
+    }
+    setSSW(value) {
+        const ssw = this.ssw;
+        this.ssw = (value === 0) ? 0 : 1;
+        if (ssw !== this.ssw) {
+            this.applySSW();
+        }
+    }
+    applySSW() {
+        if (this.ssw === 0) {
+            this._screen.changeCG(this._cg);
+            this._screen.redraw();
+        }
+        else {
+            this._screen.restoreCG();
+            this._screen.redraw();
+        }
+    }
+    write() {
+        const atb = (this.addr >> 10) & 0x01;
+        const dispCode = 0x80 + ((this.addr >> 3) & 0x7f);
+        const cpos = atb * 256 + dispCode;
+        const row = (this.addr >> 0) & 0x07;
+        const pattern = ((this.copy === 0) ? this.pattern : mz700_cg_1.default.ROM[cpos][row]);
+        this._cg.setPattern(atb, dispCode, row, pattern);
+        if (this.ssw === 0) {
+            this._screen.redrawChar(atb, dispCode);
+        }
+    }
+}
+exports.default = PCG700;
+PCG700.COPY = 0x20;
+PCG700.WE = 0x10;
+PCG700.SSW = 0x08;
+PCG700.ADDR = 0x07;
+module.exports = PCG700;
+
+},{"./mz700-cg":48}],18:[function(require,module,exports){
 "use strict";
 function doLater(job, duration) {
     if (job in doLater.TID) {
@@ -9830,7 +9925,7 @@ function doLater(job, duration) {
 doLater.TID = {};
 module.exports = doLater;
 
-},{}],18:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 class EventDispatcher {
@@ -9849,7 +9944,7 @@ class EventDispatcher {
 }
 exports.default = EventDispatcher;
 
-},{}],19:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -9884,7 +9979,7 @@ class FlipFlopCounter extends event_dispatcher_1.default {
 exports.default = FlipFlopCounter;
 module.exports = FlipFlopCounter;
 
-},{"./event-dispatcher":18}],20:[function(require,module,exports){
+},{"./event-dispatcher":19}],21:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -9919,7 +10014,7 @@ class IC556 extends flip_flop_counter_1.default {
 exports.default = IC556;
 module.exports = IC556;
 
-},{"../lib/flip-flop-counter":19}],21:[function(require,module,exports){
+},{"../lib/flip-flop-counter":20}],22:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -10114,7 +10209,7 @@ class Intel8253Counter extends event_dispatcher_1.default {
 }
 module.exports = Intel8253;
 
-},{"./event-dispatcher":18}],22:[function(require,module,exports){
+},{"./event-dispatcher":19}],23:[function(require,module,exports){
 "use strict";
 const NumberUtil = require("../number-util.js");
 const parseAddress = require("../parse-addr.js");
@@ -10229,7 +10324,7 @@ Z80AddressSpecifier.prototype.create = function(opt) {
             }));
 };
 
-},{"../number-util.js":50,"../parse-addr.js":52,"./jquery_plugin_class":39}],23:[function(require,module,exports){
+},{"../number-util.js":51,"../parse-addr.js":53,"./jquery_plugin_class":40}],24:[function(require,module,exports){
 "use strict";
 const mz700charcode = require("../mz700-charcode.js");
 const NumberUtil = require("../number-util.js");
@@ -10493,7 +10588,7 @@ dumplist.prototype.addrSpecifier = function() {
         });
 };
 
-},{"../mz700-charcode.js":48,"../number-util.js":50,"./jquery.Z80-addr-spec.js":22,"./jquery.vscrlist.js":38,"./jquery_plugin_class":39}],24:[function(require,module,exports){
+},{"../mz700-charcode.js":49,"../number-util.js":51,"./jquery.Z80-addr-spec.js":23,"./jquery.vscrlist.js":39,"./jquery_plugin_class":40}],25:[function(require,module,exports){
 const NumberUtil = require("../number-util.js");
 const jquery_plugin_class = require("./jquery_plugin_class");
 jquery_plugin_class("Z80RegView");
@@ -10794,7 +10889,7 @@ Z80RegView.prototype.HALT = function(halt) {
     this.elemHALT.innerHTML = halt;
 };
 
-},{"../number-util.js":50,"./jquery_plugin_class":39}],25:[function(require,module,exports){
+},{"../number-util.js":51,"./jquery_plugin_class":40}],26:[function(require,module,exports){
 "use strict";
 
 const jquery_plugin_class = require("./jquery_plugin_class");
@@ -10868,7 +10963,7 @@ asmeditor.prototype.text = function(text) {
     }
 };
 
-},{"./jquery_plugin_class":39,"codemirror":64,"codemirror/mode/z80/z80":65}],26:[function(require,module,exports){
+},{"./jquery_plugin_class":40,"codemirror":65,"codemirror/mode/z80/z80":66}],27:[function(require,module,exports){
 "use strict";
 
 const jquery_plugin_class = require("./jquery_plugin_class");
@@ -11158,7 +11253,7 @@ asmlist.prototype.clearCurrentAddr = function() {
         .removeClass("current");
 };
 
-},{"../number-util.js":50,"./jquery.asmeditor.js":25,"./jquery.tabview.js":35,"./jquery.vscrlist.js":38,"./jquery_plugin_class":39}],27:[function(require,module,exports){
+},{"../number-util.js":51,"./jquery.asmeditor.js":26,"./jquery.tabview.js":36,"./jquery.vscrlist.js":39,"./jquery_plugin_class":40}],28:[function(require,module,exports){
 "use strict";
 var jquery_plugin_class = require("./jquery_plugin_class");
 
@@ -11227,7 +11322,7 @@ asmview.prototype.clearCurrentLine = function() {
     }
 };
 
-},{"./jquery.asmlist.js":26,"./jquery.tabview.js":35,"./jquery_plugin_class":39}],28:[function(require,module,exports){
+},{"./jquery.asmlist.js":27,"./jquery.tabview.js":36,"./jquery_plugin_class":40}],29:[function(require,module,exports){
 "use strict";
 const Cookies = require("js-cookie");
 const jquery_plugin_class = require("./jquery_plugin_class");
@@ -11358,7 +11453,7 @@ EmuSpeedControl.prototype.actualClock = function(actualClock) {
 window.EmuSpeedControl = EmuSpeedControl;
 module.exports = EmuSpeedControl;
 
-},{"./jquery_plugin_class":39,"js-cookie":74}],29:[function(require,module,exports){
+},{"./jquery_plugin_class":40,"js-cookie":75}],30:[function(require,module,exports){
 "use strict";
 const MZ_TapeHeader = require('../mz-tape-header.js');
 const NumberUtil = require("../number-util.js");
@@ -11457,7 +11552,7 @@ class MZDataRecorder {
 window.MZDataRecorder = MZDataRecorder;
 module.exports = MZDataRecorder;
 
-},{"../mz-tape-header.js":44,"../number-util.js":50,"./jquery_plugin_class":39}],30:[function(require,module,exports){
+},{"../mz-tape-header.js":45,"../number-util.js":51,"./jquery_plugin_class":40}],31:[function(require,module,exports){
 "use strict";
 const Cookies = require("js-cookie");
 const jquery_plugin_class = require("./jquery_plugin_class");
@@ -11509,7 +11604,7 @@ MZSoundControl.prototype.create = function(mzBeep) {
 window.MZSoundControl = MZSoundControl;
 module.exports = MZSoundControl;
 
-},{"./jquery.soundctrl.js":34,"./jquery_plugin_class":39,"js-cookie":74}],31:[function(require,module,exports){
+},{"./jquery.soundctrl.js":35,"./jquery_plugin_class":40,"js-cookie":75}],32:[function(require,module,exports){
 "use strict";
 const jquery_plugin_class = require("./jquery_plugin_class");
 jquery_plugin_class("MZ700ImgButton");
@@ -11539,7 +11634,7 @@ MZ700ImgButton.prototype.create = function(opt) {
 MZ700ImgButton.prototype.setImg = function(img) {
     this._button.html($(img));
 };
-},{"./jquery_plugin_class":39}],32:[function(require,module,exports){
+},{"./jquery_plugin_class":40}],33:[function(require,module,exports){
 (function() {
     var MZ700KeyMatrix = require("../../MZ-700/mz700-key-matrix.js");
     var jquery_plugin_class = require("./jquery_plugin_class");
@@ -11709,7 +11804,7 @@ MZ700ImgButton.prototype.setImg = function(img) {
     };
 }());
 
-},{"../../MZ-700/mz700-key-matrix.js":2,"./jquery_plugin_class":39}],33:[function(require,module,exports){
+},{"../../MZ-700/mz700-key-matrix.js":2,"./jquery_plugin_class":40}],34:[function(require,module,exports){
 /*
  * jquery.mz700scrn.js - MZ-700 Screen
  *
@@ -11778,7 +11873,7 @@ THE SOFTWARE.
     window.mz700scrn = mz700scrn;
 }());
 
-},{"../mz700-scrn.js":49,"./jquery_plugin_class":39}],34:[function(require,module,exports){
+},{"../mz700-scrn.js":50,"./jquery_plugin_class":40}],35:[function(require,module,exports){
 (function() {
     var jquery_plugin_class = require("./jquery_plugin_class");
     jquery_plugin_class("soundctrl");
@@ -11914,7 +12009,7 @@ THE SOFTWARE.
     };
 }());
 
-},{"./jquery_plugin_class":39}],35:[function(require,module,exports){
+},{"./jquery_plugin_class":40}],36:[function(require,module,exports){
 "use strict";
 var jquery_plugin_class = require("./jquery_plugin_class");
 jquery_plugin_class("tabview");
@@ -12088,7 +12183,7 @@ tabview.prototype.pages = function() {
     return this._pages;
 };
 
-},{"./jquery_plugin_class":39}],36:[function(require,module,exports){
+},{"./jquery_plugin_class":40}],37:[function(require,module,exports){
 "use strict";
 const jquery_plugin_class = require("./jquery_plugin_class");
 jquery_plugin_class("ToggleButton");
@@ -12209,7 +12304,7 @@ ToggleButton.prototype.toggle = function() {
         this.on();
     }
 };
-},{"./jquery.mz700-img-button.js":31,"./jquery_plugin_class":39}],37:[function(require,module,exports){
+},{"./jquery.mz700-img-button.js":32,"./jquery_plugin_class":40}],38:[function(require,module,exports){
 "use strict";
 const jquery_plugin_class = require("./jquery_plugin_class");
 jquery_plugin_class("ToolWindow");
@@ -12281,7 +12376,7 @@ ToolWindow.prototype.close = function() {
     }
 };
 
-},{"./jquery_plugin_class":39}],38:[function(require,module,exports){
+},{"./jquery_plugin_class":40}],39:[function(require,module,exports){
 "use strict";
 const doLater = require("../do-later.js");
 const jquery_plugin_class = require("./jquery_plugin_class");
@@ -12711,7 +12806,7 @@ vscrlist.prototype.syncScrollTop = function() {
 };
 
 
-},{"../do-later.js":17,"./jquery_plugin_class":39}],39:[function(require,module,exports){
+},{"../do-later.js":18,"./jquery_plugin_class":40}],40:[function(require,module,exports){
 (function() {
     "use strict";
     const jQuery = $;
@@ -12745,7 +12840,7 @@ vscrlist.prototype.syncScrollTop = function() {
     }
 }());
 
-},{}],40:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 let id = 0;
@@ -12775,7 +12870,7 @@ if (!("removeJsonp" in window)) {
 }
 module.exports = requestJsonp;
 
-},{}],41:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -12894,7 +12989,7 @@ MZBeep.FREQ_MIN = -24000;
 MZBeep.FREQ_MAX = 24000;
 module.exports = MZBeep;
 
-},{}],42:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 class MZ_DataRecorder {
@@ -13050,7 +13145,7 @@ MZ_DataRecorder.RDATA_CYCLE_HI_SHORT = 700;
 MZ_DataRecorder.RDATA_CYCLE_LO = 700;
 module.exports = MZ_DataRecorder;
 
-},{}],43:[function(require,module,exports){
+},{}],44:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 class MZMMIO {
@@ -13079,7 +13174,7 @@ class MZMMIO {
 exports.default = MZMMIO;
 module.exports = MZMMIO;
 
-},{}],44:[function(require,module,exports){
+},{}],45:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -13177,7 +13272,7 @@ class MZ_TapeHeader {
 exports.default = MZ_TapeHeader;
 module.exports = MZ_TapeHeader;
 
-},{"./number-util":50}],45:[function(require,module,exports){
+},{"./number-util":51}],46:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -13465,7 +13560,7 @@ class MZ_Tape {
 exports.default = MZ_Tape;
 module.exports = MZ_Tape;
 
-},{"./mz-tape-header":44,"./number-util":50}],46:[function(require,module,exports){
+},{"./mz-tape-header":45,"./number-util":51}],47:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -13518,10 +13613,10 @@ class MZ700CanvasRenderer {
     }
     setupRendering() {
         this._ctx = this._canvas.getContext('2d');
-        this._ctx.mozImageSmoothingEnabled = false;
-        this._ctx.webkitImageSmoothingEnabled = false;
-        this._ctx.msImageSmoothingEnabled = false;
-        this._ctx.imageSmoothingEnabled = false;
+        this._ctx.mozImageSmoothingEnabled = true;
+        this._ctx.webkitImageSmoothingEnabled = true;
+        this._ctx.msImageSmoothingEnabled = true;
+        this._ctx.imageSmoothingEnabled = true;
     }
     redrawChar(atb, dispCode) {
         const abit = atb << 7;
@@ -13550,6 +13645,9 @@ class MZ700CanvasRenderer {
         for (let i = 0; i < n; i++) {
             this._writeVram(i, this.vramAttr[i], this.vramText[i]);
         }
+    }
+    getImageData() {
+        return this._ctx.getImageData(0, 0, 320, 200);
     }
     changeCG(cgData) {
         this._font = cgData;
@@ -13687,7 +13785,7 @@ MZ700CanvasRenderer.initializer = (() => {
 })();
 module.exports = MZ700CanvasRenderer;
 
-},{"./mz700-cg":47}],47:[function(require,module,exports){
+},{"./mz700-cg":48}],48:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const global = Function("return this")();
@@ -14301,7 +14399,7 @@ class FontImage {
 }
 module.exports = mz700cg;
 
-},{"canvas":62}],48:[function(require,module,exports){
+},{"canvas":63}],49:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const mz700charcode = {
@@ -14327,7 +14425,7 @@ const mz700charcode = {
 exports.default = mz700charcode;
 module.exports = mz700charcode;
 
-},{}],49:[function(require,module,exports){
+},{}],50:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -14361,7 +14459,7 @@ class mz700scrn extends mz700_canvas_renderer_1.default {
 exports.default = mz700scrn;
 module.exports = mz700scrn;
 
-},{"./mz700-canvas-renderer":46}],50:[function(require,module,exports){
+},{"./mz700-canvas-renderer":47}],51:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 class NumberUtil {
@@ -14409,7 +14507,7 @@ class NumberUtil {
 exports.default = NumberUtil;
 module.exports = NumberUtil;
 
-},{}],51:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 function oct(s) {
@@ -14418,7 +14516,7 @@ function oct(s) {
 exports.default = oct;
 module.exports = oct;
 
-},{}],52:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -14522,7 +14620,7 @@ const parseAddress = {
 exports.default = parseAddress;
 module.exports = parseAddress;
 
-},{"../Z80/bin-util":10}],53:[function(require,module,exports){
+},{"../Z80/bin-util":10}],54:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 function parseRequest() {
@@ -14544,7 +14642,7 @@ function parseRequest() {
 exports.default = parseRequest;
 module.exports = parseRequest;
 
-},{}],54:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getDeviceType = void 0;
@@ -14566,7 +14664,7 @@ const UserAgentUtil = {
 exports.default = UserAgentUtil;
 module.exports = UserAgentUtil;
 
-},{}],55:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 (function (global){
 'use strict';
 
@@ -15076,7 +15174,7 @@ var objectKeys = Object.keys || function (obj) {
 };
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"object-assign":76,"util/":58}],56:[function(require,module,exports){
+},{"object-assign":77,"util/":59}],57:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -15101,14 +15199,14 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],57:[function(require,module,exports){
+},{}],58:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],58:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -15698,7 +15796,7 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":57,"_process":77,"inherits":56}],59:[function(require,module,exports){
+},{"./support/isBuffer":58,"_process":78,"inherits":57}],60:[function(require,module,exports){
 (function(global) {
     "use strict";
 
@@ -15878,7 +15976,7 @@ function hasOwnProperty(obj, prop) {
 
 
 
-},{}],60:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 'use strict'
 
 exports.byteLength = byteLength
@@ -16032,7 +16130,7 @@ function fromByteArray (uint8) {
   return parts.join('')
 }
 
-},{}],61:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 (function (Buffer){
 /*!
  * The buffer module from node.js, for the browser.
@@ -17813,7 +17911,7 @@ function numberIsNaN (obj) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"base64-js":60,"buffer":61,"ieee754":73}],62:[function(require,module,exports){
+},{"base64-js":61,"buffer":62,"ieee754":74}],63:[function(require,module,exports){
 /* globals document, ImageData */
 
 const parseFont = require('./lib/parse-font')
@@ -17850,7 +17948,7 @@ exports.loadImage = function (src, options) {
   })
 }
 
-},{"./lib/parse-font":63}],63:[function(require,module,exports){
+},{"./lib/parse-font":64}],64:[function(require,module,exports){
 'use strict'
 
 /**
@@ -17954,7 +18052,7 @@ module.exports = function (str) {
   return (cache[str] = font)
 }
 
-},{}],64:[function(require,module,exports){
+},{}],65:[function(require,module,exports){
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
 // Distributed under an MIT license: https://codemirror.net/LICENSE
 
@@ -27734,7 +27832,7 @@ module.exports = function (str) {
 
 })));
 
-},{}],65:[function(require,module,exports){
+},{}],66:[function(require,module,exports){
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
 // Distributed under an MIT license: https://codemirror.net/LICENSE
 
@@ -27852,7 +27950,7 @@ CodeMirror.defineMIME("text/x-ez80", { name: "z80", ez80: true });
 
 });
 
-},{"../../lib/codemirror":64}],66:[function(require,module,exports){
+},{"../../lib/codemirror":65}],67:[function(require,module,exports){
 (function (process){
 /* eslint-env browser */
 
@@ -28120,7 +28218,7 @@ formatters.j = function (v) {
 };
 
 }).call(this,require('_process'))
-},{"./common":67,"_process":77}],67:[function(require,module,exports){
+},{"./common":68,"_process":78}],68:[function(require,module,exports){
 
 /**
  * This is the common logic for both the Node.js and web browser
@@ -28388,7 +28486,7 @@ function setup(env) {
 
 module.exports = setup;
 
-},{"ms":75}],68:[function(require,module,exports){
+},{"ms":76}],69:[function(require,module,exports){
 (function(global) {
     "use strict";
 
@@ -29192,7 +29290,7 @@ module.exports = setup;
 }(Function("return this;")()));
 
 
-},{"b-box":69,"fullscrn":71}],69:[function(require,module,exports){
+},{"b-box":70,"fullscrn":72}],70:[function(require,module,exports){
 (function(global) {
     "use strict";
 
@@ -29372,7 +29470,7 @@ module.exports = setup;
 
 
 
-},{}],70:[function(require,module,exports){
+},{}],71:[function(require,module,exports){
 (function() {
     "use strict";
     function FractionalTimer() {
@@ -29519,7 +29617,7 @@ module.exports = setup;
     }
 }());
 
-},{}],71:[function(require,module,exports){
+},{}],72:[function(require,module,exports){
 (function() {
     "use strict";
     const debug = require("debug")("fullscrn");
@@ -29908,7 +30006,7 @@ module.exports = setup;
     });
 }());
 
-},{"./lib/document-ready":72,"debug":66}],72:[function(require,module,exports){
+},{"./lib/document-ready":73,"debug":67}],73:[function(require,module,exports){
 "use strict";
 
 const debug = require("debug")("fullscrn");
@@ -29993,7 +30091,7 @@ try {
 } catch (err) {
     GLOBAL.DocumentReady = DocumentReady;
 }
-},{"debug":66}],73:[function(require,module,exports){
+},{"debug":67}],74:[function(require,module,exports){
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m
   var eLen = (nBytes * 8) - mLen - 1
@@ -30079,7 +30177,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128
 }
 
-},{}],74:[function(require,module,exports){
+},{}],75:[function(require,module,exports){
 /*!
  * JavaScript Cookie v2.2.1
  * https://github.com/js-cookie/js-cookie
@@ -30244,7 +30342,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 	return init(function () {});
 }));
 
-},{}],75:[function(require,module,exports){
+},{}],76:[function(require,module,exports){
 /**
  * Helpers.
  */
@@ -30408,7 +30506,7 @@ function plural(ms, msAbs, n, name) {
   return Math.round(ms / n) + ' ' + name + (isPlural ? 's' : '');
 }
 
-},{}],76:[function(require,module,exports){
+},{}],77:[function(require,module,exports){
 /*
 object-assign
 (c) Sindre Sorhus
@@ -30500,7 +30598,7 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 	return to;
 };
 
-},{}],77:[function(require,module,exports){
+},{}],78:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -30686,7 +30784,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],78:[function(require,module,exports){
+},{}],79:[function(require,module,exports){
 "use strict";
 const TransWorker = require("./lib/transworker.js");
 const DedicatedTransWorker = TransWorker;
@@ -30795,7 +30893,7 @@ TransWorker.createSharedWorker = function(client) {
 
 module.exports = TransWorker;
 
-},{"./lib/shared-transworker.js":79,"./lib/transworker-options.js":80,"./lib/transworker.js":81,"./lib/websocket-client.js":82,"./lib/websocket-server.js":83}],79:[function(require,module,exports){
+},{"./lib/shared-transworker.js":80,"./lib/transworker-options.js":81,"./lib/transworker.js":82,"./lib/websocket-client.js":83,"./lib/websocket-server.js":84}],80:[function(require,module,exports){
 "use strict";
 const TransWorker = require("./transworker.js");
 function SharedTransWorker() {
@@ -30843,7 +30941,7 @@ SharedTransWorker.prototype.setupOnConnect = function() {
 };
 module.exports = SharedTransWorker;
 
-},{"./transworker.js":81}],80:[function(require,module,exports){
+},{"./transworker.js":82}],81:[function(require,module,exports){
 "use strict";
 const assert = require("assert");
 const TransWorker = require("./transworker.js");
@@ -30870,7 +30968,7 @@ function TransWorkerOptions(options) {
 
 module.exports = TransWorkerOptions;
 
-},{"./transworker.js":81,"assert":55}],81:[function(require,module,exports){
+},{"./transworker.js":82,"assert":56}],82:[function(require,module,exports){
 "use strict";
 const { v4: uuidv4 } = require("uuid");
 
@@ -31247,14 +31345,15 @@ TransWorker.prototype.onReceiveClientMessage = function(e) {
  * Post a notify to the UI-thread TransWorker instance
  * @param {string} name A message name.
  * @param {any} param A message parameters.
+ * @param {Transferable[]|null} transObjList A list of transferable objects.
  * @returns {undefined}
  */
-TransWorker.prototype.postNotify = function(name, param) {
+TransWorker.prototype.postNotify = function(name, param, transObjList) {
     this.postMessage({
         type:'notify',
         name: name,
         param: param
-    });
+    }, transObjList);
 };
 
 /**
@@ -31296,7 +31395,7 @@ else if( TransWorker.context == 'DedicatedWorkerGlobalScope'
 globalContext.TransWorker = TransWorker;
 module.exports = TransWorker;
 
-},{"uuid":84}],82:[function(require,module,exports){
+},{"uuid":85}],83:[function(require,module,exports){
 "use strict";
 const TransWorker = require("./transworker.js");
 TransWorker.Options = require("./transworker-options.js");
@@ -31364,7 +31463,7 @@ class WebSocketClient extends TransWorker {
 }
 module.exports = WebSocketClient;
 
-},{"./transworker-options.js":80,"./transworker.js":81}],83:[function(require,module,exports){
+},{"./transworker-options.js":81,"./transworker.js":82}],84:[function(require,module,exports){
 "use strict";
 const WebSocket = require("ws");
 const TransWorker = require("./transworker.js");
@@ -31376,24 +31475,53 @@ class WebSocketServer extends TransWorker {
     /**
      * Start to listen client connections.
      * @param {http.server} server HTTP server
-     * @param {Function} createClient A function to create clientninstance
+     * @param {Function} createClient A function to create client instance
      * @returns {undefined}
      */
     static listen(server, createClient) {
         this.wss = new WebSocket.Server({server});
-        this.wss.on("connection", ws => {
-            const transworker = new WebSocketServer();
-            transworker.worker = null;
-            transworker.messagePort = ws;
-            transworker.messagePort.onmessage = e => {
-                const data = JSON.parse(e.data);
-                transworker.onReceiveClientMessage({data});
-            };
-            const client = createClient(transworker);
-            transworker.client = client;
-            transworker.client._transworker = this;
-            transworker.injectSubClassMethod();
+        this.wss.on("connection", async ws => {
+            const transworker = new WebSocketServer(ws);
+            try {
+                const client = createClient(transworker);
+                await transworker.setupClient(client);
+            } catch (err) {
+                console.error(`Error: ${err.stack}`);
+            }
         });
+    }
+
+    /**
+     * @constructor
+     * @param {WebSocket} ws A client WebSocket
+     */
+    constructor(ws) {
+        super();
+        this.worker = null;
+        this.messagePort = ws;
+        this.messagePort.onmessage = e => {
+            try {
+                const data = JSON.parse(e.data);
+                this.onReceiveClientMessage({data});
+            } catch (err) {
+                console.error(`Error: ${err.stack}`);
+            }
+        };
+    }
+    /**
+     * Set client.
+     * @async
+     * @param {any|Promise} client An instance of client class or its Promise
+     * @returns {undefined}
+     */
+    async setupClient(client) {
+        if(client instanceof Promise) {
+            this.client = await client;
+        } else {
+            this.client = client;
+        }
+        this.client._transworker = this;
+        this.injectSubClassMethod();
     }
 
     /**
@@ -31407,7 +31535,7 @@ class WebSocketServer extends TransWorker {
 }
 module.exports = WebSocketServer;
 
-},{"./transworker.js":81,"ws":99}],84:[function(require,module,exports){
+},{"./transworker.js":82,"ws":100}],85:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31487,7 +31615,7 @@ var _stringify = _interopRequireDefault(require("./stringify.js"));
 var _parse = _interopRequireDefault(require("./parse.js"));
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-},{"./nil.js":86,"./parse.js":87,"./stringify.js":91,"./v1.js":92,"./v3.js":93,"./v4.js":95,"./v5.js":96,"./validate.js":97,"./version.js":98}],85:[function(require,module,exports){
+},{"./nil.js":87,"./parse.js":88,"./stringify.js":92,"./v1.js":93,"./v3.js":94,"./v4.js":96,"./v5.js":97,"./validate.js":98,"./version.js":99}],86:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31711,7 +31839,7 @@ function md5ii(a, b, c, d, x, s, t) {
 
 var _default = md5;
 exports.default = _default;
-},{}],86:[function(require,module,exports){
+},{}],87:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31720,7 +31848,7 @@ Object.defineProperty(exports, "__esModule", {
 exports.default = void 0;
 var _default = '00000000-0000-0000-0000-000000000000';
 exports.default = _default;
-},{}],87:[function(require,module,exports){
+},{}],88:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31766,7 +31894,7 @@ function parse(uuid) {
 
 var _default = parse;
 exports.default = _default;
-},{"./validate.js":97}],88:[function(require,module,exports){
+},{"./validate.js":98}],89:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31775,7 +31903,7 @@ Object.defineProperty(exports, "__esModule", {
 exports.default = void 0;
 var _default = /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|00000000-0000-0000-0000-000000000000)$/i;
 exports.default = _default;
-},{}],89:[function(require,module,exports){
+},{}],90:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31797,7 +31925,7 @@ function rng() {
 
   return getRandomValues(rnds8);
 }
-},{}],90:[function(require,module,exports){
+},{}],91:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31902,7 +32030,7 @@ function sha1(bytes) {
 
 var _default = sha1;
 exports.default = _default;
-},{}],91:[function(require,module,exports){
+},{}],92:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -31942,7 +32070,7 @@ function stringify(arr, offset = 0) {
 
 var _default = stringify;
 exports.default = _default;
-},{"./validate.js":97}],92:[function(require,module,exports){
+},{"./validate.js":98}],93:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32050,7 +32178,7 @@ function v1(options, buf, offset) {
 
 var _default = v1;
 exports.default = _default;
-},{"./rng.js":89,"./stringify.js":91}],93:[function(require,module,exports){
+},{"./rng.js":90,"./stringify.js":92}],94:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32067,7 +32195,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 const v3 = (0, _v.default)('v3', 0x30, _md.default);
 var _default = v3;
 exports.default = _default;
-},{"./md5.js":85,"./v35.js":94}],94:[function(require,module,exports){
+},{"./md5.js":86,"./v35.js":95}],95:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32146,7 +32274,7 @@ function _default(name, version, hashfunc) {
   generateUUID.URL = URL;
   return generateUUID;
 }
-},{"./parse.js":87,"./stringify.js":91}],95:[function(require,module,exports){
+},{"./parse.js":88,"./stringify.js":92}],96:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32184,7 +32312,7 @@ function v4(options, buf, offset) {
 
 var _default = v4;
 exports.default = _default;
-},{"./rng.js":89,"./stringify.js":91}],96:[function(require,module,exports){
+},{"./rng.js":90,"./stringify.js":92}],97:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32201,7 +32329,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 const v5 = (0, _v.default)('v5', 0x50, _sha.default);
 var _default = v5;
 exports.default = _default;
-},{"./sha1.js":90,"./v35.js":94}],97:[function(require,module,exports){
+},{"./sha1.js":91,"./v35.js":95}],98:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32219,7 +32347,7 @@ function validate(uuid) {
 
 var _default = validate;
 exports.default = _default;
-},{"./regex.js":88}],98:[function(require,module,exports){
+},{"./regex.js":89}],99:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32241,7 +32369,7 @@ function version(uuid) {
 
 var _default = version;
 exports.default = _default;
-},{"./validate.js":97}],99:[function(require,module,exports){
+},{"./validate.js":98}],100:[function(require,module,exports){
 'use strict';
 
 module.exports = function () {

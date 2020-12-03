@@ -26,7 +26,17 @@ function main() {
         mz700screen.appendChild(canvas);
         mz700scrn.create({ canvas });
         canvas.style.height = "calc(100% - 1px)";
-        mz700js.transferObject("offscreenCanvas", canvas.transferControlToOffscreen());
+        mz700scrn.setupRendering();
+        const mz700screen2 = document.createElement("DIV");
+        const mz700scrn2 = new mz700_scrn_1.default(mz700screen2);
+        const canvas2 = document.createElement("CANVAS");
+        mz700screen2.style.display = "none";
+        mz700screen2.appendChild(canvas2);
+        mz700scrn2.create({ canvas: canvas2 });
+        mz700js.transferObject("offscreenCanvas", canvas2.transferControlToOffscreen());
+        mz700js.subscribe("onUpdateScrn", (imageData) => {
+            mz700scrn._ctx.putImageData(imageData, 0, 0);
+        });
         const addThisBox = $("<div/>").css("height", "48px").css("line-height", "48px")
             .append($("<div/>").css("box-sizing", "border-box").css("text-align", "right")
             .addClass("addthis_inline_share_toolbox"));

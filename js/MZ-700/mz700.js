@@ -15,6 +15,7 @@ const mz700_key_matrix_1 = __importDefault(require("./mz700-key-matrix"));
 const mz700_memory_js_1 = __importDefault(require("./mz700-memory.js"));
 const Z80_js_1 = __importDefault(require("../Z80/Z80.js"));
 const Z80_line_assembler_1 = __importDefault(require("../Z80/Z80-line-assembler"));
+const PCG_700_1 = __importDefault(require("../lib/PCG-700"));
 class MZ700 {
     constructor() { }
     create(opt) {
@@ -38,9 +39,9 @@ class MZ700 {
             this.VBLK = !this.VBLK;
         });
         this.ic556 = new ic556_1.default(MZ700.Z80_CLOCK / 3);
-        this.ic556_OUT = false;
+        this.ic556Out = false;
         this.ic556.addEventListener("change", () => {
-            this.ic556_OUT = !this.ic556_OUT;
+            this.ic556Out = !this.ic556Out;
         });
         this.INTMSK = false;
         this.MLDST = false;
@@ -87,7 +88,7 @@ class MZ700 {
         this.tid = null;
         this.clockFactor = 1.0;
         this.tidMeasClock = null;
-        this.t_cycle_0 = 0;
+        this.tCycle0 = 0;
         this.actualClockFreq = 0.0;
         this._cycleToWait = 0;
         this.mmio = new mz_mmio_js_1.default();
@@ -97,7 +98,7 @@ class MZ700 {
         }
         this.mmio.onWrite(0xE000, value => {
             this.memory.poke(0xE001, this.keymatrix.getKeyData(value));
-            this.ic556.loadReset((value & 0x80) != 0);
+            this.ic556.loadReset((value & 0x80) !== 0);
         });
         this.mmio.onRead(0xE002, value => {
             value = value & 0x0f;
@@ -113,7 +114,7 @@ class MZ700 {
             else {
                 value = value & 0xdf;
             }
-            if (this.ic556_OUT) {
+            if (this.ic556Out) {
                 value = value | 0x40;
             }
             else {
@@ -128,8 +129,8 @@ class MZ700 {
             return value;
         });
         this.mmio.onWrite(0xE003, value => {
-            if ((value & 0x80) == 0) {
-                const bit = ((value & 0x01) != 0);
+            if ((value & 0x80) === 0) {
+                const bit = ((value & 0x01) !== 0);
                 const bitno = (value & 0x0e) >> 1;
                 switch (bitno) {
                     case 0:
@@ -168,7 +169,8 @@ class MZ700 {
             return value;
         });
         this.mmio.onWrite(0xE008, value => {
-            if ((this.MLDST = ((value & 0x01) != 0)) == true) {
+            this.MLDST = ((value & 0x01) !== 0);
+            if (this.MLDST) {
                 this.opt.startSound(895000 / this.intel8253.counter(0).value);
             }
             else {
@@ -182,7 +184,7 @@ class MZ700 {
             },
             onMappedIoRead: (address, value) => {
                 const readValue = this.mmio.read(address, value);
-                if (readValue == null || readValue == undefined) {
+                if (readValue == null || readValue === undefined) {
                     return value;
                 }
                 return readValue;
@@ -231,21 +233,21 @@ class MZ700 {
         this.vblank.count();
         this.ic556.count();
     }
-    setCassetteTape(tape_data) {
-        if (tape_data.length > 0) {
-            if (tape_data.length <= 128) {
+    setCassetteTape(tapeData) {
+        if (tapeData.length > 0) {
+            if (tapeData.length <= 128) {
                 this.dataRecorder_setCmt([]);
                 console.error("error buf.length <= 128");
                 return null;
             }
-            this.mzt_array = mz_tape_1.default.parseMZT(tape_data);
-            if (this.mzt_array == null || this.mzt_array.length < 1) {
+            this.mztArray = mz_tape_1.default.parseMZT(tapeData);
+            if (this.mztArray == null || this.mztArray.length < 1) {
                 console.error("setCassetteTape fail to parse");
                 return null;
             }
         }
-        this.dataRecorder_setCmt(tape_data);
-        return this.mzt_array;
+        this.dataRecorder_setCmt(tapeData);
+        return this.mztArray;
     }
     getCassetteTape() {
         const cmt = this.dataRecorder.getCmt();
@@ -255,10 +257,9 @@ class MZ700 {
         return mz_tape_1.default.toBytes(cmt);
     }
     loadCassetteTape() {
-        for (let i = 0; i < this.mzt_array.length; i++) {
-            const mzt = this.mzt_array[i];
-            for (let j = 0; j < mzt.header.fileSize; j++) {
-                this.memory.poke(mzt.header.addrLoad + j, mzt.body.buffer[j]);
+        for (const mzt of this.mztArray) {
+            for (let i = 0; i < mzt.header.fileSize; i++) {
+                this.memory.poke(mzt.header.addrLoad + i, mzt.body.buffer[i]);
             }
         }
     }
@@ -352,7 +353,7 @@ class MZ700 {
         }
     }
     dataRecorder_setCmt(bytes) {
-        if (bytes.length == 0) {
+        if (bytes.length === 0) {
             this.dataRecorder.setCmt([]);
             return [];
         }
@@ -412,8 +413,8 @@ class MZ700 {
         this.tid = fractional_timer_1.default.setInterval(this.run.bind(this), MZ700.DEFAULT_TIMER_INTERVAL, 80, execCount);
         const mint = 1000;
         this.tidMeasClock = setInterval(() => {
-            this.actualClockFreq = (this.z80.consumedTCycle - this.t_cycle_0) / (mint / 1000);
-            this.t_cycle_0 = this.z80.consumedTCycle;
+            this.actualClockFreq = (this.z80.consumedTCycle - this.tCycle0) / (mint / 1000);
+            this.tCycle0 = this.z80.consumedTCycle;
         }, mint);
     }
     stopEmulation() {
@@ -427,11 +428,11 @@ class MZ700 {
             this.actualClockFreq = 0.0;
         }
     }
-    static disassemble(mztape_array) {
-        let dasmlist = [];
-        mztape_array.forEach(mzt => {
+    static disassemble(mztArray) {
+        const dasmlist = [];
+        mztArray.forEach(mzt => {
             console.assert(mzt.header.constructor === mz_tape_header_1.default, "No MZT-header");
-            let mzthead = mzt.header.getHeadline().split("\n");
+            const mzthead = mzt.header.getHeadline().split("\n");
             Array.prototype.push.apply(dasmlist, mzthead.map(line => {
                 const asmline = new Z80_line_assembler_1.default();
                 asmline.setComment(line);
@@ -439,12 +440,25 @@ class MZ700 {
             }));
             Array.prototype.push.apply(dasmlist, Z80_js_1.default.dasm(mzt.body.buffer, 0, mzt.header.fileSize, mzt.header.addrLoad));
         });
-        let dasmlines = Z80_js_1.default.dasmlines(dasmlist);
+        const dasmlines = Z80_js_1.default.dasmlines(dasmlist);
         return {
             outbuf: dasmlines.join("\n") + "\n",
-            dasmlines: dasmlines,
+            dasmlines,
             asmlist: dasmlist
         };
+    }
+    attachPCG700(pcg700) {
+        this.mmio.onWrite(0xE010, value => pcg700.setPattern(value & 0xff));
+        this.mmio.onWrite(0xE011, value => pcg700.setAddrLo(value & 0xff));
+        this.mmio.onWrite(0xE012, value => {
+            pcg700.setAddrHi(value & PCG_700_1.default.ADDR);
+            pcg700.setCopy(value & PCG_700_1.default.COPY);
+            pcg700.setWE(value & PCG_700_1.default.WE);
+            pcg700.setSSW(value & PCG_700_1.default.SSW);
+        });
+        this.memory.poke(0xE010, 0x00);
+        this.memory.poke(0xE011, 0x00);
+        this.memory.poke(0xE012, 0x18);
     }
 }
 exports.default = MZ700;
