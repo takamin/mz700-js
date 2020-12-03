@@ -13,7 +13,7 @@
     "postinstall": "grunt release",
     "lint": "npm run eslint && npm run tslint",
     "eslint": "eslint bin/**/*.js lib/**/*.js",
-    "tslint": "tslint MZ700/*.ts lib/*.ts Z80/*.ts",
+    "tslint": "tslint MZ-700/*.ts lib/*.ts Z80/*.ts",
     "build": "grunt debug",
     "release": "grunt release",
     "generate-docs": "jsdoc --configure jsdoc.json --verbose"
@@ -54,7 +54,7 @@
     "load-grunt-tasks": "^5.1.0",
     "node-getopt": "^0.3.2",
     "path": "^0.12.7",
-    "transworker": "^1.5.0",
+    "transworker": "^1.6.1",
     "ts-node": "^9.0.0",
     "tslint": "^6.1.3",
     "typescript": "^3.9.7"
