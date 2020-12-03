@@ -1,4 +1,5 @@
 "use strict";
+/* tslint:disable: no-console no-bitwise */
 import FractionalTimer from "fractional-timer";
 import MZ_TapeHeader   from '../lib/mz-tape-header';
 import MZ_Tape         from '../lib/mz-tape';
@@ -11,7 +12,7 @@ import MZ700KeyMatrix  from './mz700-key-matrix';
 import MZ700_Memory    from "./mz700-memory.js";
 import Z80             from '../Z80/Z80.js';
 import Z80LineAssembler from "../Z80/Z80-line-assembler";
-import Z80_Register from "../Z80/register";
+import PCG700 from "../lib/PCG-700";
 
 export default class MZ700 {
     static Z80_CLOCK = 3.579545 * 1000000;// 3.58 MHz
@@ -20,10 +21,10 @@ export default class MZ700 {
     tid:any;
     clockFactor:number;
     tidMeasClock:any;
-    t_cycle_0:number;
+    tCycle0:number;
     actualClockFreq:number;
     _cycleToWait:number;
-    mzt_array:any[];
+    mztArray:any[];
 
     keymatrix:MZ700KeyMatrix;
     dataRecorder: MZ_DataRecorder;
@@ -38,12 +39,12 @@ export default class MZ700 {
     INTMSK:boolean;
     VBLK:boolean;
     MLDST:boolean;
-    ic556_OUT:boolean
+    ic556Out:boolean
 
-    constructor() { }
+    constructor() { /* empty */ }
     create(opt) {
 
-        //MZ700 Key Matrix
+        // MZ700 Key Matrix
         this.keymatrix = new MZ700KeyMatrix();
 
         // Create 8253
@@ -57,13 +58,13 @@ export default class MZ700 {
             }
         });
 
-        //HBLNK F/F in 15.7 kHz
+        // HBLNK F/F in 15.7 kHz
         this.hblank = new FlipFlopCounter(MZ700.Z80_CLOCK / 15700);
         this.hblank.addEventListener("change", () => {
             this.intel8253.counter(1).count(1);
         });
 
-        //VBLNK F/F in 50 Hz
+        // VBLNK F/F in 50 Hz
         this.vblank = new FlipFlopCounter(MZ700.Z80_CLOCK / 50);
         this.VBLK = false;
         this.vblank.addEventListener("change", () => {
@@ -72,9 +73,9 @@ export default class MZ700 {
 
         // create IC 556 to create HBLNK(cursor blink) by 3 Hz?
         this.ic556 = new IC556(MZ700.Z80_CLOCK / 3);
-        this.ic556_OUT = false;
+        this.ic556Out = false;
         this.ic556.addEventListener("change", () => {
-            this.ic556_OUT = !this.ic556_OUT;
+            this.ic556Out = !this.ic556Out;
         });
 
         this.INTMSK = false;
@@ -102,23 +103,23 @@ export default class MZ700 {
         // to UI thread by transworker
         //
         this.opt = {
-            started: () => { },
-            stopped: () => { },
-            onBreak: () => { },
-            onVramUpdate: ( /*index, dispcode, attr*/) => { },
-            onUpdateScrn: ( /*buffer*/) => { },
-            onMmioRead: ( /*address, value*/) => { },
-            onMmioWrite: ( /*address, value*/) => { },
-            startSound: ( /*freq*/) => { },
-            stopSound: () => { },
-            onStartDataRecorder: () => { },
-            onStopDataRecorder: () => { }
+            started: () => { /* empty */ },
+            stopped: () => { /* empty */ },
+            onBreak: () => { /* empty */ },
+            onVramUpdate: ( /*index, dispcode, attr*/) => { /* empty */ },
+            onUpdateScrn: ( /*buffer*/) => { /* empty */ },
+            onMmioRead: ( /*address, value*/) => { /* empty */ },
+            onMmioWrite: ( /*address, value*/) => { /* empty */ },
+            startSound: ( /*freq*/) => { /* empty */ },
+            stopSound: () => { /* empty */ },
+            onStartDataRecorder: () => { /* empty */ },
+            onStopDataRecorder: () => { /* empty */ }
         };
 
         //
         // Override option to receive notifications with callbacks.
         //
-        opt = opt || {};
+        opt = opt || { /* empty */ };
         Object.keys(opt).forEach(key => {
             if (!(key in this.opt)) {
                 console.warn(`Unknown option key ${key} is specified.`);
@@ -133,7 +134,7 @@ export default class MZ700 {
         this.tid = null;
         this.clockFactor = 1.0;
         this.tidMeasClock = null;
-        this.t_cycle_0 = 0;
+        this.tCycle0 = 0;
         this.actualClockFreq = 0.0;
         this._cycleToWait = 0;
 
@@ -145,15 +146,15 @@ export default class MZ700 {
                 value => this.opt.onMmioWrite(address, value));
         }
 
-        //MMIO $E000
+        // MMIO $E000
         this.mmio.onWrite(0xE000, value => {
             this.memory.poke(0xE001, this.keymatrix.getKeyData(value));
-            this.ic556.loadReset((value & 0x80) != 0);
+            this.ic556.loadReset((value & 0x80) !== 0);
         });
 
-        //MMIO $E001
+        // MMIO $E001
         // No Device
-        //MMIO $E002
+        // MMIO $E002
         this.mmio.onRead(0xE002, value => {
             // [VBLK~] [556OUT] [RDATA] [MOTOR] [M-ON] [INTMSK] [WDATA] [*****]
             //    |        |       |       |       |       |       |       |
@@ -180,7 +181,7 @@ export default class MZ700 {
                 value = value & 0xdf;
             }
             // PC6 - 556_OUT : A signal to blink cursor on the screen
-            if (this.ic556_OUT) {
+            if (this.ic556Out) {
                 value = value | 0x40;
             } else {
                 value = value & 0xbf;
@@ -195,7 +196,7 @@ export default class MZ700 {
             return value;
         });
 
-        //MMIO $E003
+        // MMIO $E003
         this.mmio.onWrite(0xE003, value => {
             // MSB==0の場合、PortCへのビット単位の書き込みを指示する。
             //
@@ -219,31 +220,31 @@ export default class MZ700 {
             //  PortCH: Port C 上位ニブル入出力設定 0 - 出力、1 - 入力
             //  PortCL: Port C 下位ニブル入出力設定 0 - 出力、1 - 入力
             //
-            if ((value & 0x80) == 0) {
-                const bit = ((value & 0x01) != 0);
+            if ((value & 0x80) === 0) {
+                const bit = ((value & 0x01) !== 0);
                 const bitno = (value & 0x0e) >> 1;
-                //const name = [
+                // const name = [
                 //    "SOUNDMSK(MZ-1500)",
                 //    "WDATA","INTMSK","M-ON",
                 //    "MOTOR","RDATA", "556 OUT", "VBLK"][bitno];
-                //console.log("$E003 8255 CTRL BITSET", name, bit);
+                // console.log("$E003 8255 CTRL BITSET", name, bit);
                 switch (bitno) {
-                    case 0: //SOUNDMSK
+                    case 0: // SOUNDMSK
                         break;
-                    case 1: //WDATA
+                    case 1: // WDATA
                         this.dataRecorder_writeBit(bit);
                         break;
-                    case 2: //INTMSK
-                        this.INTMSK = bit; //trueで割り込み許可
+                    case 2: // INTMSK
+                        this.INTMSK = bit; // trueで割り込み許可
                         break;
-                    case 3: //M-ON
+                    case 3: // M-ON
                         this.dataRecorder_motorOn(bit);
                         break;
                 }
             }
         });
 
-        //MMIO $E004
+        // MMIO $E004
         this.mmio.onRead(0xE004, () => this.intel8253.counter(0).read());
         this.mmio.onWrite(0xE004, value => {
             if (this.intel8253.counter(0).load(value) && this.MLDST) {
@@ -251,18 +252,18 @@ export default class MZ700 {
             }
         });
 
-        //MMIO $E005
+        // MMIO $E005
         this.mmio.onRead(0xE005, () => this.intel8253.counter(1).read());
         this.mmio.onWrite(0xE005, value => this.intel8253.counter(1).load(value));
 
-        //MMIO $E006
+        // MMIO $E006
         this.mmio.onRead(0xE006, () => this.intel8253.counter(2).read());
         this.mmio.onWrite(0xE006, value => this.intel8253.counter(2).load(value));
 
-        //MMIO $E007
+        // MMIO $E007
         this.mmio.onWrite(0xE007, value => this.intel8253.setCtrlWord(value));
 
-        //MMIO $E008
+        // MMIO $E008
         this.mmio.onRead(0xE008, value => {
             value = value & 0xfe; // MSBをオフ
 
@@ -275,7 +276,8 @@ export default class MZ700 {
             return value;
         });
         this.mmio.onWrite(0xE008, value => {
-            if ((this.MLDST = ((value & 0x01) != 0)) == true) {
+            this.MLDST = ((value & 0x01) !== 0);
+            if (this.MLDST) {
                 this.opt.startSound(895000 / this.intel8253.counter(0).value);
             } else {
                 this.opt.stopSound();
@@ -288,15 +290,15 @@ export default class MZ700 {
                 this.opt.onVramUpdate(index, dispcode, attr);
             },
             onMappedIoRead: (address, value) => {
-                //MMIO: Input from memory mapped peripherals
+                // MMIO: Input from memory mapped peripherals
                 const readValue = this.mmio.read(address, value);
-                if (readValue == null || readValue == undefined) {
+                if (readValue == null || readValue === undefined) {
                     return value;
                 }
                 return readValue;
             },
             onMappedIoUpdate: (address, value) => {
-                //MMIO: Output to memory mapped peripherals
+                // MMIO: Output to memory mapped peripherals
                 this.mmio.write(address, value);
                 return value;
             }
@@ -349,21 +351,21 @@ export default class MZ700 {
         this.ic556.count();
 
     }
-    setCassetteTape(tape_data) {
-        if (tape_data.length > 0) {
-            if (tape_data.length <= 128) {
+    setCassetteTape(tapeData) {
+        if (tapeData.length > 0) {
+            if (tapeData.length <= 128) {
                 this.dataRecorder_setCmt([]);
                 console.error("error buf.length <= 128");
                 return null;
             }
-            this.mzt_array = MZ_Tape.parseMZT(tape_data);
-            if (this.mzt_array == null || this.mzt_array.length < 1) {
+            this.mztArray = MZ_Tape.parseMZT(tapeData);
+            if (this.mztArray == null || this.mztArray.length < 1) {
                 console.error("setCassetteTape fail to parse");
                 return null;
             }
         }
-        this.dataRecorder_setCmt(tape_data);
-        return this.mzt_array;
+        this.dataRecorder_setCmt(tapeData);
+        return this.mztArray;
     }
     /**
      * Get CMT content without ejecting.
@@ -377,10 +379,11 @@ export default class MZ700 {
         return MZ_Tape.toBytes(cmt);
     }
     loadCassetteTape() {
-        for (let i = 0; i < this.mzt_array.length; i++) {
-            const mzt = this.mzt_array[i];
-            for (let j = 0; j < mzt.header.fileSize; j++) {
-                this.memory.poke(mzt.header.addrLoad + j, mzt.body.buffer[j]);
+        for (const mzt of this.mztArray) {
+            for (let i = 0; i < mzt.header.fileSize; i++) {
+                this.memory.poke(
+                    mzt.header.addrLoad + i,
+                    mzt.body.buffer[i]);
             }
         }
     }
@@ -484,7 +487,7 @@ export default class MZ700 {
         }
     }
     dataRecorder_setCmt(bytes) {
-        if (bytes.length == 0) {
+        if (bytes.length === 0) {
             this.dataRecorder.setCmt([]);
             return [];
         }
@@ -545,8 +548,8 @@ export default class MZ700 {
             this.run.bind(this), MZ700.DEFAULT_TIMER_INTERVAL, 80, execCount);
         const mint = 1000;
         this.tidMeasClock = setInterval(() => {
-            this.actualClockFreq = (this.z80.consumedTCycle - this.t_cycle_0) / (mint / 1000);
-            this.t_cycle_0 = this.z80.consumedTCycle;
+            this.actualClockFreq = (this.z80.consumedTCycle - this.tCycle0) / (mint / 1000);
+            this.tCycle0 = this.z80.consumedTCycle;
         }, mint);
     }
     stopEmulation() {
@@ -563,13 +566,13 @@ export default class MZ700 {
     //
     // Disassemble
     //
-    static disassemble(mztape_array) {
-        let dasmlist = [];
-        mztape_array.forEach(mzt => {
+    static disassemble(mztArray) {
+        const dasmlist = [];
+        mztArray.forEach(mzt => {
             console.assert(
                 mzt.header.constructor === MZ_TapeHeader,
                 "No MZT-header");
-            let mzthead = mzt.header.getHeadline().split("\n");
+            const mzthead = mzt.header.getHeadline().split("\n");
             Array.prototype.push.apply(dasmlist, mzthead.map(line => {
                 const asmline = new Z80LineAssembler();
                 asmline.setComment(line);
@@ -581,12 +584,25 @@ export default class MZ700 {
                 mzt.header.addrLoad));
         });
 
-        let dasmlines = Z80.dasmlines(dasmlist);
+        const dasmlines = Z80.dasmlines(dasmlist);
         return {
             outbuf: dasmlines.join("\n") + "\n",
-            dasmlines: dasmlines,
+            dasmlines,
             asmlist: dasmlist
         };
+    }
+    attachPCG700(pcg700:PCG700) {
+        this.mmio.onWrite(0xE010, value => pcg700.setPattern(value & 0xff));
+        this.mmio.onWrite(0xE011, value => pcg700.setAddrLo(value & 0xff));
+        this.mmio.onWrite(0xE012, value => {
+            pcg700.setAddrHi(value & PCG700.ADDR);
+            pcg700.setCopy(value & PCG700.COPY);
+            pcg700.setWE(value & PCG700.WE);
+            pcg700.setSSW(value & PCG700.SSW);
+        });
+        this.memory.poke(0xE010, 0x00);
+        this.memory.poke(0xE011, 0x00);
+        this.memory.poke(0xE012, 0x18);
     }
 }
 module.exports = MZ700;

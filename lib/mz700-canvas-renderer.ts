@@ -1,4 +1,5 @@
 "use strict";
+import { CanvasRenderingContext2D } from "canvas";
 import mz700cg from "./mz700-cg";
 
 /* tslint:disable: no-bitwise */
@@ -28,7 +29,7 @@ export default class MZ700CanvasRenderer {
     // A canvas element
     _canvas:HTMLCanvasElement;
     // A canvas context to draw
-    _ctx = null;
+    _ctx:CanvasRenderingContext2D = null;
 
     opt:{
         canvas?:HTMLCanvasElement,
@@ -106,11 +107,11 @@ export default class MZ700CanvasRenderer {
     }
     setupRendering():void {
         // Save canvas context
-        this._ctx = this._canvas.getContext('2d');
-        this._ctx.mozImageSmoothingEnabled = false;
-        this._ctx.webkitImageSmoothingEnabled = false;
-        this._ctx.msImageSmoothingEnabled = false;
-        this._ctx.imageSmoothingEnabled = false;
+        this._ctx = this._canvas.getContext('2d') as CanvasRenderingContext2D;
+        (this._ctx as any).mozImageSmoothingEnabled = true;
+        (this._ctx as any).webkitImageSmoothingEnabled = true;
+        (this._ctx as any).msImageSmoothingEnabled = true;
+        this._ctx.imageSmoothingEnabled = true;
     }
     /**
      * Redraw specified characters on the screen.
@@ -156,6 +157,13 @@ export default class MZ700CanvasRenderer {
             this._writeVram(i, this.vramAttr[i], this.vramText[i]);
         }
     }
+    /**
+     * @returns canvas image data of screen.
+     */
+    getImageData():ImageData {
+        return this._ctx.getImageData(0, 0, 320, 200);
+    }
+
     // Change Character Generator
     changeCG(cgData):void {
         this._font = cgData;
