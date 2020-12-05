@@ -7,18 +7,18 @@ import Z80BinUtil from "../Z80/bin-util";
  * Translate address string to value.
  * @param {string} addrToken
  * The address to be converted.
- * @param {object|undefined} mapLabelToAddress
+ * @param {Record<string, number>|null} mapLabelToAddress
  * A dictionary to get address of the labels.
  * @returns {number} as the address.
  */
 const parseAddress = {
-    parseAddress: (addrToken:string, mapLabelToAddress?:any|null):number => {
+    parseAddress: (addrToken:string, mapLabelToAddress?:(Record<string, number>|null)):number => {
         const bytes = parseAddress.parseNumLiteralPair(addrToken);
         if(bytes == null) {
             return null;
         }
-        let H:any = bytes[1];
-        let L:any = bytes[0];
+        let H = bytes[1];
+        let L = bytes[0];
         if(mapLabelToAddress != null) {
             if(typeof(H) === "function") {
                 H = H(mapLabelToAddress);
@@ -29,11 +29,11 @@ const parseAddress = {
         } else if(typeof(H) === "function" || typeof(L) === "function") {
             return null;
         }
-        const addr = Z80BinUtil.pair(H,L);
+        const addr = Z80BinUtil.pair(H as number, L as number);
         return addr;
     },
-
-    parseNumLiteral: (tok:string):any => {
+    
+    parseNumLiteral: (tok:string):number | ((dictionary: Record<string, number>) => number) => {
         const n = parseAddress._parseNumLiteral(tok);
         if(typeof(n) === 'number') {
             if(n < -128 || 256 <= n) {
@@ -41,10 +41,10 @@ const parseAddress = {
             }
             return n & 0xff;
         }
-        return ((dictionary) => parseAddress.dereferLowByte(tok, dictionary));
+        return ((dictionary:Record<string, number>) => parseAddress.dereferLowByte(tok, dictionary));
     },
 
-    parseNumLiteralPair: (tok:string):any => {
+    parseNumLiteralPair: (tok:string):number[] | ((dictionary: Record<string, number>) => number)[] => {
         const n = parseAddress._parseNumLiteral(tok);
         if(typeof(n) === 'number') {
             if(n < -32768 || 65535 < n) {
@@ -58,7 +58,7 @@ const parseAddress = {
         ];
     },
 
-    parseRelAddr: (tok, fromAddr) => {
+    parseRelAddr: (tok:string, fromAddr:number):number | ((dictionary: Record<string, number>) => number) => {
         let n = parseAddress._parseNumLiteral(tok);
         if(typeof(n) === 'number') {
             const c0 = tok.charAt(0);
@@ -74,24 +74,24 @@ const parseAddress = {
         return (dictionary => ((parseAddress.derefer(tok, dictionary) - fromAddr) & 0xff));
     },
 
-    dereferLowByte: (label, dictionary) => {
+    dereferLowByte: (label:string, dictionary: Record<string, number>):number => {
         return parseAddress.derefer(label, dictionary) & 0xff;
     },
 
-    dereferHighByte: (label, dictionary) => {
+    dereferHighByte: (label:string, dictionary: Record<string, number>):number => {
         return (parseAddress.derefer(label, dictionary) >> 8) & 0xff;
     },
 
-    derefer: (label, dictionary) => {
+    derefer: (label:string, dictionary: Record<string, number>):number => {
         if(label in dictionary) {
             return dictionary[label];
         }
         return 0;
     },
 
-    _parseNumLiteral: (tok:string):any => {
+    _parseNumLiteral: (tok:string): number | string => {
         if(/^[+-]?[0-9]+$/.test(tok) || /^[+-]?[0-9A-F]+H$/i.test(tok)) {
-            let matches:any[];
+            let matches:RegExpMatchArray;
             let n = 0;
             const s = (/^-/.test(tok) ? -1:1);
             if(/[hH]$/.test(tok)) {

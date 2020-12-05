@@ -13,18 +13,30 @@ import MZ700_Memory    from "./mz700-memory.js";
 import Z80             from '../Z80/Z80.js';
 import Z80LineAssembler from "../Z80/Z80-line-assembler";
 import PCG700 from "../lib/PCG-700";
-
+type MZ700Opts = {
+    started?,
+    stopped?,
+    onBreak?,
+    onVramUpdate?,
+    onUpdateScrn?,
+    onMmioRead?,
+    onMmioWrite?,
+    startSound?,
+    stopSound?,
+    onStartDataRecorder?,
+    onStopDataRecorder?,
+};
 export default class MZ700 {
     static Z80_CLOCK = 3.579545 * 1000000;// 3.58 MHz
     static DEFAULT_TIMER_INTERVAL = 1.0 / MZ700.Z80_CLOCK;
-    opt:any;
-    tid:any;
+    opt:MZ700Opts;
+    tid:NodeJS.Timeout;
     clockFactor:number;
-    tidMeasClock:any;
+    tidMeasClock:NodeJS.Timeout;
     tCycle0:number;
     actualClockFreq:number;
     _cycleToWait:number;
-    mztArray:any[];
+    mztArray:{header:MZ_TapeHeader, body:{buffer:number[]}}[];
 
     keymatrix:MZ700KeyMatrix;
     dataRecorder: MZ_DataRecorder;
@@ -42,7 +54,7 @@ export default class MZ700 {
     ic556Out:boolean
 
     constructor() { /* empty */ }
-    create(opt) {
+    create(opt:MZ700Opts):void {
 
         // MZ700 Key Matrix
         this.keymatrix = new MZ700KeyMatrix();
@@ -316,10 +328,10 @@ export default class MZ700 {
         this.z80.onWriteIoPort(0xe5, () => this.memory.disableBlock1());
         this.z80.onWriteIoPort(0xe6, () => this.memory.enableBlock1());
     }
-    setMonitorRom(bin) {
+    setMonitorRom(bin:number[]):void {
         this.memory.setMonitorRom(bin);
     }
-    writeAsmCode(assembled) {
+    writeAsmCode(assembled:{buffer:number[],minAddr:number}):number {
         for (let i = 0; i < assembled.buffer.length; i++) {
             this.memory.poke(
                 assembled.minAddr + i,
@@ -327,7 +339,7 @@ export default class MZ700 {
         }
         return assembled.minAddr;
     }
-    exec(execCount) {
+    exec(execCount:number):number {
         execCount = execCount || 1;
         try {
             for (let i = 0; i < execCount; i++) {
@@ -339,7 +351,7 @@ export default class MZ700 {
         }
         return 0;
     }
-    clock() {
+    clock():void {
 
         // HBLNK - 15.7 kHz clock
         this.hblank.count();
@@ -351,7 +363,7 @@ export default class MZ700 {
         this.ic556.count();
 
     }
-    setCassetteTape(tapeData) {
+    setCassetteTape(tapeData:number[]):{header:MZ_TapeHeader, body:{buffer:number[]}}[] {
         if (tapeData.length > 0) {
             if (tapeData.length <= 128) {
                 this.dataRecorder_setCmt([]);
@@ -371,14 +383,14 @@ export default class MZ700 {
      * Get CMT content without ejecting.
      * @returns {Buffer|null} CMT data buffer
      */
-    getCassetteTape() {
+    getCassetteTape():number[] {
         const cmt = this.dataRecorder.getCmt();
         if (cmt == null) {
             return null;
         }
         return MZ_Tape.toBytes(cmt);
     }
-    loadCassetteTape() {
+    loadCassetteTape():void {
         for (const mzt of this.mztArray) {
             for (let i = 0; i < mzt.header.fileSize; i++) {
                 this.memory.poke(
@@ -387,7 +399,7 @@ export default class MZ700 {
             }
         }
     }
-    reset() {
+    reset():void {
         this.memory.enableBlock1();
         this.memory.enableBlock1();
         this.memory.changeBlock0_MONITOR();
@@ -400,16 +412,16 @@ export default class MZ700 {
         }
         this.z80.reset();
     }
-    getRegister() {
+    getRegister():Record<string, number>[] {
         const reg = this.z80.reg.cloneRaw();
-        reg._ = this.z80.regB.cloneRaw();
+        const _reg = this.z80.regB.cloneRaw();
         reg.IFF1 = this.z80.IFF1;
         reg.IFF2 = this.z80.IFF2;
         reg.IM = this.z80.IM;
         reg.HALT = this.z80.HALT;
-        return reg;
+        return [reg, _reg];
     }
-    setPC(addr) {
+    setPC(addr:number):void {
         this.z80.reg.PC = addr;
     }
     /**
@@ -418,32 +430,32 @@ export default class MZ700 {
      * @param {number} addrEnd (optional) end address
      * @returns {number|Array<number>} A value in the start addr or memory block
      */
-    readMemory(addrStart, addrEnd) {
+    readMemory(addrStart:number, addrEnd:number):number|number[] {
         if (addrEnd) {
             return Array(addrEnd - addrStart).fill(null)
                 .map(() => this.memory.peek(addrStart++));
         }
         return this.memory.peek(addrStart);
     }
-    setKeyState(strobe, bit, state) {
+    setKeyState(strobe:number, bit:number, state:boolean):void {
         this.keymatrix.setKeyMatrixState(strobe, bit, state);
     }
-    clearBreakPoints() {
+    clearBreakPoints():void {
         this.z80.clearBreakPoints();
     }
-    getBreakPoints() {
+    getBreakPoints():boolean[] {
         return this.z80.getBreakPoints();
     }
-    removeBreak(addr, size) {
+    removeBreak(addr:number, size:number):void {
         this.z80.removeBreak(addr, size);
     }
-    addBreak(addr, size) {
+    addBreak(addr:number, size:number):void {
         this.z80.setBreak(addr, size);
     }
     //
     // For TransWorker
     //
-    start() {
+    start():boolean {
         if ("tid" in this && this.tid != null) {
             console.warn("MZ700.start(): already started");
             return false;
@@ -453,14 +465,14 @@ export default class MZ700 {
 
         return true;
     }
-    stop() {
+    stop():void {
         const running = (this.tid != null);
         this.stopEmulation();
         if (running) {
             this.opt.stopped();
         }
     }
-    step() {
+    step():void {
         if ("tid" in this && this.tid != null) {
             this.stop();
             return;
@@ -469,7 +481,7 @@ export default class MZ700 {
         this.opt.started();
         this.opt.stopped();
     }
-    run() {
+    run():void {
         try {
             if (this._cycleToWait > 0) {
                 this._cycleToWait--;
@@ -486,7 +498,7 @@ export default class MZ700 {
             this.opt.onBreak();
         }
     }
-    dataRecorder_setCmt(bytes) {
+    dataRecorder_setCmt(bytes:number[]):boolean[] {
         if (bytes.length === 0) {
             this.dataRecorder.setCmt([]);
             return [];
@@ -495,7 +507,7 @@ export default class MZ700 {
         this.dataRecorder.setCmt(cmt);
         return cmt;
     }
-    dataRecorder_ejectCmt() {
+    dataRecorder_ejectCmt():number[] {
         if (this.dataRecorder.isCmtSet()) {
             const cmt = this.dataRecorder.ejectCmt();
             if (cmt != null) {
@@ -504,32 +516,32 @@ export default class MZ700 {
         }
         return [];
     }
-    dataRecorder_pushPlay() {
+    dataRecorder_pushPlay():void {
         this.dataRecorder.play();
     }
-    dataRecorder_pushRec() {
+    dataRecorder_pushRec():void {
         if (this.dataRecorder.isCmtSet()) {
             this.dataRecorder.ejectCmt();
         }
         this.dataRecorder.setCmt([]);
         this.dataRecorder.rec();
     }
-    dataRecorder_pushStop() {
+    dataRecorder_pushStop():void {
         this.dataRecorder.stop();
     }
-    dataRecorder_motorOn(state) {
+    dataRecorder_motorOn(state:boolean):void {
         this.dataRecorder.m_on(state);
     }
-    dataRecorder_readBit() {
+    dataRecorder_readBit():boolean {
         return this.dataRecorder.rdata(this.z80.consumedTCycle);
     }
-    dataRecorder_writeBit(state) {
+    dataRecorder_writeBit(state:boolean):void {
         this.dataRecorder.wdata(state, this.z80.consumedTCycle);
     }
-    getClockFactor() {
+    getClockFactor():number {
         return this.clockFactor;
     }
-    setClockFactor(clockFactor) {
+    setClockFactor(clockFactor:number):void {
         const running = (this.tid != null);
         if (running) {
             this.stopEmulation();
@@ -539,10 +551,10 @@ export default class MZ700 {
             this.startEmulation();
         }
     }
-    getActualClockFreq() {
+    getActualClockFreq():number {
         return this.actualClockFreq;
     }
-    startEmulation() {
+    startEmulation():void {
         const execCount = Math.round(200 * this.clockFactor);
         this.tid = FractionalTimer.setInterval(
             this.run.bind(this), MZ700.DEFAULT_TIMER_INTERVAL, 80, execCount);
@@ -552,7 +564,7 @@ export default class MZ700 {
             this.tCycle0 = this.z80.consumedTCycle;
         }, mint);
     }
-    stopEmulation() {
+    stopEmulation():void {
         if (this.tid != null) {
             FractionalTimer.clearInterval(this.tid);
             this.tid = null;
@@ -566,7 +578,11 @@ export default class MZ700 {
     //
     // Disassemble
     //
-    static disassemble(mztArray) {
+    static disassemble(mztArray:{header:MZ_TapeHeader, body:{buffer:number[]}}[]):{
+        outbuf:string,
+        dasmlines:string[],
+        asmlist:Z80LineAssembler[],
+    } {
         const dasmlist = [];
         mztArray.forEach(mzt => {
             console.assert(
@@ -591,7 +607,7 @@ export default class MZ700 {
             asmlist: dasmlist
         };
     }
-    attachPCG700(pcg700:PCG700) {
+    attachPCG700(pcg700:PCG700):void {
         this.mmio.onWrite(0xE010, value => pcg700.setPattern(value & 0xff));
         this.mmio.onWrite(0xE011, value => pcg700.setAddrLo(value & 0xff));
         this.mmio.onWrite(0xE012, value => {

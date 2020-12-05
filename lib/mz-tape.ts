@@ -7,12 +7,12 @@ const { HEX } = NumberUtil;
 
 export default class MZ_Tape {
     _index:number;
-    _tapeData;
-    constructor(tapeData) {
+    _tapeData:boolean[];
+    constructor(tapeData:boolean[]) {
         this._index = 0;
         this._tapeData = tapeData;
     }
-    isThereSignal(signal, n) {
+    isThereSignal(signal:boolean, n:number):boolean {
         for (let i = 0; i < n; i++) {
             if (this._tapeData[this._index + i] !== signal) {
                 return false;
@@ -21,7 +21,7 @@ export default class MZ_Tape {
         this._index += n;
         return true;
     }
-    recognizeStartingMark() {
+    recognizeStartingMark():boolean {
         // START MARK
         if (!this.isThereSignal(false, 11000)) {
             return false;
@@ -37,7 +37,7 @@ export default class MZ_Tape {
         }
         return true;
     }
-    recognizeStarting2Mark() {
+    recognizeStarting2Mark():boolean {
         // START MARK
         if (!this.isThereSignal(false, 2750)) {
             return false;
@@ -53,16 +53,16 @@ export default class MZ_Tape {
         }
         return true;
     }
-    readSignal() {
+    readSignal():boolean|null {
         if (this._index < this._tapeData.length) {
             return this._tapeData[this._index++];
         }
         return null;
     }
-    writeSignal(signal) {
+    writeSignal(signal:boolean):void {
         this._tapeData.push(signal);
     }
-    writeByte(data) {
+    writeByte(data:number):void {
         this.writeSignal(true);
         for (let j = 0; j < 8; j++) {
             if ((data & (0x01 << (7 - j))) !== 0) {
@@ -73,7 +73,7 @@ export default class MZ_Tape {
             }
         }
     }
-    writeBlock(data) {
+    writeBlock(data:number[]):void {
         data.forEach(function (d) {
             this.writeByte(d);
         }, this);
@@ -82,14 +82,14 @@ export default class MZ_Tape {
         this.writeByte((cs >> 0) & 0xff);
         this.writeSignal(true);
     }
-    writeDuplexBlock(data) {
+    writeDuplexBlock(data:number[]):void {
         this.writeBlock(data);
         for (let i = 0; i < 256; i++) {
             this.writeSignal(false);
         }
         this.writeBlock(data);
     }
-    readByte() {
+    readByte():number {
         // fast forward to starting bit
         let startBit = null;
         do {
@@ -115,7 +115,7 @@ export default class MZ_Tape {
         }
         return buf;
     }
-    readBytes(n) {
+    readBytes(n:number):number[] {
         const buf = [];
         for (let i = 0; i < n; i++) {
             const data = this.readByte();
@@ -126,7 +126,7 @@ export default class MZ_Tape {
         }
         return buf;
     }
-    countOnBit(blockBytes) {
+    countOnBit(blockBytes:number[]):number {
         let onBitCount = 0;
         const bitno = [0, 1, 2, 3, 4, 5, 6, 7];
         blockBytes.forEach((data) => {
@@ -139,7 +139,7 @@ export default class MZ_Tape {
         onBitCount &= 0xffff;
         return onBitCount;
     }
-    readBlock(n) {
+    readBlock(n:number):number[] {
         // Read block bytes
         const blockBytes = this.readBytes(n);
         // read 2 bytes of checksum
@@ -158,7 +158,7 @@ export default class MZ_Tape {
         }
         return blockBytes;
     }
-    readDuplexBlocks(n) {
+    readDuplexBlocks(n:number):number[] {
         const bytes = this.readBlock(n);
         if (bytes == null) {
             throw "FAIL TO READ BLOCK[1]";
@@ -179,7 +179,7 @@ export default class MZ_Tape {
         }
         return bytes;
     }
-    readHeader() {
+    readHeader():MZ_TapeHeader {
         // Header starting block
         if (!this.recognizeStartingMark()) {
             throw "NO STARTING MARK recognized";
@@ -191,7 +191,7 @@ export default class MZ_Tape {
         }
         return new MZ_TapeHeader(mztBytes, 0);
     }
-    readDataBlock(n) {
+    readDataBlock(n:number):number[] {
         // Data starting mark
         if (!this.recognizeStarting2Mark()) {
             throw "NO STARTING MARK 2 recognized";
@@ -199,7 +199,7 @@ export default class MZ_Tape {
         // Read duplexed data bytes
         return this.readDuplexBlocks(n);
     }
-    outputStartingMark() {
+    outputStartingMark():void {
         let i;
         // START MARK
         for (i = 0; i < 11000; i++) {
@@ -213,11 +213,11 @@ export default class MZ_Tape {
         }
         this.writeSignal(true);
     }
-    writeHeader(buffer) {
+    writeHeader(buffer:number[]):void {
         this.outputStartingMark();
         this.writeDuplexBlock(buffer);
     }
-    writeStarting2Mark() {
+    writeStarting2Mark():void {
         let i;
         // Body mark
         for (i = 0; i < 2750; i++) {
@@ -231,12 +231,12 @@ export default class MZ_Tape {
         }
         this.writeSignal(true);
     }
-    writeDataBlock(buffer) {
+    writeDataBlock(buffer:number[]):void {
         // Data starting mark
         this.writeStarting2Mark();
         this.writeDuplexBlock(buffer);
     }
-    static toBytes(bits) {
+    static toBytes(bits:boolean[]):number[] {
         try {
             const reader = new MZ_Tape(bits);
             const header = reader.readHeader();
@@ -267,7 +267,7 @@ export default class MZ_Tape {
         }
         return [];
     }
-    static fromBytes(bytes) {
+    static fromBytes(bytes:number[]):boolean[] {
         if (bytes.length < 128) {
             throw "FAIL TO WRITE HEADER";
         }
@@ -277,8 +277,8 @@ export default class MZ_Tape {
         writer.writeDataBlock(bytes.slice(128));
         return writer._tapeData;
     }
-    static parseMZT(buf) {
-        const sections = [];
+    static parseMZT(buf:number[]):{header:MZ_TapeHeader, body:{buffer:number[]}}[] {
+        const sections:{header:MZ_TapeHeader, body:{buffer:number[]}}[] = [];
         let offset = 0;
         while (offset + 128 <= buf.length) {
             const header = new MZ_TapeHeader(buf, offset);

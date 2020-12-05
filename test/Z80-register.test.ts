@@ -536,7 +536,6 @@ describe("REGISTER", ()=>{
                 {
                     A:1,B:2,C:3,D:4,E:5,F:6,H:7,L:8,
                     PC:9,SP:10,IX:11,IY:12,R:13,I:14,
-                    HALT: null, IFF1: 0, IFF2: 0, IM: 0, _: null,
                 });
             });
         });

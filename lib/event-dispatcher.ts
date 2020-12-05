@@ -5,7 +5,7 @@
  */
 export default class EventDispatcher {
 
-    _handlers:object;
+    _handlers = {};
 
     /**
      * @constructor
@@ -15,22 +15,25 @@ export default class EventDispatcher {
     }
 
     /**
-     * @param eventName {string} An event name.
+     * @param {string} eventName An event name.
+     * @returns {undefined}
      */
     declareEvent(eventName:string):void {
         this._handlers[eventName] = [];
     }
 
     /**
-     * @param eventName An event name
-     * @param handler An event handler
+     * @param {string} eventName An event name
+     * @param {Function} handler An event handler
+     * @returns {undefined}
      */
     addEventListener(eventName:string, handler:()=>void):void {
         this._handlers[eventName].push(handler);
     }
 
     /**
-     * @param eventName event name
+     * @param {string} eventName event name
+     * @returns {undefined}
      */
     fireEvent(eventName:string):void {
         this._handlers[eventName].forEach(handler => handler());

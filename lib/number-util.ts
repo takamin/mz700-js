@@ -21,8 +21,8 @@ export default class NumberUtil {
     }
     /**
      * Convert unsigned 8 bit integer to signed.
-     * @param i8u The input value
-     * @returns The converted 8 bit signed integer.
+     * @param {number} i8u The input value
+     * @returns {number} The converted 8 bit signed integer.
      */
     static to8bitSigned(i8u:number):number {
         if((~0xff & i8u) !== 0) {
@@ -39,8 +39,8 @@ export default class NumberUtil {
 
     /**
      * Convert signed 8 bit integer to unsigned.
-     * @param i8u The input value
-     * @returns The converted 8 bit unsigned integer.
+     * @param {number} i8s The input value
+     * @returns {number} The converted 8 bit signed integer.
      */
     static to8bitUnsigned(i8s:number):number {
         if(i8s < -128 || 127 < i8s) {
