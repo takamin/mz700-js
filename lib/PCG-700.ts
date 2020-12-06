@@ -26,17 +26,17 @@ import MZ700CanvasRenderer from "./mz700-canvas-renderer";
 // http://www.sharpmz.org/mz-700/pcg700_06.htm Games
 //
 export default class PCG700 {
-    static COPY:number = 0x20;
-    static WE:number = 0x10;
-    static SSW:number = 0x08;
-    static ADDR:number = 0x07;
+    static COPY = 0x20;
+    static WE = 0x10;
+    static SSW = 0x08;
+    static ADDR = 0x07;
 
     _screen:MZ700CanvasRenderer;
-    addr:number = 0x000;
-    pattern:number = 0x00;
-    we:number = 0;
-    ssw:number = 1;
-    copy:number = 0;
+    addr = 0x000;
+    pattern = 0x00;
+    we = 0;
+    ssw = 1;
+    copy = 0;
     _cg:mz700cg;
 
     /**
@@ -59,7 +59,8 @@ export default class PCG700 {
 
     /**
      * Set scan line 8 bit pattern for character generator.
-     * @param pattern 8 bit CG pattern
+     * @param {number} pattern 8 bit CG pattern
+     * @returns {undefined}
      */
     setPattern(pattern:number):void {
         this.pattern = pattern & 0xff;
@@ -67,14 +68,16 @@ export default class PCG700 {
 
     /**
      * Set lower 8 bit of address to operate.
-     * @param addr lower 8 bit address
+     * @param {number} addr lower 8 bit address
+     * @returns {undefined}
      */
     setAddrLo(addr:number):void {
         this.addr = ((this.addr & 0x700) | ((addr & 0xff) << 0));
     }
     /**
      * Set higher 8 bit of address to operate.
-     * @param addr higher 8 bit address
+     * @param {number} addr higher 8 bit address
+     * @returns {undefined}
      */
     setAddrHi(addr:number):void {
         this.addr = ((this.addr & 0x0FF) | ((addr & PCG700.ADDR) << 8));
@@ -84,8 +87,9 @@ export default class PCG700 {
      * If this flag is zero, the programmed CG pattern will be written when
      * the WE flag makes negative edge. Otherwise it is one, the preset CG
      * pattern will be used.
-     * @param value the flag value.
+     * @param {number} value the flag value.
      *      A value of zero would clears the flag, otherwise set.
+     * @returns {undefined}
      */
     setCopy(value:number):void {
         this.copy = (value === 0) ? 0 : 1;
@@ -93,8 +97,9 @@ export default class PCG700 {
     /**
      * Set WE(Write Edge) flag.
      * When the flag makes negative edge, The CG pattern will be written.
-     * @param value the flag value.
+     * @param {number} value the flag value.
      *      A value of zero would clears the flag, otherwise set.
+     * @returns {undefined}
      */
     setWE(value:number):void {
         const we = this.we;
@@ -107,8 +112,9 @@ export default class PCG700 {
      * Set SSW(Software Switch) flag.
      * When this flag is changed to zero, PCG will be displayed to the screen.
      * When it is changed to one, the original CG will be displayed.
-     * @param value the flag value.
+     * @param {number} value the flag value.
      *      A value of zero would clears the flag, otherwise set.
+     * @returns {undefined}
      */
     setSSW(value:number):void {
         // Software switch
@@ -120,6 +126,7 @@ export default class PCG700 {
     }
     /**
      * Apply PCG or restore original CG to the screen.
+     * @returns {undefined}
      */
     applySSW():void {
         if (this.ssw === 0) {
@@ -134,6 +141,7 @@ export default class PCG700 {
     /**
      * Write the pattern buffer to the specific address.
      * Or copy original pattern.
+     * @returns {undefined}
      */
     write():void {
         const atb = (this.addr >> 10) & 0x01;

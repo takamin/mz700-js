@@ -3,12 +3,17 @@ import MemoryBlock from "./memory-block";
 
 /**
  * MemoryBlock
- * @constructor
- * @param {object} opt the options.
+ * @class
  */
 export default class MemoryBlockCbw extends MemoryBlock {
+    /* callback on poke */
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     onPoke = (addr:number, value:number):void => { /* empty */ };
-    constructor(opt) {
+    /**
+     * @constructor
+     * @param {object} opt the options.
+     */
+    constructor(opt?:{size?:number, startAddr?:number, onPoke?:(addr:number, value:number)=>void}) {
         super(opt);
         if(opt.onPoke) {
             this.onPoke = opt.onPoke;
@@ -21,7 +26,7 @@ export default class MemoryBlockCbw extends MemoryBlock {
      * @param {number} value a data.
      * @returns {undefined}
      */
-    poke(address:number, value:number) {
+    poke(address:number, value:number):void {
         super.pokeByte(address, value);
         this.onPoke(address, this.peekByte(address));
     }

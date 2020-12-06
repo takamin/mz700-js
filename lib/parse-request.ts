@@ -2,9 +2,9 @@
 
 /**
  * Parse currently request URL.
- * @returns {object} The result of parsing.
+ * @returns {{uri:string, path:string, queryString:string, parameters:Record<string, unknown>}} The result of parsing.
  */
-export default function parseRequest() {
+export default function parseRequest():{uri:string, path:string, queryString:string, parameters:Record<string, unknown>} {
     const request = { uri: "", path: "", queryString: "", parameters: {} };
     request.uri = window.location.href;
     request.path = request.uri.replace(/\?.*$/, "");

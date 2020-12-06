@@ -2,7 +2,7 @@
 const NumberUtil = require("../../js/lib/number-util.js");
 var CliCommand = require("./command");
 module.exports = new CliCommand("reg", function(mz700/*, args*/) {
-    var reg = mz700.getRegister();
+    var [reg] = mz700.getRegister();
     console.log([
             `HL:${NumberUtil.HEX(reg.H, 2)}${NumberUtil.HEX(reg.L, 2)}H`,
             `BC:${NumberUtil.HEX(reg.B, 2)}${NumberUtil.HEX(reg.C, 2)}H`,

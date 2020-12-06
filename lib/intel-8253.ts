@@ -14,10 +14,10 @@ export default class Intel8253 {
             new Intel8253Counter(),
             new Intel8253Counter() ];
     }
-    public setCtrlWord(ctrlword) {
+    public setCtrlWord(ctrlword:number):void {
         const index = (ctrlword & 0xc0) >> 6;
         this._counter[index].setCtrlWord(ctrlword & 0x3f);
-    };
+    }
     public counter(index:number):Intel8253Counter {
         return this._counter[index];
     }
@@ -61,11 +61,11 @@ class Intel8253Counter extends EventDispatcher {
     MODE:number;
     BCD:number;
     value:number;
-    counter:number = 0xffff;
-    _written:boolean = true;
-    _read:boolean = true;
-    out:boolean = true;
-    gate:boolean = false;
+    counter = 0xffff;
+    _written = true;
+    _read = true;
+    out = true;
+    gate = false;
     constructor() {
         super();
         this.declareEvent("timeup");

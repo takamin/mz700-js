@@ -14,12 +14,12 @@ export default class Z80_assemble {
      * Assemble result lines
      * @type {object[]}
      */
-    list:any[] = [];
+    list:Z80LineAssembler[] = [];
     /**
      * mapping labels to address
      * @type {object}
      */
-    label2value:any = {};
+    label2value:Record<string, number> = {};
 
     /**
      * The list has ORG mnemonic, or not.
@@ -53,7 +53,7 @@ export default class Z80_assemble {
      * @param {number} startAddr
      * The starting address of assembling.
      */
-    constructor(asmSource, assembleOnly, startAddr) {
+    constructor(asmSource:string, assembleOnly:boolean, startAddr:number) {
 
         if(asmSource === undefined) {
             return;
@@ -80,15 +80,15 @@ export default class Z80_assemble {
         if(!assembleOnly) {
             this.closeAssembling(this.label2value);
         }
-    };
+    }
 
     /**
      * @returns {boolean} true if the source includes the ORG
      * pseudo mnemonic, otherwise false.
      */
-    isAddressExplicit() {
+    isAddressExplicit():boolean {
         return this._explicitAddress;
-    };
+    }
 
 
     /**
@@ -99,14 +99,14 @@ export default class Z80_assemble {
      *
      * @returns {boolean} true the list includes ORG, otherwise false.
      */
-    static hasExplicitAddress(assembleList) {
+    static hasExplicitAddress(assembleList:Z80LineAssembler[]):boolean {
         for(const asm of assembleList) {
             if(asm.mnemonic === "ORG") {
                 return true;
             }
         }
         return false;
-    };
+    }
 
     /**
      * Resolve the relocatable addresses and create a machine code.
@@ -116,7 +116,7 @@ export default class Z80_assemble {
      *
      * @returns {undefined}
      */
-    closeAssembling(mapLabelToAddress) {
+    closeAssembling(mapLabelToAddress:Record<string, number>):void {
 
         // Resolve address references
         Z80_assemble.resolveAddress(this.list, mapLabelToAddress);
@@ -130,7 +130,7 @@ export default class Z80_assemble {
         this.buffer = Z80_assemble.createMachineCode(
             this.list, this.minAddr,
             this.maxAddr - this.minAddr + 1);
-    };
+    }
 
     /**
      * Resolve the undetermined addresses in the assembled list.
@@ -143,11 +143,11 @@ export default class Z80_assemble {
      *
      * @returns {undefined}
      */
-    static resolveAddress(assembleList, mapLabelToAddress) {
+    static resolveAddress(assembleList:Z80LineAssembler[], mapLabelToAddress:Record<string, number>):void {
         assembleList.forEach( line => {
             line.resolveAddress(mapLabelToAddress);
         });
-    };
+    }
 
     /**
      * Determine the addresses of first and last line.
@@ -157,7 +157,7 @@ export default class Z80_assemble {
      *
      * @returns {object} that has minAddr and maxAddr as keys.
      */
-    static measureCodeSize(assembleList:Z80LineAssembler[]) {
+    static measureCodeSize(assembleList:Z80LineAssembler[]):{minAddr:number, maxAddr:number} {
         // address min-max
         let minAddr = null;
         let maxAddr = null;
@@ -173,7 +173,7 @@ export default class Z80_assemble {
             }
         });
         return {minAddr, maxAddr};
-    };
+    }
 
     /**
      * Create machine code from the assemble list.
@@ -189,18 +189,18 @@ export default class Z80_assemble {
      *
      * @returns {Array<number>} that contains Z80 machine code.
      */
-    static createMachineCode(assembleList:Z80LineAssembler[], minAddr:number, bytesize:number) {
+    static createMachineCode(assembleList:Z80LineAssembler[], minAddr:number, bytesize:number):number[] {
         const buffer = new Array(bytesize);
         assembleList.forEach(line => {
             if(line.bytecode.length > 0) {
                 Array.prototype.splice.apply(buffer, [
                         line.address - minAddr,
                         line.bytecode.length
-                    ].concat(line.bytecode));
+                    ].concat(line.bytecode as number[]));
             }
         });
         return buffer;
-    };
+    }
 
     /**
      * Assemble the sources.
@@ -210,7 +210,13 @@ export default class Z80_assemble {
      *
      * @returns {object} as an assembled result.
      */
-    static assemble(sources) {
+    static assemble(sources:string[]):{
+        obj: Z80_assemble[],
+        label2value: Record<string, number>,
+        minAddr:number,
+        maxAddr:number,
+        buffer:number[],
+    } {
 
         // Assemble each source
         const assembled = [];
@@ -269,7 +275,7 @@ export default class Z80_assemble {
             maxAddr,
             buffer,
         };
-    };
+    }
 
     /**
      * Translate address string to value.
@@ -277,9 +283,9 @@ export default class Z80_assemble {
      * The address to be converted.
      * @returns {number} as the address.
      */
-    parseAddress(addrToken) {
+    parseAddress(addrToken:string):number {
         return parseAddress.parseAddress(addrToken, this.label2value);
-    };
+    }
 
     /**
      * Returns a address map list.
@@ -290,9 +296,9 @@ export default class Z80_assemble {
      *
      * @returns {object[]} array of address map entry
      */
-    getMap() {
+    getMap():{label:string, address:number}[] {
         return Z80_assemble.hashMapArray(this.label2value);
-    };
+    }
 
     /**
      * Returns a address map list.
@@ -306,11 +312,11 @@ export default class Z80_assemble {
      *
      * @returns {object[]} array of address map entry
      */
-    static hashMapArray(mapLabelToAddress) {
+    static hashMapArray(mapLabelToAddress:Record<string, number>):{label:string, address:number}[] {
         return Object.keys(mapLabelToAddress).map(label => {
-            return { "label": label, "address": mapLabelToAddress[label] };
+            return { label, address: mapLabelToAddress[label] };
         }).sort((a,b)=>{ return a.address - b.address; });
-    };
+    }
 }
 
 module.exports = Z80_assemble;

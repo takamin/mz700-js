@@ -7,12 +7,12 @@ import Z80BinUtil from "./bin-util";
 export default class Z80_Register {
 
     /* FLAG MASK BIT CONSTANT */
-    static S_FLAG: number = 0x80;
-    static Z_FLAG: number = 0x40;
-    static H_FLAG: number = 0x10;
-    static V_FLAG: number = 0x04;
-    static N_FLAG: number = 0x02;
-    static C_FLAG: number = 0x01;
+    static S_FLAG = 0x80;
+    static Z_FLAG = 0x40;
+    static H_FLAG = 0x10;
+    static V_FLAG = 0x04;
+    static N_FLAG = 0x02;
+    static C_FLAG = 0x01;
 
     _flagTable: Uint8Array;
     _PTableIndex: number;
@@ -63,7 +63,7 @@ export default class Z80_Register {
         this.R = 0;	// リフレッシュレジスタ
         this.I = 0;	// 割り込みベクタ
 
-    };
+    }
 
     initTable(): void {
         const setPTable = (idx:number, value:number):void => {
@@ -78,9 +78,9 @@ export default class Z80_Register {
         const setZSPTable = (idx:number, value:number):void => {
             this._flagTable[this._ZSPTableIndex + idx] = value;
         };
-        let i:number = 0;
-        let zs:number = 0;
-        let p:number = 0;
+        let i = 0;
+        let zs = 0;
+        let p = 0;
         for (i = 0; i < 256; i++) {
             zs = 0;
             if (i === 0) {
@@ -121,33 +121,33 @@ export default class Z80_Register {
         return nn & 0xff;
     }
 
-    setB(n:number):void { n = n; this._B = (n & 0xff); }
+    setB(n:number):void { this._B = (n & 0xff); }
     getB(): number { return this._B; }
-    setC(n:number):void { n = n; this._C = (n & 0xff); }
+    setC(n:number):void { this._C = (n & 0xff); }
     getC(): number { return this._C; }
-    setD(n:number):void { n = n; this._D = (n & 0xff); }
+    setD(n:number):void { this._D = (n & 0xff); }
     getD(): number { return this._D; }
-    setE(n:number):void { n = n; this._E = (n & 0xff); }
+    setE(n:number):void { this._E = (n & 0xff); }
     getE(): number { return this._E; }
-    setH(n:number):void { n = n; this._H = (n & 0xff); }
+    setH(n:number):void { this._H = (n & 0xff); }
     getH(): number { return this._H; }
-    setL(n:number):void { n = n; this._L = (n & 0xff); }
+    setL(n:number):void { this._L = (n & 0xff); }
     getL(): number { return this._L; }
-    setA(n:number):void { n = n; this._A = (n & 0xff); }
+    setA(n:number):void { this._A = (n & 0xff); }
     getA(): number { return this._A; }
-    setF(n:number):void { n = n; this._F = (n & 0xff); }
+    setF(n:number):void { this._F = (n & 0xff); }
     getF(): number { return this._F; }
-    setBC(nn:number):void { nn = nn; this._B = this.hi8(nn); this._C = this.lo8(nn); }
+    setBC(nn:number):void { this._B = this.hi8(nn); this._C = this.lo8(nn); }
     getBC(): number { return this.pair(this._B, this._C); }
-    setDE(nn:number):void { nn = nn; this._D = this.hi8(nn); this._E = this.lo8(nn); }
+    setDE(nn:number):void { this._D = this.hi8(nn); this._E = this.lo8(nn); }
     getDE(): number { return this.pair(this._D, this._E); }
-    setHL(nn:number):void { nn = nn; this._H = this.hi8(nn); this._L = this.lo8(nn); }
+    setHL(nn:number):void { this._H = this.hi8(nn); this._L = this.lo8(nn); }
     getHL(): number { return this.pair(this._H, this._L); }
-    setAF(nn:number):void { nn = nn; this._A = this.hi8(nn); this._F = this.lo8(nn); }
+    setAF(nn:number):void { this._A = this.hi8(nn); this._F = this.lo8(nn); }
     getAF(): number { return this.pair(this._A, this._F); }
-    testFlag(mask:number): number { mask = mask; return ((this._F & mask) ? 1:0); }
-    setFlag(mask:number):void { mask = mask; this._F = this._F | mask; }
-    clearFlag(mask:number):void { mask = mask; this._F = this._F & ((~mask) & 0xff); }
+    testFlag(mask:number): number { return ((this._F & mask) ? 1:0); }
+    setFlag(mask:number):void { this._F = this._F | mask; }
+    clearFlag(mask:number):void { this._F = this._F & ((~mask) & 0xff); }
 
     /* TEST FLAG BIT */
     flagS(): number {return ((this._F & Z80_Register.S_FLAG) ? 1:0); }
@@ -522,7 +522,7 @@ export default class Z80_Register {
     // R.AF.B.l=(R.AF.B.l&C_FLAG)|ZSTable[j]|
     //          ((R.AF.B.h^i^j)&H_FLAG)|(R.BC.D? V_FLAG:0)|N_FLAG;
     // }
-    CPI(n:number) {
+    CPI(n:number):void {
         const q = ((this.getA()) - n);
         this.incHL();
         this.decBC();
@@ -540,7 +540,7 @@ export default class Z80_Register {
     // R.AF.B.l=(R.AF.B.l&C_FLAG)|ZSTable[j]|
     //          ((R.AF.B.h^i^j)&H_FLAG)|(R.BC.D? V_FLAG:0)|N_FLAG;
     // }
-    CPD(n:number) {
+    CPD(n:number):void {
         const q = this.getA() - n;
         this.decHL();
         this.decBC();
@@ -555,7 +555,7 @@ export default class Z80_Register {
     // Reg=(Reg<<1)|q;
     // R.AF.B.l=ZSPTable[Reg]|q;
     // }
-    RLC(x:number) {
+    RLC(x:number):number {
         const q = x >> 7;
         x = ((x << 1) | q) & 255;
         this.setF( this.getZSPTable(x) | q );
@@ -568,7 +568,7 @@ export default class Z80_Register {
     // Reg=(Reg<<1)|(R.AF.B.l&1);  \
     // R.AF.B.l=ZSPTable[Reg]|q;   \
     // }
-    RL(x:number) {
+    RL(x:number):number {
         const q = x >> 7;
         x = ((x << 1) | (this.getF() & 1)) & 255;
         this.setF( this.getZSPTable(x) | q );
@@ -581,7 +581,7 @@ export default class Z80_Register {
     // Reg=(Reg>>1)|(q<<7);      \
     // R.AF.B.l=ZSPTable[Reg]|q; \
     // }
-    RRC(x:number) {
+    RRC(x:number):number {
         const q = x & 1;
         x = (x >> 1) | ((q << 7) & 255);
         this.setF( this.getZSPTable(x) | q );
@@ -594,7 +594,7 @@ export default class Z80_Register {
     // Reg=(Reg>>1)|(R.AF.B.l<<7); \
     // R.AF.B.l=ZSPTable[Reg]|q;   \
     // }
-    RR(x:number) {
+    RR(x:number):number {
         const q = x & 1;
         x = (x >> 1) | ((this.getF() << 7) & 255);
         this.setF( this.getZSPTable(x) | q );
@@ -607,7 +607,7 @@ export default class Z80_Register {
     // Reg<<=1;                    \
     // R.AF.B.l=ZSPTable[Reg]|q;   \
     // }
-    SLA(x:number) {
+    SLA(x:number):number {
         const q = x >> 7;
         x = (x << 1) & 255;
         this.setF( this.getZSPTable(x) | q );
@@ -620,7 +620,7 @@ export default class Z80_Register {
     // Reg=(Reg>>1)|(Reg&0x80);    \
     // R.AF.B.l=ZSPTable[Reg]|q;   \
     // }
-    SRA(x:number) {
+    SRA(x:number):number {
         const q = x & 1;
         x = (x >> 1) | (x & 0x80);
         this.setF( this.getZSPTable(x) | q );
@@ -633,7 +633,7 @@ export default class Z80_Register {
     // Reg>>=1;                    \
     // R.AF.B.l=ZSPTable[Reg]|q;   \
     // }
-    SRL(x:number) {
+    SRL(x:number):number {
         const q = x & 1;
         x = x >> 1;
         this.setF( this.getZSPTable(x) | q );
@@ -643,7 +643,7 @@ export default class Z80_Register {
     // #define M_IN(Reg)           \
     //        Reg=DoIn(R.BC.B.l,R.BC.B.h); \
     //        R.AF.B.l=(R.AF.B.l&C_FLAG)|ZSPTable[Reg]
-    onReadIoPort(Reg:number) {
+    onReadIoPort(Reg:number):void {
         this.setF( (this.getF() & Z80_Register.C_FLAG) | this.getZSPTable(Reg) );
     }
     // static void ld_a_i(void)
@@ -651,7 +651,7 @@ export default class Z80_Register {
     // R.AF.B.h=R.I;
     // R.AF.B.l=(R.AF.B.l&C_FLAG)|ZSTable[R.I]|(R.IFF2<<2);
     // }
-    LD_A_I(iff2:number) {
+    LD_A_I(iff2:number):void {
         this.setA(this.I);
         this.setF( (this.getF() & Z80_Register.C_FLAG) | this.getZSTable(this.I) | (iff2 << 2) );
     }
@@ -660,12 +660,11 @@ export default class Z80_Register {
     // R.AF.B.h=(R.R&127)|(R.R2&128);
     // R.AF.B.l=(R.AF.B.l&C_FLAG)|ZSTable[R.AF.B.h]|(R.IFF2<<2);
     // }
-    LD_A_R(iff2:number,r2:number) {
+    LD_A_R(iff2:number,r2:number):void {
         this.setA((this.R & 127) | (r2 & 128));
         this.setF( (this.getF() & Z80_Register.C_FLAG) | (this.getZSTable(this.getA())) | (iff2 << 2) );
     }
-
-    cloneRaw():any {
+    cloneRaw():Record<string, number> {
         return {
             B: this.getB(),
             C: this.getC(),
@@ -681,14 +680,9 @@ export default class Z80_Register {
             IY: this.IY,
             R: this.R,
             I: this.I,
-            _: null,
-            IFF1: 0,
-            IFF2: 0,
-            IM: 0,
-            HALT:null,
         };
-    };
-    clear() {
+    }
+    clear():void {
         this._B = 0;
         this._C = 0;
         this._D = 0;
@@ -704,7 +698,7 @@ export default class Z80_Register {
         this.R = 0;
         this.I = 0;
     }
-    setFrom(reg:Z80_Register) {
+    setFrom(reg:Z80_Register):void {
         this.setB(reg.getB());
         this.setC(reg.getC());
         this.setD(reg.getD());
@@ -720,7 +714,7 @@ export default class Z80_Register {
         this.R = reg.R;
         this.I = reg.I;
     }
-    setPair(rr:string, value:number) {
+    setPair(rr:string, value:number):void {
         switch(rr) {
             case "SP": this.SP = value; break;
             case "PC": this.PC = value; break;
@@ -733,7 +727,7 @@ export default class Z80_Register {
         }
     }
 
-    debugDump() {
+    debugDump():void {
         console.info(
                 "B:" + NumberUtil.HEX(this.getB(), 2) + "H " + this.getB() + " " +
                 "C:" + NumberUtil.HEX(this.getC(), 2) + "H " + this.getC() + " / " + this.getBC());
@@ -752,22 +746,22 @@ export default class Z80_Register {
         "R:" + NumberUtil.HEX(this.R, 2) + "H " + NumberUtil.bin(this.R, 8) + "(2) " + this.R);
     }
 
-    ADD_IX(n:number)
+    ADD_IX(n:number):void
     {
         this.IX = this.ADDW(this.IX, n);
     }
-    ADD_IY(n:number)
+    ADD_IY(n:number):void
     {
         this.IY = this.ADDW(this.IY, n);
     }
 
-    jumpRel(e:number) {
+    jumpRel(e:number):void {
         this.PC += Z80BinUtil.getSignedByte(e);
     }
-    increment(r:string) {
+    increment(r:string):void {
         this["set" + r]( this.getINCValue(this["get" + r]()) );
     }
-    decrement(r:string) {
+    decrement(r:string):void {
         this["set" + r]( this.getDECValue(this["get" + r]()) );
     }
 
@@ -870,9 +864,9 @@ export default class Z80_Register {
         if(f & Z80_Register.H_FLAG) { i |= 0x200; }
         if(f & Z80_Register.N_FLAG) { i |= 0x400; }
         this.setAF(Z80_Register.DAATable[i]);
-    };
+    }
 
-    static DAATable:any = [
+    static DAATable:number[] = [
         68, 256, 512, 772, 1024, 1284, 1540, 1792, 2056, 2316, 4112, 4372, 4628, 4880, 5140, 5392,
         4096, 4356, 4612, 4864, 5124, 5376, 5632, 5892, 6156, 6408, 8240, 8500, 8756, 9008, 9268, 9520,
         8224, 8484, 8740, 8992, 9252, 9504, 9760, 10020, 10284, 10536, 12340, 12592, 12848, 13108, 13360, 13620,

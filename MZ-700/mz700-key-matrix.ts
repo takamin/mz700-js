@@ -24,7 +24,7 @@ export default class MZ700KeyMatrix {
     constructor() {
         this.keymap = new Array(10).fill(0xff);
     }
-    getKeyData(strobe) {
+    getKeyData(strobe:number):number {
         let keydata = 0xff;
         strobe &= 0x0f;
         if (strobe < this.keymap.length) {
@@ -32,7 +32,7 @@ export default class MZ700KeyMatrix {
         }
         return keydata;
     }
-    setKeyMatrixState(strobe, bit, state) {
+    setKeyMatrixState(strobe:number, bit:number, state:boolean):void {
         if (state) {
             // clear bit
             this.keymap[strobe] &= ((~(1 << bit)) & 0xff);

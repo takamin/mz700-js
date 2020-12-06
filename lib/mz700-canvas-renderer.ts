@@ -51,7 +51,7 @@ export default class MZ700CanvasRenderer {
     };
     vramText:number[] = [];
     vramAttr:number[] = [];
-    _font;
+    _font:mz700cg;
     idxloc:{x:number, y:number}[];
 
     constructor() { /* empty */ }
@@ -108,9 +108,9 @@ export default class MZ700CanvasRenderer {
     setupRendering():void {
         // Save canvas context
         this._ctx = this._canvas.getContext('2d') as CanvasRenderingContext2D;
-        (this._ctx as any).mozImageSmoothingEnabled = true;
-        (this._ctx as any).webkitImageSmoothingEnabled = true;
-        (this._ctx as any).msImageSmoothingEnabled = true;
+        // (this._ctx as any).mozImageSmoothingEnabled = true;
+        // (this._ctx as any).webkitImageSmoothingEnabled = true;
+        // (this._ctx as any).msImageSmoothingEnabled = true;
         this._ctx.imageSmoothingEnabled = true;
     }
     /**
@@ -119,7 +119,7 @@ export default class MZ700CanvasRenderer {
      * @param {number} dispCode The display code to redraw.
      * @returns {undefined}
      */
-    redrawChar(atb, dispCode) {
+    redrawChar(atb:number, dispCode:number):void {
         const abit = atb << 7;
         const n = this.opt.cols * this.opt.rows;
         for (let i = 0; i < n; i++) {
@@ -158,14 +158,14 @@ export default class MZ700CanvasRenderer {
         }
     }
     /**
-     * @returns canvas image data of screen.
+     * @returns {ImageData} canvas image data of screen.
      */
     getImageData():ImageData {
         return this._ctx.getImageData(0, 0, 320, 200);
     }
 
     // Change Character Generator
-    changeCG(cgData):void {
+    changeCG(cgData:mz700cg):void {
         this._font = cgData;
     }
     // Restore Character Generator
@@ -259,7 +259,7 @@ export default class MZ700CanvasRenderer {
      * Create a dictionary to retrieve the display code of MZ-700
      * by one normal character or string of entity reference.
      */
-    static MapChar2DispCode:object = {};
+    static MapChar2DispCode = {};
 
     /**
      * A dummy field like a static constructor
