@@ -58,6 +58,7 @@ export default class mz700scrn extends MZ700CanvasRenderer {
         const text = element.innerText;
         const chars = mz700scrn.str2chars(text);
 
+        $e.empty();
         const scrnText = new mz700scrn(element);
         scrnText.create({
             cols: chars.length + padding * 2,
