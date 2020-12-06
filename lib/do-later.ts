@@ -9,7 +9,7 @@
  *
  * This is useful to run heavy process in a scroll or mouse event handler.
  *
- * @param {()=>void} job the process to invoked once
+ * @param {Function} job the process to invoked once
  * @param {number} duration duration in milliseconds.
  * @returns {undefined}
  *

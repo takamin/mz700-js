@@ -5,7 +5,6 @@ import EventDispatcher from "./event-dispatcher";
  * FlipFlopCounter
  */
 export default class FlipFlopCounter extends EventDispatcher {
-    _handlers:object;
     _out:boolean;
     _counter:number;
     _counterMax:number;

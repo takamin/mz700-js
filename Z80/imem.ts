@@ -18,7 +18,7 @@ export default class IMem {
      * @param {any} opt the options.
      * @returns {undefined}
      */
-    create(opt?:any):void {
+    create(opt?:{size?:number, startAddr?:number}):void {
         opt = opt || {};
         this.size = opt.size || 0x10000;
         this.startAddr = opt.startAddr || 0;
@@ -38,7 +38,8 @@ export default class IMem {
      * @param {number} address an address.
      * @returns {number} the value in the memory.
      */
-    peekByte( address:number ):number {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    peekByte(address:number):number {
         const msg = "Error: abstruct pokeByte was invoked." +
             `This method must be overrided by the class ${this.constructor.name}`;
         console.error(msg);
@@ -52,7 +53,8 @@ export default class IMem {
      * @param {number} value a data.
      * @returns {undefined}
      */
-    pokeByte( address:number, value:number) {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    pokeByte(address:number, value:number):void {
         const msg = "Error: abstruct pokeByte was invoked." +
             `This method must be overrided by the class ${this.constructor.name}`;
         console.error(msg);
@@ -62,7 +64,7 @@ export default class IMem {
      * Clear memory by zero.
      * @returns {undefined}
      */
-    clear() {
+    clear():void {
         for (let i = 0; i < this.size; i++) {
             this.pokeByte(i, 0);
         }
@@ -81,7 +83,7 @@ export default class IMem {
      * @param {number} value a data.
      * @returns {undefined}
      */
-    poke(address:number, value:number) {
+    poke(address:number, value:number):void {
         this.pokeByte(address, value);
     }
     /**
@@ -89,7 +91,7 @@ export default class IMem {
      * @param {number} address an address.
      * @returns {number} the value in the memory.
      */
-    peekPair(address) {
+    peekPair(address:number):number {
         return Z80BinUtil.pair(this.peek(address + 1), this.peek(address + 0));
     }
 }

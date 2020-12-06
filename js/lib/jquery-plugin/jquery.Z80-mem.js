@@ -253,7 +253,7 @@ dumplist.prototype.redraw = function() {
 dumplist.prototype.addrSpecifier = function() {
     return $("<div/>").Z80AddressSpecifier("create")
         .on("queryregister", async (event, regName, callback) => {
-            const reg = await this._mz700js.getRegister();
+            const [reg] = await this._mz700js.getRegister();
             callback(reg[regName]);
         })
         .on("notifyaddress", (event, address) => {

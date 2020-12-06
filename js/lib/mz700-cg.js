@@ -7,9 +7,6 @@ if (!global.ImageData) {
 class mz700cg {
     constructor(patternBuffer, width, height) {
         this._fontTable = null;
-        patternBuffer = patternBuffer;
-        width = width;
-        height = height;
         this._fontTable = null;
         this._patternBuffer = patternBuffer;
         this._width = width;

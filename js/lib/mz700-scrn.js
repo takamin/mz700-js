@@ -27,6 +27,27 @@ class mz700scrn extends mz700_canvas_renderer_1.default {
             this._canvas.setAttribute("title", this.opt.title);
         }
     }
+    static convert(element) {
+        const $e = $(element);
+        const charSize = parseInt($e.attr("charSize")) || 8;
+        const padding = parseInt($e.attr("padding")) || 0;
+        const fg = (7 & parseInt($e.attr("color") || "7"));
+        const bg = (7 & parseInt($e.attr("bgColor") || "1"));
+        const text = element.innerText;
+        const chars = mz700scrn.str2chars(text);
+        const scrnText = new mz700scrn(element);
+        scrnText.create({
+            cols: chars.length + padding * 2,
+            rows: 1 + padding * 2,
+            width: charSize * (chars.length + padding * 2) + "px",
+            color: fg, backgroundColor: bg,
+            alt: text, title: text
+        });
+        scrnText.setupRendering();
+        scrnText.clear();
+        scrnText.putChars(chars, padding, padding);
+        $e.find("canvas").css("display", "inherit");
+    }
 }
 exports.default = mz700scrn;
 module.exports = mz700scrn;

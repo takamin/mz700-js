@@ -5,7 +5,7 @@ function requestJsonp(callbackName, url, callback) {
     return new Promise((resolve, reject) => {
         window[callbackName] = (...args) => {
             if (callback) {
-                callback.apply(null, args);
+                callback(...args);
             }
             resolve(args[0]);
         };

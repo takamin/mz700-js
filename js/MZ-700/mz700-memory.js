@@ -51,7 +51,7 @@ class MZ700_Memory extends memory_bank_1.default {
             }),
             MMAPED_IO: new memory_block_cbrw_1.default({
                 startAddr: 0xE000, size: 0x0800,
-                onPeek: opt.onMappedIoRead || (() => { }),
+                onPeek: opt.onMappedIoRead || (() => 0),
                 onPoke: opt.onMappedIoUpdate || (() => { })
             }),
             EXTND_ROM: new memory_block_1.default({

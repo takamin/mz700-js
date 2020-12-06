@@ -9,9 +9,9 @@ import IMem from "./imem";
  * @param {object} opt the options.
  */
 export default class MemoryBank extends IMem {
-    mem:any[];
+    mem:(IMem|Record<string, unknown>)[];
     memblk:Map<string, IMem>;
-    constructor(opt:any) {
+    constructor(opt?:{size?:number, startAddr?:number}) {
         super();
         this.create(opt);
     }
@@ -20,7 +20,7 @@ export default class MemoryBank extends IMem {
      * @param {any} opt the options.
      * @returns {undefined}
      */
-    create(opt:any):void {
+    create(opt?:{size?:number, startAddr?:number}):void {
         super.create(opt);
         this.mem = new Array(this.size);
         this.memblk = new Map<string, IMem>();
@@ -62,7 +62,7 @@ export default class MemoryBank extends IMem {
      * @returns {number} the value in the memory.
      */
     peekByte(address:number):number {
-        return (this.mem[address - this.startAddr]).peek(address) & 0xff;
+        return (this.mem[address - this.startAddr] as IMem).peek(address) & 0xff;
     }
     /**
      * Write a byte data.
@@ -71,7 +71,7 @@ export default class MemoryBank extends IMem {
      * @returns {undefined}
      */
     pokeByte(address:number, value:number):void {
-        (this.mem[address - this.startAddr]).poke(address, value & 0xff);
+        (this.mem[address - this.startAddr] as IMem).poke(address, value & 0xff);
     }
 }
 

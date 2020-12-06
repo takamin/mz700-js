@@ -5,10 +5,10 @@
  * @class
  */
 export default class MZMMIO {
-    _map:{r:(n:number)=>any, w:(n:number)=>void}[] = [];
+    _map:{r:(n:number)=>number, w:(n:number)=>void}[] = [];
 
     constructor() {
-        for (let addr:number = 0xE000; addr < 0xE800; addr++) {
+        for (let addr = 0xE000; addr < 0xE800; addr++) {
             this._map.push({
                 "r": (value:number) => value,
                 "w": (value:number) => value,
@@ -18,17 +18,19 @@ export default class MZMMIO {
 
     /**
      * Entry event listener on read.
-     * @param address address of MMIO.
-     * @param handler invoked when the address is read.
+     * @param {number} address address of MMIO.
+     * @param {Function} handler invoked when the address is read.
+     * @returns {undefined}
      */
-    onRead(address:number, handler:(n:number)=>any):void {
+    onRead(address:number, handler:(n:number)=>number):void {
         this._map[address - 0xE000].r = handler;
     }
 
     /**
      * Entry event listener on write.
-     * @param address address of MMIO.
-     * @param handler invoked when the address is write.
+     * @param {number} address address of MMIO.
+     * @param {Function} handler invoked when the address is write.
+     * @returns {undefined}
      */
     onWrite(address:number, handler:(n:number)=>void):void {
         this._map[address - 0xE000].w = handler;
@@ -38,9 +40,9 @@ export default class MZMMIO {
      * Invoke the read handlers of this memory mapped I/O.
      * @param {number} address An address
      * @param {number} value A value
-     * @returns {any}
+     * @returns {number} A value that read.
      */
-    read(address:number, value:number):any {
+    read(address:number, value:number):number {
         return this._map[address - 0xE000].r(value);
     }
 
@@ -50,7 +52,7 @@ export default class MZMMIO {
      * @param {number} value A value
      * @returns {undefined}
      */
-    write(address:number, value:number) {
+    write(address:number, value:number):void {
         this._map[address - 0xE000].w(value);
     }
 }

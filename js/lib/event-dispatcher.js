@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 class EventDispatcher {
     constructor() {
         this._handlers = {};
+        this._handlers = {};
     }
     declareEvent(eventName) {
         this._handlers[eventName] = [];

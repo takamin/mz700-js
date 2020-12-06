@@ -22,8 +22,7 @@ export default class Z80LineAssembler {
      * Z80 machine codes
      * @type {number[]}
      */
-    bytecode:any[] = [];
-
+    bytecode:(string|number|((dictionary:Record<string, number|string>)=>number))[] = [];
     /**
      * Attached label
      * @type {string}
@@ -46,7 +45,7 @@ export default class Z80LineAssembler {
      * Comment for this line
      * @type {string}
      */
-    comment:string = "";
+    comment = "";
 
     /**
      * The address that may be jumped or called to
@@ -58,7 +57,7 @@ export default class Z80LineAssembler {
      * Referenced count of this address as a distination of the instructions JP, JR, or CALL.
      * @type {number}
      */
-    refCount:number = 0;
+    refCount = 0;
 
     /**
      * Set address.
@@ -67,7 +66,7 @@ export default class Z80LineAssembler {
      */
     setAddress(address:number):void {
         this.address = address;
-    };
+    }
 
     /**
      * Set referencing address.
@@ -76,7 +75,7 @@ export default class Z80LineAssembler {
      */
     setRefAddrTo(refAddrTo:number):void {
         this.refAddrTo = refAddrTo;
-    };
+    }
 
     /**
      * Set label for address.
@@ -85,7 +84,7 @@ export default class Z80LineAssembler {
      */
     setLabel(label:string):void {
         this.label = label;
-    };
+    }
 
     /**
      * Set comment
@@ -95,7 +94,7 @@ export default class Z80LineAssembler {
     setComment(comment:string):void {
         this.address = this.address || 0;
         this.comment = comment;
-    };
+    }
 
     /**
      * Next starting address of this line.
@@ -103,7 +102,7 @@ export default class Z80LineAssembler {
      */
     getNextAddress():number {
         return this.address + this.bytecode.length;
-    };
+    }
 
     /**
      * Last address of the binary codes.
@@ -111,7 +110,7 @@ export default class Z80LineAssembler {
      */
     getLastAddress():number {
         return this.address + this.bytecode.length - 1;
-    };
+    }
 
     /**
      * Use a space as a delimiter for operands when the delimiter does not exist.
@@ -121,7 +120,7 @@ export default class Z80LineAssembler {
      *
      * @returns {string} The representation of the operand as string.
      */
-    static joinOperand(srcOperand:string[]) {
+    static joinOperand(srcOperand:string[]):string {
         const dstOperand = [];
         let delimiterPushed = true;
         srcOperand.forEach(element => {
@@ -145,7 +144,7 @@ export default class Z80LineAssembler {
      * @param {object} dictionary The label definition.
      * @returns {number[]} converted.
      */
-    static getBytecodesFromOperandOfDEFB(operand, dictionary) {
+    static getBytecodesFromOperandOfDEFB(operand:string[], dictionary:Record<string, number|string>):number[] {
         const code = [];
         operand.forEach(element => {
             if(element !== ",") {
@@ -169,7 +168,7 @@ export default class Z80LineAssembler {
                                     throw new Error(
                                         ["The character code exceeds the maximum",
                                         "value of 8 bit with the label", element,
-                                        "(", "0x" + NumberUtil.HEX(deref, 4) , ")"].join(" "));
+                                        "(", "0x" + NumberUtil.HEX(deref as number, 4) , ")"].join(" "));
                                 }
                                 strcode = [deref];
                             } else {
@@ -183,7 +182,7 @@ export default class Z80LineAssembler {
             }
         });
         return code;
-    };
+    }
 
     /**
      * Convert string token to character code for MZ-700.
@@ -198,7 +197,7 @@ export default class Z80LineAssembler {
      * @returns {number[]}
      * An array of a character code converted.
      */
-    static convertToAsciiCode(str, ascii) {
+    static convertToAsciiCode(str:string, ascii:boolean):number[] {
         const asciicodes = [];
         for(let i = 0;i < str.length;) {
             let c = str.charAt(i++);
@@ -275,22 +274,22 @@ export default class Z80LineAssembler {
             }
         }
         return asciicodes;
-    };
+    }
 
     /**
      * Parse displacement value for index register.
-     * @param toks The token list to assemble.
-     * @param indexOfSign The index of toks that points a displacement operator.
-     * @returns a total evaluated displacement value.
+     * @param {string[]} toks The token list to assemble.
+     * @param {number} indexOfSign The index of toks that points a displacement operator.
+     * @returns {number} a total evaluated displacement value.
      */
     static parseIndexDisplacer(toks:string[], indexOfSign:number):number {
         const indexD = indexOfSign + (toks[indexOfSign].match(/^[+-]$/) ? 1 : 0);
-        const d = parseAddress.parseNumLiteral(toks[indexD]);
+        const d = parseAddress.parseNumLiteral(toks[indexD]) as number;
         if(indexD === indexOfSign + 1 && toks[indexOfSign] === '-') {
             return NumberUtil.to8bitUnsigned(-d);
         }
         return d;
-    };
+    }
 
     /**
      * Create Z80 assembler instruction code line.
@@ -301,15 +300,15 @@ export default class Z80LineAssembler {
      *
      * @returns {Z80LineAssembler} assembled line object
      */
-    static create(mnemonic:string, operand?:string, machineCode?:number[]) {
+    static create(mnemonic:string, operand?:string, machineCode?:number[]):Z80LineAssembler {
         const asmline = new Z80LineAssembler();
         asmline.mnemonic = mnemonic;
         asmline.operand = operand || "";
         asmline.bytecode = machineCode || [];
         return asmline;
-    };
+    }
 
-    static assemble(source, address, dictionary) {
+    static assemble(source:string, address:number, dictionary:Record<string, number|string>):Z80LineAssembler {
         const asmline = new Z80LineAssembler();
         asmline.address = address;
 
@@ -355,9 +354,9 @@ export default class Z80LineAssembler {
             }
         }
         return asmline;
-    };
+    }
 
-    static tokenize(line) {
+    static tokenize(line:string):string[] {
         const LEX_IDLE=0;
         const LEX_NUMBER=2;
         const LEX_IDENT=3;
@@ -365,7 +364,7 @@ export default class Z80LineAssembler {
         let currstat = LEX_IDLE;
         const L = line.length;
         let i = 0;
-        const toks = [];
+        const toks:string[] = [];
         let tok = '';
         while(i < L) {
             let ch = line.charAt(i);
@@ -461,29 +460,30 @@ export default class Z80LineAssembler {
             toks.push(tok.toUpperCase());
         }
         return toks;
-    };
+    }
 
     /**
      * Resolve the address if it was referenced by a label.
      * @param {object} dictionary   A label to address map.
      * @returns {undefined}
      */
-    resolveAddress(dictionary)
+    resolveAddress(dictionary:Record<string, number|string>):void
     {
         for(let j = 0; j < this.bytecode.length; j++) {
             if(typeof(this.bytecode[j]) === 'function') {
-                this.bytecode[j] = this.bytecode[j](dictionary);
+                const deref = this.bytecode[j] as ((dictionary:Record<string, number|string>)=>number);
+                this.bytecode[j] = deref(dictionary);
             }
         }
-    };
+    }
 
-    assembleMnemonic(toks, dictionary) {
+    assembleMnemonic(toks:string[], dictionary:Record<string, number|string>):(string|number|((dictionary:Record<string, number|string>)=>number))[] {
         const label = this.label;
         //
         // Pseudo Instruction
         //
         if(match_token(toks,['ORG', null])) {
-            this.address = parseAddress._parseNumLiteral(toks[1]);
+            this.address = parseAddress._parseNumLiteral(toks[1]) as number;
             return [];
         }
         if(match_token(toks,['ENT'])) {
@@ -840,17 +840,17 @@ export default class Z80LineAssembler {
 
         if(match_token(toks,[/^(BIT|SET|RES)$/, /^[0-7]$/, ',', /^[BCDEHLA]$/])) {
             switch(toks[0]) {
-                case 'BIT': return [oct("0313"), oct("0100") | (toks[1] << 3) | get8bitRegId(toks[3])];
-                case 'SET': return [oct("0313"), oct("0300") | (toks[1] << 3) | get8bitRegId(toks[3])];
-                case 'RES': return [oct("0313"), oct("0200") | (toks[1] << 3) | get8bitRegId(toks[3])];
+                case 'BIT': return [oct("0313"), oct("0100") | (parseInt(toks[1], 10) << 3) | get8bitRegId(toks[3])];
+                case 'SET': return [oct("0313"), oct("0300") | (parseInt(toks[1], 10) << 3) | get8bitRegId(toks[3])];
+                case 'RES': return [oct("0313"), oct("0200") | (parseInt(toks[1], 10) << 3) | get8bitRegId(toks[3])];
             }
             return [];
         }
         if(match_token(toks,[/^(BIT|SET|RES)$/, /^[0-7]$/, ',', '(','HL',')']))  {
             switch(toks[0]) {
-                case 'BIT': return [oct("0313"), oct("0106") | (toks[1] << 3)];
-                case 'SET': return [oct("0313"), oct("0306") | (toks[1] << 3)];
-                case 'RES': return [oct("0313"), oct("0206") | (toks[1] << 3)];
+                case 'BIT': return [oct("0313"), oct("0106") | (parseInt(toks[1], 10) << 3)];
+                case 'SET': return [oct("0313"), oct("0306") | (parseInt(toks[1], 10) << 3)];
+                case 'RES': return [oct("0313"), oct("0206") | (parseInt(toks[1], 10) << 3)];
             }
             return [];
         }
@@ -859,9 +859,9 @@ export default class Z80LineAssembler {
             const prefix = getSubopeIXIY(toks[4]);
             const d8u = Z80LineAssembler.parseIndexDisplacer(toks, 5);
             switch(toks[0]) {
-                case 'BIT': return [prefix, oct("0313"), d8u, oct("0106") | (toks[1] << 3)];
-                case 'SET': return [prefix, oct("0313"), d8u, oct("0306") | (toks[1] << 3)];
-                case 'RES': return [prefix, oct("0313"), d8u, oct("0206") | (toks[1] << 3)];
+                case 'BIT': return [prefix, oct("0313"), d8u, oct("0106") | (parseInt(toks[1], 10) << 3)];
+                case 'SET': return [prefix, oct("0313"), d8u, oct("0306") | (parseInt(toks[1], 10) << 3)];
+                case 'RES': return [prefix, oct("0313"), d8u, oct("0206") | (parseInt(toks[1], 10) << 3)];
             }
             return [];
         }
@@ -1175,7 +1175,7 @@ export default class Z80LineAssembler {
         }
         console.warn("**** ERROR: CANNOT ASSEMBLE:" + toks.join(" / "));
         return [];
-    };
+    }
 
 }
 
@@ -1258,7 +1258,7 @@ function get8bitRegId(name) {
  *
  * @returns {boolean} true if the tokens follows the syntax. otherwise false.
  */
-function match_token(toks, pattern, lastNullOfPatternMatchAll?) {
+function match_token(toks:string[], pattern:(string|RegExp)[], lastNullOfPatternMatchAll?:boolean) {
     lastNullOfPatternMatchAll = lastNullOfPatternMatchAll || false;
     if(!lastNullOfPatternMatchAll) {
         if(toks.length !== pattern.length) {
@@ -1276,8 +1276,9 @@ function match_token(toks, pattern, lastNullOfPatternMatchAll?) {
                     return false;
                 }
             } else if(typeof(pattern[i]) === 'object') {
-                if(pattern[i].constructor.name === 'RegExp') {
-                    if(!pattern[i].test(toks[i])) {
+                if(pattern[i] instanceof RegExp) {
+                    const re = pattern[i] as RegExp;
+                    if(!re.test(toks[i])) {
                         return false;
                     }
                 }

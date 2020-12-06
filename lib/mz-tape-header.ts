@@ -10,8 +10,8 @@ export default class MZ_TapeHeader {
     fileSize:number;
     addrLoad:number;
     addrExec:number;
-    buffer:any[];
-    constructor(buf, offset) {
+    buffer:number[];
+    constructor(buf:number[], offset:number) {
         const arrayToString = (arr:number[], start:number, end:number):string => {
             let s = "";
             for (let i = start; i < end; i++) {
@@ -45,7 +45,7 @@ export default class MZ_TapeHeader {
         this.fileSize = readArrayUInt16LE(buf, offset + 0x12);
         this.addrLoad = readArrayUInt16LE(buf, offset + 0x14);
         this.addrExec = readArrayUInt16LE(buf, offset + 0x16);
-        const headerBuffer = [];
+        const headerBuffer = [] as number[];
         for (let i = 0; i < 128; i++) {
             headerBuffer.push(buf[offset + i]);
         }
@@ -99,12 +99,12 @@ export default class MZ_TapeHeader {
     /**
      * Get first filename in MZT tape images.
      *
-     * @param {array} mztArray
+     * @param {{header}[]} mztArray
      * the tape images. The each element has MZT header.
      *
      * @returns {string|null} The filename in the first MZT header.
      */
-    static get1stFilename(mztArray):string|null {
+    static get1stFilename(mztArray:{header}[]):string|null {
         if (mztArray && Array.isArray(mztArray) && mztArray.length > 0) {
             return mztArray[0].header.filename;
         }

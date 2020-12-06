@@ -1,5 +1,6 @@
 "use strict";
 import oct from "../lib/oct";
+import IMem from "./imem";
 import MemoryBlock from "./memory-block";
 import Z80_Register from "./register";
 import BinUtil from "./bin-util";
@@ -9,21 +10,30 @@ import NumberUtil from "../lib/number-util";
 /* tslint:disable:no-console no-bitwise no-string-throw */
 
 export default class Z80 {
-    memory: MemoryBlock;
-    IFF1:number = 0;
-    IFF2:number = 0;
-    IM:number = 0;
-    HALT:number = 0;
+    memory: IMem;
+    IFF1 = 0;
+    IFF2 = 0;
+    IM = 0;
+    HALT = 0;
     ioPort:number[];
     reg:Z80_Register;
     regB:Z80_Register;
-    bpmap:any[];
-    consumedTCycle:number = 0;
+    bpmap:boolean[];
+    consumedTCycle = 0;
     _onReadIoPort:((value:number)=>void)[];
     _onWriteIoPort:((value:number)=>void)[];
 
     exec:()=>void = Z80.exec;
-    opecodeTable:any[];
+    opecodeTable:{
+        mnemonic: string|(()=>Record<string, string>[])|null,
+        cycle?:number|string,
+        proc: ()=>void,
+        disasm: (mem:IMem, addr:number)=>{
+            code: number[],
+            mnemonic: string[],
+            refAddrTo?:number,
+        }
+    }[];
 
     /**
      * Execute the instruction at current program counter.
@@ -44,7 +54,7 @@ export default class Z80 {
      * @param {object} opt  The options to create.
      * @constructor
      */
-    constructor(opt) {
+    constructor(opt?:{memory?:IMem}) {
         opt = opt || { memory: null, };
         this.memory = opt.memory;
         if (opt.memory == null) {
@@ -77,7 +87,7 @@ export default class Z80 {
      * @param {number} value A 8-bit value to be written.
      * @returns {undefined}
      */
-    writeIoPort(port:number, value:number) {
+    writeIoPort(port:number, value:number):void {
         this.ioPort[port] = value;
         this._onWriteIoPort[port](value);
     }
@@ -85,7 +95,7 @@ export default class Z80 {
      * Reset.
      * @returns {undefined}
      */
-    reset() {
+    reset():void {
         this.IFF1 = 0;
         this.IFF2 = 0;
         this.IM = 0;
@@ -99,7 +109,7 @@ export default class Z80 {
      * Interrupt.
      * @returns {undefined}
      */
-    interrupt() {
+    interrupt():void {
         if (this.IFF1) {
             this.pushPair(this.reg.PC);
             this.reg.PC = 0x0038;
@@ -109,7 +119,7 @@ export default class Z80 {
      * Clear the break points.
      * @returns {undefined}
      */
-    clearBreakPoints() {
+    clearBreakPoints():void {
         this.bpmap = new Array(0x10000);
         for (let i = 0; i < 0x10000; i++) {
             this.bpmap[i] = null;
@@ -121,7 +131,7 @@ export default class Z80 {
      *      an address and the element is a status whether it
      *      is a break point.
      */
-    getBreakPoints() {
+    getBreakPoints():boolean[] {
         return this.bpmap;
     }
     /**
@@ -130,7 +140,7 @@ export default class Z80 {
      * @param {number} size The area size.
      * @returns {undefined}
      */
-    removeBreak(address, size) {
+    removeBreak(address:number, size:number):void {
         for (let i = 0; i < size; i++) {
             this.bpmap[address + i] = null;
         }
@@ -141,7 +151,7 @@ export default class Z80 {
      * @param {number} size The area size.
      * @returns {undefined}
      */
-    setBreak(address, size) {
+    setBreak(address:number, size:number):void {
         for (let i = 0; i < size; i++) {
             this.bpmap[address + i] = true;
         }
@@ -170,7 +180,7 @@ export default class Z80 {
      * And the PC goes forward with 2 bytes.
      * @returns {number} A 16-bit value.
      */
-    fetchPair() {
+    fetchPair():number {
         const PC = this.reg.PC;
         this.reg.PC = (PC + 2) & 0xffff;
         return this.memory.peekPair(PC);
@@ -181,7 +191,7 @@ export default class Z80 {
      * @param {number} nn 16 bit integer.
      * @returns {undefined}
      */
-    pushPair(nn) {
+    pushPair(nn:number):void {
         this.memory.poke(--this.reg.SP, BinUtil.hibyte(nn));
         this.memory.poke(--this.reg.SP, BinUtil.lobyte(nn));
     }
@@ -190,7 +200,7 @@ export default class Z80 {
      * And SP goes forward with 2 bytes.
      * @returns {number} 16 bit integer that was read.
      */
-    popPair() {
+    popPair():number {
         const lo = this.memory.peek(this.reg.SP++);
         const hi = this.memory.peek(this.reg.SP++);
         return BinUtil.pair(hi, lo);
@@ -200,7 +210,7 @@ export default class Z80 {
      * @param {number} addr A address to increment.
      * @returns {undefined}
      */
-    incrementAt(addr) {
+    incrementAt(addr:number):void {
         this.memory.poke(addr, this.reg.getINCValue(this.memory.peek(addr)));
     }
     /**
@@ -208,7 +218,7 @@ export default class Z80 {
      * @param {number} addr A address to increment.
      * @returns {undefined}
      */
-    decrementAt(addr) {
+    decrementAt(addr:number):void {
         this.memory.poke(addr, this.reg.getDECValue(this.memory.peek(addr)));
     }
     /**
@@ -216,9 +226,9 @@ export default class Z80 {
      *
      * @param {number} addr The starting address
      * @param {number} lastAddr    The last address to assemble.
-     * @returns {object} A disassembled result.
+     * @returns {Z80LineAssembler} A disassembled result.
      */
-    disassemble(addr, lastAddr) {
+    disassemble(addr:number, lastAddr:number):Z80LineAssembler {
         let disasm = null;
         let errmsg = "";
         const opecode = this.memory.peek(addr);
@@ -313,7 +323,7 @@ export default class Z80 {
      * LD SP,IY		SP<-IY					11 111 101	11 111 001
      *
      */
-    createOpecodeTable() {
+    createOpecodeTable():void {
         this.opecodeTable = new Array(256);
         const opeIX = new Array(256);
         const opeIY = new Array(256);
@@ -339,7 +349,7 @@ export default class Z80 {
                 })))(ii)
             };
             opeIX[ii] = {
-            mnemonic: null,
+                mnemonic: null,
                 proc: ((i) => (() => {
                     throw "ILLEGAL OPCODE DD " + NumberUtil.HEX(i, 2) + " for IX command subset";
                 }))(ii),
@@ -6338,10 +6348,10 @@ export default class Z80 {
             }
         };
     }
-    onReadIoPort(port:number, handler:(value:number)=>void) {
+    onReadIoPort(port:number, handler:(value:number)=>void):void {
         this._onReadIoPort[port] = handler;
     }
-    onWriteIoPort(port:number, handler:(value:number)=>void) {
+    onWriteIoPort(port:number, handler:(value:number)=>void):void {
         this._onWriteIoPort[port] = handler;
     }
     /**
@@ -6355,14 +6365,14 @@ export default class Z80 {
      *    * mnemonic    string[]
      *    * refAddrTo   number
      *
-     * @param {Buffer}  buf     machine code byte buffer
+     * @param {number[]} buf    machine code byte buffer
      * @param {number}  offset  start index of the buffer
      * @param {number}  size    buffer size
      * @param {number}  addr    memory address of the offset
      *
      * @returns {object[]}  assembled line data object
      */
-    static dasm(buf, offset, size, addr) {
+    static dasm(buf:number[], offset:number, size:number, addr:number):Z80LineAssembler[] {
         offset = offset || 0;
         size = size || buf.length - offset;
         addr = addr || 0;
@@ -6389,7 +6399,7 @@ export default class Z80 {
             dis.setAddress(cpu.reg.PC);
             if (dis.bytecode.length > 0) {
                 dis.setComment('; ' + NumberUtil.HEX(dis.address, 4) + "H " +
-                    dis.bytecode.map((b) => {
+                    dis.bytecode.map((b:number) => {
                         return NumberUtil.HEX(b, 2);
                     }).join(" "));
             }
@@ -6400,10 +6410,10 @@ export default class Z80 {
     }
     /**
      * Create information of the referenced count.
-     * @param {object[]} dasmlist   A result of disassembling.
-     * @return {object[]} Same object to parameter.
+     * @param {any[]} dasmlist   A result of disassembling.
+     * @return {any[]} Same object to parameter.
      */
-    static processAddressReference(dasmlist) {
+    static processAddressReference(dasmlist:Z80LineAssembler[]):Z80LineAssembler[] {
         const addr2line = {};
         dasmlist.forEach((dis, lineno) => {
             addr2line[dis.address] = lineno;
@@ -6421,7 +6431,7 @@ export default class Z80 {
         });
         return dasmlist;
     }
-    static dasmlines(dasmlist) {
+    static dasmlines(dasmlist:Z80LineAssembler[]):string[] {
         return dasmlist.map((dis) => {
             let addr;
             if (dis.refCount > 0) {

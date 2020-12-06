@@ -50,9 +50,6 @@ class MZ700CanvasRenderer {
     }
     setupRendering() {
         this._ctx = this._canvas.getContext('2d');
-        this._ctx.mozImageSmoothingEnabled = true;
-        this._ctx.webkitImageSmoothingEnabled = true;
-        this._ctx.msImageSmoothingEnabled = true;
         this._ctx.imageSmoothingEnabled = true;
     }
     redrawChar(atb, dispCode) {

@@ -5,17 +5,18 @@ export default class MZ700_NewMonitor extends MemoryBlock {
     constructor() {
         super();
     }
-    create() {
+    create():void {
         MemoryBlock.prototype.create.call(this, { startAddr: 0x0000, size: 0x1000 });
     }
-    setBinary(bin) {
+    setBinary(bin:number[]):void {
         for (let i = 0; i < this.size; i++) {
             const address = this.startAddr + i;
             MemoryBlock.prototype.pokeByte.call(this,
                 address, bin[address]);
         }
     }
-    pokeByte( /*address, value*/) {
+    // eslint-disable-next-line  @typescript-eslint/no-unused-vars
+    pokeByte(address:number, value:number):void {
         /* IGNORE ALL WRITING */
     }
 }

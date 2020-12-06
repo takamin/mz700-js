@@ -297,7 +297,7 @@ class MZ700_Memory extends memory_bank_1.default {
             }),
             MMAPED_IO: new memory_block_cbrw_1.default({
                 startAddr: 0xE000, size: 0x0800,
-                onPeek: opt.onMappedIoRead || (() => { }),
+                onPeek: opt.onMappedIoRead || (() => 0),
                 onPoke: opt.onMappedIoUpdate || (() => { })
             }),
             EXTND_ROM: new memory_block_1.default({
@@ -398,7 +398,7 @@ class MZ700_NewMonitor extends memory_block_1.default {
             memory_block_1.default.prototype.pokeByte.call(this, address, bin[address]);
         }
     }
-    pokeByte() {
+    pokeByte(address, value) {
     }
 }
 exports.default = MZ700_NewMonitor;
@@ -424,6 +424,7 @@ require("fullscrn");
 const b_box_1 = __importDefault(require("b-box"));
 const dock_n_liquid_1 = __importDefault(require("dock-n-liquid"));
 const mz700_1 = __importDefault(require("./mz700"));
+const mz700_scrn_1 = __importDefault(require("../lib/mz700-scrn"));
 const mz_beep_1 = __importDefault(require("../lib/mz-beep"));
 const mz_tape_1 = __importDefault(require("../lib/mz-tape"));
 const mz_tape_header_1 = __importDefault(require("../lib/mz-tape-header"));
@@ -661,7 +662,7 @@ function createUI(mz700js, mz700screen, canvas) {
             btnStart.MZ700ImgButton("setImg", imgBtnRunOff);
             btnStep.prop('disabled', '');
             btnStep.MZ700ImgButton("setImg", imgBtnStepOff);
-            const reg = yield mz700js.getRegister();
+            const [reg] = yield mz700js.getRegister();
             asmView.asmview("currentLine", reg.PC);
             btnExecImm.prop("disabled", false);
         }));
@@ -751,8 +752,8 @@ function createUI(mz700js, mz700screen, canvas) {
         let regUpdTid = null;
         let regVisibility = false;
         const Z80RegViewUpdateRegister = () => __awaiter(this, void 0, void 0, function* () {
-            const reg = yield mz700js.getRegister();
-            regview.Z80RegView("updateRegister", reg);
+            const [reg, _reg] = yield mz700js.getRegister();
+            regview.Z80RegView("updateRegister", [reg, _reg]);
         });
         const Z80RegViewAutoUpdate = (status) => __awaiter(this, void 0, void 0, function* () {
             if (status) {
@@ -819,7 +820,7 @@ function createUI(mz700js, mz700screen, canvas) {
         const asmlistMzt = asmView.asmview("newAsmList", "mzt", "PCG-700 sample");
         const asmlistSrc = yield new Promise(resolve => $.get("./MZ-700/pcg700-sample.asm", {}, resolve));
         yield asmlistAssemble(asmlistMzt, asmlistSrc);
-        const getText = url => {
+        const getText = (url) => {
             return new Promise(resolve => $.get(url, {}, resolve));
         };
         const readme = yield getText("./mz_newmon/newmon_readme.txt");
@@ -849,7 +850,7 @@ function createUI(mz700js, mz700screen, canvas) {
                     let src = 'ORG ' + number_util_1.default.HEX(addr, 4) + "H\r\n";
                     src += par.find("input.mnemonic").val() + "\r\n";
                     const bin = assembler_1.default.assemble([src]).obj[0];
-                    const reg = yield mz700js.getRegister();
+                    const [reg] = yield mz700js.getRegister();
                     const execAddr = yield mz700js.writeAsmCode(bin);
                     yield mz700js.setPC(execAddr);
                     yield mz700js.step();
@@ -901,7 +902,7 @@ function createUI(mz700js, mz700screen, canvas) {
             }
             resizeScreen();
         }));
-        const readBinFile = file => {
+        const readBinFile = (file) => {
             return new Promise((resolve, reject) => {
                 try {
                     const reader = new FileReader();
@@ -915,7 +916,7 @@ function createUI(mz700js, mz700screen, canvas) {
                 }
             });
         };
-        const readTextFile = file => {
+        const readTextFile = (file) => {
             return new Promise((resolve, reject) => {
                 try {
                     const reader = new FileReader();
@@ -1011,6 +1012,7 @@ function createUI(mz700js, mz700screen, canvas) {
                 catch (err) {
                     console.error(`Error: Loading file ${file.name} ${err.message}`);
                 }
+                return;
             });
             setupDragDrop(canvas, {
                 "MZT": mztFileLoader,
@@ -1057,7 +1059,7 @@ function createUI(mz700js, mz700screen, canvas) {
                 break;
         }
         for (const element of document.querySelectorAll("span.mz700scrn")) {
-            window.mz700scrn.convert(element);
+            mz700_scrn_1.default.convert(element);
         }
         yield new Promise(resolve => mz700screen.show(0, resolve));
         resizeScreen();
@@ -1079,7 +1081,7 @@ exports.default = module.exports = {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"../Z80/Z80.js":8,"../Z80/assembler":9,"../lib/jquery-plugin/jquery.Z80-mem.js":24,"../lib/jquery-plugin/jquery.Z80-reg.js":25,"../lib/jquery-plugin/jquery.asmlist.js":27,"../lib/jquery-plugin/jquery.asmview.js":28,"../lib/jquery-plugin/jquery.emu-speed-control.js":29,"../lib/jquery-plugin/jquery.mz-data-recorder.js":30,"../lib/jquery-plugin/jquery.mz-sound-control.js":31,"../lib/jquery-plugin/jquery.mz700-img-button.js":32,"../lib/jquery-plugin/jquery.mz700-kb.js":33,"../lib/jquery-plugin/jquery.mz700-scrn.js":34,"../lib/jquery-plugin/jquery.tabview.js":36,"../lib/jquery-plugin/jquery.toggle-button.js":37,"../lib/jquery-plugin/jquery.tool-window.js":38,"../lib/jsonp":41,"../lib/mz-beep":42,"../lib/mz-tape":46,"../lib/mz-tape-header":45,"../lib/number-util":51,"../lib/parse-addr":53,"../lib/parse-request":54,"../lib/user-agent-util":55,"./mz700":6,"b-box":60,"buffer":62,"dock-n-liquid":69,"fullscrn":72}],6:[function(require,module,exports){
+},{"../Z80/Z80.js":8,"../Z80/assembler":9,"../lib/jquery-plugin/jquery.Z80-mem.js":24,"../lib/jquery-plugin/jquery.Z80-reg.js":25,"../lib/jquery-plugin/jquery.asmlist.js":27,"../lib/jquery-plugin/jquery.asmview.js":28,"../lib/jquery-plugin/jquery.emu-speed-control.js":29,"../lib/jquery-plugin/jquery.mz-data-recorder.js":30,"../lib/jquery-plugin/jquery.mz-sound-control.js":31,"../lib/jquery-plugin/jquery.mz700-img-button.js":32,"../lib/jquery-plugin/jquery.mz700-kb.js":33,"../lib/jquery-plugin/jquery.mz700-scrn.js":34,"../lib/jquery-plugin/jquery.tabview.js":36,"../lib/jquery-plugin/jquery.toggle-button.js":37,"../lib/jquery-plugin/jquery.tool-window.js":38,"../lib/jsonp":41,"../lib/mz-beep":42,"../lib/mz-tape":46,"../lib/mz-tape-header":45,"../lib/mz700-scrn":50,"../lib/number-util":51,"../lib/parse-addr":53,"../lib/parse-request":54,"../lib/user-agent-util":55,"./mz700":6,"b-box":60,"buffer":62,"dock-n-liquid":69,"fullscrn":72}],6:[function(require,module,exports){
 "use strict";
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
@@ -1358,12 +1360,12 @@ class MZ700 {
     }
     getRegister() {
         const reg = this.z80.reg.cloneRaw();
-        reg._ = this.z80.regB.cloneRaw();
+        const _reg = this.z80.regB.cloneRaw();
         reg.IFF1 = this.z80.IFF1;
         reg.IFF2 = this.z80.IFF2;
         reg.IM = this.z80.IM;
         reg.HALT = this.z80.HALT;
-        return reg;
+        return [reg, _reg];
     }
     setPC(addr) {
         this.z80.reg.PC = addr;
@@ -1572,28 +1574,22 @@ class Z80LineAssembler {
     setAddress(address) {
         this.address = address;
     }
-    ;
     setRefAddrTo(refAddrTo) {
         this.refAddrTo = refAddrTo;
     }
-    ;
     setLabel(label) {
         this.label = label;
     }
-    ;
     setComment(comment) {
         this.address = this.address || 0;
         this.comment = comment;
     }
-    ;
     getNextAddress() {
         return this.address + this.bytecode.length;
     }
-    ;
     getLastAddress() {
         return this.address + this.bytecode.length - 1;
     }
-    ;
     static joinOperand(srcOperand) {
         const dstOperand = [];
         let delimiterPushed = true;
@@ -1651,7 +1647,6 @@ class Z80LineAssembler {
         });
         return code;
     }
-    ;
     static convertToAsciiCode(str, ascii) {
         const asciicodes = [];
         for (let i = 0; i < str.length;) {
@@ -1744,7 +1739,6 @@ class Z80LineAssembler {
         }
         return asciicodes;
     }
-    ;
     static parseIndexDisplacer(toks, indexOfSign) {
         const indexD = indexOfSign + (toks[indexOfSign].match(/^[+-]$/) ? 1 : 0);
         const d = parse_addr_1.default.parseNumLiteral(toks[indexD]);
@@ -1753,7 +1747,6 @@ class Z80LineAssembler {
         }
         return d;
     }
-    ;
     static create(mnemonic, operand, machineCode) {
         const asmline = new Z80LineAssembler();
         asmline.mnemonic = mnemonic;
@@ -1761,7 +1754,6 @@ class Z80LineAssembler {
         asmline.bytecode = machineCode || [];
         return asmline;
     }
-    ;
     static assemble(source, address, dictionary) {
         const asmline = new Z80LineAssembler();
         asmline.address = address;
@@ -1808,7 +1800,6 @@ class Z80LineAssembler {
         }
         return asmline;
     }
-    ;
     static tokenize(line) {
         const LEX_IDLE = 0;
         const LEX_NUMBER = 2;
@@ -1921,15 +1912,14 @@ class Z80LineAssembler {
         }
         return toks;
     }
-    ;
     resolveAddress(dictionary) {
         for (let j = 0; j < this.bytecode.length; j++) {
             if (typeof (this.bytecode[j]) === 'function') {
-                this.bytecode[j] = this.bytecode[j](dictionary);
+                const deref = this.bytecode[j];
+                this.bytecode[j] = deref(dictionary);
             }
         }
     }
-    ;
     assembleMnemonic(toks, dictionary) {
         const label = this.label;
         if (match_token(toks, ['ORG', null])) {
@@ -2338,17 +2328,17 @@ class Z80LineAssembler {
         }
         if (match_token(toks, [/^(BIT|SET|RES)$/, /^[0-7]$/, ',', /^[BCDEHLA]$/])) {
             switch (toks[0]) {
-                case 'BIT': return [oct_1.default("0313"), oct_1.default("0100") | (toks[1] << 3) | get8bitRegId(toks[3])];
-                case 'SET': return [oct_1.default("0313"), oct_1.default("0300") | (toks[1] << 3) | get8bitRegId(toks[3])];
-                case 'RES': return [oct_1.default("0313"), oct_1.default("0200") | (toks[1] << 3) | get8bitRegId(toks[3])];
+                case 'BIT': return [oct_1.default("0313"), oct_1.default("0100") | (parseInt(toks[1], 10) << 3) | get8bitRegId(toks[3])];
+                case 'SET': return [oct_1.default("0313"), oct_1.default("0300") | (parseInt(toks[1], 10) << 3) | get8bitRegId(toks[3])];
+                case 'RES': return [oct_1.default("0313"), oct_1.default("0200") | (parseInt(toks[1], 10) << 3) | get8bitRegId(toks[3])];
             }
             return [];
         }
         if (match_token(toks, [/^(BIT|SET|RES)$/, /^[0-7]$/, ',', '(', 'HL', ')'])) {
             switch (toks[0]) {
-                case 'BIT': return [oct_1.default("0313"), oct_1.default("0106") | (toks[1] << 3)];
-                case 'SET': return [oct_1.default("0313"), oct_1.default("0306") | (toks[1] << 3)];
-                case 'RES': return [oct_1.default("0313"), oct_1.default("0206") | (toks[1] << 3)];
+                case 'BIT': return [oct_1.default("0313"), oct_1.default("0106") | (parseInt(toks[1], 10) << 3)];
+                case 'SET': return [oct_1.default("0313"), oct_1.default("0306") | (parseInt(toks[1], 10) << 3)];
+                case 'RES': return [oct_1.default("0313"), oct_1.default("0206") | (parseInt(toks[1], 10) << 3)];
             }
             return [];
         }
@@ -2357,9 +2347,9 @@ class Z80LineAssembler {
             const prefix = getSubopeIXIY(toks[4]);
             const d8u = Z80LineAssembler.parseIndexDisplacer(toks, 5);
             switch (toks[0]) {
-                case 'BIT': return [prefix, oct_1.default("0313"), d8u, oct_1.default("0106") | (toks[1] << 3)];
-                case 'SET': return [prefix, oct_1.default("0313"), d8u, oct_1.default("0306") | (toks[1] << 3)];
-                case 'RES': return [prefix, oct_1.default("0313"), d8u, oct_1.default("0206") | (toks[1] << 3)];
+                case 'BIT': return [prefix, oct_1.default("0313"), d8u, oct_1.default("0106") | (parseInt(toks[1], 10) << 3)];
+                case 'SET': return [prefix, oct_1.default("0313"), d8u, oct_1.default("0306") | (parseInt(toks[1], 10) << 3)];
+                case 'RES': return [prefix, oct_1.default("0313"), d8u, oct_1.default("0206") | (parseInt(toks[1], 10) << 3)];
             }
             return [];
         }
@@ -2665,7 +2655,6 @@ class Z80LineAssembler {
         console.warn("**** ERROR: CANNOT ASSEMBLE:" + toks.join(" / "));
         return [];
     }
-    ;
 }
 exports.default = Z80LineAssembler;
 function getSubopeIXIY(tok) {
@@ -2796,8 +2785,9 @@ function match_token(toks, pattern, lastNullOfPatternMatchAll) {
                 }
             }
             else if (typeof (pattern[i]) === 'object') {
-                if (pattern[i].constructor.name === 'RegExp') {
-                    if (!pattern[i].test(toks[i])) {
+                if (pattern[i] instanceof RegExp) {
+                    const re = pattern[i];
+                    if (!re.test(toks[i])) {
                         return false;
                     }
                 }
@@ -8835,11 +8825,9 @@ class Z80_assemble {
             this.closeAssembling(this.label2value);
         }
     }
-    ;
     isAddressExplicit() {
         return this._explicitAddress;
     }
-    ;
     static hasExplicitAddress(assembleList) {
         for (const asm of assembleList) {
             if (asm.mnemonic === "ORG") {
@@ -8848,7 +8836,6 @@ class Z80_assemble {
         }
         return false;
     }
-    ;
     closeAssembling(mapLabelToAddress) {
         Z80_assemble.resolveAddress(this.list, mapLabelToAddress);
         const range = Z80_assemble.measureCodeSize(this.list);
@@ -8856,13 +8843,11 @@ class Z80_assemble {
         this.maxAddr = range.minAddr;
         this.buffer = Z80_assemble.createMachineCode(this.list, this.minAddr, this.maxAddr - this.minAddr + 1);
     }
-    ;
     static resolveAddress(assembleList, mapLabelToAddress) {
         assembleList.forEach(line => {
             line.resolveAddress(mapLabelToAddress);
         });
     }
-    ;
     static measureCodeSize(assembleList) {
         let minAddr = null;
         let maxAddr = null;
@@ -8879,7 +8864,6 @@ class Z80_assemble {
         });
         return { minAddr, maxAddr };
     }
-    ;
     static createMachineCode(assembleList, minAddr, bytesize) {
         const buffer = new Array(bytesize);
         assembleList.forEach(line => {
@@ -8892,7 +8876,6 @@ class Z80_assemble {
         });
         return buffer;
     }
-    ;
     static assemble(sources) {
         const assembled = [];
         let startAddr = 0;
@@ -8944,21 +8927,17 @@ class Z80_assemble {
             buffer,
         };
     }
-    ;
     parseAddress(addrToken) {
         return parse_addr_1.default.parseAddress(addrToken, this.label2value);
     }
-    ;
     getMap() {
         return Z80_assemble.hashMapArray(this.label2value);
     }
-    ;
     static hashMapArray(mapLabelToAddress) {
         return Object.keys(mapLabelToAddress).map(label => {
-            return { "label": label, "address": mapLabelToAddress[label] };
+            return { label, address: mapLabelToAddress[label] };
         }).sort((a, b) => { return a.address - b.address; });
     }
-    ;
 }
 exports.default = Z80_assemble;
 module.exports = Z80_assemble;
@@ -9086,10 +9065,10 @@ class MemoryBank extends imem_1.default {
         }
     }
     peekByte(address) {
-        return (this.mem[address - this.startAddr]).peek(address) & 0xff;
+        return this.mem[address - this.startAddr].peek(address) & 0xff;
     }
     pokeByte(address, value) {
-        (this.mem[address - this.startAddr]).poke(address, value & 0xff);
+        this.mem[address - this.startAddr].poke(address, value & 0xff);
     }
 }
 exports.default = MemoryBank;
@@ -9200,7 +9179,6 @@ class Z80_Register {
         this.R = 0;
         this.I = 0;
     }
-    ;
     initTable() {
         const setPTable = (idx, value) => {
             this._flagTable[this._PTableIndex + idx] = value;
@@ -9269,33 +9247,33 @@ class Z80_Register {
     lo8(nn) {
         return nn & 0xff;
     }
-    setB(n) { n = n; this._B = (n & 0xff); }
+    setB(n) { this._B = (n & 0xff); }
     getB() { return this._B; }
-    setC(n) { n = n; this._C = (n & 0xff); }
+    setC(n) { this._C = (n & 0xff); }
     getC() { return this._C; }
-    setD(n) { n = n; this._D = (n & 0xff); }
+    setD(n) { this._D = (n & 0xff); }
     getD() { return this._D; }
-    setE(n) { n = n; this._E = (n & 0xff); }
+    setE(n) { this._E = (n & 0xff); }
     getE() { return this._E; }
-    setH(n) { n = n; this._H = (n & 0xff); }
+    setH(n) { this._H = (n & 0xff); }
     getH() { return this._H; }
-    setL(n) { n = n; this._L = (n & 0xff); }
+    setL(n) { this._L = (n & 0xff); }
     getL() { return this._L; }
-    setA(n) { n = n; this._A = (n & 0xff); }
+    setA(n) { this._A = (n & 0xff); }
     getA() { return this._A; }
-    setF(n) { n = n; this._F = (n & 0xff); }
+    setF(n) { this._F = (n & 0xff); }
     getF() { return this._F; }
-    setBC(nn) { nn = nn; this._B = this.hi8(nn); this._C = this.lo8(nn); }
+    setBC(nn) { this._B = this.hi8(nn); this._C = this.lo8(nn); }
     getBC() { return this.pair(this._B, this._C); }
-    setDE(nn) { nn = nn; this._D = this.hi8(nn); this._E = this.lo8(nn); }
+    setDE(nn) { this._D = this.hi8(nn); this._E = this.lo8(nn); }
     getDE() { return this.pair(this._D, this._E); }
-    setHL(nn) { nn = nn; this._H = this.hi8(nn); this._L = this.lo8(nn); }
+    setHL(nn) { this._H = this.hi8(nn); this._L = this.lo8(nn); }
     getHL() { return this.pair(this._H, this._L); }
-    setAF(nn) { nn = nn; this._A = this.hi8(nn); this._F = this.lo8(nn); }
+    setAF(nn) { this._A = this.hi8(nn); this._F = this.lo8(nn); }
     getAF() { return this.pair(this._A, this._F); }
-    testFlag(mask) { mask = mask; return ((this._F & mask) ? 1 : 0); }
-    setFlag(mask) { mask = mask; this._F = this._F | mask; }
-    clearFlag(mask) { mask = mask; this._F = this._F & ((~mask) & 0xff); }
+    testFlag(mask) { return ((this._F & mask) ? 1 : 0); }
+    setFlag(mask) { this._F = this._F | mask; }
+    clearFlag(mask) { this._F = this._F & ((~mask) & 0xff); }
     flagS() { return ((this._F & Z80_Register.S_FLAG) ? 1 : 0); }
     flagZ() { return ((this._F & Z80_Register.Z_FLAG) ? 1 : 0); }
     flagH() { return ((this._F & Z80_Register.H_FLAG) ? 1 : 0); }
@@ -9557,14 +9535,8 @@ class Z80_Register {
             IY: this.IY,
             R: this.R,
             I: this.I,
-            _: null,
-            IFF1: 0,
-            IFF2: 0,
-            IM: 0,
-            HALT: null,
         };
     }
-    ;
     clear() {
         this._B = 0;
         this._C = 0;
@@ -9675,7 +9647,6 @@ class Z80_Register {
         }
         this.setAF(Z80_Register.DAATable[i]);
     }
-    ;
 }
 exports.default = Z80_Register;
 Z80_Register.S_FLAG = 0x80;
@@ -9922,6 +9893,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 class EventDispatcher {
     constructor() {
         this._handlers = {};
+        this._handlers = {};
     }
     declareEvent(eventName) {
         this._handlers[eventName] = [];
@@ -10024,7 +9996,6 @@ class Intel8253 {
         const index = (ctrlword & 0xc0) >> 6;
         this._counter[index].setCtrlWord(ctrlword & 0x3f);
     }
-    ;
     counter(index) {
         return this._counter[index];
     }
@@ -10571,7 +10542,7 @@ dumplist.prototype.redraw = function() {
 dumplist.prototype.addrSpecifier = function() {
     return $("<div/>").Z80AddressSpecifier("create")
         .on("queryregister", async (event, regName, callback) => {
-            const reg = await this._mz700js.getRegister();
+            const [reg] = await this._mz700js.getRegister();
             callback(reg[regName]);
         })
         .on("notifyaddress", (event, address) => {
@@ -10814,9 +10785,9 @@ Z80RegView.prototype.create = function() {
     this.elemR_ = this.$R_.get(0);
 };
 
-Z80RegView.prototype.updateRegister = function (reg) {
+Z80RegView.prototype.updateRegister = function ([reg, _reg]) {
     this.update(reg);
-    this.update_(reg._);
+    this.update_(_reg);
     this.IFF1(reg.IFF1);
     this.IFF2(reg.IFF2);
     this.IM(reg.IM);
@@ -10980,7 +10951,7 @@ function asmlist(element) {
     this._currentAddr = null;
     this._breakpoints = {};
     this._opts = {
-        onSetBreak: ()=>{},
+        onSetBreak: ()=>{ /* empty */ },
     };
 }
 
@@ -11257,7 +11228,7 @@ var asmview = function(element) {
     this._root = $(element);
     this._root.tabview("create");
     this._opts = {
-        onSetBreak: ()=>{},
+        onSetBreak: ()=>{ /* empty */ },
     };
 };
 
@@ -11458,10 +11429,10 @@ class MZDataRecorder {
         this.cmtMessageArea = $("<span/>").addClass("cmt-message").html("(EMPTY)");
         this.opts = {
             mz700js: null,
-            onRecPushed: ()=>{},
-            onPlayPushed: ()=>{},
-            onStopPushed: ()=>{},
-            onEjectPushed: ()=>{},
+            onRecPushed: ()=>{ /* empty */ },
+            onPlayPushed: ()=>{ /* empty */ },
+            onStopPushed: ()=>{ /* empty */ },
+            onEjectPushed: ()=>{ /* empty */ },
         }
         this._mz700js = null;
     }
@@ -11834,33 +11805,6 @@ THE SOFTWARE.
     const mz700scrn = require("../mz700-scrn.js");
     const jquery_plugin_class = require("./jquery_plugin_class");
     jquery_plugin_class("mz700scrn");
-
-    /**
-     * Convert the inner text of the HTML element to MZ-700 VRAM
-     * @param {HTMLElement} element the element to convert
-     * @return {undefined}
-     */
-    mz700scrn.convert = element => {
-        const $e = $(element);
-        const charSize = parseInt($e.attr("charSize")) || 8;
-        const padding = parseInt($e.attr("padding")) || 0;
-        const fg = (7 & parseInt($e.attr("color") || "7"));
-        const bg = (7 & parseInt($e.attr("bgColor") || "1"));
-        const text = element.innerText;
-        const chars = mz700scrn.str2chars(text);
-
-        $e.empty().mz700scrn("create", {
-            cols: chars.length + padding * 2,
-            rows: 1 + padding * 2,
-            width: charSize * (chars.length + padding * 2) + "px",
-            color: fg, backgroundColor: bg,
-            alt: text, title: text
-        }).mz700scrn("setupRendering").mz700scrn("clear")
-        .mz700scrn("putChars", chars, padding, padding);
-
-        $e.find("canvas").css("display", "inherit");
-    };
-
     window.mz700scrn = mz700scrn;
 }());
 
@@ -11873,8 +11817,8 @@ THE SOFTWARE.
         $(this.element).addClass("soundctrl");
         this.opt = {
             "sound": null,
-            "onChangeVolume": function(/*volume*/) {},
-            "onChangeMute": function(/*mute*/) {},
+            "onChangeVolume": function(/*volume*/) { /* empty */ },
+            "onChangeMute": function(/*mute*/) { /* empty */ },
             "urlIconOn": 'images/icon-sound-on.svg',
             "urlIconOff": 'images/icon-sound-off.svg',
             "colOn": 'red',
@@ -12203,8 +12147,8 @@ ToggleButton.prototype.create = function(opt) {
     MZ700ImgButton.prototype.create.call(this, opt);
 
     const thisOpts = {
-        on: (/*button*/)=>{},
-        off: (/*button*/)=>{},
+        on: (/*button*/)=>{ /* empty */ },
+        off: (/*button*/)=>{ /* empty */ },
         autoState: true,
         imgOff: null,
         imgOn: null,
@@ -12303,8 +12247,8 @@ jquery_plugin_class("ToolWindow");
 function ToolWindow(element) {
     this._element = element;
     this._opts = {
-        onOpened: ()=>{},
-        onClosed: ()=>{},
+        onOpened: ()=>{ /* empty */ },
+        onClosed: ()=>{ /* empty */ },
     }
     this.content = $(this._element);
     this.wndBase = $("<div/>").addClass("toolwnd");
@@ -12839,7 +12783,7 @@ function requestJsonp(callbackName, url, callback) {
     return new Promise((resolve, reject) => {
         window[callbackName] = (...args) => {
             if (callback) {
-                callback.apply(null, args);
+                callback(...args);
             }
             resolve(args[0]);
         };
@@ -12880,7 +12824,6 @@ class MZBeep {
         this.sustainLebel = 0.8;
         this.releaseTime = 0.050;
         this.audio = null;
-        this.totalGain = null;
         this.totalGainNode = null;
         this.gain = 0;
         this.poly = 128;
@@ -12909,17 +12852,15 @@ class MZBeep {
             this.resume();
         }
     }
-    ;
     resumed() {
         return this.audio.state === "running";
     }
-    ;
     resume() {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.audio.resume();
+            return;
         });
     }
-    ;
     setGain(gain) {
         if (gain < 0) {
             gain = 0;
@@ -13604,9 +13545,6 @@ class MZ700CanvasRenderer {
     }
     setupRendering() {
         this._ctx = this._canvas.getContext('2d');
-        this._ctx.mozImageSmoothingEnabled = true;
-        this._ctx.webkitImageSmoothingEnabled = true;
-        this._ctx.msImageSmoothingEnabled = true;
         this._ctx.imageSmoothingEnabled = true;
     }
     redrawChar(atb, dispCode) {
@@ -13786,9 +13724,6 @@ if (!global.ImageData) {
 class mz700cg {
     constructor(patternBuffer, width, height) {
         this._fontTable = null;
-        patternBuffer = patternBuffer;
-        width = width;
-        height = height;
         this._fontTable = null;
         this._patternBuffer = patternBuffer;
         this._width = width;
@@ -14445,6 +14380,27 @@ class mz700scrn extends mz700_canvas_renderer_1.default {
         if (this.opt.title != null) {
             this._canvas.setAttribute("title", this.opt.title);
         }
+    }
+    static convert(element) {
+        const $e = $(element);
+        const charSize = parseInt($e.attr("charSize")) || 8;
+        const padding = parseInt($e.attr("padding")) || 0;
+        const fg = (7 & parseInt($e.attr("color") || "7"));
+        const bg = (7 & parseInt($e.attr("bgColor") || "1"));
+        const text = element.innerText;
+        const chars = mz700scrn.str2chars(text);
+        const scrnText = new mz700scrn(element);
+        scrnText.create({
+            cols: chars.length + padding * 2,
+            rows: 1 + padding * 2,
+            width: charSize * (chars.length + padding * 2) + "px",
+            color: fg, backgroundColor: bg,
+            alt: text, title: text
+        });
+        scrnText.setupRendering();
+        scrnText.clear();
+        scrnText.putChars(chars, padding, padding);
+        $e.find("canvas").css("display", "inherit");
     }
 }
 exports.default = mz700scrn;

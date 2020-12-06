@@ -26,8 +26,8 @@ ToggleButton.prototype.create = function(opt) {
     MZ700ImgButton.prototype.create.call(this, opt);
 
     const thisOpts = {
-        on: (/*button*/)=>{},
-        off: (/*button*/)=>{},
+        on: (/*button*/)=>{ /* empty */ },
+        off: (/*button*/)=>{ /* empty */ },
         autoState: true,
         imgOff: null,
         imgOn: null,

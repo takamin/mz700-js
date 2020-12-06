@@ -27,9 +27,6 @@ export default class mz700cg {
     _width:number;
     _height:number;
     constructor(patternBuffer:number[][], width:number, height:number) {
-        patternBuffer = patternBuffer;
-        width = width;
-        height = height;
         this._fontTable = null;
         this._patternBuffer = patternBuffer;
         this._width = width;
@@ -41,7 +38,7 @@ export default class mz700cg {
      *
      * @returns {undefined}
      */
-    createFontTable() {
+    createFontTable():void {
         // 256 attributes x 256 character display codes
         // attribute: b7 b6 b5 b4 b3 b2 b1 b0
         //            -- -------- -- --------
@@ -74,7 +71,7 @@ export default class mz700cg {
      *
      * @returns {undefined}
      */
-    initFont(atb, dispCode) {
+    initFont(atb:number, dispCode:number):void {
         const pattern = this._patternBuffer[atb * 256 + dispCode];
         for (let bg = 0; bg < 8; bg++) {
             for (let fg = 0; fg < 8; fg++) {
@@ -104,7 +101,7 @@ export default class mz700cg {
      *
      * @returns {undefined}
      */
-    setPattern(atb, dispCode, row, pattern) {
+    setPattern(atb:number, dispCode:number, row:number, pattern:number):void{
         const cpos = atb * 256 + dispCode;
         this._patternBuffer[cpos][row] = pattern;
         this.initFont(atb, dispCode);
@@ -121,7 +118,7 @@ export default class mz700cg {
      *
      * @returns {FontImage} A font image.
      */
-    get(attr, dispCode) {
+    get(attr:number, dispCode:number):FontImage {
         return this._fontTable[mz700cg.tableIndex(attr, dispCode)];
     }
     /**
@@ -136,7 +133,7 @@ export default class mz700cg {
      *
      * @returns {number} an index of the font table.
      */
-    static tableIndex(attr, dispCode) {
+    static tableIndex(attr:number, dispCode:number):number {
         return attr << 8 | dispCode;
     }
 

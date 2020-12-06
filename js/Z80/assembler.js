@@ -32,11 +32,9 @@ class Z80_assemble {
             this.closeAssembling(this.label2value);
         }
     }
-    ;
     isAddressExplicit() {
         return this._explicitAddress;
     }
-    ;
     static hasExplicitAddress(assembleList) {
         for (const asm of assembleList) {
             if (asm.mnemonic === "ORG") {
@@ -45,7 +43,6 @@ class Z80_assemble {
         }
         return false;
     }
-    ;
     closeAssembling(mapLabelToAddress) {
         Z80_assemble.resolveAddress(this.list, mapLabelToAddress);
         const range = Z80_assemble.measureCodeSize(this.list);
@@ -53,13 +50,11 @@ class Z80_assemble {
         this.maxAddr = range.minAddr;
         this.buffer = Z80_assemble.createMachineCode(this.list, this.minAddr, this.maxAddr - this.minAddr + 1);
     }
-    ;
     static resolveAddress(assembleList, mapLabelToAddress) {
         assembleList.forEach(line => {
             line.resolveAddress(mapLabelToAddress);
         });
     }
-    ;
     static measureCodeSize(assembleList) {
         let minAddr = null;
         let maxAddr = null;
@@ -76,7 +71,6 @@ class Z80_assemble {
         });
         return { minAddr, maxAddr };
     }
-    ;
     static createMachineCode(assembleList, minAddr, bytesize) {
         const buffer = new Array(bytesize);
         assembleList.forEach(line => {
@@ -89,7 +83,6 @@ class Z80_assemble {
         });
         return buffer;
     }
-    ;
     static assemble(sources) {
         const assembled = [];
         let startAddr = 0;
@@ -141,21 +134,17 @@ class Z80_assemble {
             buffer,
         };
     }
-    ;
     parseAddress(addrToken) {
         return parse_addr_1.default.parseAddress(addrToken, this.label2value);
     }
-    ;
     getMap() {
         return Z80_assemble.hashMapArray(this.label2value);
     }
-    ;
     static hashMapArray(mapLabelToAddress) {
         return Object.keys(mapLabelToAddress).map(label => {
-            return { "label": label, "address": mapLabelToAddress[label] };
+            return { label, address: mapLabelToAddress[label] };
         }).sort((a, b) => { return a.address - b.address; });
     }
-    ;
 }
 exports.default = Z80_assemble;
 module.exports = Z80_assemble;

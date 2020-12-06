@@ -16,6 +16,7 @@ require("fullscrn");
 const b_box_1 = __importDefault(require("b-box"));
 const dock_n_liquid_1 = __importDefault(require("dock-n-liquid"));
 const mz700_1 = __importDefault(require("./mz700"));
+const mz700_scrn_1 = __importDefault(require("../lib/mz700-scrn"));
 const mz_beep_1 = __importDefault(require("../lib/mz-beep"));
 const mz_tape_1 = __importDefault(require("../lib/mz-tape"));
 const mz_tape_header_1 = __importDefault(require("../lib/mz-tape-header"));
@@ -253,7 +254,7 @@ function createUI(mz700js, mz700screen, canvas) {
             btnStart.MZ700ImgButton("setImg", imgBtnRunOff);
             btnStep.prop('disabled', '');
             btnStep.MZ700ImgButton("setImg", imgBtnStepOff);
-            const reg = yield mz700js.getRegister();
+            const [reg] = yield mz700js.getRegister();
             asmView.asmview("currentLine", reg.PC);
             btnExecImm.prop("disabled", false);
         }));
@@ -343,8 +344,8 @@ function createUI(mz700js, mz700screen, canvas) {
         let regUpdTid = null;
         let regVisibility = false;
         const Z80RegViewUpdateRegister = () => __awaiter(this, void 0, void 0, function* () {
-            const reg = yield mz700js.getRegister();
-            regview.Z80RegView("updateRegister", reg);
+            const [reg, _reg] = yield mz700js.getRegister();
+            regview.Z80RegView("updateRegister", [reg, _reg]);
         });
         const Z80RegViewAutoUpdate = (status) => __awaiter(this, void 0, void 0, function* () {
             if (status) {
@@ -411,7 +412,7 @@ function createUI(mz700js, mz700screen, canvas) {
         const asmlistMzt = asmView.asmview("newAsmList", "mzt", "PCG-700 sample");
         const asmlistSrc = yield new Promise(resolve => $.get("./MZ-700/pcg700-sample.asm", {}, resolve));
         yield asmlistAssemble(asmlistMzt, asmlistSrc);
-        const getText = url => {
+        const getText = (url) => {
             return new Promise(resolve => $.get(url, {}, resolve));
         };
         const readme = yield getText("./mz_newmon/newmon_readme.txt");
@@ -441,7 +442,7 @@ function createUI(mz700js, mz700screen, canvas) {
                     let src = 'ORG ' + number_util_1.default.HEX(addr, 4) + "H\r\n";
                     src += par.find("input.mnemonic").val() + "\r\n";
                     const bin = assembler_1.default.assemble([src]).obj[0];
-                    const reg = yield mz700js.getRegister();
+                    const [reg] = yield mz700js.getRegister();
                     const execAddr = yield mz700js.writeAsmCode(bin);
                     yield mz700js.setPC(execAddr);
                     yield mz700js.step();
@@ -493,7 +494,7 @@ function createUI(mz700js, mz700screen, canvas) {
             }
             resizeScreen();
         }));
-        const readBinFile = file => {
+        const readBinFile = (file) => {
             return new Promise((resolve, reject) => {
                 try {
                     const reader = new FileReader();
@@ -507,7 +508,7 @@ function createUI(mz700js, mz700screen, canvas) {
                 }
             });
         };
-        const readTextFile = file => {
+        const readTextFile = (file) => {
             return new Promise((resolve, reject) => {
                 try {
                     const reader = new FileReader();
@@ -603,6 +604,7 @@ function createUI(mz700js, mz700screen, canvas) {
                 catch (err) {
                     console.error(`Error: Loading file ${file.name} ${err.message}`);
                 }
+                return;
             });
             setupDragDrop(canvas, {
                 "MZT": mztFileLoader,
@@ -649,7 +651,7 @@ function createUI(mz700js, mz700screen, canvas) {
                 break;
         }
         for (const element of document.querySelectorAll("span.mz700scrn")) {
-            window.mz700scrn.convert(element);
+            mz700_scrn_1.default.convert(element);
         }
         yield new Promise(resolve => mz700screen.show(0, resolve));
         resizeScreen();

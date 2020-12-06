@@ -29,7 +29,6 @@ class Z80_Register {
         this.R = 0;
         this.I = 0;
     }
-    ;
     initTable() {
         const setPTable = (idx, value) => {
             this._flagTable[this._PTableIndex + idx] = value;
@@ -98,33 +97,33 @@ class Z80_Register {
     lo8(nn) {
         return nn & 0xff;
     }
-    setB(n) { n = n; this._B = (n & 0xff); }
+    setB(n) { this._B = (n & 0xff); }
     getB() { return this._B; }
-    setC(n) { n = n; this._C = (n & 0xff); }
+    setC(n) { this._C = (n & 0xff); }
     getC() { return this._C; }
-    setD(n) { n = n; this._D = (n & 0xff); }
+    setD(n) { this._D = (n & 0xff); }
     getD() { return this._D; }
-    setE(n) { n = n; this._E = (n & 0xff); }
+    setE(n) { this._E = (n & 0xff); }
     getE() { return this._E; }
-    setH(n) { n = n; this._H = (n & 0xff); }
+    setH(n) { this._H = (n & 0xff); }
     getH() { return this._H; }
-    setL(n) { n = n; this._L = (n & 0xff); }
+    setL(n) { this._L = (n & 0xff); }
     getL() { return this._L; }
-    setA(n) { n = n; this._A = (n & 0xff); }
+    setA(n) { this._A = (n & 0xff); }
     getA() { return this._A; }
-    setF(n) { n = n; this._F = (n & 0xff); }
+    setF(n) { this._F = (n & 0xff); }
     getF() { return this._F; }
-    setBC(nn) { nn = nn; this._B = this.hi8(nn); this._C = this.lo8(nn); }
+    setBC(nn) { this._B = this.hi8(nn); this._C = this.lo8(nn); }
     getBC() { return this.pair(this._B, this._C); }
-    setDE(nn) { nn = nn; this._D = this.hi8(nn); this._E = this.lo8(nn); }
+    setDE(nn) { this._D = this.hi8(nn); this._E = this.lo8(nn); }
     getDE() { return this.pair(this._D, this._E); }
-    setHL(nn) { nn = nn; this._H = this.hi8(nn); this._L = this.lo8(nn); }
+    setHL(nn) { this._H = this.hi8(nn); this._L = this.lo8(nn); }
     getHL() { return this.pair(this._H, this._L); }
-    setAF(nn) { nn = nn; this._A = this.hi8(nn); this._F = this.lo8(nn); }
+    setAF(nn) { this._A = this.hi8(nn); this._F = this.lo8(nn); }
     getAF() { return this.pair(this._A, this._F); }
-    testFlag(mask) { mask = mask; return ((this._F & mask) ? 1 : 0); }
-    setFlag(mask) { mask = mask; this._F = this._F | mask; }
-    clearFlag(mask) { mask = mask; this._F = this._F & ((~mask) & 0xff); }
+    testFlag(mask) { return ((this._F & mask) ? 1 : 0); }
+    setFlag(mask) { this._F = this._F | mask; }
+    clearFlag(mask) { this._F = this._F & ((~mask) & 0xff); }
     flagS() { return ((this._F & Z80_Register.S_FLAG) ? 1 : 0); }
     flagZ() { return ((this._F & Z80_Register.Z_FLAG) ? 1 : 0); }
     flagH() { return ((this._F & Z80_Register.H_FLAG) ? 1 : 0); }
@@ -386,14 +385,8 @@ class Z80_Register {
             IY: this.IY,
             R: this.R,
             I: this.I,
-            _: null,
-            IFF1: 0,
-            IFF2: 0,
-            IM: 0,
-            HALT: null,
         };
     }
-    ;
     clear() {
         this._B = 0;
         this._C = 0;
@@ -504,7 +497,6 @@ class Z80_Register {
         }
         this.setAF(Z80_Register.DAATable[i]);
     }
-    ;
 }
 exports.default = Z80_Register;
 Z80_Register.S_FLAG = 0x80;

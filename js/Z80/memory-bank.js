@@ -40,10 +40,10 @@ class MemoryBank extends imem_1.default {
         }
     }
     peekByte(address) {
-        return (this.mem[address - this.startAddr]).peek(address) & 0xff;
+        return this.mem[address - this.startAddr].peek(address) & 0xff;
     }
     pokeByte(address, value) {
-        (this.mem[address - this.startAddr]).poke(address, value & 0xff);
+        this.mem[address - this.startAddr].poke(address, value & 0xff);
     }
 }
 exports.default = MemoryBank;

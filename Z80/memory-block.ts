@@ -8,7 +8,7 @@ import IMem from "./imem";
  */
 export default class MemoryBlock extends IMem {
     mem:number[];
-    constructor(opt?) {
+    constructor(opt?:{size?:number, startAddr?:number}) {
         super();
         super.create(opt);
         this.mem = new Array(this.size);

@@ -17,7 +17,7 @@ class MZ700_NewMonitor extends memory_block_1.default {
             memory_block_1.default.prototype.pokeByte.call(this, address, bin[address]);
         }
     }
-    pokeByte() {
+    pokeByte(address, value) {
     }
 }
 exports.default = MZ700_NewMonitor;

@@ -71,16 +71,16 @@ MZ700.prototype.subscribe = function(notify, handler) {
 function createMZ700() {
     const mz700 = new MZ700();
     mz700.create({
-        "started": ()=> { },
-        "stopped": ()=> { },
-        "onBreak" : ()=> { },
+        "started": ()=> { /* empty */ },
+        "stopped": ()=> { /* empty */ },
+        "onBreak" : ()=> { /* empty */ },
         "onVramUpdate": (index, dispcode, attr)=>{
             cliCommandVram.setAt(index, dispcode, attr);
         },
-        'startSound': ()=> { },
-        'stopSound': ()=> { },
-        "onStartDataRecorder": ()=>{ },
-        "onStopDataRecorder": ()=>{ }
+        'startSound': ()=> { /* empty */ },
+        'stopSound': ()=> { /* empty */ },
+        "onStartDataRecorder": ()=>{ /* empty */ },
+        "onStopDataRecorder": ()=>{ /* empty */ }
     });
     return mz700;
 }

@@ -11,25 +11,24 @@ export default class MZBeep {
      * Minimum frequency
      * @type {number}
      */
-    static FREQ_MIN:number = -24000;
+    static FREQ_MIN = -24000;
 
     /**
      * Maximum frequency
      * @type {number}
      */
-    static FREQ_MAX:number = 24000;
+    static FREQ_MAX = 24000;
 
-    attackTime:number = 0.010;
-    decayTime:number = 0.010;
-    sustainLebel:number = 0.8;
-    releaseTime:number = 0.050;
+    attackTime = 0.010;
+    decayTime = 0.010;
+    sustainLebel = 0.8;
+    releaseTime = 0.050;
 
-    audio = null;
-    totalGain = null;
-    totalGainNode = null;
-    gain:number = 0;
-    poly:number = 128;
-    indexOsc:number = 0;
+    audio:AudioContext = null;
+    totalGainNode:GainNode = null;
+    gain = 0;
+    poly = 128;
+    indexOsc = 0;
     oscNodes:OscillatorNode[] = null;
     oscGainNodes:GainNode[] = null;
 
@@ -57,7 +56,7 @@ export default class MZBeep {
         if(!this.resumed()) {
             this.resume();
         }
-    };
+    }
 
     /**
      * Check the audio API is resumed (available).
@@ -66,16 +65,17 @@ export default class MZBeep {
      */
     resumed():boolean {
         return this.audio.state === "running";
-    };
+    }
 
     /**
      * Resume the Audio API that was blocked by its platform.
      * @async
      * @returns {Promise<undefined>} that will be resolved.
      */
-    async resume() {
+    async resume():Promise<undefined> {
         await this.audio.resume();
-    };
+        return;
+    }
 
     /**
      * Set beep gain.

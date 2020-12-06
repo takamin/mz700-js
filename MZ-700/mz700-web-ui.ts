@@ -5,6 +5,7 @@ import BBox from "b-box";
 import dock_n_liquid from "dock-n-liquid";
 
 import MZ700 from "./mz700";
+import mz700scrn from "../lib/mz700-scrn";
 import MZBeep from "../lib/mz-beep";
 import MZ_Tape from "../lib/mz-tape";
 import MZ_TapeHeader from "../lib/mz-tape-header";
@@ -31,12 +32,26 @@ require("../lib/jquery-plugin/jquery.mz-data-recorder.js");
 require("../lib/jquery-plugin/jquery.toggle-button.js");
 require("../lib/jquery-plugin/jquery.tool-window.js");
 
+type MZ700ImgButton = JQuery<HTMLElement> & { MZ700ImgButton: (method:string, ...any) => MZ700ImgButton };
+type mz700keyboard = JQuery<HTMLElement> & { mz700keyboard: (method:string, ...any) => mz700keyboard };
+type ToggleButton = JQuery<HTMLElement> & { ToggleButton: (method:string, ...any) => ToggleButton };
+type MZSoundControl = JQuery<HTMLElement> & { MZSoundControl: (method:string, ...any) => MZSoundControl };
+type EmuSpeedControl = JQuery<HTMLElement> & { EmuSpeedControl: (method:string, ...any) => EmuSpeedControl };
+type MZDataRecorder = JQuery<HTMLElement> & { MZDataRecorder: (method:string, ...any) => MZDataRecorder };
+type Z80RegView = JQuery<HTMLElement> & { Z80RegView: (method:string, ...any) => Z80RegView };
+type ToolWindow = JQuery<HTMLElement> & { ToolWindow: (method:string, ...any) => ToolWindow };
+type dumplist = JQuery<HTMLElement> & { dumplist: (method:string, ...any) => dumplist };
+type asmview = JQuery<HTMLElement> & {
+    asmview: (method:string, ...any) => asmview,
+    asmlist: (method:string, ...any) => asmview,
+};
+
 /**
  * MONITOR ROM を読み込む。
  * @param {string} filename ROM filename
  * @return {Array<number>} Uint8Arrayを配列に変換したもの
  */
-async function loadMonitorROM(filename) {
+async function loadMonitorROM(filename):Promise<number[]> {
     const monitorRom = await new Promise(resolve => {
         const xhr = new XMLHttpRequest();
         xhr.open("GET", `./mz_newmon/ROMS/${filename}`, true);
@@ -49,7 +64,7 @@ async function loadMonitorROM(filename) {
             }
         };
         xhr.send(null);
-    });
+    }) as number[];
     return monitorRom;
 }
 
@@ -124,7 +139,7 @@ async function createUI(mz700js, mz700screen, canvas) {
 
     // Set module version to the page title
     {
-        const {name, version, description} = packageJson as any;
+        const {name, version, description} = packageJson as {name:string, version:string, description:string};
         const pageTitle = `${description}(${name}@${version})`;
         $("title").html(pageTitle);
         $("h1 .mz700scrn").html(pageTitle);
@@ -244,7 +259,7 @@ async function createUI(mz700js, mz700screen, canvas) {
     }
 
     // Reset Button
-    const btnReset = ($("<button/>") as any).MZ700ImgButton("create", {
+    const btnReset = ($("<button/>") as MZ700ImgButton).MZ700ImgButton("create", {
         img: imgBtnResetOff,
     }).click(async () => {
         await mz700js.stop();
@@ -260,7 +275,7 @@ async function createUI(mz700js, mz700screen, canvas) {
     let _isRunning = false;
 
     // Run/Stop/Step Button
-    const btnStart = ($("<button/>") as any).MZ700ImgButton("create", {
+    const btnStart = ($("<button/>") as MZ700ImgButton).MZ700ImgButton("create", {
         img: imgBtnRunOff,
     }).click(() => {
         _isRunning ? mz700js.stop() : mz700js.start();
@@ -270,7 +285,7 @@ async function createUI(mz700js, mz700screen, canvas) {
         () => btnStart.MZ700ImgButton("setImg",
                 _isRunning ? imgBtnStopOff : imgBtnRunOff),
     );
-    const btnStep = ($("<button/>") as any).MZ700ImgButton("create", {
+    const btnStep = ($("<button/>") as MZ700ImgButton).MZ700ImgButton("create", {
         img: imgBtnStepOff,
     }).click( () => mz700js.step() ).hover(
         () => {
@@ -328,16 +343,16 @@ async function createUI(mz700js, mz700screen, canvas) {
         btnStep.prop('disabled', '');
         btnStep.MZ700ImgButton("setImg", imgBtnStepOff);
 
-        const reg = await mz700js.getRegister();
+        const [reg] = await mz700js.getRegister();
         asmView.asmview("currentLine", reg.PC);
 
         btnExecImm.prop("disabled", false);
     });
 
     // Software keyboard
-    const keyboard = $("<div/>").css("display", "none").addClass("keyboard") as any;
+    const keyboard = $("<div/>").css("display", "none").addClass("keyboard") as mz700keyboard;
     ctrlPanel.append(keyboard);
-    keyboard.mz700keyboard("create", mz700js);
+    (keyboard as mz700keyboard).mz700keyboard("create", mz700js);
     if(getDeviceType() === "pc") {
         mz700container.mouseenter(() => {
             keyboard.mz700keyboard("acceptKey", true);
@@ -351,7 +366,7 @@ async function createUI(mz700js, mz700screen, canvas) {
     }
 
     // Create Screen keyboard button.
-    const screenKbButton = ($("<button/>") as any).ToggleButton("create", {
+    const screenKbButton = ($("<button/>") as ToggleButton).ToggleButton("create", {
         img: imgBtnScrnKbOff,
         imgOff: imgBtnScrnKbOff,
         imgOn: imgBtnScrnKbOn,
@@ -361,7 +376,7 @@ async function createUI(mz700js, mz700screen, canvas) {
     });
 
     // Create Full screen button.
-    const fullscreenButton = ($("<button/>") as any).ToggleButton("create", {
+    const fullscreenButton = ($("<button/>") as ToggleButton).ToggleButton("create", {
         img: imgBtnFullScrnOff,
         imgOff: imgBtnFullScrnOff,
         imgOn: imgBtnFullScrnOn,
@@ -381,16 +396,16 @@ async function createUI(mz700js, mz700screen, canvas) {
 
     const emulationPanel = $("<div/>").addClass("emulation-panel");
     emulationPanel
-        .append(($("<span/>") as any).MZSoundControl("create", mzBeep))
+        .append(($("<span/>") as MZSoundControl).MZSoundControl("create", mzBeep))
         .append(btnStart).append(btnReset).append(btnStep)
-        .append(($("<span/>") as any).EmuSpeedControl(
+        .append(($("<span/>") as EmuSpeedControl).EmuSpeedControl(
             "create", mz700js, MZ700.Z80_CLOCK))
         .append(screenKbButton)
         .append(fullscreenButton);
     ctrlPanel.append(emulationPanel)
 
     // Data Recorder UI
-    const dataRecorder = ($("<div/>") as any).MZDataRecorder("create", {
+    const dataRecorder = ($("<div/>") as MZDataRecorder).MZDataRecorder("create", {
         mz700js,
         onRecPushed: ()=>mz700js.dataRecorder_pushRec(),
         onPlayPushed: ()=>mz700js.dataRecorder_pushPlay(),
@@ -434,15 +449,15 @@ async function createUI(mz700js, mz700screen, canvas) {
     const dockPanelRight = $("#dock-panel-right").css("display", "none");
 
     // Register View
-    const regview = ($("<div/>") as any).Z80RegView("create");
-    const wndRegView = $("<div class='register-monitor tool-window close' title='REGISTER'/>") as any;
+    const regview = ($("<div/>") as Z80RegView).Z80RegView("create");
+    const wndRegView = $("<div class='register-monitor tool-window close' title='REGISTER'/>");
     dockPanelRight.append(wndRegView);
 
     let regUpdTid = null;
     let regVisibility = false;
     const Z80RegViewUpdateRegister = async () => {
-        const reg = await mz700js.getRegister();
-        regview.Z80RegView("updateRegister", reg);
+        const [reg, _reg] = await mz700js.getRegister();
+        regview.Z80RegView("updateRegister", [reg, _reg]);
     }
     const Z80RegViewAutoUpdate = async status => {
         if(status) {
@@ -470,22 +485,22 @@ async function createUI(mz700js, mz700screen, canvas) {
         }
     };
     (wndRegView
-        .append($("<div/>").css("display", "inline-block").append(regview)) as any)
+        .append($("<div/>").css("display", "inline-block").append(regview)) as ToolWindow)
         .ToolWindow("create", {
             onOpened: () => Z80RegViewVisibility(true),
             onClosed: () => Z80RegViewVisibility(false),
         });
 
     // Create dump list
-    const dumplist = ($("<div/>") as any).dumplist("init", {mz700js});
+    const dumplist = ($("<div/>") as dumplist).dumplist("init", {mz700js});
     const wndDumpList = $("<div class='tool-window memory open' title='MEMORY'/>");
     dockPanelRight.append(wndDumpList);
     (wndDumpList
         .append(dumplist.dumplist("addrSpecifier"))
-        .append(dumplist) as any).ToolWindow("create");
+        .append(dumplist) as ToolWindow).ToolWindow("create");
 
     // Create assemble list
-    const asmView = ($("<div/>") as any).asmview("create", {
+    const asmView = ($("<div/>") as asmview).asmview("create", {
         onSetBreak: async (addr, size, state) =>
             (state ?
                 await mz700js.addBreak(addr, size) :
@@ -494,7 +509,7 @@ async function createUI(mz700js, mz700screen, canvas) {
 
     const wndAsmList = $("<div class='tool-window open' title='Z80 ASM'/>");
     dockPanelRight.append(wndAsmList);
-    (wndAsmList.append(asmView) as any).ToolWindow("create");
+    (wndAsmList.append(asmView) as ToolWindow).ToolWindow("create");
 
     const asmlistAssemble = async (asmlistObj, asmsrc) => {
         asmlistObj.asmlist("text", asmsrc);
@@ -519,7 +534,7 @@ async function createUI(mz700js, mz700screen, canvas) {
     await asmlistAssemble(asmlistMzt, asmlistSrc);
 
     // Disassemble MONITOR ROM and show that source.
-    const getText:(url:string)=>Promise<string> = url => {
+    const getText = (url:string):Promise<string> => {
         return new Promise(resolve => $.get(url, {}, resolve));
     };
     const readme = await getText("./mz_newmon/newmon_readme.txt");
@@ -538,7 +553,7 @@ async function createUI(mz700js, mz700screen, canvas) {
     ].join("\n");
 
     const source = comment +  "\n" + Z80.dasmlines(Z80.dasm(
-        monitorRom, 0x0000, 0x1000, 0x0000
+        monitorRom as number[], 0x0000, 0x1000, 0x0000
     )).join("\n") + "\n";
 
     const monRom = asmView.asmview("newAsmList",
@@ -555,7 +570,7 @@ async function createUI(mz700js, mz700screen, canvas) {
                 let src = 'ORG ' + NumberUtil.HEX(addr, 4) + "H\r\n";
                 src += par.find("input.mnemonic").val() + "\r\n";
                 const bin = Z80_assemble.assemble([src]).obj[0];
-                const reg = await mz700js.getRegister();
+                const [reg] = await mz700js.getRegister();
                 const execAddr = await mz700js.writeAsmCode( bin );
                 await mz700js.setPC(execAddr);
                 await mz700js.step();
@@ -584,7 +599,7 @@ async function createUI(mz700js, mz700screen, canvas) {
                 .addClass("mnemonic"))
         .append(btnExecImm)
         .append($("<br/>"))
-    ) as any).ToolWindow("create");
+    ) as ToolWindow).ToolWindow("create");
 
     // Layout
     const dockPanelHeader = $("#dock-panel-header");
@@ -596,7 +611,7 @@ async function createUI(mz700js, mz700screen, canvas) {
             if(deviceType === "pc") {
                 await new Promise(
                     resolve => dockPanelRight.show(0, resolve));
-                if(wndRegView.ToolWindow("isOpen")) {
+                if((wndRegView as ToolWindow).ToolWindow("isOpen")) {
                     await Z80RegViewVisibility(true);
                 }
             }
@@ -606,7 +621,7 @@ async function createUI(mz700js, mz700screen, canvas) {
             if(deviceType === "pc") {
                 await new Promise(
                     resolve => dockPanelRight.hide(0, resolve));
-                if(wndRegView.ToolWindow("isOpen")) {
+                if((wndRegView as ToolWindow).ToolWindow("isOpen")) {
                     await Z80RegViewVisibility(false);
                 }
             }
@@ -616,7 +631,7 @@ async function createUI(mz700js, mz700screen, canvas) {
 
     // Accept MZT file to drop to the data recorder and MZ-700 screen
 
-    const readBinFile:(file:Blob) => Promise<ArrayBuffer> = file => {
+    const readBinFile = (file:Blob):Promise<ArrayBuffer> => {
         return new Promise((resolve, reject) => {
             try {
                 const reader = new FileReader();
@@ -630,7 +645,7 @@ async function createUI(mz700js, mz700screen, canvas) {
         });
     };
 
-    const readTextFile = file => {
+    const readTextFile = (file:Blob):Promise<string|ArrayBuffer> => {
         return new Promise((resolve, reject) => {
             try {
                 const reader = new FileReader();
@@ -719,9 +734,9 @@ async function createUI(mz700js, mz700screen, canvas) {
                 console.error(`Error: Loading file ${file.name} ${err.message}`);
             }
         };
-        const asmFileLoader = async file => {
+        const asmFileLoader = async (file:File):Promise<undefined> => {
             try {
-                const src = await readTextFile(file);
+                const src = await readTextFile(file) as string;
                 const obj = Z80_assemble.assemble([src]);
                 const hdr = MZ_TapeHeader.createNew();
                 hdr.setFilename(file.name);
@@ -733,6 +748,7 @@ async function createUI(mz700js, mz700screen, canvas) {
             } catch(err) {
                 console.error(`Error: Loading file ${file.name} ${err.message}`);
             }
+            return;
         };
         setupDragDrop(canvas, {
             "MZT": mztFileLoader,
@@ -780,7 +796,7 @@ async function createUI(mz700js, mz700screen, canvas) {
 
     // Convert MZ-700 character
     for(const element of document.querySelectorAll("span.mz700scrn")) {
-        (window as any).mz700scrn.convert(element);
+        mz700scrn.convert(element as HTMLElement);
     }
 
     await new Promise(resolve => mz700screen.show(0, resolve));

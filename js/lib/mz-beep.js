@@ -16,7 +16,6 @@ class MZBeep {
         this.sustainLebel = 0.8;
         this.releaseTime = 0.050;
         this.audio = null;
-        this.totalGain = null;
         this.totalGainNode = null;
         this.gain = 0;
         this.poly = 128;
@@ -45,17 +44,15 @@ class MZBeep {
             this.resume();
         }
     }
-    ;
     resumed() {
         return this.audio.state === "running";
     }
-    ;
     resume() {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.audio.resume();
+            return;
         });
     }
-    ;
     setGain(gain) {
         if (gain < 0) {
             gain = 0;

@@ -254,7 +254,7 @@ class MZ700_Memory extends memory_bank_1.default {
             }),
             MMAPED_IO: new memory_block_cbrw_1.default({
                 startAddr: 0xE000, size: 0x0800,
-                onPeek: opt.onMappedIoRead || (() => { }),
+                onPeek: opt.onMappedIoRead || (() => 0),
                 onPoke: opt.onMappedIoUpdate || (() => { })
             }),
             EXTND_ROM: new memory_block_1.default({
@@ -355,7 +355,7 @@ class MZ700_NewMonitor extends memory_block_1.default {
             memory_block_1.default.prototype.pokeByte.call(this, address, bin[address]);
         }
     }
-    pokeByte() {
+    pokeByte(address, value) {
     }
 }
 exports.default = MZ700_NewMonitor;
@@ -707,12 +707,12 @@ class MZ700 {
     }
     getRegister() {
         const reg = this.z80.reg.cloneRaw();
-        reg._ = this.z80.regB.cloneRaw();
+        const _reg = this.z80.regB.cloneRaw();
         reg.IFF1 = this.z80.IFF1;
         reg.IFF2 = this.z80.IFF2;
         reg.IM = this.z80.IM;
         reg.HALT = this.z80.HALT;
-        return reg;
+        return [reg, _reg];
     }
     setPC(addr) {
         this.z80.reg.PC = addr;
@@ -921,28 +921,22 @@ class Z80LineAssembler {
     setAddress(address) {
         this.address = address;
     }
-    ;
     setRefAddrTo(refAddrTo) {
         this.refAddrTo = refAddrTo;
     }
-    ;
     setLabel(label) {
         this.label = label;
     }
-    ;
     setComment(comment) {
         this.address = this.address || 0;
         this.comment = comment;
     }
-    ;
     getNextAddress() {
         return this.address + this.bytecode.length;
     }
-    ;
     getLastAddress() {
         return this.address + this.bytecode.length - 1;
     }
-    ;
     static joinOperand(srcOperand) {
         const dstOperand = [];
         let delimiterPushed = true;
@@ -1000,7 +994,6 @@ class Z80LineAssembler {
         });
         return code;
     }
-    ;
     static convertToAsciiCode(str, ascii) {
         const asciicodes = [];
         for (let i = 0; i < str.length;) {
@@ -1093,7 +1086,6 @@ class Z80LineAssembler {
         }
         return asciicodes;
     }
-    ;
     static parseIndexDisplacer(toks, indexOfSign) {
         const indexD = indexOfSign + (toks[indexOfSign].match(/^[+-]$/) ? 1 : 0);
         const d = parse_addr_1.default.parseNumLiteral(toks[indexD]);
@@ -1102,7 +1094,6 @@ class Z80LineAssembler {
         }
         return d;
     }
-    ;
     static create(mnemonic, operand, machineCode) {
         const asmline = new Z80LineAssembler();
         asmline.mnemonic = mnemonic;
@@ -1110,7 +1101,6 @@ class Z80LineAssembler {
         asmline.bytecode = machineCode || [];
         return asmline;
     }
-    ;
     static assemble(source, address, dictionary) {
         const asmline = new Z80LineAssembler();
         asmline.address = address;
@@ -1157,7 +1147,6 @@ class Z80LineAssembler {
         }
         return asmline;
     }
-    ;
     static tokenize(line) {
         const LEX_IDLE = 0;
         const LEX_NUMBER = 2;
@@ -1270,15 +1259,14 @@ class Z80LineAssembler {
         }
         return toks;
     }
-    ;
     resolveAddress(dictionary) {
         for (let j = 0; j < this.bytecode.length; j++) {
             if (typeof (this.bytecode[j]) === 'function') {
-                this.bytecode[j] = this.bytecode[j](dictionary);
+                const deref = this.bytecode[j];
+                this.bytecode[j] = deref(dictionary);
             }
         }
     }
-    ;
     assembleMnemonic(toks, dictionary) {
         const label = this.label;
         if (match_token(toks, ['ORG', null])) {
@@ -1687,17 +1675,17 @@ class Z80LineAssembler {
         }
         if (match_token(toks, [/^(BIT|SET|RES)$/, /^[0-7]$/, ',', /^[BCDEHLA]$/])) {
             switch (toks[0]) {
-                case 'BIT': return [oct_1.default("0313"), oct_1.default("0100") | (toks[1] << 3) | get8bitRegId(toks[3])];
-                case 'SET': return [oct_1.default("0313"), oct_1.default("0300") | (toks[1] << 3) | get8bitRegId(toks[3])];
-                case 'RES': return [oct_1.default("0313"), oct_1.default("0200") | (toks[1] << 3) | get8bitRegId(toks[3])];
+                case 'BIT': return [oct_1.default("0313"), oct_1.default("0100") | (parseInt(toks[1], 10) << 3) | get8bitRegId(toks[3])];
+                case 'SET': return [oct_1.default("0313"), oct_1.default("0300") | (parseInt(toks[1], 10) << 3) | get8bitRegId(toks[3])];
+                case 'RES': return [oct_1.default("0313"), oct_1.default("0200") | (parseInt(toks[1], 10) << 3) | get8bitRegId(toks[3])];
             }
             return [];
         }
         if (match_token(toks, [/^(BIT|SET|RES)$/, /^[0-7]$/, ',', '(', 'HL', ')'])) {
             switch (toks[0]) {
-                case 'BIT': return [oct_1.default("0313"), oct_1.default("0106") | (toks[1] << 3)];
-                case 'SET': return [oct_1.default("0313"), oct_1.default("0306") | (toks[1] << 3)];
-                case 'RES': return [oct_1.default("0313"), oct_1.default("0206") | (toks[1] << 3)];
+                case 'BIT': return [oct_1.default("0313"), oct_1.default("0106") | (parseInt(toks[1], 10) << 3)];
+                case 'SET': return [oct_1.default("0313"), oct_1.default("0306") | (parseInt(toks[1], 10) << 3)];
+                case 'RES': return [oct_1.default("0313"), oct_1.default("0206") | (parseInt(toks[1], 10) << 3)];
             }
             return [];
         }
@@ -1706,9 +1694,9 @@ class Z80LineAssembler {
             const prefix = getSubopeIXIY(toks[4]);
             const d8u = Z80LineAssembler.parseIndexDisplacer(toks, 5);
             switch (toks[0]) {
-                case 'BIT': return [prefix, oct_1.default("0313"), d8u, oct_1.default("0106") | (toks[1] << 3)];
-                case 'SET': return [prefix, oct_1.default("0313"), d8u, oct_1.default("0306") | (toks[1] << 3)];
-                case 'RES': return [prefix, oct_1.default("0313"), d8u, oct_1.default("0206") | (toks[1] << 3)];
+                case 'BIT': return [prefix, oct_1.default("0313"), d8u, oct_1.default("0106") | (parseInt(toks[1], 10) << 3)];
+                case 'SET': return [prefix, oct_1.default("0313"), d8u, oct_1.default("0306") | (parseInt(toks[1], 10) << 3)];
+                case 'RES': return [prefix, oct_1.default("0313"), d8u, oct_1.default("0206") | (parseInt(toks[1], 10) << 3)];
             }
             return [];
         }
@@ -2014,7 +2002,6 @@ class Z80LineAssembler {
         console.warn("**** ERROR: CANNOT ASSEMBLE:" + toks.join(" / "));
         return [];
     }
-    ;
 }
 exports.default = Z80LineAssembler;
 function getSubopeIXIY(tok) {
@@ -2145,8 +2132,9 @@ function match_token(toks, pattern, lastNullOfPatternMatchAll) {
                 }
             }
             else if (typeof (pattern[i]) === 'object') {
-                if (pattern[i].constructor.name === 'RegExp') {
-                    if (!pattern[i].test(toks[i])) {
+                if (pattern[i] instanceof RegExp) {
+                    const re = pattern[i];
+                    if (!re.test(toks[i])) {
                         return false;
                     }
                 }
@@ -8272,10 +8260,10 @@ class MemoryBank extends imem_1.default {
         }
     }
     peekByte(address) {
-        return (this.mem[address - this.startAddr]).peek(address) & 0xff;
+        return this.mem[address - this.startAddr].peek(address) & 0xff;
     }
     pokeByte(address, value) {
-        (this.mem[address - this.startAddr]).poke(address, value & 0xff);
+        this.mem[address - this.startAddr].poke(address, value & 0xff);
     }
 }
 exports.default = MemoryBank;
@@ -8386,7 +8374,6 @@ class Z80_Register {
         this.R = 0;
         this.I = 0;
     }
-    ;
     initTable() {
         const setPTable = (idx, value) => {
             this._flagTable[this._PTableIndex + idx] = value;
@@ -8455,33 +8442,33 @@ class Z80_Register {
     lo8(nn) {
         return nn & 0xff;
     }
-    setB(n) { n = n; this._B = (n & 0xff); }
+    setB(n) { this._B = (n & 0xff); }
     getB() { return this._B; }
-    setC(n) { n = n; this._C = (n & 0xff); }
+    setC(n) { this._C = (n & 0xff); }
     getC() { return this._C; }
-    setD(n) { n = n; this._D = (n & 0xff); }
+    setD(n) { this._D = (n & 0xff); }
     getD() { return this._D; }
-    setE(n) { n = n; this._E = (n & 0xff); }
+    setE(n) { this._E = (n & 0xff); }
     getE() { return this._E; }
-    setH(n) { n = n; this._H = (n & 0xff); }
+    setH(n) { this._H = (n & 0xff); }
     getH() { return this._H; }
-    setL(n) { n = n; this._L = (n & 0xff); }
+    setL(n) { this._L = (n & 0xff); }
     getL() { return this._L; }
-    setA(n) { n = n; this._A = (n & 0xff); }
+    setA(n) { this._A = (n & 0xff); }
     getA() { return this._A; }
-    setF(n) { n = n; this._F = (n & 0xff); }
+    setF(n) { this._F = (n & 0xff); }
     getF() { return this._F; }
-    setBC(nn) { nn = nn; this._B = this.hi8(nn); this._C = this.lo8(nn); }
+    setBC(nn) { this._B = this.hi8(nn); this._C = this.lo8(nn); }
     getBC() { return this.pair(this._B, this._C); }
-    setDE(nn) { nn = nn; this._D = this.hi8(nn); this._E = this.lo8(nn); }
+    setDE(nn) { this._D = this.hi8(nn); this._E = this.lo8(nn); }
     getDE() { return this.pair(this._D, this._E); }
-    setHL(nn) { nn = nn; this._H = this.hi8(nn); this._L = this.lo8(nn); }
+    setHL(nn) { this._H = this.hi8(nn); this._L = this.lo8(nn); }
     getHL() { return this.pair(this._H, this._L); }
-    setAF(nn) { nn = nn; this._A = this.hi8(nn); this._F = this.lo8(nn); }
+    setAF(nn) { this._A = this.hi8(nn); this._F = this.lo8(nn); }
     getAF() { return this.pair(this._A, this._F); }
-    testFlag(mask) { mask = mask; return ((this._F & mask) ? 1 : 0); }
-    setFlag(mask) { mask = mask; this._F = this._F | mask; }
-    clearFlag(mask) { mask = mask; this._F = this._F & ((~mask) & 0xff); }
+    testFlag(mask) { return ((this._F & mask) ? 1 : 0); }
+    setFlag(mask) { this._F = this._F | mask; }
+    clearFlag(mask) { this._F = this._F & ((~mask) & 0xff); }
     flagS() { return ((this._F & Z80_Register.S_FLAG) ? 1 : 0); }
     flagZ() { return ((this._F & Z80_Register.Z_FLAG) ? 1 : 0); }
     flagH() { return ((this._F & Z80_Register.H_FLAG) ? 1 : 0); }
@@ -8743,14 +8730,8 @@ class Z80_Register {
             IY: this.IY,
             R: this.R,
             I: this.I,
-            _: null,
-            IFF1: 0,
-            IFF2: 0,
-            IM: 0,
-            HALT: null,
         };
     }
-    ;
     clear() {
         this._B = 0;
         this._C = 0;
@@ -8861,7 +8842,6 @@ class Z80_Register {
         }
         this.setAF(Z80_Register.DAATable[i]);
     }
-    ;
 }
 exports.default = Z80_Register;
 Z80_Register.S_FLAG = 0x80;
@@ -9089,6 +9069,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 class EventDispatcher {
     constructor() {
         this._handlers = {};
+        this._handlers = {};
     }
     declareEvent(eventName) {
         this._handlers[eventName] = [];
@@ -9191,7 +9172,6 @@ class Intel8253 {
         const index = (ctrlword & 0xc0) >> 6;
         this._counter[index].setCtrlWord(ctrlword & 0x3f);
     }
-    ;
     counter(index) {
         return this._counter[index];
     }
@@ -9991,9 +9971,6 @@ class MZ700CanvasRenderer {
     }
     setupRendering() {
         this._ctx = this._canvas.getContext('2d');
-        this._ctx.mozImageSmoothingEnabled = true;
-        this._ctx.webkitImageSmoothingEnabled = true;
-        this._ctx.msImageSmoothingEnabled = true;
         this._ctx.imageSmoothingEnabled = true;
     }
     redrawChar(atb, dispCode) {
@@ -10173,9 +10150,6 @@ if (!global.ImageData) {
 class mz700cg {
     constructor(patternBuffer, width, height) {
         this._fontTable = null;
-        patternBuffer = patternBuffer;
-        width = width;
-        height = height;
         this._fontTable = null;
         this._patternBuffer = patternBuffer;
         this._width = width;

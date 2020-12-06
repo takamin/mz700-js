@@ -9,33 +9,33 @@ export default class MZ_DataRecorder {
     static RDATA_CYCLE_HI_SHORT = 700;
     static RDATA_CYCLE_LO = 700;
 
-    _mOn:boolean = false;
-    _play:boolean = false;
-    _rec:boolean = false;
-    _motor:boolean = false;
-    _wdata = null;
-    _twdata = null;
-    _rbit = null;
-    _trdata = null;
-    _cmt = null;
-    _pos:number = 0;
+    _mOn = false;
+    _play = false;
+    _rec = false;
+    _motor = false;
+    _wdata:boolean = null;
+    _twdata:number = null;
+    _rbit:boolean = null;
+    _trdata:number = null;
+    _cmt:boolean[] = null;
+    _pos = 0;
     _motorCallback:(driveState:boolean)=>void = null;
-    _readTopBlank:number = 0;
+    _readTopBlank = 0;
 
     constructor(motorCallback:(driveState:boolean)=>void) {
         this._motorCallback = motorCallback;
     }
-    isCmtSet() {
+    isCmtSet():boolean {
         return (this._cmt != null);
     }
     /**
      * Retrieves magnetic data, if a tape is set.
      * @returns {Buffer|null} pseudo magnetic data.
      */
-    getCmt() {
+    getCmt():boolean[] {
         return this._cmt;
     }
-    setCmt(cmt) {
+    setCmt(cmt:boolean[]):void {
         const m = this.motor();
         if (m) {
             this.stop();
@@ -47,7 +47,7 @@ export default class MZ_DataRecorder {
         this._trdata = null;
         this._readTopBlank = 0;
     }
-    play() {
+    play():void {
         const m = this.motor();
         if (this._cmt != null) {
             this._play = true;
@@ -56,7 +56,7 @@ export default class MZ_DataRecorder {
             this._motorCallback(true);
         }
     }
-    rec() {
+    rec():void {
         const m = this.motor();
         if (this._cmt != null) {
             this._play = true;
@@ -66,7 +66,7 @@ export default class MZ_DataRecorder {
             this._motorCallback(true);
         }
     }
-    stop() {
+    stop():void {
         const m = this.motor();
         this._play = false;
         this._rec = false;
@@ -74,7 +74,7 @@ export default class MZ_DataRecorder {
             this._motorCallback(false);
         }
     }
-    ejectCmt() {
+    ejectCmt():boolean[] {
         this.stop();
         const cmt = this._cmt;
         this._cmt = null;
@@ -85,7 +85,7 @@ export default class MZ_DataRecorder {
         this._readTopBlank = 0;
         return cmt;
     }
-    m_on(state) {
+    m_on(state:boolean):void {
         const m = this.motor();
         if (!this._mOn && state) {
             this._motor = !this._motor;
@@ -98,10 +98,10 @@ export default class MZ_DataRecorder {
             this._motorCallback(false);
         }
     }
-    motor() {
+    motor():boolean {
         return this._cmt != null && this._play && this._motor;
     }
-    wdata(wdata, tick) {
+    wdata(wdata:boolean, tick:number):void {
         if (this.motor() && this._rec) {
             if (this._wdata !== wdata) {
                 this._wdata = wdata;
@@ -125,7 +125,7 @@ export default class MZ_DataRecorder {
             }
         }
     }
-    rdata(tick) {
+    rdata(tick:number):boolean|null {
         if (this.motor()) {
             if (this._pos < this._cmt.length) {
                 // Simulate blank reagion at the top of CMT

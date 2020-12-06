@@ -276,12 +276,12 @@ class MZ700 {
     }
     getRegister() {
         const reg = this.z80.reg.cloneRaw();
-        reg._ = this.z80.regB.cloneRaw();
+        const _reg = this.z80.regB.cloneRaw();
         reg.IFF1 = this.z80.IFF1;
         reg.IFF2 = this.z80.IFF2;
         reg.IM = this.z80.IM;
         reg.HALT = this.z80.HALT;
-        return reg;
+        return [reg, _reg];
     }
     setPC(addr) {
         this.z80.reg.PC = addr;

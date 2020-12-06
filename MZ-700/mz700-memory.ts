@@ -14,7 +14,13 @@ export default class MZ700_Memory extends MemoryBank {
     constructor() {
         super({});
     }
-    create(opt) {
+    create(opt?:{
+        size?:number,
+        startAddr?:number,
+        onVramUpdate:(i:number, dispcode:number, cache:number) => void,
+        onMappedIoRead:(addr:number, value:number) => number,
+        onMappedIoUpdate:(addr:number, value:number) => void,
+    }):void {
 
         super.create(opt);
 
@@ -58,7 +64,7 @@ export default class MZ700_Memory extends MemoryBank {
             }),
             MMAPED_IO: new MemoryBlockCbrw({
                 startAddr: 0xE000, size: 0x0800,
-                onPeek: opt.onMappedIoRead || (()=>{ /* empty */ }),
+                onPeek: opt.onMappedIoRead || (()=>0),
                 onPoke: opt.onMappedIoUpdate || (()=>{ /* empty */ })
             }),
             EXTND_ROM: new MemoryBlock({
@@ -80,26 +86,26 @@ export default class MZ700_Memory extends MemoryBank {
             this.memblks.ATTR_VRAM.pokeByte(0xD800 + i, 0x71);
         }
     }
-    setMonitorRom(bin) {
-        this.memblks.IPL_AREA_ROM.setBinary(bin);
+    setMonitorRom(bin:number[]):void {
+        (this.memblks.IPL_AREA_ROM as MZ700_NewMonitor).setBinary(bin);
     }
-    clear() {
+    clear():void {
         MemoryBank.prototype.clear.call(this);
         Object.values(this.memblks).forEach((memblk:IMem) => memblk.clear())
     }
-    getTextVram() {
+    getTextVram():IMem {
         return this.memblks.TEXT_VRAM;
     }
-    getAttrVram() {
+    getAttrVram():IMem {
         return this.memblks.ATTR_VRAM;
     }
-    changeBlock0_MONITOR() {
+    changeBlock0_MONITOR():void {
         this.setMemoryBlock("IPL_AREA", this.memblks.IPL_AREA_ROM);
     }
-    changeBlock0_DRAM() {
+    changeBlock0_DRAM():void {
         this.setMemoryBlock("IPL_AREA", this.memblks.IPL_AREA_RAM);
     }
-    changeBlock1_DRAM() {
+    changeBlock1_DRAM():void {
         this._block1VRAM = false;
         this._disabledBlock1 = false;
         this.setMemoryBlock("TEXT_VRAM", null);
@@ -108,7 +114,7 @@ export default class MZ700_Memory extends MemoryBank {
         this.setMemoryBlock("EXTND_ROM", null);
         this.setMemoryBlock("DRAM", this.memblks.DRAM);
     }
-    changeBlock1_VRAM() {
+    changeBlock1_VRAM():void {
         this._block1VRAM = true;
         this._disabledBlock1 = false;
         this.setMemoryBlock("DRAM", null);
@@ -117,7 +123,7 @@ export default class MZ700_Memory extends MemoryBank {
         this.setMemoryBlock("MMAPED_IO", this.memblks.MMAPED_IO);
         this.setMemoryBlock("EXTND_ROM", this.memblks.EXTND_ROM);
     }
-    disableBlock1() {
+    disableBlock1():void {
         if (!this._disabledBlock1) {
             this._disabledBlock1 = true;
             this.setMemoryBlock("TEXT_VRAM", null);
@@ -127,7 +133,7 @@ export default class MZ700_Memory extends MemoryBank {
             this.setMemoryBlock("DRAM", null);
         }
     }
-    enableBlock1() {
+    enableBlock1():void {
         if (this._disabledBlock1) {
             if (this._block1VRAM) {
                 this.changeBlock1_VRAM();

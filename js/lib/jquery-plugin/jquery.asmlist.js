@@ -23,7 +23,7 @@ function asmlist(element) {
     this._currentAddr = null;
     this._breakpoints = {};
     this._opts = {
-        onSetBreak: ()=>{},
+        onSetBreak: ()=>{ /* empty */ },
     };
 }
 

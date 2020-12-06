@@ -123,7 +123,7 @@ if('reuse-mzt-header' in cli.options) {
     //
     // Set binary size to MZT Header
     //
-    var mzt_header_buf = new Array();
+    var mzt_header_buf = [];
     if(mzt_header != null) {
         if(mzt_header.addrLoad == 0) {
             mzt_header.setAddrLoad(asm.minAddr);

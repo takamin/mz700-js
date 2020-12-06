@@ -16,7 +16,6 @@ class Intel8253 {
         const index = (ctrlword & 0xc0) >> 6;
         this._counter[index].setCtrlWord(ctrlword & 0x3f);
     }
-    ;
     counter(index) {
         return this._counter[index];
     }
