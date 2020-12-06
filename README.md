@@ -12,7 +12,7 @@ width="100%" style="max-width:900px"/>
 Description
 -----------
 
-This is an emulator of "MZ-700", a Japanese historical 8-bit micro computer.
+This is an emulator of "MZ-700", a Japanese historical 8-bit microcomputer.
 
 This emulator is written by JavaScript.
 It works on the modern HTML5 web browser.
@@ -46,11 +46,11 @@ width="100%" style="max-width:900px"/>
 PREREQUISITES and FEATURES
 --------------------------
 
-* Node.js 8.10 or later is requied.
+* Node.js 8.10 or later is required.
 * This emulator bundles [MZ-NEW MONITOR](http://retropc.net/mz-memories/mz700/) to boot.
 * You can drop a MZT-file to the screen to run.
 * Z80 assembler and disassembler is available on the Web and also CLI command.
-* And, It's a somewhat a crazy feature, the emulator running on the CLI with Node.js is also available.
+* And, it's a somewhat a crazy feature, the emulator running on the CLI with Node.js is also available.
 
 INSTALLATION
 ------------
