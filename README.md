@@ -37,7 +37,7 @@ Many people were saying,
 
 __"MZ-700 Has No LIMIT"__
 
-<a href="https://takamin.github.io/MZ-700/"
+<a href="https://takamin.github.io/mz700-js/emu.html"
 target="_blank" title="Click to play some free 8 bit game">
 <img src="https://takamin.github.io/MZ-700/image/MZ-700.png"
 width="100%" style="max-width:900px"/>

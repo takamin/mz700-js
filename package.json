@@ -1,6 +1,6 @@
 {
   "name": "mz700-js",
-  "version": "1.5.4",
+  "version": "1.5.5",
   "description": "MZ-700 Full JavaScript Emulator",
   "private": false,
   "scripts": {
@@ -13,8 +13,7 @@
     "postinstall": "grunt release",
     "lint": "eslint bin/*.js bin/**/*.js lib/**/*.js MZ-700/*.ts lib/*.ts Z80/*.ts",
     "build": "grunt debug",
-    "release": "grunt release",
-    "generate-docs": "jsdoc --configure jsdoc.json --verbose"
+    "release": "grunt release"
   },
   "bin": {
     "mz700": "./bin/mz700-ws.js",
