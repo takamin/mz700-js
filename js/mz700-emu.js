@@ -14398,6 +14398,7 @@ class mz700scrn extends mz700_canvas_renderer_1.default {
         const bg = (7 & parseInt($e.attr("bgColor") || "1"));
         const text = element.innerText;
         const chars = mz700scrn.str2chars(text);
+        $e.empty();
         const scrnText = new mz700scrn(element);
         scrnText.create({
             cols: chars.length + padding * 2,
