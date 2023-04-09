@@ -1,5 +1,4 @@
 "use strict";
-import { CanvasRenderingContext2D } from "canvas";
 import mz700cg from "./mz700-cg";
 
 /* tslint:disable: no-bitwise */
