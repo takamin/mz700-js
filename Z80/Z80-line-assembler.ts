@@ -163,12 +163,12 @@ export default class Z80LineAssembler {
                             break;
                         default:
                             if(element in dictionary) {
-                                const deref = dictionary[element];
+                                const deref = dictionary[element] as number;
                                 if(deref >= 256) {
                                     throw new Error(
                                         ["The character code exceeds the maximum",
                                         "value of 8 bit with the label", element,
-                                        "(", "0x" + NumberUtil.HEX(deref as number, 4) , ")"].join(" "));
+                                        "(", "0x" + NumberUtil.HEX(deref, 4) , ")"].join(" "));
                                 }
                                 strcode = [deref];
                             } else {
@@ -505,7 +505,7 @@ export default class Z80LineAssembler {
             return parseAddress.parseNumLiteralPair(toks[1]);
         }
         if(match_token(toks,['DEFS', null])) {
-            const n = parseAddress._parseNumLiteral(toks[1]);
+            const n = parseAddress._parseNumLiteral(toks[1]) as number;
             if(n < 0) {
                 throw "negative DEFS number " + toks[1];
             }

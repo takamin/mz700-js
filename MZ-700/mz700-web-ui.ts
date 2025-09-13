@@ -610,7 +610,7 @@ async function createUI(mz700js, mz700screen, canvas) {
                 () => fullscreenButton.ToggleButton("setOff"));
             if(deviceType === "pc") {
                 await new Promise(
-                    resolve => dockPanelRight.show(0, resolve));
+                    resolve => dockPanelRight.show(0, resolve as any));
                 if((wndRegView as ToolWindow).ToolWindow("isOpen")) {
                     await Z80RegViewVisibility(true);
                 }
@@ -620,7 +620,7 @@ async function createUI(mz700js, mz700screen, canvas) {
                 () => fullscreenButton.ToggleButton("setOn"));
             if(deviceType === "pc") {
                 await new Promise(
-                    resolve => dockPanelRight.hide(0, resolve));
+                    resolve => dockPanelRight.hide(0, resolve as any));
                 if((wndRegView as ToolWindow).ToolWindow("isOpen")) {
                     await Z80RegViewVisibility(false);
                 }
@@ -790,7 +790,7 @@ async function createUI(mz700js, mz700screen, canvas) {
             keyboard.mz700keyboard("acceptKey", true);
             showCtrlPanel();
         });
-        await new Promise(resolve => dockPanelRight.show(0, resolve));
+        await new Promise(resolve => dockPanelRight.show(0, resolve as any));
         break;
     }
 
